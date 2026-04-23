@@ -85,16 +85,33 @@ function VendorDashboardPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && !user) { navigate({ to: "/login" }); return; }
+    if (!authLoading && !user) { 
+      // Preserve search params when redirecting to login
+      const search = window.location.search;
+      navigate({ to: "/login", search: { redirect: `/vendor${search}` } }); 
+      return; 
+    }
     if (user) loadVendorData();
 
     // --- NEW: Handle deep-linking from emails ---
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab');
+    const orderIdParam = params.get('orderId');
+
     if (tabParam && tabParam !== activeTab) {
       setActiveTab(tabParam);
     }
-  }, [user, authLoading, navigate, activeTab]);
+
+    // Scroll to order if we have an orderId and data is loaded
+    if (orderIdParam && !loading && orderItems.length > 0) {
+      setTimeout(() => {
+        const element = document.getElementById(`order-${orderIdParam}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 500);
+    }
+  }, [user, authLoading, navigate, activeTab, loading, orderItems.length]);
 
   async function loadVendorData() {
     if (!user) return;
@@ -313,7 +330,7 @@ function VendorDashboardPage() {
                     const isHighlighted = params.get('orderId') === item.order_id;
                     
                     return (
-                    <Card key={item.id} className={cn(
+                    <Card key={item.id} id={`order-${item.order_id}`} className={cn(
                       "overflow-hidden border-border/50 transition-all duration-500",
                       isHighlighted ? "border-primary ring-1 ring-primary shadow-lg scale-[1.02]" : ""
                     )}>
