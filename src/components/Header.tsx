@@ -31,7 +31,7 @@ const exploreItems = [
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
-  const { user, loading, signOut } = useAuth();
+  const { user, role, loading, signOut } = useAuth();
   const router = useRouter();
 
   const handleBecomeVendor = () => {
@@ -140,7 +140,7 @@ export function Header() {
                 <DropdownMenuItem asChild>
                   <Link to="/vendor">Vendor Dashboard</Link>
                 </DropdownMenuItem>
-                {user.id === 'd14875df-befb-4d22-93d3-a5c133c4e1b7' || user.id === 'c71de976-2dc5-4966-ae0f-5f8c05c62e18' ? (
+                {role === 'admin' ? (
                   <DropdownMenuItem asChild>
                     <Link to="/admin" className="text-primary font-bold">Platform Admin</Link>
                   </DropdownMenuItem>
@@ -241,7 +241,7 @@ export function Header() {
               {item.label}
             </Link>
           ))}
-          {(user?.id === 'd14875df-befb-4d22-93d3-a5c133c4e1b7' || user?.id === 'c71de976-2dc5-4966-ae0f-5f8c05c62e18') && (
+          {role === 'admin' && (
             <Link
               to="/admin"
               className="rounded-md px-3 py-2.5 text-sm font-bold text-primary hover:bg-primary/10 transition-colors"

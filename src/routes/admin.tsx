@@ -65,9 +65,8 @@ const statusColors: Record<string, string> = {
 };
 
 function AdminPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, role, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<{ role: string } | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [users, setUsers] = useState<Profile[]>([]);
@@ -85,24 +84,18 @@ function AdminPage() {
 
   // Check admin role
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate({ to: "/login" });
-      return;
+    if (!authLoading) {
+      if (!user) {
+        navigate({ to: "/login" });
+      } else if (role && role !== "admin") {
+        navigate({ to: "/" });
+      }
     }
-    if (user) {
-      supabase.from("profiles").select("role").eq("id", user.id).single().then(({ data }) => {
-        const d = data as any;
-        setProfile(d);
-        if (d?.role !== "admin") {
-          navigate({ to: "/" });
-        }
-      });
-    }
-  }, [authLoading, user, navigate]);
+  }, [authLoading, user, role, navigate]);
 
   // Load data
   useEffect(() => {
-    if (!profile || profile.role !== "admin") return;
+    if (role !== "admin") return;
 
     async function loadData() {
       setLoading(true);
@@ -167,7 +160,7 @@ function AdminPage() {
      setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, status: newStatus } : p)));
   };
 
-  if (authLoading || loading || !profile) {
+  if (authLoading || loading || !role) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -175,7 +168,7 @@ function AdminPage() {
     );
   }
 
-  if (profile.role !== "admin") return null;
+  if (role !== "admin") return null;
 
   return (
     <div className="min-h-screen bg-background">
