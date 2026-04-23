@@ -43,16 +43,19 @@ export function UserEditDialog({ user, isOpen, onClose, onSuccess }: UserEditDia
   };
 
   const handleSendReset = async () => {
+    if (!email) {
+      toast.error("Please provide an email address first.");
+      return;
+    }
     setResetLoading(true);
     try {
-      // Use the built-in client method for password reset
-      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/login?type=recovery`,
       });
 
       if (error) throw error;
 
-      toast.success(`Password reset email sent to ${user.email}`);
+      toast.success(`Password reset email sent to ${email}`);
     } catch (error: any) {
       console.error("Error sending reset:", error);
       toast.error(error.message || "Failed to send reset email");
@@ -95,7 +98,7 @@ export function UserEditDialog({ user, isOpen, onClose, onSuccess }: UserEditDia
               variant="outline" 
               className="w-full justify-start" 
               onClick={handleSendReset}
-              disabled={resetLoading}
+              disabled={resetLoading || !email}
             >
               {resetLoading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -59,14 +59,18 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
   };
 
   const handleSendReset = async () => {
+    if (!email) {
+      toast.error("Please provide an email address first.");
+      return;
+    }
     setResetLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(vendor.email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/login?type=recovery`,
       });
 
       if (error) throw error;
-      toast.success(`Password reset email sent to ${vendor.email}`);
+      toast.success(`Password reset email sent to ${email}`);
     } catch (error: any) {
       console.error("Error sending reset:", error);
       toast.error(error.message || "Failed to send reset email");
@@ -233,7 +237,7 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
               variant="outline" 
               className="w-full justify-start"
               onClick={handleSendReset}
-              disabled={resetLoading}
+              disabled={resetLoading || !email}
             >
               {resetLoading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
