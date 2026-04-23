@@ -9,6 +9,9 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminGalleriesTab } from "@/components/admin/AdminGalleriesTab";
 import { AdminContentTab } from "@/components/admin/AdminContentTab";
+import { VendorEditDialog } from "@/components/admin/VendorEditDialog";
+import { toast } from "sonner";
+import { Edit } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -81,6 +84,8 @@ function AdminPage() {
     contactMessages: 0,
     subscribers: 0,
   });
+  const [editingVendor, setEditingVendor] = useState<any>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   // Check admin role
   useEffect(() => {
@@ -308,7 +313,17 @@ function AdminPage() {
                                            {v.is_approved ? "Approved" : "Pending"}
                                         </Badge>
                                      </td>
-                                     <td className="py-3 text-right">
+                                     <td className="py-3 text-right flex items-center justify-end gap-2">
+                                        <Button 
+                                           size="sm" 
+                                           variant="ghost" 
+                                           onClick={() => {
+                                              setEditingVendor(v);
+                                              setIsEditOpen(true);
+                                           }}
+                                        >
+                                           <Edit className="h-4 w-4 mr-1" /> Edit
+                                        </Button>
                                         <Button size="sm" variant="outline" onClick={() => toggleVendorApproval(v.id, v.is_approved)}>
                                            {v.is_approved ? "Revoke" : "Approve"}
                                         </Button>
@@ -449,6 +464,23 @@ function AdminPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {editingVendor && (
+        <VendorEditDialog
+          vendor={editingVendor}
+          isOpen={isEditOpen}
+          onClose={() => {
+            setIsEditOpen(false);
+            setEditingVendor(null);
+          }}
+          onSuccess={() => {
+            // Re-fetch data or update local state
+            supabase.from("vendor_profiles").select("*").order("created_at", { ascending: false }).then(({ data }) => {
+               if (data) setVendors(data);
+            });
+          }}
+        />
+      )}
     </div>
   );
 }
