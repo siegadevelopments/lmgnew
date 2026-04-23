@@ -1,6 +1,8 @@
 import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-router";
 import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import MuxPlayer from "@mux/mux-player-react";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/vendors/$slug")({
   loader: async ({ context: { queryClient }, params: { slug } }) => {
@@ -41,6 +43,18 @@ function VendorPage() {
     },
   });
 
+  const { data: streamInfo } = useQuery({
+    queryKey: ["vendor_stream", slug],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("vendor_streams")
+        .select("*")
+        .eq("vendor_id", slug)
+        .single();
+      return data;
+    },
+  });
+
   return (
     <div className="py-12 sm:py-16">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -67,8 +81,28 @@ function VendorPage() {
             )}
           </div>
 
-          {/* Vendor Products */}
-          <div className="w-full md:w-2/3">
+            )}
+          </div>
+
+          {/* Vendor Content */}
+          <div className="w-full md:w-2/3 space-y-8">
+            {streamInfo?.is_live && streamInfo?.mux_playback_id && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Badge variant="destructive" className="animate-pulse px-3 py-1">LIVE NOW</Badge>
+                  <h2 className="text-xl font-bold">{streamInfo.stream_title || "Vendor Live Stream"}</h2>
+                </div>
+                <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-elevated border border-border">
+                  <MuxPlayer
+                    playbackId={streamInfo.mux_playback_id}
+                    streamType="live"
+                    autoPlay
+                    className="w-full h-full"
+                  />
+                </div>
+              </div>
+            )}
+
             <h2 className="text-xl font-bold text-foreground">Products by {vendor.store_name}</h2>
             {vendorProducts && vendorProducts.length > 0 ? (
               <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

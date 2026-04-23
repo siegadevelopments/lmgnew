@@ -13,6 +13,7 @@ import { VideosTab } from "@/components/vendor/VideosTab";
 import { ArticlesTab } from "@/components/vendor/ArticlesTab";
 import { WithdrawTab } from "@/components/vendor/WithdrawTab";
 import { SettingsTab } from "@/components/vendor/SettingsTab";
+import { VendorLiveStream } from "@/components/vendor/VendorLiveStream";
 
 export const Route = createFileRoute("/vendor")({
   head: () => ({
@@ -123,7 +124,9 @@ function VendorDashboardPage() {
           <TabsList className="flex-wrap h-auto gap-1">
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="products">Products</TabsTrigger>
+            <TabsTrigger value="live">Live Stream</TabsTrigger>
             <TabsTrigger value="videos">Videos</TabsTrigger>
+            <TabsTrigger value="orders">Orders</TabsTrigger>
             <TabsTrigger value="articles">Articles</TabsTrigger>
             <TabsTrigger value="withdraw">Withdraw</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -135,8 +138,31 @@ function VendorDashboardPage() {
           <TabsContent value="products">
             <ProductsTab products={products} setProducts={setProducts} userId={user!.id} />
           </TabsContent>
+          <TabsContent value="live" className="mt-6">
+            <VendorLiveStream vendorId={profile.id} />
+          </TabsContent>
           <TabsContent value="videos">
             <VideosTab videos={videos} setVideos={setVideos} />
+          </TabsContent>
+          <TabsContent value="orders">
+            <div className="grid gap-4">
+              <h3 className="text-lg font-bold">Recent Orders</h3>
+              {orderItems.length === 0 ? (
+                <Card><CardContent className="py-10 text-center text-muted-foreground">No orders yet.</CardContent></Card>
+              ) : (
+                <div className="border rounded-md divide-y">
+                  {orderItems.map(item => (
+                    <div key={item.id} className="p-4 flex justify-between items-center">
+                      <div>
+                        <p className="font-medium">{item.product_name}</p>
+                        <p className="text-xs text-muted-foreground">Qty: {item.quantity} • {new Date(item.created_at).toLocaleDateString()}</p>
+                      </div>
+                      <p className="font-bold">${(item.price * item.quantity).toFixed(2)}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </TabsContent>
           <TabsContent value="articles">
             <ArticlesTab articles={articles} setArticles={setArticles} userId={user!.id} />

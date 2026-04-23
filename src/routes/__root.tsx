@@ -1,4 +1,4 @@
-import { Outlet, Link, createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
+import { Outlet, Link, createRootRouteWithContext } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -6,8 +6,6 @@ import { BackToTop } from "@/components/BackToTop";
 import { CartProvider } from "@/hooks/use-cart";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Toaster } from "sonner";
-
-import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
   return (
@@ -31,63 +29,10 @@ function NotFoundComponent() {
   );
 }
 
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
-  {
-    head: () => ({
-      meta: [
-        { charSet: "utf-8" },
-        { name: "viewport", content: "width=device-width, initial-scale=1" },
-        { title: "Lifestyle Medicine Gateway — Wellness Marketplace" },
-        {
-          name: "description",
-          content:
-            "Discover products, services, and expert content for a healthier life.",
-        },
-        { name: "author", content: "Lifestyle Medicine Gateway" },
-        { property: "og:type", content: "website" },
-        { name: "twitter:card", content: "summary" },
-      ],
-      links: [
-        { rel: "preconnect", href: "https://fonts.googleapis.com" },
-        {
-          rel: "preconnect",
-          href: "https://fonts.gstatic.com",
-          crossOrigin: "anonymous",
-        },
-        {
-          rel: "stylesheet",
-          href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap",
-        },
-        {
-          rel: "stylesheet",
-          href: appCss,
-        },
-      ],
-      scripts: [
-        {
-          children: `(function(){try{var t=localStorage.getItem("theme");if(t==="dark"||(!t&&window.matchMedia("(prefers-color-scheme:dark)").matches)){document.documentElement.classList.add("dark")}}catch(e){}})()`,
-        },
-      ],
-    }),
-    shellComponent: RootShell,
-    component: RootComponent,
-    notFoundComponent: NotFoundComponent,
-  },
-);
-
-function RootShell({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  );
-}
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  component: RootComponent,
+  notFoundComponent: NotFoundComponent,
+});
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
@@ -95,13 +40,15 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <CartProvider>
-          <Header />
-          <main>
-            <Outlet />
-          </main>
-          <Footer />
-          <BackToTop />
-          <Toaster position="bottom-right" richColors closeButton />
+          <div className="flex flex-col min-h-screen bg-background text-foreground">
+            <Header />
+            <main className="flex-grow">
+              <Outlet />
+            </main>
+            <Footer />
+            <BackToTop />
+            <Toaster position="bottom-right" richColors closeButton />
+          </div>
         </CartProvider>
       </AuthProvider>
     </QueryClientProvider>

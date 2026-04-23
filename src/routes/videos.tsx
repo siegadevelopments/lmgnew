@@ -4,6 +4,11 @@ import { videosQueryOptions } from "@/lib/queries";
 import { useState } from "react";
 import { Play, Maximize2, X } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import MuxPlayer from "@mux/mux-player-react";
+import { Badge } from "@/components/ui/badge";
+import { Radio } from "lucide-react";
 
 export const Route = createFileRoute("/videos")({
   head: () => ({
@@ -78,6 +83,18 @@ function VideosPage() {
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [fullscreenVideo, setFullscreenVideo] = useState<string | null>(null);
 
+  const { data: liveStreams } = useQuery({
+    queryKey: ["live_streams"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("vendor_streams")
+        .select("*, vendor:vendor_profiles(store_name, store_logo_url)")
+        .eq("is_live", true);
+      return (data as any[]) || [];
+    },
+    refetchInterval: 30000, // Refresh every 30s
+  });
+
   return (
     <div className="bg-background min-h-screen">
       {/* Hero */}
@@ -94,6 +111,46 @@ function VideosPage() {
           </p>
         </div>
       </div>
+
+      {/* Live Streams Section */}
+      {liveStreams && liveStreams.length > 0 && (
+        <div className="bg-destructive/5 border-y border-destructive/10 py-12">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-2 mb-8">
+              <div className="h-3 w-3 rounded-full bg-destructive animate-pulse" />
+              <h2 className="text-2xl font-bold tracking-tight">Live Now</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {liveStreams.map(stream => (
+                <div key={stream.vendor_id} className="group relative overflow-hidden rounded-2xl bg-black shadow-elevated border border-destructive/20 aspect-video">
+                  <MuxPlayer
+                    playbackId={stream.mux_playback_id}
+                    streamType="live"
+                    autoPlay={false}
+                    className="w-full h-full"
+                  />
+                  <div className="absolute top-4 left-4 z-10">
+                    <Badge variant="destructive" className="animate-pulse gap-1.5 px-3 py-1">
+                      <Radio className="h-3 w-3" /> LIVE
+                    </Badge>
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
+                    <div className="flex items-center gap-3">
+                      {stream.vendor?.store_logo_url && (
+                        <img src={stream.vendor.store_logo_url} className="h-8 w-8 rounded-full border border-white/20" />
+                      )}
+                      <div>
+                        <p className="text-white font-bold">{stream.vendor?.store_name || "Vendor"}</p>
+                        <p className="text-white/70 text-sm line-clamp-1">{stream.stream_title || "Lifestyle Medicine Live Session"}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Grid */}
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
