@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,8 +22,16 @@ export const Route = createFileRoute("/checkout")({
 
 function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, authLoading } = useAuth();
   const navigate = useNavigate();
+
+  // --- NEW: Redirect to signup if not logged in ---
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate({ to: "/signup", search: { redirect: "/checkout" } });
+    }
+  }, [authLoading, user, navigate]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState("");
@@ -203,7 +211,7 @@ function CheckoutPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} />
+                  <Input id="phone" name="phone" type="tel" value={formData.phone} onChange={handleChange} required />
                 </div>
               </CardContent>
             </Card>

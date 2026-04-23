@@ -25,6 +25,9 @@ export const Route = createFileRoute("/signup")({
 
 function SignupPage() {
   const navigate = useNavigate();
+  const [searchParams] = useState(() => new URLSearchParams(window.location.search));
+  const redirectTo = searchParams.get("redirect");
+
   const { signUp } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -196,7 +199,11 @@ function SignupPage() {
             </Button>
             <p className="text-center text-sm text-muted-foreground">
               Already have an account?{" "}
-              <Link to="/login" className="text-primary hover:underline">
+              <Link 
+                to="/login" 
+                search={{ redirect: redirectTo }} 
+                className="text-primary hover:underline"
+              >
                 Sign in
               </Link>
             </p>

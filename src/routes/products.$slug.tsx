@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter, useNavigate, notFound } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { productBySlugQueryOptions } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
@@ -49,12 +49,18 @@ function ProductPage() {
   const { slug } = Route.useParams();
   const { data: products } = useSuspenseQuery(productBySlugQueryOptions(slug));
   const product = products[0];
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
 
   const handleAddToCart = () => {
+    if (!user) {
+      navigate({ to: "/signup", search: { redirect: window.location.pathname } });
+      return;
+    }
     addItem({
       id: product.id,
       name: product.title,
@@ -67,7 +73,6 @@ function ProductPage() {
     setTimeout(() => setAdded(false), 2000);
   };
 
-  const { user } = useAuth();
   const { data: reviews, refetch: refetchReviews } = useQuery({
     queryKey: ["reviews", product.id],
     queryFn: async () => {
