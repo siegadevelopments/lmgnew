@@ -19,10 +19,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-
   const fetchRole = useCallback(async (userId: string) => {
-    const { data } = await supabase.from("profiles").select("role").eq("id", userId).single();
-    if (data) setRole((data as any).role);
+    try {
+      const { data, error } = await supabase.from("profiles").select("role").eq("id", userId).single();
+      if (error) {
+        console.error("Error fetching role:", error);
+        setRole("customer");
+      } else {
+        setRole((data as any)?.role || "customer");
+      }
+    } catch (err) {
+      console.error("Fetch role exception:", err);
+      setRole("customer");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -30,8 +41,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       setUser(s?.user ?? null);
-      if (s?.user) fetchRole(s.user.id);
-      else setLoading(false);
+      if (s?.user) {
+        fetchRole(s.user.id);
+      } else {
+        setRole(null);
+        setLoading(false);
+      }
     });
 
     // Listen for auth changes
@@ -40,8 +55,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
-      if (s?.user) fetchRole(s.user.id);
-      else {
+      if (s?.user) {
+        setLoading(true);
+        fetchRole(s.user.id);
+      } else {
         setRole(null);
         setLoading(false);
       }
@@ -49,11 +66,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, [fetchRole]);
-
-  useEffect(() => {
-     if (user && role) setLoading(false);
-     if (!user) setLoading(false);
-  }, [user, role]);
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
