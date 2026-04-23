@@ -16,8 +16,19 @@ export const Route = createFileRoute("/search")({
 
 function SearchPage() {
   const navigate = useNavigate();
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<{ products: any[], articles: any[], recipes: any[] }>({ products: [], articles: [], recipes: [] });
+  const [results, setResults] = useState<{ 
+    products: any[], 
+    articles: any[], 
+    recipes: any[],
+    videos: any[],
+    remedies: any[]
+  }>({ 
+    products: [], 
+    articles: [], 
+    recipes: [],
+    videos: [],
+    remedies: []
+  });
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -40,16 +51,20 @@ function SearchPage() {
       setLoading(true);
       setSearched(true);
 
-      const [productsRes, articlesRes, recipesRes] = await Promise.all([
+      const [productsRes, articlesRes, recipesRes, videosRes, remediesRes] = await Promise.all([
         supabase.from("products").select("*").ilike("title", `%${query}%`).eq("status", "published").limit(6),
         supabase.from("articles").select("*").ilike("title", `%${query}%`).limit(6),
         supabase.from("recipes").select("*").ilike("title", `%${query}%`).limit(6),
+        supabase.from("videos").select("*").ilike("title", `%${query}%`).limit(6),
+        supabase.from("natural_remedies").select("*").ilike("title", `%${query}%`).limit(6),
       ]);
 
       setResults({
         products: productsRes.data || [],
         articles: articlesRes.data || [],
         recipes: recipesRes.data || [],
+        videos: videosRes.data || [],
+        remedies: remediesRes.data || [],
       });
       setLoading(false);
     }, 400);
@@ -57,7 +72,7 @@ function SearchPage() {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [query]);
 
-  const totalResults = results.products.length + results.articles.length + results.recipes.length;
+  const totalResults = results.products.length + results.articles.length + results.recipes.length + results.videos.length + results.remedies.length;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
@@ -148,7 +163,7 @@ function SearchPage() {
             <Badge variant="secondary">{results.recipes.length}</Badge>
           </div>
           <div className="mt-4 space-y-3">
-            {results.recipes.map((recipe) => (
+            {results.recipes.map((recipe: any) => (
               <Link
                 key={recipe.id}
                 to="/recipes/$slug"
@@ -161,6 +176,53 @@ function SearchPage() {
                   {recipe.excerpt && (
                     <p className="mt-1 text-xs text-muted-foreground line-clamp-2" dangerouslySetInnerHTML={{ __html: recipe.excerpt }} />
                   )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {results.videos.length > 0 && (
+        <section className="mt-8">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-foreground">Videos</h2>
+            <Badge variant="secondary">{results.videos.length}</Badge>
+          </div>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {results.videos.map((vid: any) => (
+              <Link
+                key={vid.id}
+                to="/videos"
+                className="group rounded-xl border border-border bg-card p-3 transition-all hover:shadow-card"
+              >
+                <div className="aspect-video overflow-hidden rounded-lg bg-black">
+                   <img src={`https://img.youtube.com/vi/${vid.embed_url?.split('/').pop()}/0.jpg`} className="h-full w-full object-cover" />
+                </div>
+                <h3 className="mt-2 text-sm font-semibold text-foreground group-hover:text-primary line-clamp-1">{vid.title}</h3>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {results.remedies.length > 0 && (
+        <section className="mt-8">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-foreground">Natural Remedies</h2>
+            <Badge variant="secondary">{results.remedies.length}</Badge>
+          </div>
+          <div className="mt-4 space-y-3">
+            {results.remedies.map((rem: any) => (
+              <Link
+                key={rem.id}
+                to="/natural-remedies"
+                className="group flex gap-4 rounded-xl border border-border bg-card p-3 transition-all hover:shadow-card"
+              >
+                {rem.image_url && <img src={rem.image_url} className="h-16 w-16 rounded-lg object-cover shrink-0" />}
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-foreground group-hover:text-primary line-clamp-1">{rem.title}</h3>
+                  {rem.excerpt && <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{rem.excerpt}</p>}
                 </div>
               </Link>
             ))}

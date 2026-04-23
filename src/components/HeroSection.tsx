@@ -36,13 +36,11 @@ export function HeroSection() {
           <span className="mb-4 inline-block rounded-full bg-primary/20 px-4 py-1.5 text-xs font-semibold tracking-wide text-primary-foreground">
             Your Wellness Marketplace
           </span>
-          <h1 className="text-4xl font-extrabold leading-tight tracking-tight text-primary-foreground sm:text-5xl lg:text-6xl">
-            Discover Products &amp; Services for a{" "}
-            <span className="text-wellness-light">Healthier Life</span>
+          <h1 className="text-5xl font-black leading-tight tracking-tighter text-primary-foreground sm:text-6xl lg:text-8xl text-balance">
+            Elevate Your <span className="text-wellness-light drop-shadow-sm">Wellness</span> Journey
           </h1>
-          <p className="mt-5 max-w-lg text-base leading-relaxed text-primary-foreground/80 sm:text-lg">
-            Search for recipes, articles, products, practitioners, and wellness
-            services — all from trusted lifestyle medicine vendors.
+          <p className="mt-8 max-w-xl text-lg leading-relaxed text-primary-foreground/90 sm:text-xl font-medium">
+            The gateway to trusted products, professional services, and expert knowledge in Lifestyle Medicine.
           </p>
 
           {/* Search bar */}

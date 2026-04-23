@@ -11,6 +11,7 @@ import { uploadMedia } from "@/lib/upload";
 interface Product {
   id: number; title: string; price: number; stock: number; status: string; image_url: string | null;
   content?: string;
+  variants?: any[];
 }
 
 interface Props {
@@ -21,7 +22,10 @@ interface Props {
 
 export function ProductsTab({ products, setProducts, userId }: Props) {
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ id: 0, title: "", price: "", stock: "50", image_url: "", video_url: "", description: "", status: "draft" });
+  const [form, setForm] = useState({ 
+    id: 0, title: "", price: "", stock: "50", image_url: "", video_url: "", description: "", status: "draft",
+    variants: [] as any[]
+  });
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
 
@@ -38,6 +42,7 @@ export function ProductsTab({ products, setProducts, userId }: Props) {
     const payload: any = {
       title: form.title, price: parseFloat(form.price) || 0, stock: parseInt(form.stock) || 0,
       image_url: form.image_url || null, content: form.description, status: form.id ? form.status : "published",
+      variants: form.variants
     };
     if (form.video_url) payload.content = (payload.content || "") + `\n<video src="${form.video_url}" controls class="w-full rounded-lg mt-4"></video>`;
 
@@ -50,12 +55,22 @@ export function ProductsTab({ products, setProducts, userId }: Props) {
       if (data) setProducts([data, ...products]);
     }
     setEditing(false);
-    setForm({ id: 0, title: "", price: "", stock: "50", image_url: "", video_url: "", description: "", status: "draft" });
+    setForm({ id: 0, title: "", price: "", stock: "50", image_url: "", video_url: "", description: "", status: "draft", variants: [] });
     setSubmitting(false);
   };
 
   const handleEdit = (p: Product) => {
-    setForm({ id: p.id, title: p.title, price: p.price.toString(), stock: p.stock.toString(), image_url: p.image_url || "", video_url: "", description: (p as any).content || "", status: p.status });
+    setForm({ 
+      id: p.id, 
+      title: p.title, 
+      price: p.price.toString(), 
+      stock: p.stock.toString(), 
+      image_url: p.image_url || "", 
+      video_url: "", 
+      description: (p as any).content || "", 
+      status: p.status,
+      variants: p.variants || []
+    });
     setEditing(true);
   };
 
@@ -75,7 +90,7 @@ export function ProductsTab({ products, setProducts, userId }: Props) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div><CardTitle>Catalog</CardTitle><CardDescription>Manage your products</CardDescription></div>
-        {!editing && <Button onClick={() => { setForm({ id: 0, title: "", price: "", stock: "50", image_url: "", video_url: "", description: "", status: "draft" }); setEditing(true); }}>Add Product</Button>}
+        {!editing && <Button onClick={() => { setForm({ id: 0, title: "", price: "", stock: "50", image_url: "", video_url: "", description: "", status: "draft", variants: [] }); setEditing(true); }}>Add Product</Button>}
       </CardHeader>
       <CardContent>
         {editing && (
@@ -106,6 +121,85 @@ export function ProductsTab({ products, setProducts, userId }: Props) {
                 </div>
               </div>
               <div className="space-y-2 sm:col-span-2"><Label>Description</Label><Textarea rows={3} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
+              
+              <div className="space-y-4 sm:col-span-2 rounded-lg border border-border p-4 bg-muted/20">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-bold">Product Variants</h4>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setForm({ ...form, variants: [...form.variants, { id: crypto.randomUUID(), name: "", price: form.price, stock: form.stock }] })}
+                  >
+                    Add Variant
+                  </Button>
+                </div>
+                {form.variants.length > 0 && (
+                  <div className="space-y-3">
+                    {form.variants.map((v, idx) => (
+                      <div key={v.id} className="grid grid-cols-1 sm:grid-cols-4 gap-2 items-end">
+                        <div className="sm:col-span-2">
+                          <Label className="text-[10px] uppercase">Variant Name (e.g. 1Liter, Green)</Label>
+                          <Input 
+                            value={v.name} 
+                            onChange={e => {
+                              const newVariants = [...form.variants];
+                              newVariants[idx].name = e.target.value;
+                              setForm({ ...form, variants: newVariants });
+                            }} 
+                            placeholder="Variant name"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] uppercase">Price</Label>
+                          <Input 
+                            type="number" 
+                            step="0.01"
+                            value={v.price} 
+                            onChange={e => {
+                              const newVariants = [...form.variants];
+                              newVariants[idx].price = e.target.value;
+                              setForm({ ...form, variants: newVariants });
+                            }} 
+                            required
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1">
+                            <Label className="text-[10px] uppercase">Stock</Label>
+                            <Input 
+                              type="number" 
+                              value={v.stock} 
+                              onChange={e => {
+                                const newVariants = [...form.variants];
+                                newVariants[idx].stock = e.target.value;
+                                setForm({ ...form, variants: newVariants });
+                              }} 
+                              required
+                            />
+                          </div>
+                          <Button 
+                            type="button" 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-9 w-9 text-destructive"
+                            onClick={() => {
+                              const newVariants = form.variants.filter((_, i) => i !== idx);
+                              setForm({ ...form, variants: newVariants });
+                            }}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {form.variants.length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-2">No variants added. The base price and stock will be used.</p>
+                )}
+              </div>
               <div className="flex gap-2 sm:col-span-2">
                 <Button type="submit" disabled={submitting}>{submitting ? "Saving..." : "Save"}</Button>
                 <Button type="button" variant="outline" onClick={() => setEditing(false)}>Cancel</Button>

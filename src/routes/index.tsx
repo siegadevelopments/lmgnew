@@ -9,6 +9,8 @@ import { FeaturedVendorsSection } from "@/components/FeaturedVendorsSection";
 import { LatestArticlesSection } from "@/components/LatestArticlesSection";
 import { NewsletterSection } from "@/components/NewsletterSection";
 import { CTASection } from "@/components/CTASection";
+import { FeaturesSection } from "@/components/FeaturesSection";
+import { TestimonialsSection } from "@/components/TestimonialsSection";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -29,10 +31,12 @@ function Index() {
       <MantraAndPositivitySection />
       <WhatIsLifestyleMedicine />
       <JustForYouSection />
+      <FeaturesSection />
       <NewArrivalsSection />
       <YoungevityPromoSection />
       <FeaturedVendorsSection />
       <LatestArticlesSection />
+      <TestimonialsSection />
       <NewsletterSection />
       <CTASection />
     </>

@@ -14,6 +14,7 @@ import { ArticlesTab } from "@/components/vendor/ArticlesTab";
 import { WithdrawTab } from "@/components/vendor/WithdrawTab";
 import { SettingsTab } from "@/components/vendor/SettingsTab";
 import { VendorLiveStream } from "@/components/vendor/VendorLiveStream";
+import { BulkImportTab } from "@/components/vendor/BulkImportTab";
 import { 
   LayoutDashboard, 
   Package, 
@@ -26,7 +27,8 @@ import {
   ChevronRight,
   Menu,
   LogOut,
-  Store
+  Store,
+  Upload
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -131,6 +133,7 @@ function VendorDashboardPage() {
     { id: "orders", label: `Orders (${orderItems.length})`, icon: ShoppingBag },
     { id: "articles", label: "Articles", icon: FileText },
     { id: "withdraw", label: "Withdrawals", icon: Wallet },
+    { id: "import", label: "Bulk Import", icon: Upload },
     { id: "settings", label: "Store Settings", icon: Settings },
   ];
 
@@ -316,6 +319,14 @@ function VendorDashboardPage() {
                 <p className="text-muted-foreground">Manage your earnings and transfer funds.</p>
               </div>
               <WithdrawTab totalSales={totalSales} />
+            </TabsContent>
+
+            <TabsContent value="import" className="mt-0 border-0 p-0">
+              <div className="mb-6 flex flex-col gap-1">
+                <h1 className="text-2xl font-bold tracking-tight">Bulk Import</h1>
+                <p className="text-muted-foreground">Import products from Shopify or WooCommerce.</p>
+              </div>
+              <BulkImportTab userId={user!.id} onSuccess={loadVendorData} />
             </TabsContent>
 
             <TabsContent value="settings" className="mt-0 border-0 p-0">

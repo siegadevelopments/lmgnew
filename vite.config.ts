@@ -14,6 +14,10 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
+      workbox: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest,jpg}"],
+      },
       manifest: {
         name: 'Lifestyle Medicine Gateway',
         short_name: 'LMG',
