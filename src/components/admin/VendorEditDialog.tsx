@@ -29,6 +29,8 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
     instagram: vendor?.instagram || "",
     facebook: vendor?.facebook || "",
     twitter: vendor?.twitter || "",
+    mux_stream_key: vendor?.stream?.mux_stream_key || "",
+    mux_playback_id: vendor?.stream?.mux_playback_id || "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -96,6 +98,19 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
         .eq("id", vendor.id);
 
       if (error) throw error;
+
+      // Update or insert stream info
+      const { mux_stream_key, mux_playback_id } = formData as any;
+      if (mux_stream_key || mux_playback_id) {
+        await supabase
+          .from("vendor_streams")
+          .upsert({
+            vendor_id: vendor.id,
+            mux_stream_key,
+            mux_playback_id,
+            updated_at: new Date().toISOString()
+          });
+      }
 
       toast.success("Vendor updated successfully");
       onSuccess();
@@ -249,6 +264,34 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
               )}
               Send Password Reset Email
             </Button>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-primary">Live Stream Keys (Mux)</h3>
+            <div className="grid gap-2">
+              <Label htmlFor="mux_stream_key">Mux Stream Key</Label>
+              <Input
+                id="mux_stream_key"
+                name="mux_stream_key"
+                type="password"
+                value={formData.mux_stream_key}
+                onChange={handleChange}
+                placeholder="Centralized Mux Stream Key"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="mux_playback_id">Mux Playback ID</Label>
+              <Input
+                id="mux_playback_id"
+                name="mux_playback_id"
+                value={formData.mux_playback_id}
+                onChange={handleChange}
+                placeholder="Centralized Mux Playback ID"
+              />
+            </div>
           </div>
 
           <Separator />

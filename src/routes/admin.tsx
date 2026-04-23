@@ -141,7 +141,9 @@ function AdminPage() {
 
         const allOrders = (ordersRes.data || []) as Order[];
         const allMessages = (messagesRes.data || []) as ContactMessage[];
-        const allUsers = (usersRes.data || []) as Profile[];
+        const allUsers = (usersRes.data || []) as any[];
+        const { data: streamsData } = await supabase.from("vendor_streams").select("*");
+        const allStreams = streamsData || [];
 
         // 2. Get users with emails from secure RPC
         let usersWithEmails: any[] = [];
@@ -170,7 +172,12 @@ function AdminPage() {
         setOrders(allOrders);
         setMessages(allMessages);
         setUsers(usersWithEmails.length > 0 ? usersWithEmails : allUsers);
-        setVendors(vendorsWithEmails);
+        
+        const vendorsWithStreams = vendorsWithEmails.map(v => ({
+          ...v,
+          stream: allStreams.find((s: any) => s.vendor_id === v.id)
+        }));
+        setVendors(vendorsWithStreams);
         
         const productsData = (productsRes.data || []).map((p: any) => ({
           ...p,
@@ -239,7 +246,8 @@ function AdminPage() {
   const sidebarItems = [
     { id: "overview", label: "Dashboard", icon: LayoutDashboard },
     { id: "orders", label: `Orders (${orders.length})`, icon: ShoppingBag },
-    { id: "vendors", label: `Vendors (${vendors.length})`, icon: Store },
+    { id: "vendors", label: "Vendors", icon: Store },
+    { id: "streams", label: "Live Streams", icon: Radio },
     { id: "products", label: `Products (${products.length})`, icon: Package },
     { id: "content", label: "Content Manager", icon: FileText },
     { id: "galleries", label: "Galleries", icon: ImageIcon },
@@ -695,6 +703,67 @@ function AdminPage() {
                       </table>
                     </div>
                   )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="streams" className="mt-0 border-0 p-0">
+              <Card className="border-border/50">
+                <CardHeader>
+                  <CardTitle>Vendor Live Streams</CardTitle>
+                  <CardDescription>Manage Mux credentials and live status for all vendors.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border/50 text-left text-muted-foreground">
+                          <th className="pb-3 font-medium">Vendor</th>
+                          <th className="pb-3 font-medium">Stream Key</th>
+                          <th className="pb-3 font-medium">Playback ID</th>
+                          <th className="pb-3 font-medium text-right">Status</th>
+                          <th className="pb-3 font-medium text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {vendors.map((v) => (
+                          <tr key={v.id} className="border-b border-border/50 last:border-0 hover:bg-muted/30">
+                            <td className="py-4">
+                              <p className="font-bold">{v.store_name}</p>
+                              <p className="text-[10px] text-muted-foreground">{v.email}</p>
+                            </td>
+                            <td className="py-4">
+                              <code className="text-[10px] bg-muted px-1 py-0.5 rounded">
+                                {v.stream?.mux_stream_key ? "••••••••••••" : "None"}
+                              </code>
+                            </td>
+                            <td className="py-4 font-mono text-[10px]">
+                              {v.stream?.mux_playback_id || "None"}
+                            </td>
+                            <td className="py-4 text-right">
+                              {v.stream?.is_live ? (
+                                <Badge variant="destructive" className="animate-pulse">LIVE</Badge>
+                              ) : (
+                                <Badge variant="secondary">OFFLINE</Badge>
+                              )}
+                            </td>
+                            <td className="py-4 text-right">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => {
+                                  setEditingVendor(v);
+                                  setIsEditOpen(true);
+                                }}
+                              >
+                                Edit Keys
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
