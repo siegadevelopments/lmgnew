@@ -359,46 +359,57 @@ function ProfilePage() {
 
               {/* Shopee-style Stepper */}
               <div className="py-6 px-2">
-                <div className="relative flex justify-between">
-                  {/* Progress Line */}
-                  <div className="absolute top-4 left-0 h-0.5 w-full bg-muted -z-0">
-                    <div 
-                      className="h-full bg-primary transition-all duration-1000" 
-                      style={{ 
-                        width: selectedOrder.status === 'delivered' ? '100%' : 
-                               selectedOrder.status === 'shipped' ? '50%' : '0%' 
-                      }} 
-                    />
-                  </div>
+                {(() => {
+                  // Calculate overall status based on items
+                  const items = selectedOrder.order_items || [];
+                  const isAllDelivered = items.length > 0 && items.every(i => i.status === 'delivered');
+                  const isAnyShipped = items.some(i => i.status === 'shipped' || i.status === 'delivered');
                   
-                  {[
-                    { label: 'Placed', status: 'pending', icon: '📝' },
-                    { label: 'Shipped', status: 'shipped', icon: '🚚' },
-                    { label: 'Delivered', status: 'delivered', icon: '🎁' }
-                  ].map((step, idx) => {
-                    const isCompleted = 
-                      (step.status === 'pending') || 
-                      (step.status === 'shipped' && (selectedOrder.status === 'shipped' || selectedOrder.status === 'delivered')) ||
-                      (step.status === 'delivered' && selectedOrder.status === 'delivered');
-                    
-                    return (
-                      <div key={step.label} className="relative z-10 flex flex-col items-center gap-2">
-                        <div className={cn(
-                          "h-8 w-8 rounded-full flex items-center justify-center text-sm border-2 transition-all duration-500 bg-background",
-                          isCompleted ? "border-primary text-primary scale-110 shadow-sm" : "border-muted text-muted-foreground"
-                        )}>
-                          {step.icon}
-                        </div>
-                        <span className={cn(
-                          "text-[10px] font-bold uppercase tracking-tight",
-                          isCompleted ? "text-primary" : "text-muted-foreground"
-                        )}>
-                          {step.label}
-                        </span>
+                  const currentStatus = isAllDelivered ? 'delivered' : (isAnyShipped ? 'shipped' : 'pending');
+
+                  return (
+                    <div className="relative flex justify-between">
+                      {/* Progress Line */}
+                      <div className="absolute top-4 left-0 h-0.5 w-full bg-muted -z-0">
+                        <div 
+                          className="h-full bg-primary transition-all duration-1000" 
+                          style={{ 
+                            width: currentStatus === 'delivered' ? '100%' : 
+                                   currentStatus === 'shipped' ? '50%' : '0%' 
+                          }} 
+                        />
                       </div>
-                    );
-                  })}
-                </div>
+                      
+                      {[
+                        { label: 'Placed', status: 'pending', icon: '📝' },
+                        { label: 'Shipped', status: 'shipped', icon: '🚚' },
+                        { label: 'Delivered', status: 'delivered', icon: '🎁' }
+                      ].map((step) => {
+                        const isCompleted = 
+                          (step.status === 'pending') || 
+                          (step.status === 'shipped' && (currentStatus === 'shipped' || currentStatus === 'delivered')) ||
+                          (step.status === 'delivered' && currentStatus === 'delivered');
+                        
+                        return (
+                          <div key={step.label} className="relative z-10 flex flex-col items-center gap-2">
+                            <div className={cn(
+                              "h-8 w-8 rounded-full flex items-center justify-center text-sm border-2 transition-all duration-500 bg-background",
+                              isCompleted ? "border-primary text-primary scale-110 shadow-sm" : "border-muted text-muted-foreground"
+                            )}>
+                              {step.icon}
+                            </div>
+                            <span className={cn(
+                              "text-[10px] font-bold uppercase tracking-tight",
+                              isCompleted ? "text-primary" : "text-muted-foreground"
+                            )}>
+                              {step.label}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
               
               <div className="space-y-3 pt-2">
