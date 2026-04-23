@@ -139,6 +139,10 @@ function AdminPage() {
         if (ordersRes.error) console.error("Orders error:", ordersRes.error);
         if (productsRes.error) console.error("Products error:", productsRes.error);
 
+        const allOrders = (ordersRes.data || []) as Order[];
+        const allMessages = (messagesRes.data || []) as ContactMessage[];
+        const allUsers = (usersRes.data || []) as Profile[];
+
         // 2. Try to get users with emails from Edge Function
         let usersWithEmails: any[] = [];
         try {
