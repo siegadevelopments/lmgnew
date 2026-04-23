@@ -91,11 +91,10 @@ function VendorDashboardPage() {
     // --- NEW: Handle deep-linking from emails ---
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab');
-    if (tabParam) {
+    if (tabParam && tabParam !== activeTab) {
       setActiveTab(tabParam);
-      // If we have an orderId, we can scroll to it after data loads
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, activeTab]);
 
   async function loadVendorData() {
     if (!user) return;
