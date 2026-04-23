@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useWishlist, type WishlistItem } from "@/hooks/use-wishlist";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadMedia } from "@/lib/upload";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -354,6 +355,50 @@ function ProfilePage() {
                 <p className="text-muted-foreground">{selectedOrder.first_name} {selectedOrder.last_name}</p>
                 <p className="text-muted-foreground">{selectedOrder.address}</p>
                 <p className="text-muted-foreground">{selectedOrder.city}, {selectedOrder.state} {selectedOrder.zip}</p>
+              </div>
+
+              {/* Shopee-style Stepper */}
+              <div className="py-6 px-2">
+                <div className="relative flex justify-between">
+                  {/* Progress Line */}
+                  <div className="absolute top-4 left-0 h-0.5 w-full bg-muted -z-0">
+                    <div 
+                      className="h-full bg-primary transition-all duration-1000" 
+                      style={{ 
+                        width: selectedOrder.status === 'delivered' ? '100%' : 
+                               selectedOrder.status === 'shipped' ? '50%' : '0%' 
+                      }} 
+                    />
+                  </div>
+                  
+                  {[
+                    { label: 'Placed', status: 'pending', icon: '📝' },
+                    { label: 'Shipped', status: 'shipped', icon: '🚚' },
+                    { label: 'Delivered', status: 'delivered', icon: '🎁' }
+                  ].map((step, idx) => {
+                    const isCompleted = 
+                      (step.status === 'pending') || 
+                      (step.status === 'shipped' && (selectedOrder.status === 'shipped' || selectedOrder.status === 'delivered')) ||
+                      (step.status === 'delivered' && selectedOrder.status === 'delivered');
+                    
+                    return (
+                      <div key={step.label} className="relative z-10 flex flex-col items-center gap-2">
+                        <div className={cn(
+                          "h-8 w-8 rounded-full flex items-center justify-center text-sm border-2 transition-all duration-500 bg-background",
+                          isCompleted ? "border-primary text-primary scale-110 shadow-sm" : "border-muted text-muted-foreground"
+                        )}>
+                          {step.icon}
+                        </div>
+                        <span className={cn(
+                          "text-[10px] font-bold uppercase tracking-tight",
+                          isCompleted ? "text-primary" : "text-muted-foreground"
+                        )}>
+                          {step.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
               
               <div className="space-y-3 pt-2">
