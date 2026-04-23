@@ -36,29 +36,66 @@ export function VendorLiveStream({ vendorId }: { vendorId: string }) {
 
   async function toggleLiveStatus() {
     if (!streamInfo) return;
-    
     setIsUpdating(true);
-    const newStatus = !streamInfo.is_live;
-    
-    const { error } = await supabase
-      .from("vendor_streams")
-      .update({ is_live: newStatus, last_streamed_at: newStatus ? new Date().toISOString() : streamInfo.last_streamed_at })
-      .eq("vendor_id", vendorId);
-
-    if (error) {
-      toast.error("Failed to update status");
-    } else {
-      setStreamInfo({ ...streamInfo, is_live: newStatus });
-      toast.success(newStatus ? "You are now LIVE!" : "Stream ended");
+    try {
+      const newStatus = !streamInfo.is_live;
+      const { error } = await supabase
+        .from("vendor_streams")
+        .update({ is_live: newStatus, last_streamed_at: newStatus ? new Date().toISOString() : streamInfo.last_streamed_at })
+        .eq("vendor_id", vendorId);
       
-      // Also update vendor_profiles for easy discovery
-      await supabase
-        .from("vendor_profiles")
-        .update({ is_live: newStatus })
-        .eq("id", vendorId);
+      if (error) {
+        toast.error(error.message);
+      } else {
+        setStreamInfo({ ...streamInfo, is_live: newStatus });
+        toast.success(newStatus ? "You are now LIVE!" : "Stream ended");
+        
+        // Also update vendor_profiles for easy discovery
+        await supabase
+          .from("vendor_profiles")
+          .update({ is_live: newStatus })
+          .eq("id", vendorId);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update status");
+    } finally {
+      setIsUpdating(false);
     }
-    setIsUpdating(false);
   }
+
+  const initializeStream = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget as HTMLFormElement);
+    const streamKey = formData.get("streamKey") as string;
+    const playbackId = formData.get("playbackId") as string;
+
+    if (!streamKey || !playbackId) {
+      toast.error("Please provide both Stream Key and Playback ID.");
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const { data, error } = await supabase
+        .from("vendor_streams")
+        .upsert({ 
+          vendor_id: vendorId, 
+          mux_stream_key: streamKey, 
+          mux_playback_id: playbackId,
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      setStreamInfo(data);
+      toast.success("Stream settings saved successfully!");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to initialize stream");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
@@ -208,19 +245,35 @@ export function VendorLiveStream({ vendorId }: { vendorId: string }) {
 
       {!streamInfo && (
         <Card className="border-primary bg-primary/5">
-          <CardContent className="py-6 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center">
-                <RefreshCw className="h-6 w-6 text-primary" />
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Radio className="h-5 w-5 text-primary" />
+              Initialize Your Live Stream
+            </CardTitle>
+            <CardDescription>
+              To start streaming, you need to connect your Mux account. 
+              <a href="https://dashboard.mux.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline ml-1 inline-flex items-center gap-1">
+                Get your keys here <ExternalLink className="h-3 w-3" />
+              </a>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={initializeStream} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold">Mux Stream Key</label>
+                  <Input name="streamKey" placeholder="Paste your stream key here" type="password" required />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold">Mux Playback ID</label>
+                  <Input name="playbackId" placeholder="Paste your playback ID here" required />
+                </div>
               </div>
-              <div>
-                <h4 className="font-bold">Setup Required</h4>
-                <p className="text-sm text-muted-foreground">You haven't initialized your live stream yet.</p>
-              </div>
-            </div>
-            <Button onClick={() => toast.info("Setup Mux account first to get keys!")}>
-              Setup Now
-            </Button>
+              <Button type="submit" className="w-full" disabled={isUpdating}>
+                {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                Save and Initialize Stream
+              </Button>
+            </form>
           </CardContent>
         </Card>
       )}
