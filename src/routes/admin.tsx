@@ -81,8 +81,11 @@ const statusColors: Record<string, string> = {
   confirmed: "bg-blue-500/10 text-blue-600 border-blue-200",
   shipped: "bg-indigo-500/10 text-indigo-600 border-indigo-200",
   delivered: "bg-emerald-500/10 text-emerald-600 border-emerald-200",
+  completed: "bg-emerald-500/10 text-emerald-600 border-emerald-200",
   cancelled: "bg-red-500/10 text-red-600 border-red-200",
 };
+
+const getStatusColor = (status: string) => statusColors[status?.toLowerCase()] || "bg-slate-500/10 text-slate-600 border-slate-200";
 
 function AdminPage() {
   const { user, role, loading: authLoading, signOut } = useAuth();
@@ -389,7 +392,7 @@ function AdminPage() {
                           </div>
                           <div className="text-right">
                             <p className="text-sm font-bold">${Number(order.total).toFixed(2)}</p>
-                            <Badge variant="outline" className={cn("mt-1 text-[10px]", statusColors[order.status])}>{order.status}</Badge>
+                            <Badge variant="outline" className={cn("mt-1 text-[10px]", getStatusColor(order.status))}>{order.status}</Badge>
                           </div>
                         </div>
                       ))}
@@ -455,7 +458,7 @@ function AdminPage() {
                               <td className="py-4 hidden sm:table-cell text-muted-foreground">{order.email}</td>
                               <td className="py-4 font-bold text-primary">${Number(order.total).toFixed(2)}</td>
                               <td className="py-4">
-                                <span className={cn("inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase", statusColors[order.status])}>
+                                <span className={cn("inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase", getStatusColor(order.status))}>
                                   {order.status}
                                 </span>
                               </td>
@@ -470,6 +473,7 @@ function AdminPage() {
                                   <option value="confirmed">Confirmed</option>
                                   <option value="shipped">Shipped</option>
                                   <option value="delivered">Delivered</option>
+                                  <option value="completed">Completed</option>
                                   <option value="cancelled">Cancelled</option>
                                 </select>
                               </td>
