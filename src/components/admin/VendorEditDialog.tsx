@@ -64,9 +64,13 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
       return;
     }
     setResetLoading(true);
+    const resetUrl = window.location.origin.includes("localhost") 
+      ? "https://lmgnew.vercel.app/login?type=recovery"
+      : `${window.location.origin}/login?type=recovery`;
+
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/login?type=recovery`,
+        redirectTo: resetUrl,
       });
 
       if (error) throw error;
