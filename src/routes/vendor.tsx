@@ -118,21 +118,26 @@ function VendorDashboardPage() {
   async function loadVendorData() {
     if (!user) return;
     setLoading(true);
-    const { data: vendorData } = await supabase.from("vendor_profiles").select("*").eq("id", user.id).single();
-    if (vendorData) {
-      setProfile(vendorData as VendorProfile);
-      const [prodRes, vidRes, artRes, orderRes] = await Promise.all([
-        supabase.from("products").select("*").eq("vendor_id", user.id).order("created_at", { ascending: false }),
-        supabase.from("videos").select("*").eq("author_id", user.id).order("created_at", { ascending: false }),
-        supabase.from("articles").select("*").eq("author_id", user.id).order("created_at", { ascending: false }),
-        supabase.from("order_items").select("*, orders(*)").eq("vendor_id", user.id).order("created_at", { ascending: false }),
-      ]);
-      if (prodRes.data) setProducts(prodRes.data);
-      if (vidRes.data) setVideos(vidRes.data as VideoData[]);
-      if (artRes.data) setArticles(artRes.data as Article[]);
-      if (orderRes.data) setOrderItems(orderRes.data as any);
+    try {
+      const { data: vendorData } = await supabase.from("vendor_profiles").select("*").eq("id", user.id).single();
+      if (vendorData) {
+        setProfile(vendorData as VendorProfile);
+        const [prodRes, vidRes, artRes, orderRes] = await Promise.all([
+          supabase.from("products").select("*").eq("vendor_id", user.id).order("created_at", { ascending: false }),
+          supabase.from("videos").select("*").eq("author_id", user.id).order("created_at", { ascending: false }),
+          supabase.from("articles").select("*").eq("author_id", user.id).order("created_at", { ascending: false }),
+          supabase.from("order_items").select("*, orders(*)").eq("vendor_id", user.id).order("created_at", { ascending: false }),
+        ]);
+        if (prodRes.data) setProducts(prodRes.data);
+        if (vidRes.data) setVideos(vidRes.data as VideoData[]);
+        if (artRes.data) setArticles(artRes.data as Article[]);
+        if (orderRes.data) setOrderItems(orderRes.data as any);
+      }
+    } catch (err) {
+      console.error("Error loading vendor data:", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   const updateOrderItem = async (id: string, payload: any) => {
