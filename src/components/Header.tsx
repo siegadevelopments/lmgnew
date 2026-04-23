@@ -90,14 +90,16 @@ export function Header() {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          <Button
-            variant="wellness"
-            size="sm"
-            className="hidden sm:inline-flex"
-            onClick={handleBecomeVendor}
-          >
-            Become a Vendor
-          </Button>
+          {(!user || (role !== "vendor" && role !== "admin")) && (
+            <Button
+              variant="wellness"
+              size="sm"
+              className="hidden sm:inline-flex"
+              onClick={handleBecomeVendor}
+            >
+              Become a Vendor
+            </Button>
+          )}
           <Link to="/search">
             <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label="Search">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -250,14 +252,16 @@ export function Header() {
               Platform Admin
             </Link>
           )}
-          <Button
-            variant="wellness"
-            size="sm"
-            className="mt-4"
-            onClick={handleBecomeVendor}
-          >
-            Become a Vendor
-          </Button>
+          {(!user || (role !== "vendor" && role !== "admin")) && (
+            <Button
+              variant="wellness"
+              size="sm"
+              className="mt-4"
+              onClick={handleBecomeVendor}
+            >
+              Become a Vendor
+            </Button>
+          )}
         </nav>
       </div>
     </header>
