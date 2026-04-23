@@ -81,9 +81,6 @@ function VendorPage() {
             )}
           </div>
 
-            )}
-          </div>
-
           {/* Vendor Content */}
           <div className="w-full md:w-2/3 space-y-8">
             {streamInfo?.is_live && streamInfo?.mux_playback_id && (
