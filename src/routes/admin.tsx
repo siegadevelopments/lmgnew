@@ -168,10 +168,19 @@ function AdminPage() {
           console.warn("Could not fetch users via Edge Function, falling back to profiles only.", e);
         }
 
+        const vendorProfiles = vendorsRes.data || [];
+        const vendorsWithEmails = vendorProfiles.map(vp => {
+          const user = (usersWithEmails.length > 0 ? usersWithEmails : allUsers).find(u => u.id === vp.id);
+          return {
+            ...vp,
+            email: user?.email || ""
+          };
+        });
+
         setOrders(allOrders);
         setMessages(allMessages);
         setUsers(usersWithEmails.length > 0 ? usersWithEmails : allUsers);
-        setVendors(vendorsRes.data || []);
+        setVendors(vendorsWithEmails);
         
         const productsData = (productsRes.data || []).map((p: any) => ({
           ...p,
