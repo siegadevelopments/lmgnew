@@ -158,9 +158,9 @@ function AdminPage() {
         }
 
         const vendorProfiles = (vendorsRes.data || []) as any[];
-        const vendorsWithEmails = vendorProfiles.map(vp => {
+        const vendorsWithEmails = vendorProfiles.filter(vp => vp && vp.id).map(vp => {
           const userList = usersWithEmails.length > 0 ? usersWithEmails : allUsers;
-          const user = (userList as any[]).find(u => u.id === vp.id);
+          const user = (userList as any[]).find(u => u && u.id === vp.id);
           return {
             ...vp,
             email: user?.email || ""
@@ -667,7 +667,7 @@ function AdminPage() {
                                   </div>
                                   <div>
                                     <p className="font-bold">{u.full_name || "Guest User"}</p>
-                                    <p className="text-[10px] text-muted-foreground">{u.email || u.id.slice(0, 8)}</p>
+                                    <p className="text-[10px] text-muted-foreground">{u.email || (u.id ? u.id.slice(0, 8) : "---")}</p>
                                   </div>
                                 </div>
                               </td>
@@ -676,7 +676,7 @@ function AdminPage() {
                                   {u.role}
                                 </Badge>
                               </td>
-                              <td className="py-4 text-muted-foreground text-xs">{new Date(u.created_at).toLocaleDateString()}</td>
+                              <td className="py-4 text-muted-foreground text-xs">{u.created_at ? new Date(u.created_at).toLocaleDateString() : "---"}</td>
                               <td className="py-4 text-right">
                                 <Button 
                                   size="sm" 
