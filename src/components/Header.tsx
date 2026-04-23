@@ -121,7 +121,7 @@ export function Header() {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          {(!user || (role !== "vendor" && role !== "admin")) && (
+          {(!user || (role !== "vendor" && role !== "admin")) ? (
             <Button
               variant="wellness"
               size="sm"
@@ -130,6 +130,16 @@ export function Header() {
             >
               Become a Vendor
             </Button>
+          ) : (
+            <Link to="/vendor">
+              <Button
+                variant="wellness"
+                size="sm"
+                className="hidden sm:inline-flex"
+              >
+                Dashboard
+              </Button>
+            </Link>
           )}
           <Link to="/search">
             <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label="Search">
@@ -288,7 +298,7 @@ export function Header() {
               Platform Admin
             </Link>
           )}
-          {(!user || (role !== "vendor" && role !== "admin")) && (
+          {(!user || (role !== "vendor" && role !== "admin")) ? (
             <Button
               variant="wellness"
               size="sm"
@@ -297,6 +307,17 @@ export function Header() {
             >
               Become a Vendor
             </Button>
+          ) : (
+            <Link to="/vendor">
+              <Button
+                variant="wellness"
+                size="sm"
+                className="mt-4 w-full"
+                onClick={() => setMobileOpen(false)}
+              >
+                Dashboard
+              </Button>
+            </Link>
           )}
         </nav>
       </div>
