@@ -229,6 +229,7 @@ export function Header() {
             </Link>
           ))}
           <div className="h-px bg-border/50 my-2"></div>
+          {topNavItems.map((item) => (
             <Link
               key={item.label}
               to={item.to}
