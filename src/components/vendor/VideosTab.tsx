@@ -11,9 +11,10 @@ interface Video { id: string; title: string; embed_url: string; description: str
 interface Props {
   videos: Video[];
   setVideos: React.Dispatch<React.SetStateAction<Video[]>>;
+  userId: string;
 }
 
-export function VideosTab({ videos, setVideos }: Props) {
+export function VideosTab({ videos, setVideos, userId }: Props) {
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState({ title: "", embed_url: "", description: "" });
   const [submitting, setSubmitting] = useState(false);
@@ -22,7 +23,10 @@ export function VideosTab({ videos, setVideos }: Props) {
     e.preventDefault();
     setSubmitting(true);
     const { data } = await supabase.from("videos").insert({
-      title: form.title, embed_url: form.embed_url, description: form.description || null,
+      title: form.title, 
+      embed_url: form.embed_url, 
+      description: form.description || null,
+      author_id: userId
     } as any).select().single();
     if (data) setVideos([data as Video, ...videos]);
     setAdding(false);

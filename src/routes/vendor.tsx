@@ -75,7 +75,7 @@ function VendorDashboardPage() {
       setProfile(vendorData as VendorProfile);
       const [prodRes, vidRes, artRes] = await Promise.all([
         supabase.from("products").select("*").eq("vendor_id", user.id).order("created_at", { ascending: false }),
-        supabase.from("videos").select("*").order("created_at", { ascending: false }),
+        supabase.from("videos").select("*").eq("author_id", user.id).order("created_at", { ascending: false }),
         supabase.from("articles").select("*").eq("author_id", user.id).order("created_at", { ascending: false }),
       ]);
       if (prodRes.data) setProducts(prodRes.data);
@@ -262,7 +262,7 @@ function VendorDashboardPage() {
                 <h1 className="text-2xl font-bold tracking-tight">Video Content</h1>
                 <p className="text-muted-foreground">Manage your educational or promotional videos.</p>
               </div>
-              <VideosTab videos={videos} setVideos={setVideos} />
+              <VideosTab videos={videos} setVideos={setVideos} userId={user!.id} />
             </TabsContent>
 
             <TabsContent value="orders" className="mt-0 border-0 p-0">
