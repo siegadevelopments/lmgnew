@@ -143,29 +143,18 @@ function AdminPage() {
         const allMessages = (messagesRes.data || []) as ContactMessage[];
         const allUsers = (usersRes.data || []) as Profile[];
 
-        // 2. Try to get users with emails from Edge Function
+        // 2. Get users with emails from secure RPC
         let usersWithEmails: any[] = [];
         try {
-          const { data: edgeUsers, error: edgeError } = await supabase.functions.invoke("admin-api", {
-            body: { action: "list-users" },
-          });
+          const { data: rpcUsers, error: rpcError } = await supabase.rpc("get_admin_users");
           
-          if (!edgeError && edgeUsers?.users) {
-            // Map Edge Users (auth.users) to Profiles
-            usersWithEmails = edgeUsers.users.map((au: any) => {
-              const profile = allUsers.find(p => p.id === au.id);
-              return {
-                ...profile,
-                id: au.id,
-                email: au.email,
-                full_name: profile?.full_name || au.user_metadata?.full_name || au.email.split('@')[0],
-                role: profile?.role || 'customer',
-                created_at: au.created_at
-              };
-            });
+          if (!rpcError && rpcUsers) {
+            usersWithEmails = rpcUsers;
+          } else if (rpcError) {
+            console.warn("RPC Error fetching users:", rpcError);
           }
         } catch (e) {
-          console.warn("Could not fetch users via Edge Function, falling back to profiles only.", e);
+          console.warn("Could not fetch users via RPC, falling back to profiles only.", e);
         }
 
         const vendorProfiles = vendorsRes.data || [];
