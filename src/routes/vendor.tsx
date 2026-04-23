@@ -141,9 +141,17 @@ function VendorDashboardPage() {
   }
 
   const updateOrderItem = async (id: string, payload: any) => {
-    const { error } = await (supabase.from("order_items") as any).update(payload).eq("id", id);
-    if (!error) {
-      setOrderItems(prev => prev.map(item => item.id === id ? { ...item, ...payload } : item));
+    const { error } = await supabase
+      .from("order_items")
+      .update(payload)
+      .eq("id", id);
+    
+    if (error) {
+      console.error("Error updating order item:", error);
+      alert("Failed to update: " + error.message);
+    } else {
+      loadVendorData();
+      alert("Status updated successfully!");
     }
   };
 
