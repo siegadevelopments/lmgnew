@@ -67,6 +67,13 @@ serve(async (req) => {
         return new Response(JSON.stringify({ success: true, link: data.properties.action_link }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
       }
 
+      case 'delete-user': {
+        const { id } = params
+        const { data, error } = await adminClient.auth.admin.deleteUser(id)
+        if (error) throw error
+        return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      }
+
       default:
         throw new Error('Invalid action')
     }

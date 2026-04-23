@@ -110,6 +110,39 @@ export function UserEditDialog({ user, isOpen, onClose, onSuccess }: UserEditDia
             </Button>
             <p className="text-[10px] text-muted-foreground">This will send an official Supabase recovery email to the user.</p>
           </div>
+
+          <Separator />
+
+          <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 space-y-3">
+            <Label className="text-destructive font-bold">Danger Zone</Label>
+            <Button 
+              variant="destructive" 
+              className="w-full" 
+              onClick={async () => {
+                if (window.confirm(`Are you absolutely sure you want to PERMANENTLY delete the account for ${user.full_name}? This cannot be undone.`)) {
+                  setLoading(true);
+                  try {
+                    const { error } = await supabase.functions.invoke("admin-api", {
+                      body: { action: "delete-user", params: { id: user.id } },
+                    });
+                    if (error) throw error;
+                    toast.success("Account deleted successfully");
+                    onSuccess();
+                    onClose();
+                  } catch (err: any) {
+                    toast.error(err.message || "Failed to delete account");
+                  } finally {
+                    setLoading(false);
+                  }
+                }
+              }}
+              disabled={loading}
+            >
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete Account Permanently
+            </Button>
+            <p className="text-[10px] text-destructive/70">Warning: This will remove the user from the authentication system and all their profile data.</p>
+          </div>
         </div>
 
         <DialogFooter>
