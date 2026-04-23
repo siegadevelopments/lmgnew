@@ -2,6 +2,8 @@ import { useState } from "react";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { articlesQueryOptions } from "@/lib/queries";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 
 
 export const Route = createFileRoute("/articles/")({
@@ -37,13 +39,16 @@ function ArticlesPage() {
             Expert insights, research, and tips for preventative health.
           </p>
           <div className="mx-auto mt-8 max-w-md">
-            <input
-              type="search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search articles..."
-              className="w-full bg-card border border-input text-foreground rounded-xl px-5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 shadow-sm"
-            />
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search articles..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
         </div>
       </div>

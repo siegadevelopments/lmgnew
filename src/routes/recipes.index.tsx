@@ -1,6 +1,9 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { recipesQueryOptions } from "@/lib/queries";
+import { useState, useMemo } from "react";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 
 export const Route = createFileRoute("/recipes/")({
   loader: ({ context: { queryClient } }) => {
@@ -17,6 +20,14 @@ export const Route = createFileRoute("/recipes/")({
 
 function RecipesPage() {
   const { data: recipes } = useSuspenseQuery(recipesQueryOptions());
+  const [search, setSearch] = useState("");
+
+  const filteredRecipes = useMemo(() => {
+    return recipes.filter(recipe => 
+      (recipe.title?.toLowerCase() || "").includes(search.toLowerCase()) || 
+      (recipe.excerpt?.toLowerCase() || "").includes(search.toLowerCase())
+    );
+  }, [recipes, search]);
 
   return (
     <div className="bg-background min-h-screen">
@@ -28,46 +39,64 @@ function RecipesPage() {
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
             Nutritious meals to support your lifestyle medicine journey.
           </p>
+          <div className="mx-auto mt-8 max-w-md">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search recipes..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
 
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {recipes.map((recipe) => (
-            <Link
-              key={recipe.id}
-              to="/recipes/$slug"
-              params={{ slug: recipe.slug }}
-              className="group flex flex-col overflow-hidden rounded-xl bg-card border border-border transition-all hover:shadow-card hover:-translate-y-1"
-            >
-              <div className="aspect-video overflow-hidden bg-muted relative">
-                {recipe.image_url ? (
-                  <img
-                    src={recipe.image_url}
-                    alt={recipe.title}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-muted-foreground/30">No Image</div>
-                )}
-                {(recipe.prep_time || recipe.cook_time) && (
-                  <div className="absolute bottom-3 right-3 rounded-full bg-background/90 px-2.5 py-1 text-xs font-semibold backdrop-blur-sm">
-                    {(recipe.prep_time || 0) + (recipe.cook_time || 0)} min
-                  </div>
-                )}
-              </div>
-              <div className="p-5 flex flex-col flex-1">
-                <h3 className="text-lg font-bold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
-                  {recipe.title}
-                </h3>
-                {recipe.excerpt && (
-                  <p className="mt-2 text-sm text-muted-foreground line-clamp-3" dangerouslySetInnerHTML={{ __html: recipe.excerpt }} />
-                )}
-              </div>
-            </Link>
-          ))}
-        </div>
+        {filteredRecipes.length === 0 ? (
+          <div className="text-center py-20 bg-muted/20 rounded-2xl border border-border">
+             <p className="text-muted-foreground text-lg">No recipes matched your search.</p>
+          </div>
+        ) : (
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredRecipes.map((recipe) => (
+              <Link
+                key={recipe.id}
+                to="/recipes/$slug"
+                params={{ slug: recipe.slug }}
+                className="group flex flex-col overflow-hidden rounded-xl bg-card border border-border transition-all hover:shadow-card hover:-translate-y-1"
+              >
+                <div className="aspect-video overflow-hidden bg-muted relative">
+                  {recipe.image_url ? (
+                    <img
+                      src={recipe.image_url}
+                      alt={recipe.title}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-muted-foreground/30">No Image</div>
+                  )}
+                  {(recipe.prep_time || recipe.cook_time) && (
+                    <div className="absolute bottom-3 right-3 rounded-full bg-background/90 px-2.5 py-1 text-xs font-semibold backdrop-blur-sm">
+                      {(recipe.prep_time || 0) + (recipe.cook_time || 0)} min
+                    </div>
+                  )}
+                </div>
+                <div className="p-5 flex flex-col flex-1">
+                  <h3 className="text-lg font-bold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                    {recipe.title}
+                  </h3>
+                  {recipe.excerpt && (
+                    <p className="mt-2 text-sm text-muted-foreground line-clamp-3" dangerouslySetInnerHTML={{ __html: recipe.excerpt }} />
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

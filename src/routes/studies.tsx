@@ -1,6 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { articlesQueryOptions } from "@/lib/queries";
+import { useState, useMemo } from "react";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 
 export const Route = createFileRoute("/studies")({
   loader: ({ context: { queryClient } }) => {
@@ -17,22 +20,49 @@ export const Route = createFileRoute("/studies")({
 
 function StudiesPage() {
   const { data: articles } = useSuspenseQuery(articlesQueryOptions("Studies"));
+  const [search, setSearch] = useState("");
+
+  const filteredArticles = useMemo(() => {
+    return articles.filter(article => 
+      (article.title?.toLowerCase() || "").includes(search.toLowerCase()) || 
+      (article.excerpt?.toLowerCase() || "").includes(search.toLowerCase())
+    );
+  }, [articles, search]);
 
   return (
-    <section className="py-12 sm:py-16">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-12 text-center md:text-left">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Scientific Studies</h1>
-          <p className="mt-4 text-lg text-muted-foreground">In-depth research and analytical studies within the field of lifestyle medicine.</p>
+    <div className="bg-background min-h-screen">
+      <div className="bg-wellness-muted py-16 sm:py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl text-balance">
+            Scientific Studies
+          </h1>
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
+            In-depth research and analytical studies within the field of lifestyle medicine.
+          </p>
+          <div className="mx-auto mt-8 max-w-md">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search studies..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
         </div>
+      </div>
 
-        {articles.length === 0 ? (
-          <div className="py-20 text-center">
-            <p className="text-lg text-muted-foreground">No studies found in this category.</p>
+      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+
+        {filteredArticles.length === 0 ? (
+          <div className="text-center py-20 bg-muted/20 rounded-2xl border border-border">
+             <p className="text-muted-foreground text-lg">No studies matched your search.</p>
           </div>
         ) : (
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {articles.map((article) => (
+            {filteredArticles.map((article) => (
               <Link
                 key={article.id}
                 to="/articles/$slug"
@@ -66,6 +96,6 @@ function StudiesPage() {
           </div>
         )}
       </div>
-    </section>
+    </div>
   );
 }

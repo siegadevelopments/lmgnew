@@ -8,7 +8,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import MuxPlayer from "@mux/mux-player-react";
 import { Badge } from "@/components/ui/badge";
-import { Radio } from "lucide-react";
+import { Radio, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { useMemo } from "react";
 
 export const Route = createFileRoute("/videos")({
   head: () => ({
@@ -82,6 +84,14 @@ function VideosPage() {
   const { data: videos } = useSuspenseQuery(videosQueryOptions());
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [fullscreenVideo, setFullscreenVideo] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+
+  const filteredVideos = useMemo(() => {
+    return videos.filter(video => 
+      (video.title?.toLowerCase() || "").includes(search.toLowerCase()) || 
+      (video.description?.toLowerCase() || "").includes(search.toLowerCase())
+    );
+  }, [videos, search]);
 
   const { data: liveStreams } = useQuery({
     queryKey: ["live_streams"],
@@ -106,9 +116,18 @@ function VideosPage() {
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
             Explore our curated selection of video content to support your wellness journey.
           </p>
-          <p className="mx-auto mt-2 text-sm text-muted-foreground/70">
-            {videos.length} video{videos.length !== 1 ? "s" : ""} available
-          </p>
+          <div className="mx-auto mt-8 max-w-md">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search videos..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -154,18 +173,13 @@ function VideosPage() {
 
       {/* Grid */}
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        {videos.length === 0 && (
-          <div className="text-center py-20">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-              <Play className="h-10 w-10 text-muted-foreground" />
-            </div>
-            <h2 className="mt-6 text-xl font-semibold text-foreground">No videos yet</h2>
-            <p className="mt-2 text-muted-foreground">Check back soon for educational video content.</p>
+        {filteredVideos.length === 0 ? (
+          <div className="text-center py-20 bg-muted/20 rounded-2xl border border-border">
+             <p className="text-muted-foreground text-lg">No videos matched your search.</p>
           </div>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {videos.map((video) => {
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredVideos.map((video) => {
             const isPlaying = playingId === video.id;
             const embedUrl = getEmbedUrl(video.embed_url);
             const thumbnail = getThumbnail(video);
@@ -281,7 +295,8 @@ function VideosPage() {
             );
           })}
         </div>
-      </div>
+      )}
+    </div>
 
       {/* Fullscreen modal */}
       <Dialog open={!!fullscreenVideo} onOpenChange={(open) => !open && setFullscreenVideo(null)}>
