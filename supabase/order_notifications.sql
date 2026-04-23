@@ -106,6 +106,16 @@ BEGIN
     )
   );
 
+  -- 4. NEW: Update parent order status to 'completed' if all items are delivered
+  IF (NEW.status = 'delivered') THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM public.order_items 
+      WHERE order_id = NEW.order_id AND (status IS NULL OR status <> 'delivered')
+    ) THEN
+      UPDATE public.orders SET status = 'completed' WHERE id = NEW.order_id;
+    END IF;
+  END IF;
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

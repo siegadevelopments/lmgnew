@@ -99,16 +99,20 @@ function ProfilePage() {
         const fetchedOrders = (data as unknown as Order[]) || [];
         setOrders(fetchedOrders);
         setLoadingOrders(false);
-
-        // --- NEW: Handle deep-linking from shipping emails ---
-        const params = new URLSearchParams(window.location.search);
-        const orderIdParam = params.get('orderId');
-        if (orderIdParam) {
-          const matchedOrder = fetchedOrders.find(o => o.id === orderIdParam);
-          if (matchedOrder) setSelectedOrder(matchedOrder);
-        }
       });
-  }, [user]);
+  }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    // --- Handle deep-linking from shipping emails ---
+    if (loadingOrders || orders.length === 0) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const orderIdParam = params.get('orderId');
+    if (orderIdParam) {
+      const matchedOrder = orders.find(o => o.id === orderIdParam);
+      if (matchedOrder) setSelectedOrder(matchedOrder);
+    }
+  }, [loadingOrders, orders]);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
