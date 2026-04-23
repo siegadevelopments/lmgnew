@@ -393,19 +393,38 @@ function VendorDashboardPage() {
                               }}
                             />
                           </div>
-                          <Button 
-                            className="w-full" 
-                            variant={item.status === 'delivered' ? "secondary" : (item.status === 'shipped' ? "outline" : "default")}
-                            onClick={() => {
-                              let nextStatus = 'shipped';
-                              if (item.status === 'shipped') nextStatus = 'delivered';
-                              else if (item.status === 'delivered') nextStatus = 'pending';
-                              updateOrderItem(item.id, { status: nextStatus });
-                            }}
-                          >
-                            {item.status === 'delivered' ? "Order Delivered ✅" : 
-                             (item.status === 'shipped' ? "Mark as Delivered" : "Mark as Shipped")}
-                          </Button>
+                          <div className="space-y-2">
+                            {item.status !== 'delivered' && (
+                              <Button 
+                                className="w-full" 
+                                variant={item.status === 'shipped' ? "outline" : "default"}
+                                onClick={() => {
+                                  const nextStatus = item.status === 'shipped' ? 'delivered' : 'shipped';
+                                  console.log("Updating item", item.id, "to", nextStatus);
+                                  updateOrderItem(item.id, { status: nextStatus });
+                                }}
+                              >
+                                {item.status === 'shipped' ? "Mark as Delivered" : "Mark as Shipped"}
+                              </Button>
+                            )}
+                            
+                            {item.status === 'delivered' && (
+                              <Button className="w-full" variant="secondary" disabled>
+                                Order Delivered ✅
+                              </Button>
+                            )}
+                            
+                            {(item.status === 'shipped' || item.status === 'delivered') && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="w-full text-xs text-muted-foreground"
+                                onClick={() => updateOrderItem(item.id, { status: 'pending' })}
+                              >
+                                Reset to Pending
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </Card>
