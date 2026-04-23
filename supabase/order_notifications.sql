@@ -66,6 +66,30 @@ BEGIN
       </div>
     </div>';
   
+  -- CASE C: MARKED AS DELIVERED (Notify Customer)
+  ELSIF (TG_OP = 'UPDATE' AND NEW.status = 'delivered' AND (OLD.status IS NULL OR OLD.status <> 'delivered')) THEN
+    target_email := order_data.email;
+    IF target_email IS NULL THEN RETURN NEW; END IF;
+
+    email_subject := '🎁 Order Delivered! - LMG-' || UPPER(SUBSTRING(NEW.order_id::text, 1, 8));
+    email_html := '<div style="font-family: sans-serif; background-color: #f8fafc; padding: 40px 20px;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+        <div style="background-color: #10b981; padding: 32px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800;">Delivered!</h1>
+        </div>
+        <div style="padding: 32px;">
+          <p style="font-size: 16px; color: #475569;">Hi ' || order_data.first_name || ', your wellness products have been delivered.</p>
+          <div style="background-color: #f1f5f9; border-radius: 12px; padding: 20px; margin: 24px 0; text-align: center;">
+            <p style="margin: 0; font-size: 18px; font-weight: 600; color: #1e293b;">' || NEW.product_name || '</p>
+            <p style="margin: 8px 0 0 0; font-size: 14px; color: #10b981;">Enjoy your purchase! 🌿</p>
+          </div>
+          <div style="text-align: center;">
+            <a href="https://lmgnew.vercel.app/profile" style="display: inline-block; background-color: #10b981; color: #ffffff; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: 700;">View My History →</a>
+          </div>
+        </div>
+      </div>
+    </div>';
+  
   ELSE
     RETURN NEW; -- No notification needed for this update
   END IF;

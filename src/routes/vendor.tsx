@@ -380,10 +380,16 @@ function VendorDashboardPage() {
                           </div>
                           <Button 
                             className="w-full" 
-                            variant={item.status === 'shipped' ? "outline" : "default"}
-                            onClick={() => updateOrderItem(item.id, { status: item.status === 'shipped' ? 'pending' : 'shipped' })}
+                            variant={item.status === 'delivered' ? "secondary" : (item.status === 'shipped' ? "outline" : "default")}
+                            onClick={() => {
+                              let nextStatus = 'shipped';
+                              if (item.status === 'shipped') nextStatus = 'delivered';
+                              else if (item.status === 'delivered') nextStatus = 'pending';
+                              updateOrderItem(item.id, { status: nextStatus });
+                            }}
                           >
-                            {item.status === 'shipped' ? "Mark as Pending" : "Mark as Shipped"}
+                            {item.status === 'delivered' ? "Order Delivered ✅" : 
+                             (item.status === 'shipped' ? "Mark as Delivered" : "Mark as Shipped")}
                           </Button>
                         </div>
                       </div>
