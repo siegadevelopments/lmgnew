@@ -28,8 +28,12 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
-  const searchParams = new URLSearchParams(window.location.search);
-  const isRecovery = searchParams.get("type") === "recovery" || window.location.hash.includes("type=recovery");
+  // Memoize search params to avoid re-calculating on every keystroke
+  const [isRecovery] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("type") === "recovery" || window.location.hash.includes("type=recovery");
+  });
+  const [searchParams] = useState(() => new URLSearchParams(window.location.search));
   
   const { signIn, updatePassword } = useAuth();
   const [email, setEmail] = useState("");
