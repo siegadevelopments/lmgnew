@@ -11,31 +11,27 @@ interface EmailPayload {
   vendorId?: string;
 }
 
+import { supabase } from "@/integrations/supabase/client";
+
 export const sendEmail = async ({ to, subject, html }: EmailPayload) => {
-  console.log(`[Email Service] Sending email to: ${to} | Subject: ${subject}`);
+  console.log(`[Email Service] Invoking Edge Function for: ${to} | Subject: ${subject}`);
   
-  // In a real implementation, you would use an Edge Function or Server Action
-  // to call an API like Resend.
-  
-  // Example with Resend (if using Edge Functions):
-  /*
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-    },
-    body: JSON.stringify({
-      from: 'Lifestyle Medicine Gateway <noreply@lifestylemedicinegateway.com>',
-      to: [to],
-      subject,
-      html,
-    }),
-  });
-  return res.json();
-  */
-  
-  return { success: true, message: "Email simulation successful" };
+  try {
+    const { data, error } = await supabase.functions.invoke('send-email', {
+      body: { to, subject, html }
+    });
+
+    if (error) {
+      console.error("[Email Service] Edge Function error:", error);
+      return { success: false, error };
+    }
+
+    console.log("[Email Service] Email sent successfully via Edge Function");
+    return { success: true, data };
+  } catch (error) {
+    console.error("[Email Service] Network error calling Edge Function:", error);
+    return { success: false, error };
+  }
 };
 
 export const emailTemplates = {

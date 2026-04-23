@@ -98,14 +98,20 @@ function CheckoutPage() {
       const vendors = [...new Set(items.map(i => i.vendor_id).filter(Boolean))];
       for (const vId of vendors) {
         const vendorItems = items.filter(i => i.vendor_id === vId);
-        // We'd ideally fetch the vendor's email here, but for now we simulate
-        // In production, we'd fetch: supabase.from('profiles').select('email').eq('id', vId)
         const { data: vProfile } = await supabase.from('profiles').select('email').eq('id', vId as string).single();
         if (vProfile?.email) {
           const { subject, html } = emailTemplates.vendorOrderNotification({ ...formData, id: order.id }, vendorItems);
           await sendEmail({ to: vProfile.email, subject, html });
         }
       }
+      
+      // --- NEW: Notify Customer ---
+      const { subject: custSubject, html: custHtml } = emailTemplates.orderConfirmation({
+        ...formData,
+        id: order.id,
+        total: grandTotal.toFixed(2)
+      });
+      await sendEmail({ to: formData.email, subject: custSubject, html: custHtml });
       // ---------------------------
 
       setOrderId(order.id.slice(0, 8).toUpperCase());
