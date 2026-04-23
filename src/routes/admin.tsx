@@ -98,37 +98,50 @@ function AdminPage() {
     if (role !== "admin") return;
 
     async function loadData() {
-      setLoading(true);
+      try {
+        setLoading(true);
 
-      const [ordersRes, messagesRes, usersRes, subscribersRes, vendorsRes, productsRes] = await Promise.all([
-        supabase.from("orders").select("*").order("created_at", { ascending: false }).limit(50),
-        supabase.from("contact_messages").select("*").order("created_at", { ascending: false }).limit(50),
-        supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(100),
-        supabase.from("newsletter_subscribers").select("id", { count: "exact", head: true }),
-        supabase.from("vendor_profiles").select("*").order("created_at", { ascending: false }),
-        supabase.from("products").select("*, vendor:vendor_profiles(store_name)").order("created_at", { ascending: false }).limit(100),
-      ]);
+        const [ordersRes, messagesRes, usersRes, subscribersRes, vendorsRes, productsRes] = await Promise.all([
+          supabase.from("orders").select("*").order("created_at", { ascending: false }).limit(50),
+          supabase.from("contact_messages").select("*").order("created_at", { ascending: false }).limit(50),
+          supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(100),
+          supabase.from("newsletter_subscribers").select("id", { count: "exact", head: true }),
+          supabase.from("vendor_profiles").select("*").order("created_at", { ascending: false }),
+          supabase.from("products").select("*, vendor_profiles(store_name)").order("created_at", { ascending: false }).limit(100),
+        ]);
 
-      const allOrders = (ordersRes.data || []) as Order[];
-      const allMessages = (messagesRes.data || []) as ContactMessage[];
-      const allUsers = (usersRes.data || []) as Profile[];
+        if (ordersRes.error) console.error("Orders error:", ordersRes.error);
+        if (productsRes.error) console.error("Products error:", productsRes.error);
 
-      setOrders(allOrders);
-      setMessages(allMessages);
-      setUsers(allUsers);
-      setVendors(vendorsRes.data || []);
-      setProducts(productsRes.data || []);
+        const allOrders = (ordersRes.data || []) as Order[];
+        const allMessages = (messagesRes.data || []) as ContactMessage[];
+        const allUsers = (usersRes.data || []) as Profile[];
 
-      setStats({
-        totalUsers: allUsers.length,
-        totalOrders: allOrders.length,
-        totalRevenue: allOrders.reduce((sum, o) => sum + Number(o.total), 0),
-        pendingOrders: allOrders.filter((o) => o.status === "pending").length,
-        contactMessages: allMessages.filter((m) => !m.read).length,
-        subscribers: subscribersRes.count || 0,
-      });
+        setOrders(allOrders);
+        setMessages(allMessages);
+        setUsers(allUsers);
+        setVendors(vendorsRes.data || []);
+        
+        // Handle potential different alias/structure for products
+        const productsData = (productsRes.data || []).map((p: any) => ({
+          ...p,
+          vendor: p.vendor_profiles
+        }));
+        setProducts(productsData);
 
-      setLoading(false);
+        setStats({
+          totalUsers: allUsers.length,
+          totalOrders: allOrders.length,
+          totalRevenue: allOrders.reduce((sum, o) => sum + Number(o.total || 0), 0),
+          pendingOrders: allOrders.filter((o) => o.status === "pending").length,
+          contactMessages: allMessages.filter((m) => !m.read).length,
+          subscribers: subscribersRes.count || 0,
+        });
+      } catch (err) {
+        console.error("Critical dashboard load error:", err);
+      } finally {
+        setLoading(false);
+      }
     }
 
     loadData();

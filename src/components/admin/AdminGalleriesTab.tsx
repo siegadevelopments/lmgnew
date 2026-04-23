@@ -153,7 +153,7 @@ export function AdminGalleriesTab() {
                 </div>
 
                 <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
-                  {gallery.gallery_items.map((item: any) => (
+                  {(gallery.gallery_items || []).map((item: any) => (
                     <div key={item.id} className="group relative aspect-square rounded-md overflow-hidden border border-border">
                       <img src={item.image_url} alt="" className="h-full w-full object-cover" />
                       <button 
