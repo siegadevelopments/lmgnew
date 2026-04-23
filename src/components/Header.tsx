@@ -140,6 +140,11 @@ export function Header() {
                 <DropdownMenuItem asChild>
                   <Link to="/vendor">Vendor Dashboard</Link>
                 </DropdownMenuItem>
+                {user.id === 'd14875df-befb-4d22-93d3-a5c133c4e1b7' || user.id === 'c71de976-2dc5-4966-ae0f-5f8c05c62e18' ? (
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin" className="text-primary font-bold">Platform Admin</Link>
+                  </DropdownMenuItem>
+                ) : null}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleSignOut}
@@ -224,7 +229,6 @@ export function Header() {
             </Link>
           ))}
           <div className="h-px bg-border/50 my-2"></div>
-          {topNavItems.map((item) => (
             <Link
               key={item.label}
               to={item.to}
@@ -236,6 +240,15 @@ export function Header() {
               {item.label}
             </Link>
           ))}
+          {(user?.id === 'd14875df-befb-4d22-93d3-a5c133c4e1b7' || user?.id === 'c71de976-2dc5-4966-ae0f-5f8c05c62e18') && (
+            <Link
+              to="/admin"
+              className="rounded-md px-3 py-2.5 text-sm font-bold text-primary hover:bg-primary/10 transition-colors"
+              onClick={() => setMobileOpen(false)}
+            >
+              Platform Admin
+            </Link>
+          )}
           <Button
             variant="wellness"
             size="sm"

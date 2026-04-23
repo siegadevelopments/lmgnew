@@ -31,7 +31,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     setLoading(true);
     const { data, error } = await supabase
       .from(activeType)
-      .select("*, vendor:profiles(full_name)") // Note: author_id links to profiles
+      .select("*, author:profiles(full_name)") // Profiles relationship is usually named after the column or table
       .order("created_at", { ascending: false })
       .limit(50);
 
