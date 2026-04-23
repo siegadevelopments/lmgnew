@@ -121,16 +121,7 @@ export function Header() {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          {(!user || (role !== "vendor" && role !== "admin")) ? (
-            <Button
-              variant="wellness"
-              size="sm"
-              className="hidden sm:inline-flex"
-              onClick={handleBecomeVendor}
-            >
-              Become a Vendor
-            </Button>
-          ) : (
+          {!loading && user && (role === "vendor" || role === "admin") ? (
             <Link to="/vendor">
               <Button
                 variant="wellness"
@@ -140,6 +131,15 @@ export function Header() {
                 Dashboard
               </Button>
             </Link>
+          ) : (
+            <Button
+              variant="wellness"
+              size="sm"
+              className="hidden sm:inline-flex"
+              onClick={handleBecomeVendor}
+            >
+              Become a Vendor
+            </Button>
           )}
           <Link to="/search">
             <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label="Search">
@@ -298,16 +298,7 @@ export function Header() {
               Platform Admin
             </Link>
           )}
-          {(!user || (role !== "vendor" && role !== "admin")) ? (
-            <Button
-              variant="wellness"
-              size="sm"
-              className="mt-4"
-              onClick={handleBecomeVendor}
-            >
-              Become a Vendor
-            </Button>
-          ) : (
+          {!loading && user && (role === "vendor" || role === "admin") ? (
             <Link to="/vendor">
               <Button
                 variant="wellness"
@@ -318,6 +309,15 @@ export function Header() {
                 Dashboard
               </Button>
             </Link>
+          ) : (
+            <Button
+              variant="wellness"
+              size="sm"
+              className="mt-4 w-full"
+              onClick={handleBecomeVendor}
+            >
+              Become a Vendor
+            </Button>
           )}
         </nav>
       </div>
