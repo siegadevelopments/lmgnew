@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { productsQueryOptions } from "@/lib/queries";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ProductCard } from "@/components/ProductCard";
 
 export function NewArrivalsSection() {
   const { data: products, isLoading } = useQuery(productsQueryOptions());
@@ -37,34 +38,7 @@ export function NewArrivalsSection() {
                 </div>
               ))
             : products?.slice(0, 5).map((product) => (
-                <Link
-                  key={product.id}
-                  to="/products/$slug"
-                  params={{ slug: product.slug }}
-                  className="group overflow-hidden rounded-2xl border border-border bg-card shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-card"
-                >
-                  <div className="relative aspect-square overflow-hidden bg-muted">
-                    {product.image_url ? (
-                      <img
-                        src={product.image_url}
-                        alt={product.title}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                        No image
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <h3 className="text-sm font-medium text-card-foreground group-hover:text-primary transition-colors line-clamp-1">
-                      {product.title}
-                    </h3>
-                    <p className="mt-1 text-sm font-semibold text-foreground">
-                      ${product.price.toFixed(2)}
-                    </p>
-                  </div>
-                </Link>
+                <ProductCard key={product.id} product={product as any} />
               ))}
         </div>
 
