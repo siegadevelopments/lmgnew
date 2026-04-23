@@ -1,9 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { productsQueryOptions } from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
 import { ProductCard } from "@/components/ProductCard";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Search } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/products/")({
 // ... (omitting lines for brevity in instruction, will apply correctly)
@@ -32,35 +36,69 @@ export const Route = createFileRoute("/products/")({
 function ProductsPage() {
   const { data: products } = useSuspenseQuery(productsQueryOptions());
   const [searchInput, setSearchInput] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All");
 
-  const filteredProducts = products.filter(
-    (p) => p.title.toLowerCase().includes(searchInput.toLowerCase())
-  );
+  const categories = ["All", "Supplements", "Equipment", "Food", "Books", "Digital"];
+
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      const matchesSearch = p.title.toLowerCase().includes(searchInput.toLowerCase());
+      const matchesCategory = activeCategory === "All" || p.category === activeCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [products, searchInput, activeCategory]);
 
   return (
     <div className="bg-background min-h-screen">
-      <div className="bg-wellness-muted py-16 sm:py-24">
+      {/* Shopee-style Hero Search */}
+      <div className="bg-wellness-muted py-12 sm:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl text-balance">
-            Products
+          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+            Wellness Marketplace
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-            Wellness products from trusted vendors
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
+            Trusted products for your lifestyle medicine journey.
           </p>
-          <div className="mx-auto mt-8 max-w-md">
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Search products..."
-              className="w-full rounded-xl border border-input bg-card px-5 py-3 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
-            />
+          
+          <div className="mx-auto mt-8 max-w-2xl">
+            <div className="relative flex items-center gap-2 bg-card p-1 rounded-xl border border-border shadow-md focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+               <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    placeholder="Search for items, brands, or categories..."
+                    className="pl-10 border-0 focus-visible:ring-0 shadow-none h-12"
+                  />
+               </div>
+               <Button className="h-12 px-8 rounded-lg font-bold">Search</Button>
+            </div>
+          </div>
+
+          {/* Quick Categories */}
+          <div className="mx-auto mt-8 flex flex-wrap justify-center gap-4">
+             {categories.map(cat => (
+               <button
+                 key={cat}
+                 onClick={() => setActiveCategory(cat)}
+                 className={cn(
+                   "px-4 py-2 rounded-full text-xs font-bold transition-all border",
+                   activeCategory === cat 
+                    ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" 
+                    : "bg-background text-muted-foreground border-border hover:border-primary/50"
+                 )}
+               >
+                 {cat}
+               </button>
+             ))}
           </div>
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {/* Product Grid */}
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4">
           {filteredProducts.map((product) => (
             <ProductCard key={product.id} product={product as any} />
           ))}

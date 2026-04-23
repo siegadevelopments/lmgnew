@@ -49,14 +49,6 @@ export function ProductCard({ product, className }: ProductCardProps) {
     
     toast.success(`${product.title} added to cart`, {
       description: "You can view your items in the cart.",
-      action: {
-        label: "View Cart",
-        onClick: () => {
-          // Trigger cart sheet or navigate
-          const cartBtn = document.querySelector('[aria-label="Open Cart"]') as HTMLButtonElement;
-          if (cartBtn) cartBtn.click();
-        }
-      }
     });
   };
 
@@ -65,11 +57,11 @@ export function ProductCard({ product, className }: ProductCardProps) {
       to="/products/$slug"
       params={{ slug: product.slug }}
       className={cn(
-        "group flex flex-col overflow-hidden rounded-xl bg-card shadow-sm transition-all hover:shadow-card hover:-translate-y-1 border border-border/50",
+        "group flex flex-col overflow-hidden bg-card transition-all hover:shadow-lg border border-border/50 hover:border-primary/30 relative",
         className
       )}
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+      <div className="relative aspect-square overflow-hidden bg-muted">
         {product.image_url ? (
           <img
             src={product.image_url}
@@ -78,40 +70,51 @@ export function ProductCard({ product, className }: ProductCardProps) {
           />
         ) : (
           <div className="flex h-full items-center justify-center text-muted-foreground bg-muted/50">
-            <svg className="h-10 w-10 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
+             <ShoppingCart className="h-10 w-10 opacity-10" />
           </div>
         )}
         
-        {/* Quick Add Overlay */}
-        <div className="absolute inset-0 flex items-center justify-center bg-black/5 opacity-0 transition-opacity group-hover:opacity-100">
-           <Button 
-            size="sm" 
-            className="translate-y-4 transition-transform group-hover:translate-y-0 shadow-lg"
-            onClick={handleAddToCart}
-           >
-            <ShoppingCart className="mr-2 h-4 w-4" />
-            Add to Cart
-           </Button>
+        {/* Shopee-style "Preferred" or "Wellness" Badge */}
+        <div className="absolute top-2 left-0 z-10">
+          <div className="bg-primary px-1.5 py-0.5 text-[9px] font-bold text-white rounded-r-sm shadow-sm uppercase tracking-tighter">
+            Wellness
+          </div>
         </div>
       </div>
       
-      <div className="flex flex-1 flex-col p-5">
-        <h3 className="text-base font-bold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+      <div className="flex flex-1 flex-col p-2.5">
+        <h3 className="text-sm font-medium text-foreground line-clamp-2 h-10 group-hover:text-primary transition-colors leading-snug">
           {product.title}
         </h3>
-        {product.category && (
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1">{product.category}</p>
-        )}
-        <div className="mt-auto pt-4 flex items-center justify-between">
-          <p className="text-lg font-black text-primary">${Number(product.price).toFixed(2)}</p>
-          <div className="md:hidden">
-            <Button size="icon" variant="ghost" className="h-8 w-8 text-primary" onClick={handleAddToCart}>
-              <ShoppingCart className="h-4 w-4" />
-            </Button>
+        
+        <div className="mt-2 flex flex-col gap-1">
+          <div className="flex items-baseline gap-1">
+            <span className="text-xs text-primary font-bold">₱</span>
+            <span className="text-lg font-bold text-primary">{Number(product.price).toLocaleString()}</span>
+          </div>
+          
+          <div className="flex items-center justify-between mt-1">
+             <div className="flex items-center gap-1">
+                <div className="flex text-[10px] text-amber-500">
+                   {"★★★★★".split("").map((s, i) => <span key={i}>{s}</span>)}
+                </div>
+                <span className="text-[10px] text-muted-foreground">(12)</span>
+             </div>
+             <span className="text-[10px] text-muted-foreground">8.2k sold</span>
+          </div>
+
+          <div className="mt-2 pt-2 border-t border-border/50 flex items-center justify-between text-[10px] text-muted-foreground">
+             <span className="truncate max-w-[80px]">{(product as any).vendor_profiles?.store_name || "LMG Store"}</span>
+             <span className="shrink-0">Philippines</span>
           </div>
         </div>
+      </div>
+
+      {/* Shopee-style hover action */}
+      <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none flex items-end justify-center pb-20">
+         <div className="bg-primary text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-xl translate-y-4 group-hover:translate-y-0 transition-transform pointer-events-auto" onClick={handleAddToCart}>
+            Quick Add
+         </div>
       </div>
     </Link>
   );

@@ -9,7 +9,7 @@ export const productsQueryOptions = () =>
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*")
+        .select("*, vendor_profiles(store_name)")
         .eq("status", "published")
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
@@ -42,6 +42,23 @@ export const categoriesQueryOptions = () =>
         .from("categories")
         .select("*")
         .eq("type", "product");
+      if (error) throw new Error(error.message);
+      return (data || []) as any[];
+    },
+  });
+
+// ... (other options)
+
+export const featuredProductsQueryOptions = () =>
+  queryOptions({
+    queryKey: ["products", "featured"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*, vendor_profiles(store_name)")
+        .eq("status", "published")
+        .limit(4)
+        .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
       return (data || []) as any[];
     },
@@ -124,21 +141,6 @@ export const brandsQueryOptions = () =>
         .from("vendor_profiles")
         .select("id, store_name, store_description, store_logo_url, created_at")
         .eq("is_approved", true)
-        .order("created_at", { ascending: false });
-      if (error) throw new Error(error.message);
-      return (data || []) as any[];
-    },
-  });
-
-export const featuredProductsQueryOptions = () =>
-  queryOptions({
-    queryKey: ["products", "featured"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("status", "published")
-        .limit(4)
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
       return (data || []) as any[];
