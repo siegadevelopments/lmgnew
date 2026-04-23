@@ -78,11 +78,10 @@ function ProfilePage() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate({ to: "/login" });
+      const search = window.location.search;
+      navigate({ to: "/login", search: { redirect: `/profile${search}` } });
+      return;
     }
-  }, [authLoading, user, navigate]);
-
-  useEffect(() => {
     if (!user) return;
 
     // Fetch profile
