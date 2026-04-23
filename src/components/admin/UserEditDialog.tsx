@@ -24,7 +24,7 @@ export function UserEditDialog({ user, isOpen, onClose, onSuccess }: UserEditDia
     setLoading(true);
 
     try {
-      const { error } = await supabase.rpc("admin_update_user_email", {
+      const { error } = await (supabase as any).rpc("admin_update_user_email", {
         target_user_id: user.id,
         new_email: email
       });
@@ -125,7 +125,7 @@ export function UserEditDialog({ user, isOpen, onClose, onSuccess }: UserEditDia
                 if (window.confirm(`Are you absolutely sure you want to PERMANENTLY delete the account for ${user.full_name}? This cannot be undone.`)) {
                   setLoading(true);
                   try {
-                    const { error } = await supabase.rpc("admin_delete_user", {
+                    const { error } = await (supabase as any).rpc("admin_delete_user", {
                       target_user_id: user.id
                     });
                     if (error) throw error;

@@ -146,7 +146,7 @@ function AdminPage() {
         // 2. Get users with emails from secure RPC
         let usersWithEmails: any[] = [];
         try {
-          const { data: rpcUsers, error: rpcError } = await supabase.rpc("get_admin_users");
+          const { data: rpcUsers, error: rpcError } = await (supabase as any).rpc("get_admin_users");
           
           if (!rpcError && rpcUsers) {
             usersWithEmails = rpcUsers;
