@@ -60,7 +60,7 @@ BEGIN
             <p style="margin: 8px 0 0 0; font-size: 14px; color: #475569;"><b>Tracking Number:</b> ' || COALESCE(NEW.tracking_number, 'In progress...') || '</p>
           </div>
           <div style="text-align: center;">
-            <a href="https://lmgnew.vercel.app/profile" style="display: inline-block; background-color: #10b981; color: #ffffff; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: 700;">Track My Order →</a>
+            <a href="https://lmgnew.vercel.app/profile?orderId=' || NEW.order_id || '" style="display: inline-block; background-color: #10b981; color: #ffffff; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: 700;">Track My Order →</a>
           </div>
         </div>
       </div>

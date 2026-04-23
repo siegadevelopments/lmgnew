@@ -96,8 +96,17 @@ function ProfilePage() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .then(({ data }) => {
-        setOrders((data as unknown as Order[]) || []);
+        const fetchedOrders = (data as unknown as Order[]) || [];
+        setOrders(fetchedOrders);
         setLoadingOrders(false);
+
+        // --- NEW: Handle deep-linking from shipping emails ---
+        const params = new URLSearchParams(window.location.search);
+        const orderIdParam = params.get('orderId');
+        if (orderIdParam) {
+          const matchedOrder = fetchedOrders.find(o => o.id === orderIdParam);
+          if (matchedOrder) setSelectedOrder(matchedOrder);
+        }
       });
   }, [user]);
 
