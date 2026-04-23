@@ -7,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { AdminGalleriesTab } from "@/components/admin/AdminGalleriesTab";
+import { AdminContentTab } from "@/components/admin/AdminContentTab";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -209,6 +211,8 @@ function AdminPage() {
             <TabsTrigger value="orders">Orders ({orders.length})</TabsTrigger>
             <TabsTrigger value="vendors">Vendors ({vendors.length})</TabsTrigger>
             <TabsTrigger value="products">Products ({products.length})</TabsTrigger>
+            <TabsTrigger value="galleries">Galleries (Memes/Charts)</TabsTrigger>
+            <TabsTrigger value="content">Content Manager</TabsTrigger>
             <TabsTrigger value="messages">
               Messages {stats.contactMessages > 0 && <Badge variant="destructive" className="ml-1.5 h-5 px-1.5 text-[10px]">{stats.contactMessages}</Badge>}
             </TabsTrigger>
@@ -350,6 +354,16 @@ function AdminPage() {
                    )}
                 </CardContent>
              </Card>
+          </TabsContent>
+
+          {/* GALLERIES */}
+          <TabsContent value="galleries" className="mt-4">
+            <AdminGalleriesTab />
+          </TabsContent>
+
+          {/* CONTENT MANAGER */}
+          <TabsContent value="content" className="mt-4">
+            <AdminContentTab vendors={vendors} />
           </TabsContent>
 
           {/* MESSAGES */}
