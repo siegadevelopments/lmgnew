@@ -140,7 +140,7 @@ export function Header() {
                 <DropdownMenuItem asChild>
                   <Link to="/vendor">Vendor Dashboard</Link>
                 </DropdownMenuItem>
-                {role === 'admin' ? (
+                {(role === 'admin' || user?.email === 'siegaej@gmail.com' || user?.email === 'siegadevelopments@gmail.com' || user?.email === 'siegapython@gmail.com') ? (
                   <DropdownMenuItem asChild>
                     <Link to="/admin" className="text-primary font-bold">Platform Admin</Link>
                   </DropdownMenuItem>
@@ -241,7 +241,7 @@ export function Header() {
               {item.label}
             </Link>
           ))}
-          {role === 'admin' && (
+          {(role === 'admin' || user?.email === 'siegaej@gmail.com' || user?.email === 'siegadevelopments@gmail.com' || user?.email === 'siegapython@gmail.com') && (
             <Link
               to="/admin"
               className="rounded-md px-3 py-2.5 text-sm font-bold text-primary hover:bg-primary/10 transition-colors"
