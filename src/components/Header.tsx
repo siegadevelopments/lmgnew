@@ -29,9 +29,35 @@ const exploreItems = [
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [anyVendorLive, setAnyVendorLive] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const { user, role, loading, signOut } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    const checkLiveVendors = async () => {
+      const { data } = await supabase
+        .from("vendor_profiles")
+        .select("id")
+        .eq("is_live", true)
+        .limit(1);
+      setAnyVendorLive(!!data && data.length > 0);
+    };
+
+    checkLiveVendors();
+    
+    // Subscribe to changes
+    const channel = supabase
+      .channel("live_vendors")
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "vendor_profiles" }, () => {
+        checkLiveVendors();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const handleBecomeVendor = () => {
     window.location.href = "/signup?role=vendor";
@@ -78,11 +104,17 @@ export function Header() {
             <Link
               key={item.label}
               to={item.to}
-              className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground [&.active]:text-foreground [&.active]:bg-accent/50"
+              className="relative rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground [&.active]:text-foreground [&.active]:bg-accent/50"
               activeOptions={{ exact: (item.to as string) === "/" }}
               activeProps={{ className: "active" }}
             >
               {item.label}
+              {item.label === "Vendors" && anyVendorLive && (
+                <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive"></span>
+                </span>
+              )}
             </Link>
           ))}
         </nav>
@@ -233,12 +265,18 @@ export function Header() {
             <Link
               key={item.label}
               to={item.to}
-              className="rounded-md px-3 py-2.5 text-sm font-medium text-foreground hover:bg-accent hover:text-foreground transition-colors [&.active]:text-primary [&.active]:bg-primary/10"
+              className="relative rounded-md px-3 py-2.5 text-sm font-medium text-foreground hover:bg-accent hover:text-foreground transition-colors [&.active]:text-primary [&.active]:bg-primary/10"
               activeOptions={{ exact: (item.to as string) === "/" }}
               activeProps={{ className: "active" }}
               onClick={() => setMobileOpen(false)}
             >
               {item.label}
+              {item.label === "Vendors" && anyVendorLive && (
+                <span className="absolute top-3 right-3 flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive"></span>
+                </span>
+              )}
             </Link>
           ))}
           {(role === 'admin' || user?.email === 'siegaej@gmail.com' || user?.email === 'siegadevelopments@gmail.com' || user?.email === 'siegapython@gmail.com') && (
