@@ -53,7 +53,13 @@ function LoginPage() {
       return;
     }
 
-    navigate({ to: "/" });
+    const redirectTo = searchParams.get("redirect");
+    if (redirectTo) {
+      // Use window.location for external-style path strings or complex redirects
+      window.location.href = redirectTo;
+    } else {
+      navigate({ to: "/" });
+    }
   };
 
   const handleRecovery = async (e: React.FormEvent) => {
