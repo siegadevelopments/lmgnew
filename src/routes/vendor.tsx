@@ -86,14 +86,17 @@ function VendorDashboardPage() {
 
   useEffect(() => {
     if (!authLoading && !user) { 
-      // Preserve search params when redirecting to login
       const search = window.location.search;
       navigate({ to: "/login", search: { redirect: `/vendor${search}` } }); 
       return; 
     }
     if (user) loadVendorData();
+  }, [user, authLoading, navigate]);
 
-    // --- NEW: Handle deep-linking from emails ---
+  useEffect(() => {
+    // --- Handle deep-linking and scrolling ---
+    if (loading || orderItems.length === 0) return;
+
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab');
     const orderIdParam = params.get('orderId');
@@ -102,8 +105,7 @@ function VendorDashboardPage() {
       setActiveTab(tabParam);
     }
 
-    // Scroll to order if we have an orderId and data is loaded
-    if (orderIdParam && !loading && orderItems.length > 0) {
+    if (orderIdParam) {
       setTimeout(() => {
         const element = document.getElementById(`order-${orderIdParam}`);
         if (element) {
@@ -111,7 +113,7 @@ function VendorDashboardPage() {
         }
       }, 500);
     }
-  }, [user, authLoading, navigate, activeTab, loading, orderItems.length]);
+  }, [loading, orderItems.length, activeTab]);
 
   async function loadVendorData() {
     if (!user) return;
