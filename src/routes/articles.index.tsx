@@ -30,7 +30,7 @@ function ArticlesPage() {
 
   return (
     <div className="bg-background min-h-screen">
-      <div className="bg-wellness-muted py-16 sm:py-24">
+      <div className="bg-wellness-muted py-12 sm:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl text-balance">
             Wellness Articles
