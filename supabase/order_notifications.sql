@@ -1,55 +1,93 @@
--- 0. Ensure order_items table has the necessary columns
-ALTER TABLE public.order_items ADD COLUMN IF NOT EXISTS status text DEFAULT 'pending';
-ALTER TABLE public.order_items ADD COLUMN IF NOT EXISTS tracking_number text;
-ALTER TABLE public.order_items ADD COLUMN IF NOT EXISTS vendor_id uuid REFERENCES public.vendor_profiles(id);
+-- 1. FIX RLS: Allow vendors to update their own items (status, tracking)
+DROP POLICY IF EXISTS "Vendors can update their own order items" ON public.order_items;
+CREATE POLICY "Vendors can update their own order items"
+  ON public.order_items
+  FOR UPDATE
+  USING (auth.uid() = vendor_id);
 
--- Enable pg_net extension for HTTP requests
-create extension if not exists pg_net;
-
--- Function to send order notification to vendor
-create or replace function public.notify_vendor_of_new_order()
-returns trigger as $$
-declare
-  vendor_email text;
+-- 2. UNIFIED TRIGGER FUNCTION for Notifications
+CREATE OR REPLACE FUNCTION public.handle_order_item_notifications()
+RETURNS TRIGGER AS $$
+DECLARE
+  target_email text;
   order_data record;
-  items_html text;
-  resend_api_key text := 're_F1GNSPL9_BfdxqC9qL3JRPBnzke1vYHJS'; -- Your Resend Key
-begin
-  -- 1. Get vendor email from auth.users
-  select email into vendor_email from auth.users where id = new.vendor_id;
-  
-  -- If no email found, exit early to avoid errors
-  if vendor_email is null then
-    return new;
-  end if;
-  
-  -- 2. Get order details
-  select * into order_data from public.orders where id = new.order_id;
-  
-  -- 3. Construct items list (simple version for single item)
-  items_html := '<li>' || new.product_name || ' (Qty: ' || new.quantity || ') - $' || (new.price * new.quantity) || '</li>';
+  resend_api_key text := 're_F1GNSPL9_BfdxqC9qL3JRPBnzke1vYHJS';
+  email_subject text;
+  email_html text;
+BEGIN
+  -- Load order data for customer details
+  SELECT * INTO order_data FROM public.orders WHERE id = NEW.order_id;
 
-  -- 4. Send email via Resend API
-  perform net.http_post(
+  -- CASE A: NEW ORDER (Notify Vendor)
+  IF (TG_OP = 'INSERT') THEN
+    SELECT email INTO target_email FROM auth.users WHERE id = NEW.vendor_id;
+    IF target_email IS NULL THEN RETURN NEW; END IF;
+
+    email_subject := '🌿 New Order Received: LMG-' || UPPER(SUBSTRING(NEW.order_id::text, 1, 8));
+    email_html := '<div style="font-family: sans-serif; background-color: #f8fafc; padding: 40px 20px;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+        <div style="background-color: #10b981; padding: 32px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800;">New Order Received!</h1>
+        </div>
+        <div style="padding: 32px;">
+          <p style="font-size: 16px; color: #475569;">You have a new product to fulfill for <b>' || order_data.first_name || ' ' || order_data.last_name || '</b>.</p>
+          <div style="background-color: #f1f5f9; border-radius: 12px; padding: 20px; margin: 24px 0;">
+            <p style="margin: 0; font-size: 15px; font-weight: 600; color: #1e293b;">' || NEW.product_name || ' (Qty: ' || NEW.quantity || ')</p>
+            <p style="margin: 8px 0 0 0; font-size: 14px; color: #475569;">' || order_data.address || ', ' || order_data.city || '</p>
+          </div>
+          <div style="text-align: center;">
+            <a href="https://lmgnew.vercel.app/vendor?tab=orders&orderId=' || NEW.order_id || '" style="display: inline-block; background-color: #10b981; color: #ffffff; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: 700;">Manage & Ship Order →</a>
+          </div>
+        </div>
+      </div>
+    </div>';
+
+  -- CASE B: MARKED AS SHIPPED (Notify Customer)
+  ELSIF (TG_OP = 'UPDATE' AND NEW.status = 'shipped' AND (OLD.status IS NULL OR OLD.status <> 'shipped')) THEN
+    target_email := order_data.email;
+    IF target_email IS NULL THEN RETURN NEW; END IF;
+
+    email_subject := '🚀 Your Order has Shipped! - LMG-' || UPPER(SUBSTRING(NEW.order_id::text, 1, 8));
+    email_html := '<div style="font-family: sans-serif; background-color: #f8fafc; padding: 40px 20px;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+        <div style="background-color: #10b981; padding: 32px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 800;">Your Item is on its Way!</h1>
+        </div>
+        <div style="padding: 32px;">
+          <p style="font-size: 16px; color: #475569;">Great news, ' || order_data.first_name || '! Your item has been shipped by the vendor.</p>
+          <div style="background-color: #f1f5f9; border-radius: 12px; padding: 20px; margin: 24px 0;">
+            <p style="margin: 0; font-size: 15px; font-weight: 600; color: #1e293b;">' || NEW.product_name || '</p>
+            <p style="margin: 8px 0 0 0; font-size: 14px; color: #475569;"><b>Tracking Number:</b> ' || COALESCE(NEW.tracking_number, 'In progress...') || '</p>
+          </div>
+          <div style="text-align: center;">
+            <a href="https://lmgnew.vercel.app/profile" style="display: inline-block; background-color: #10b981; color: #ffffff; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: 700;">Track My Order →</a>
+          </div>
+        </div>
+      </div>
+    </div>';
+  
+  ELSE
+    RETURN NEW; -- No notification needed for this update
+  END IF;
+
+  -- 3. SEND EMAIL
+  PERFORM net.http_post(
     url := 'https://api.resend.com/emails',
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || resend_api_key
-    ),
+    headers := jsonb_build_object('Content-Type', 'application/json', 'Authorization', 'Bearer ' || resend_api_key),
     body := jsonb_build_object(
       'from', 'Lifestyle Medicine Gateway <noreply@lifestylemedicinegateway.com>',
-      'to', ARRAY[vendor_email],
-      'subject', 'New Order Received - LMG-' || upper(substring(new.order_id::text, 1, 8)),
-      'html', '<h1>New Order!</h1><p>You have a new order to fulfill.</p><h3>Customer:</h3><p>' || order_data.first_name || ' ' || order_data.last_name || '<br/>' || order_data.address || '</p><h3>Items:</h3><ul>' || items_html || '</ul>'
+      'to', ARRAY[target_email],
+      'subject', email_subject,
+      'html', email_html
     )
   );
 
-  return new;
-end;
-$$ language plpgsql security definer;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Trigger to run on every new order item
-drop trigger if exists on_new_order_item on public.order_items;
-create trigger on_new_order_item
-  after insert on public.order_items
-  for each row execute function public.notify_vendor_of_new_order();
+-- 4. RE-APPLY TRIGGER
+DROP TRIGGER IF EXISTS on_order_item_notification ON public.order_items;
+CREATE TRIGGER on_order_item_notification
+  AFTER INSERT OR UPDATE ON public.order_items
+  FOR EACH ROW EXECUTE FUNCTION public.handle_order_item_notifications();

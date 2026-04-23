@@ -87,6 +87,14 @@ function VendorDashboardPage() {
   useEffect(() => {
     if (!authLoading && !user) { navigate({ to: "/login" }); return; }
     if (user) loadVendorData();
+
+    // --- NEW: Handle deep-linking from emails ---
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    if (tabParam) {
+      setActiveTab(tabParam);
+      // If we have an orderId, we can scroll to it after data loads
+    }
   }, [user, authLoading, navigate]);
 
   async function loadVendorData() {
@@ -301,8 +309,15 @@ function VendorDashboardPage() {
                 {orderItems.length === 0 ? (
                   <Card><CardContent className="py-12 text-center text-muted-foreground">No orders yet.</CardContent></Card>
                 ) : (
-                  orderItems.map(item => (
-                    <Card key={item.id} className="overflow-hidden border-border/50">
+                  orderItems.map(item => {
+                    const params = new URLSearchParams(window.location.search);
+                    const isHighlighted = params.get('orderId') === item.order_id;
+                    
+                    return (
+                    <Card key={item.id} className={cn(
+                      "overflow-hidden border-border/50 transition-all duration-500",
+                      isHighlighted ? "border-primary ring-1 ring-primary shadow-lg scale-[1.02]" : ""
+                    )}>
                       <div className="flex flex-col md:flex-row">
                         <div className="flex-1 p-6">
                           <div className="flex items-center justify-between mb-4">
@@ -357,7 +372,8 @@ function VendorDashboardPage() {
                         </div>
                       </div>
                     </Card>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </TabsContent>
