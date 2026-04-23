@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { CartButton } from "@/components/CartButton";
 import { useAuth } from "@/hooks/use-auth";
 import { ChevronDown } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
