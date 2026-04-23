@@ -30,7 +30,6 @@ export function UserEditDialog({ user, isOpen, onClose, onSuccess }: UserEditDia
       });
 
       if (error) throw error;
-      if (data.error) throw new Error(data.error);
 
       toast.success("User email updated successfully");
       onSuccess();

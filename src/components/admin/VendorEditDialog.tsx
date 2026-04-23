@@ -47,7 +47,6 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
       });
 
       if (error) throw error;
-      if (data.error) throw new Error(data.error);
 
       toast.success("Vendor email updated successfully");
       onSuccess();
