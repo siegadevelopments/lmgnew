@@ -145,7 +145,7 @@ function AdminPage() {
     }
 
     loadData();
-  }, [profile]);
+  }, [role]);
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     const { error } = await (supabase.from("orders") as any).update({ status: newStatus }).eq("id", orderId);
