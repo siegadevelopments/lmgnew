@@ -28,11 +28,17 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const searchParams = new URLSearchParams(window.location.search);
+  const isRecovery = searchParams.get("type") === "recovery" || window.location.hash.includes("type=recovery");
+  
+  const { signIn, updatePassword } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +55,96 @@ function LoginPage() {
 
     navigate({ to: "/" });
   };
+
+  const handleRecovery = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+    
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+
+    setIsLoading(true);
+    const { error: authError } = await updatePassword(newPassword);
+
+    if (authError) {
+      setError(authError.message);
+      setIsLoading(false);
+      return;
+    }
+
+    setSuccess("Password updated successfully! You can now sign in.");
+    setIsLoading(false);
+    
+    // Clear hash and switch back to login mode after a short delay
+    setTimeout(() => {
+      window.location.hash = "";
+      navigate({ to: "/login", replace: true });
+    }, 2000);
+  };
+
+  if (isRecovery) {
+    return (
+      <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12">
+        <Card className="w-full max-w-md border-primary/20 shadow-xl">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Reset Password</CardTitle>
+            <CardDescription>
+              Enter your new password below to regain access.
+            </CardDescription>
+          </CardHeader>
+          <form onSubmit={handleRecovery}>
+            <CardContent className="space-y-4">
+              {error && (
+                <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
+              {success && (
+                <div className="rounded-md bg-green-500/10 p-3 text-sm text-green-600">
+                  {success}
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New Password</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirm New Password</Label>
+                <Input
+                  id="confirm-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button type="submit" className="w-full" disabled={isLoading || !!success}>
+                {isLoading ? "Updating..." : "Update Password"}
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12">
