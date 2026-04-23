@@ -30,6 +30,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
       price: product.price,
       image: product.image_url || undefined,
       slug: product.slug,
+      vendor_id: (product as any).vendor_id
     });
     
     toast.success(`${product.title} added to cart`, {

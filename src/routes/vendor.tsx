@@ -47,7 +47,27 @@ interface VendorProfile {
   store_logo_url: string | null; website: string | null; is_approved: boolean;
 }
 interface Product { id: number; title: string; price: number; stock: number; status: string; image_url: string | null; }
-interface OrderItem { id: string; order_id: string; product_id: number; product_name: string; price: number; quantity: number; created_at: string; }
+interface OrderItem { 
+  id: string; 
+  order_id: string; 
+  product_id: number; 
+  product_name: string; 
+  price: number; 
+  quantity: number; 
+  created_at: string;
+  status: string;
+  tracking_number: string | null;
+  orders?: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string | null;
+    address: string;
+    city: string;
+    state: string;
+    zip: string;
+  }
+}
 interface VideoData { id: string; title: string; embed_url: string; description: string | null; created_at: string | null; }
 interface Article { id: number; title: string; slug: string; excerpt: string | null; image_url: string | null; created_at: string; }
 
@@ -75,22 +95,26 @@ function VendorDashboardPage() {
     const { data: vendorData } = await supabase.from("vendor_profiles").select("*").eq("id", user.id).single();
     if (vendorData) {
       setProfile(vendorData as VendorProfile);
-      const [prodRes, vidRes, artRes] = await Promise.all([
+      const [prodRes, vidRes, artRes, orderRes] = await Promise.all([
         supabase.from("products").select("*").eq("vendor_id", user.id).order("created_at", { ascending: false }),
         supabase.from("videos").select("*").eq("author_id", user.id).order("created_at", { ascending: false }),
         supabase.from("articles").select("*").eq("author_id", user.id).order("created_at", { ascending: false }),
+        supabase.from("order_items").select("*, orders(*)").eq("vendor_id", user.id).order("created_at", { ascending: false }),
       ]);
       if (prodRes.data) setProducts(prodRes.data);
       if (vidRes.data) setVideos(vidRes.data as VideoData[]);
       if (artRes.data) setArticles(artRes.data as Article[]);
-      if (prodRes.data && prodRes.data.length > 0) {
-        const ids = (prodRes.data as any[]).map(p => p.id);
-        const { data: items } = await supabase.from("order_items").select("*").in("product_id", ids).order("created_at", { ascending: false });
-        if (items) setOrderItems(items as any);
-      }
+      if (orderRes.data) setOrderItems(orderRes.data as any);
     }
     setLoading(false);
   }
+
+  const updateOrderItem = async (id: string, payload: any) => {
+    const { error } = await (supabase.from("order_items") as any).update(payload).eq("id", id);
+    if (!error) {
+      setOrderItems(prev => prev.map(item => item.id === id ? { ...item, ...payload } : item));
+    }
+  };
 
   const handleCreateStore = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -273,36 +297,69 @@ function VendorDashboardPage() {
                 <h1 className="text-2xl font-bold tracking-tight">Recent Orders</h1>
                 <p className="text-muted-foreground">Fulfill and track customer purchases.</p>
               </div>
-              <Card>
-                <CardContent className="pt-6">
-                  {orderItems.length === 0 ? (
-                    <p className="py-12 text-center text-muted-foreground">No orders yet.</p>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm text-left">
-                        <thead>
-                          <tr className="border-b border-border/50 text-muted-foreground">
-                            <th className="pb-3 font-medium">Product</th>
-                            <th className="pb-3 font-medium">Quantity</th>
-                            <th className="pb-3 font-medium">Date</th>
-                            <th className="pb-3 font-medium text-right">Price</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {orderItems.map(item => (
-                            <tr key={item.id} className="border-b border-border/50 last:border-0 hover:bg-muted/30">
-                              <td className="py-4 font-medium">{item.product_name}</td>
-                              <td className="py-4">{item.quantity}</td>
-                              <td className="py-4 text-xs text-muted-foreground">{new Date(item.created_at).toLocaleDateString()}</td>
-                              <td className="py-4 text-right font-bold text-primary">${(item.price * item.quantity).toFixed(2)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <div className="space-y-4">
+                {orderItems.length === 0 ? (
+                  <Card><CardContent className="py-12 text-center text-muted-foreground">No orders yet.</CardContent></Card>
+                ) : (
+                  orderItems.map(item => (
+                    <Card key={item.id} className="overflow-hidden border-border/50">
+                      <div className="flex flex-col md:flex-row">
+                        <div className="flex-1 p-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <span className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">Order ID: {item.order_id.slice(0,8)}</span>
+                            <span className={cn(
+                              "text-[10px] uppercase font-bold px-2 py-1 rounded-full",
+                              item.status === 'shipped' ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
+                            )}>
+                              {item.status}
+                            </span>
+                          </div>
+                          <h3 className="text-lg font-bold mb-1">{item.product_name}</h3>
+                          <p className="text-sm text-muted-foreground mb-4">Quantity: {item.quantity} • Price: ${(item.price * item.quantity).toFixed(2)}</p>
+                          
+                          <div className="grid gap-4 sm:grid-cols-2 p-4 rounded-lg bg-muted/30 border border-border/50">
+                            <div>
+                              <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Customer</p>
+                              <p className="text-sm font-medium">{item.orders?.first_name} {item.orders?.last_name}</p>
+                              <p className="text-xs text-muted-foreground">{item.orders?.email}</p>
+                              <p className="text-xs text-muted-foreground">{item.orders?.phone}</p>
+                            </div>
+                            <div>
+                              <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Shipping Address</p>
+                              <p className="text-xs leading-relaxed">
+                                {item.orders?.address}<br />
+                                {item.orders?.city}, {item.orders?.state} {item.orders?.zip}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="w-full md:w-72 bg-muted/10 border-t md:border-t-0 md:border-l border-border/50 p-6 flex flex-col justify-center gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-xs">Tracking Number</Label>
+                            <Input 
+                              placeholder="Add tracking #" 
+                              defaultValue={item.tracking_number || ""}
+                              onBlur={(e) => {
+                                if (e.target.value !== item.tracking_number) {
+                                  updateOrderItem(item.id, { tracking_number: e.target.value });
+                                }
+                              }}
+                            />
+                          </div>
+                          <Button 
+                            className="w-full" 
+                            variant={item.status === 'shipped' ? "outline" : "default"}
+                            onClick={() => updateOrderItem(item.id, { status: item.status === 'shipped' ? 'pending' : 'shipped' })}
+                          >
+                            {item.status === 'shipped' ? "Mark as Pending" : "Mark as Shipped"}
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))
+                )}
+              </div>
             </TabsContent>
 
             <TabsContent value="articles" className="mt-0 border-0 p-0">

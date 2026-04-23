@@ -8,6 +8,7 @@ import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
+import { sendEmail, emailTemplates } from "@/lib/email";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -87,10 +88,25 @@ function CheckoutPage() {
         product_slug: item.slug,
         price: item.price,
         quantity: item.quantity,
+        vendor_id: item.vendor_id || null,
       }));
 
       const { error: itemsError } = await supabase.from("order_items").insert(orderItems as any);
       if (itemsError) throw new Error(itemsError.message);
+
+      // --- NEW: Notify Vendors ---
+      const vendors = [...new Set(items.map(i => i.vendor_id).filter(Boolean))];
+      for (const vId of vendors) {
+        const vendorItems = items.filter(i => i.vendor_id === vId);
+        // We'd ideally fetch the vendor's email here, but for now we simulate
+        // In production, we'd fetch: supabase.from('profiles').select('email').eq('id', vId)
+        const { data: vProfile } = await supabase.from('profiles').select('email').eq('id', vId as string).single();
+        if (vProfile?.email) {
+          const { subject, html } = emailTemplates.vendorOrderNotification({ ...formData, id: order.id }, vendorItems);
+          await sendEmail({ to: vProfile.email, subject, html });
+        }
+      }
+      // ---------------------------
 
       setOrderId(order.id.slice(0, 8).toUpperCase());
       clearCart();

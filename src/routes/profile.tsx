@@ -37,7 +37,16 @@ interface Order {
   state: string;
   zip: string;
   created_at: string;
-  order_items?: { id: string; product_name: string; product_image: string | null; price: number; quantity: number; product_slug: string | null }[];
+  order_items?: { 
+    id: string; 
+    product_name: string; 
+    product_image: string | null; 
+    price: number; 
+    quantity: number; 
+    product_slug: string | null;
+    status: string;
+    tracking_number: string | null;
+  }[];
 }
 
 interface Profile {
@@ -341,9 +350,22 @@ function ProfilePage() {
               <div className="space-y-3 pt-2">
                 <p className="font-semibold text-sm">Order Items</p>
                 {selectedOrder.order_items?.map((item) => (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{item.quantity}x {item.product_name}</span>
-                    <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
+                  <div key={item.id} className="space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{item.quantity}x {item.product_name}</span>
+                      <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center justify-between pl-4">
+                      <span className={cn(
+                        "text-[10px] uppercase font-bold px-1.5 py-0.5 rounded",
+                        item.status === 'shipped' ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
+                      )}>
+                        {item.status}
+                      </span>
+                      {item.tracking_number && (
+                        <span className="text-[10px] font-mono text-muted-foreground">Tracking: {item.tracking_number}</span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
