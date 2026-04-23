@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminGalleriesTab } from "@/components/admin/AdminGalleriesTab";
 import { AdminContentTab } from "@/components/admin/AdminContentTab";
 import { VendorEditDialog } from "@/components/admin/VendorEditDialog";
+import { UserEditDialog } from "@/components/admin/UserEditDialog";
 import { toast } from "sonner";
 import { 
   Edit, 
@@ -24,7 +25,8 @@ import {
   Settings,
   ChevronRight,
   Menu,
-  LogOut
+  LogOut,
+  Key
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -103,6 +105,8 @@ function AdminPage() {
   });
   const [editingVendor, setEditingVendor] = useState<any>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
+  const [isUserEditOpen, setIsUserEditOpen] = useState(false);
 
   // Check admin role
   useEffect(() => {
@@ -135,13 +139,34 @@ function AdminPage() {
         if (ordersRes.error) console.error("Orders error:", ordersRes.error);
         if (productsRes.error) console.error("Products error:", productsRes.error);
 
-        const allOrders = (ordersRes.data || []) as Order[];
-        const allMessages = (messagesRes.data || []) as ContactMessage[];
-        const allUsers = (usersRes.data || []) as Profile[];
+        // 2. Try to get users with emails from Edge Function
+        let usersWithEmails: any[] = [];
+        try {
+          const { data: edgeUsers, error: edgeError } = await supabase.functions.invoke("admin-api", {
+            body: { action: "list-users" },
+          });
+          
+          if (!edgeError && edgeUsers?.users) {
+            // Map Edge Users (auth.users) to Profiles
+            usersWithEmails = edgeUsers.users.map((au: any) => {
+              const profile = allUsers.find(p => p.id === au.id);
+              return {
+                ...profile,
+                id: au.id,
+                email: au.email,
+                full_name: profile?.full_name || au.user_metadata?.full_name || au.email.split('@')[0],
+                role: profile?.role || 'customer',
+                created_at: au.created_at
+              };
+            });
+          }
+        } catch (e) {
+          console.warn("Could not fetch users via Edge Function, falling back to profiles only.", e);
+        }
 
         setOrders(allOrders);
         setMessages(allMessages);
-        setUsers(allUsers);
+        setUsers(usersWithEmails.length > 0 ? usersWithEmails : allUsers);
         setVendors(vendorsRes.data || []);
         
         const productsData = (productsRes.data || []).map((p: any) => ({
@@ -626,7 +651,7 @@ function AdminPage() {
                             <th className="pb-3 font-medium">User</th>
                             <th className="pb-3 font-medium">Role</th>
                             <th className="pb-3 font-medium">Joined</th>
-                            <th className="pb-3 font-medium text-right">ID</th>
+                            <th className="pb-3 font-medium text-right">Actions</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -639,7 +664,7 @@ function AdminPage() {
                                   </div>
                                   <div>
                                     <p className="font-bold">{u.full_name || "Guest User"}</p>
-                                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest">ID: {u.id.slice(0, 8)}</p>
+                                    <p className="text-[10px] text-muted-foreground">{u.email || u.id.slice(0, 8)}</p>
                                   </div>
                                 </div>
                               </td>
@@ -649,7 +674,18 @@ function AdminPage() {
                                 </Badge>
                               </td>
                               <td className="py-4 text-muted-foreground text-xs">{new Date(u.created_at).toLocaleDateString()}</td>
-                              <td className="py-4 text-right font-mono text-[10px] text-muted-foreground">{u.id}</td>
+                              <td className="py-4 text-right">
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost" 
+                                  onClick={() => {
+                                    setEditingUser(u);
+                                    setIsUserEditOpen(true);
+                                  }}
+                                >
+                                  <Key className="h-4 w-4 mr-1 text-muted-foreground" /> Manage
+                                </Button>
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -674,6 +710,23 @@ function AdminPage() {
           onSuccess={() => {
             supabase.from("vendor_profiles").select("*").order("created_at", { ascending: false }).then(({ data }) => {
                if (data) setVendors(data);
+            });
+          }}
+        />
+      )}
+
+      {editingUser && (
+        <UserEditDialog
+          user={editingUser}
+          isOpen={isUserEditOpen}
+          onClose={() => {
+            setIsUserEditOpen(false);
+            setEditingUser(null);
+          }}
+          onSuccess={() => {
+            // Re-fetch users
+            supabase.from("profiles").select("*").order("created_at", { ascending: false }).then(({ data }) => {
+               if (data) setUsers(data);
             });
           }}
         />
