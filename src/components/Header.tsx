@@ -2,7 +2,6 @@ import { Link, useRouter } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect } from "react";
 import { CartButton } from "@/components/CartButton";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/use-auth";
 import { ChevronDown } from "lucide-react";
 import {
@@ -107,7 +106,6 @@ export function Header() {
               </svg>
             </Button>
           </Link>
-          <ThemeToggle />
           <CartButton />
 
           {/* Auth */}
