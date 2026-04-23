@@ -88,8 +88,7 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
     setLoading(true);
 
     try {
-      const { error } = await supabase
-        .from("vendor_profiles")
+      const { error } = await (supabase.from("vendor_profiles") as any)
         .update({
           ...formData,
           updated_at: new Date().toISOString(),

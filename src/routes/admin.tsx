@@ -89,7 +89,7 @@ function AdminPage() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<Order[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
-  const [users, setUsers] = useState<Profile[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [vendors, setVendors] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -157,9 +157,10 @@ function AdminPage() {
           console.warn("Could not fetch users via RPC, falling back to profiles only.", e);
         }
 
-        const vendorProfiles = vendorsRes.data || [];
+        const vendorProfiles = (vendorsRes.data || []) as any[];
         const vendorsWithEmails = vendorProfiles.map(vp => {
-          const user = (usersWithEmails.length > 0 ? usersWithEmails : allUsers).find(u => u.id === vp.id);
+          const userList = usersWithEmails.length > 0 ? usersWithEmails : allUsers;
+          const user = (userList as any[]).find(u => u.id === vp.id);
           return {
             ...vp,
             email: user?.email || ""
