@@ -29,8 +29,8 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
 
   async function loadItems() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from(activeType)
+    const { data, error } = await (supabase
+      .from(activeType) as any)
       .select("*, author:profiles(full_name)") // Profiles relationship is usually named after the column or table
       .order("created_at", { ascending: false })
       .limit(50);
@@ -67,7 +67,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
 
     let result;
     if (activeType === "articles") {
-      result = await supabase.from("articles").insert({
+      result = await (supabase.from("articles") as any).insert({
         ...commonData,
         content,
         image_url: imageUrl,
@@ -75,7 +75,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         category_name: category
       });
     } else if (activeType === "recipes") {
-      result = await supabase.from("recipes").insert({
+      result = await (supabase.from("recipes") as any).insert({
         ...commonData,
         content,
         image_url: imageUrl,
@@ -84,7 +84,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         cook_time: cookTime
       });
     } else if (activeType === "videos") {
-      result = await supabase.from("videos").insert({
+      result = await (supabase.from("videos") as any).insert({
         title,
         description: content,
         embed_url: embedUrl,
@@ -93,7 +93,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         author_id: selectedVendorId 
       });
     } else if (activeType === "products") {
-      result = await supabase.from("products").insert({
+      result = await (supabase.from("products") as any).insert({
         title,
         description: content,
         price: parseFloat(imageUrl) || 0,
@@ -115,7 +115,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
 
   async function deleteItem(id: string) {
     if (!confirm("Are you sure?")) return;
-    const { error } = await supabase.from(activeType).delete().eq("id", id);
+    const { error } = await (supabase.from(activeType) as any).delete().eq("id", id);
     if (error) toast.error("Failed to delete");
     else loadItems();
   }

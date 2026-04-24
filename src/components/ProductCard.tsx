@@ -89,8 +89,8 @@ export function ProductCard({ product, className }: ProductCardProps) {
         
         <div className="mt-2 flex flex-col gap-1">
           <div className="flex items-baseline gap-1">
-            <span className="text-xs text-primary font-bold">₱</span>
-            <span className="text-lg font-bold text-primary">{Number(product.price).toLocaleString()}</span>
+            <span className="text-xs text-primary font-bold">$</span>
+            <span className="text-lg font-bold text-primary">{Number(product.price).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
           </div>
           
           <div className="flex items-center justify-between mt-1">
@@ -105,7 +105,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
 
           <div className="mt-2 pt-2 border-t border-border/50 flex items-center justify-between text-[10px] text-muted-foreground">
              <span className="truncate max-w-[80px]">{(product as any).vendor_profiles?.store_name || "LMG Store"}</span>
-             <span className="shrink-0">Philippines</span>
+             <span className="shrink-0">Australia</span>
           </div>
         </div>
       </div>

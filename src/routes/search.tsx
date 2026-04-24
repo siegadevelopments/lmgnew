@@ -31,6 +31,7 @@ function SearchPage() {
   });
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [query, setQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<any>(null);
 
@@ -42,7 +43,7 @@ function SearchPage() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (query.length < 2) {
-      setResults({ products: [], articles: [], recipes: [] });
+      setResults({ products: [], articles: [], recipes: [], videos: [], remedies: [] });
       setSearched(false);
       return;
     }

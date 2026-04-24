@@ -22,7 +22,7 @@ export const Route = createFileRoute("/checkout")({
 
 function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCart();
-  const { user, authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
   // --- NEW: Redirect to signup if not logged in ---
@@ -106,7 +106,7 @@ function CheckoutPage() {
       const vendors = [...new Set(items.map(i => i.vendor_id).filter(Boolean))];
       for (const vId of vendors) {
         const vendorItems = items.filter(i => i.vendor_id === vId);
-        const { data: vProfile } = await supabase.from('profiles').select('email').eq('id', vId as string).single();
+        const { data: vProfile } = await (supabase.from('profiles') as any).select('email').eq('id', vId as string).single();
         if (vProfile?.email) {
           const { subject, html } = emailTemplates.vendorOrderNotification({ ...formData, id: order.id }, vendorItems);
           await sendEmail({ to: vProfile.email, subject, html });

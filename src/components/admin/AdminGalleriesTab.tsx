@@ -19,8 +19,8 @@ export function AdminGalleriesTab() {
 
   async function loadGalleries() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("galleries")
+    const { data, error } = await (supabase
+      .from("galleries") as any)
       .select("*, gallery_items(*)")
       .order("created_at", { ascending: false });
 
@@ -35,8 +35,8 @@ export function AdminGalleriesTab() {
   async function createGallery() {
     if (!newGalleryTitle.trim()) return;
     
-    const { data, error } = await supabase
-      .from("galleries")
+    const { data, error } = await (supabase
+      .from("galleries") as any)
       .insert({ title: newGalleryTitle, category: newGalleryCategory })
       .select()
       .single();
@@ -53,7 +53,7 @@ export function AdminGalleriesTab() {
   async function deleteGallery(id: string) {
     if (!confirm("Are you sure? This will delete all items in this gallery.")) return;
     
-    const { error } = await supabase.from("galleries").delete().eq("id", id);
+    const { error } = await (supabase.from("galleries") as any).delete().eq("id", id);
     if (error) {
       toast.error("Failed to delete gallery");
     } else {
@@ -65,7 +65,7 @@ export function AdminGalleriesTab() {
   async function addImageToGallery(galleryId: string, imageUrl: string) {
     if (!imageUrl.trim()) return;
 
-    const { error } = await supabase.from("gallery_items").insert({
+    const { error } = await (supabase.from("gallery_items") as any).insert({
       gallery_id: galleryId,
       image_url: imageUrl
     });
@@ -79,7 +79,7 @@ export function AdminGalleriesTab() {
   }
 
   async function deleteImage(itemId: string) {
-    const { error } = await supabase.from("gallery_items").delete().eq("id", itemId);
+    const { error } = await (supabase.from("gallery_items") as any).delete().eq("id", itemId);
     if (error) {
       toast.error("Failed to delete image");
     } else {

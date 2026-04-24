@@ -123,10 +123,10 @@ function VendorDashboardPage() {
       if (vendorData) {
         setProfile(vendorData as VendorProfile);
         const [prodRes, vidRes, artRes, orderRes] = await Promise.all([
-          supabase.from("products").select("*").eq("vendor_id", user.id).order("created_at", { ascending: false }),
-          supabase.from("videos").select("*").eq("author_id", user.id).order("created_at", { ascending: false }),
-          supabase.from("articles").select("*").eq("author_id", user.id).order("created_at", { ascending: false }),
-          supabase.from("order_items").select("*, orders(*)").eq("vendor_id", user.id).order("created_at", { ascending: false }),
+          (supabase.from("products") as any).select("*").eq("vendor_id", user.id).order("created_at", { ascending: false }),
+          (supabase.from("videos") as any).select("*").eq("author_id", user.id).order("created_at", { ascending: false }),
+          (supabase.from("articles") as any).select("*").eq("author_id", user.id).order("created_at", { ascending: false }),
+          (supabase.from("order_items") as any).select("*, orders(*)").eq("vendor_id", user.id).order("created_at", { ascending: false }),
         ]);
         if (prodRes.data) setProducts(prodRes.data);
         if (vidRes.data) setVideos(vidRes.data as VideoData[]);
@@ -141,8 +141,8 @@ function VendorDashboardPage() {
   }
 
   const updateOrderItem = async (id: string, payload: any) => {
-    const { error } = await supabase
-      .from("order_items")
+    const { error } = await (supabase
+      .from("order_items") as any)
       .update(payload)
       .eq("id", id);
     
@@ -161,7 +161,7 @@ function VendorDashboardPage() {
     setIsSubmitting(true);
     const storeName = (e.target as HTMLFormElement).store_name.value;
     await (supabase.from("profiles") as any).update({ role: "vendor" }).eq("id", user.id);
-    const { data } = await supabase.from("vendor_profiles").insert({ id: user.id, store_name: storeName, is_approved: false } as any).select().single();
+    const { data } = await (supabase.from("vendor_profiles") as any).insert({ id: user.id, store_name: storeName, is_approved: false } as any).select().single();
     if (data) { setProfile(data as VendorProfile); navigate({ to: "/vendor" }); }
     setIsSubmitting(false);
   };

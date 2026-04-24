@@ -102,8 +102,8 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
       // Update or insert stream info
       const { mux_stream_key, mux_playback_id } = formData as any;
       if (mux_stream_key || mux_playback_id) {
-        await supabase
-          .from("vendor_streams")
+        await (supabase
+          .from("vendor_streams") as any)
           .upsert({
             vendor_id: vendor.id,
             mux_stream_key,

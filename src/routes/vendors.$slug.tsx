@@ -46,8 +46,8 @@ function VendorPage() {
   const { data: streamInfo } = useQuery({
     queryKey: ["vendor_stream", slug],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("vendor_streams")
+      const { data } = await (supabase
+        .from("vendor_streams") as any)
         .select("*")
         .eq("vendor_id", slug)
         .single();

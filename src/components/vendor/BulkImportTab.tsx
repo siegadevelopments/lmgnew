@@ -64,7 +64,7 @@ export function BulkImportTab({ userId, onSuccess }: Props) {
 
         const slug = title.toLowerCase().replace(/[\s\W-]+/g, "-") + "-" + Math.floor(Math.random() * 1000);
 
-        const { error } = await supabase.from("products").insert({
+        const { error } = await (supabase.from("products") as any).insert({
           vendor_id: userId,
           title,
           slug,

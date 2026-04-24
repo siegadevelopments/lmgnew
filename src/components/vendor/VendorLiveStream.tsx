@@ -22,8 +22,8 @@ export function VendorLiveStream({ vendorId }: { vendorId: string }) {
 
   async function loadStreamInfo() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("vendor_streams")
+    const { data, error } = await (supabase
+      .from("vendor_streams") as any)
       .select("*")
       .eq("vendor_id", vendorId)
       .single();
@@ -39,8 +39,8 @@ export function VendorLiveStream({ vendorId }: { vendorId: string }) {
     setIsUpdating(true);
     try {
       const newStatus = !streamInfo.is_live;
-      const { error } = await supabase
-        .from("vendor_streams")
+      const { error } = await (supabase
+        .from("vendor_streams") as any)
         .update({ is_live: newStatus, last_streamed_at: newStatus ? new Date().toISOString() : streamInfo.last_streamed_at })
         .eq("vendor_id", vendorId);
       
@@ -51,8 +51,8 @@ export function VendorLiveStream({ vendorId }: { vendorId: string }) {
         toast.success(newStatus ? "You are now LIVE!" : "Stream ended");
         
         // Also update vendor_profiles for easy discovery
-        await supabase
-          .from("vendor_profiles")
+        await (supabase
+          .from("vendor_profiles") as any)
           .update({ is_live: newStatus })
           .eq("id", vendorId);
       }
@@ -76,8 +76,8 @@ export function VendorLiveStream({ vendorId }: { vendorId: string }) {
 
     setIsUpdating(true);
     try {
-      const { data, error } = await supabase
-        .from("vendor_streams")
+      const { data, error } = await (supabase
+        .from("vendor_streams") as any)
         .upsert({ 
           vendor_id: vendorId, 
           mux_stream_key: streamKey, 
