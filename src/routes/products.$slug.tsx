@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { ProductCard } from "@/components/ProductCard";
 
 export const Route = createFileRoute("/products/$slug")({
   loader: async ({ context: { queryClient }, params: { slug } }) => {
@@ -91,6 +92,26 @@ function ProductPage() {
          .order("created_at", { ascending: false });
        return (data as any[]) || [];
     }
+  });
+  
+  const { data: relatedProducts } = useQuery({
+    queryKey: ["products", "related", product.category, product.id],
+    queryFn: async () => {
+      let query = supabase
+        .from("products")
+        .select("*, vendor_profiles(store_name)")
+        .eq("status", "published")
+        .neq("id", product.id)
+        .limit(6);
+      
+      if (product.category) {
+        query = query.eq("category", product.category);
+      }
+      
+      const { data } = await query;
+      return (data as any[]) || [];
+    },
+    enabled: !!product.id
   });
 
   const averageRating = reviews && reviews.length > 0 
@@ -295,6 +316,18 @@ function ProductPage() {
             </div>
           </div>
         </div>
+        
+        {relatedProducts && relatedProducts.length > 0 && (
+          <div className="mt-20">
+            <h2 className="text-2xl font-bold tracking-tight text-foreground">You May Also Like</h2>
+            <p className="mt-2 text-sm text-muted-foreground">Related products based on this item</p>
+            <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {relatedProducts.map((p) => (
+                <ProductCard key={p.id} product={p as any} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </article>
   );
