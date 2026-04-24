@@ -62,6 +62,11 @@ function VendorPage() {
 
   const joinedDate = new Date(vendor.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" });
   const productCount = vendorProducts?.length || 0;
+  const [activeCategory, setActiveCategory] = useState("home");
+
+  const filteredProducts = activeCategory === "home" || activeCategory === "all" || activeCategory === "about"
+    ? vendorProducts
+    : vendorProducts?.filter(p => p.category === activeCategory);
 
   return (
     <div className="bg-[#f5f5f5] min-h-screen">
@@ -143,11 +148,14 @@ function VendorPage() {
 
         {/* Tab Navigation */}
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-           <Tabs defaultValue="home" className="w-full">
-              <TabsList className="bg-transparent border-b-0 h-12 gap-8 p-0">
-                 <TabsTrigger value="home" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-4 text-sm font-medium">Home</TabsTrigger>
-                 <TabsTrigger value="all" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-4 text-sm font-medium">All Products</TabsTrigger>
-                 <TabsTrigger value="about" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-4 text-sm font-medium">Profile</TabsTrigger>
+           <Tabs value={activeCategory} onValueChange={setActiveCategory} className="w-full">
+              <TabsList className="bg-transparent border-b-0 h-12 gap-4 sm:gap-8 p-0 overflow-x-auto overflow-y-hidden no-scrollbar">
+                 <TabsTrigger value="home" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">Home</TabsTrigger>
+                 <TabsTrigger value="all" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">All Products</TabsTrigger>
+                 {(vendor.store_categories || []).map((cat: string) => (
+                   <TabsTrigger key={cat} value={cat} className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">{cat}</TabsTrigger>
+                 ))}
+                 <TabsTrigger value="about" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">Profile</TabsTrigger>
               </TabsList>
            </Tabs>
         </div>
@@ -174,42 +182,78 @@ function VendorPage() {
 
         {/* Home Content */}
         <div className="space-y-12">
-           {/* Section: Recommended */}
-           <section>
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Recommended For You</h2>
-                <Link to="/products" className="text-xs font-bold text-primary hover:underline flex items-center gap-1">See All <span className="text-[10px]">›</span></Link>
-              </div>
-              <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {vendorProducts && vendorProducts.slice(0, 6).map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))}
-              </div>
-           </section>
-
-           {/* Section: Top Products */}
-           <section>
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Top Products</h2>
-                <Link to="/products" className="text-xs font-bold text-primary hover:underline flex items-center gap-1">See All <span className="text-[10px]">›</span></Link>
-              </div>
-              <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {vendorProducts && vendorProducts.slice(6, 12).map((product, idx) => (
-                  <div key={product.id} className="relative">
-                    <ProductCard product={product} />
-                    <div className="absolute top-0 left-0 bg-primary/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-br-md shadow-sm">
-                      TOP {idx + 1}
-                    </div>
+           {activeCategory === "home" && (
+             <>
+               {/* Section: Recommended */}
+               <section>
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Recommended For You</h2>
+                    <button onClick={() => setActiveCategory("all")} className="text-xs font-bold text-primary hover:underline flex items-center gap-1">See All <span className="text-[10px]">›</span></button>
                   </div>
-                ))}
-              </div>
-           </section>
+                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    {vendorProducts && vendorProducts.slice(0, 6).map((product) => (
+                      <ProductCard key={product.id} product={product} />
+                    ))}
+                  </div>
+               </section>
 
-           {/* Full Catalog link if many products */}
-           {productCount > 12 && (
+               {/* Section: Top Products */}
+               <section>
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Top Products</h2>
+                    <button onClick={() => setActiveCategory("all")} className="text-xs font-bold text-primary hover:underline flex items-center gap-1">See All <span className="text-[10px]">›</span></button>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    {vendorProducts && vendorProducts.slice(6, 12).map((product, idx) => (
+                      <div key={product.id} className="relative">
+                        <ProductCard product={product} />
+                        <div className="absolute top-0 left-0 bg-primary/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-br-md shadow-sm">
+                          TOP {idx + 1}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+               </section>
+             </>
+           )}
+
+           {(activeCategory === "all" || (activeCategory !== "home" && activeCategory !== "about")) && (
+             <section>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                    {activeCategory === "all" ? "All Products" : activeCategory}
+                  </h2>
+                </div>
+                <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {filteredProducts?.map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                  {filteredProducts?.length === 0 && (
+                    <div className="col-span-full py-12 text-center text-muted-foreground bg-white rounded-xl border border-dashed">
+                      No products found in this category.
+                    </div>
+                  )}
+                </div>
+             </section>
+           )}
+
+           {activeCategory === "about" && (
+             <section className="bg-white rounded-xl p-8 border border-border shadow-sm">
+                <h2 className="text-xl font-bold mb-4">About {vendor.store_name}</h2>
+                <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{vendor.store_description || "No description provided."}</p>
+                {vendor.website && (
+                  <a href={vendor.website} target="_blank" rel="noopener noreferrer" className="mt-6 inline-block text-primary font-bold hover:underline">
+                    Visit Official Website ↗
+                  </a>
+                )}
+             </section>
+           )}
+
+           {/* Full Catalog link if many products and on Home */}
+           {activeCategory === "home" && productCount > 12 && (
              <div className="text-center pt-8">
-               <Button variant="outline" className="px-12" asChild>
-                 <Link to="/products">View Full Catalog ({productCount})</Link>
+               <Button variant="outline" className="px-12" onClick={() => setActiveCategory("all")}>
+                 View Full Catalog ({productCount})
                </Button>
              </div>
            )}
