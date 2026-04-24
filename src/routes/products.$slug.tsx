@@ -169,6 +169,12 @@ function ProductPage() {
                 <span className="text-sm text-muted-foreground">
                   Sold by <Link to="/vendors/$slug" params={{ slug: product.vendor.id }} className="font-semibold text-primary hover:underline">{product.vendor.store_name}</Link>
                 </span>
+                {product.brand && (
+                  <>
+                    <span className="text-muted-foreground">•</span>
+                    <span className="text-sm font-medium text-muted-foreground">Brand: <span className="text-foreground">{product.brand}</span></span>
+                  </>
+                )}
               </div>
             )}
 

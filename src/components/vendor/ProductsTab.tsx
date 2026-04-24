@@ -12,6 +12,7 @@ interface Product {
   id: number; title: string; price: number; stock: number; status: string; image_url: string | null;
   content?: string;
   variants?: any[];
+  brand?: string;
 }
 
 interface Props {
@@ -24,7 +25,8 @@ export function ProductsTab({ products, setProducts, userId }: Props) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ 
     id: 0, title: "", price: "", stock: "50", image_url: "", video_url: "", description: "", status: "draft",
-    variants: [] as any[]
+    variants: [] as any[],
+    brand: ""
   });
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
@@ -42,7 +44,8 @@ export function ProductsTab({ products, setProducts, userId }: Props) {
     const payload: any = {
       title: form.title, price: parseFloat(form.price) || 0, stock: parseInt(form.stock) || 0,
       image_url: form.image_url || null, content: form.description, status: form.id ? form.status : "published",
-      variants: form.variants
+      variants: form.variants,
+      brand: form.brand || null
     };
     if (form.video_url) payload.content = (payload.content || "") + `\n<video src="${form.video_url}" controls class="w-full rounded-lg mt-4"></video>`;
 
@@ -55,7 +58,7 @@ export function ProductsTab({ products, setProducts, userId }: Props) {
       if (data) setProducts([data, ...products]);
     }
     setEditing(false);
-    setForm({ id: 0, title: "", price: "", stock: "50", image_url: "", video_url: "", description: "", status: "draft", variants: [] });
+    setForm({ id: 0, title: "", price: "", stock: "50", image_url: "", video_url: "", description: "", status: "draft", variants: [], brand: "" });
     setSubmitting(false);
   };
 
@@ -69,7 +72,8 @@ export function ProductsTab({ products, setProducts, userId }: Props) {
       video_url: "", 
       description: (p as any).content || "", 
       status: p.status,
-      variants: p.variants || []
+      variants: p.variants || [],
+      brand: (p as any).brand || ""
     });
     setEditing(true);
   };
@@ -99,6 +103,7 @@ export function ProductsTab({ products, setProducts, userId }: Props) {
             <form onSubmit={handleSave} className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2"><Label>Title</Label><Input required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} /></div>
               <div className="space-y-2"><Label>Price</Label><Input type="number" step="0.01" required value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Brand</Label><Input value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value })} placeholder="e.g. A Better" /></div>
               <div className="space-y-2"><Label>Stock</Label><Input type="number" required value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} /></div>
               <div className="space-y-2">
                 <Label>Product Image</Label>
