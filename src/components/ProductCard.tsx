@@ -14,6 +14,7 @@ interface ProductCardProps {
     image_url?: string | null;
     slug: string;
     category?: string;
+    variants?: any[];
   };
   className?: string;
 }
@@ -38,10 +39,15 @@ export function ProductCard({ product, className }: ProductCardProps) {
       return;
     }
     
+    const baseVariant = product.variants && product.variants.length > 0 ? product.variants[0] : null;
+    
     addItem({
-      id: product.id,
+      id: baseVariant ? `${product.id}-${baseVariant.id}` : product.id,
+      product_id: product.id,
+      variant_id: baseVariant?.id,
       name: product.title,
-      price: product.price,
+      variant_name: baseVariant?.title,
+      price: baseVariant ? baseVariant.price : product.price,
       image: product.image_url || undefined,
       slug: product.slug,
       vendor_id: (product as any).vendor_id
@@ -112,8 +118,17 @@ export function ProductCard({ product, className }: ProductCardProps) {
 
       {/* Shopee-style hover action */}
       <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none flex items-end justify-center pb-20">
-         <div className="bg-primary text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-xl translate-y-4 group-hover:translate-y-0 transition-transform pointer-events-auto" onClick={handleAddToCart}>
-            Quick Add
+         <div 
+           className="bg-primary text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-xl translate-y-4 group-hover:translate-y-0 transition-transform pointer-events-auto cursor-pointer" 
+           onClick={(e) => {
+             if (product.variants && product.variants.length > 1) {
+               // Let the Link handle navigation
+             } else {
+               handleAddToCart(e);
+             }
+           }}
+         >
+            {product.variants && product.variants.length > 1 ? "Select Options" : "Quick Add"}
          </div>
       </div>
     </Link>

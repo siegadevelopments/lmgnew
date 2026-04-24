@@ -129,7 +129,7 @@ export function ProductsTab({ products, setProducts, userId }: Props) {
                     type="button" 
                     variant="outline" 
                     size="sm" 
-                    onClick={() => setForm({ ...form, variants: [...form.variants, { id: crypto.randomUUID(), name: "", price: form.price, stock: form.stock }] })}
+                    onClick={() => setForm({ ...form, variants: [...form.variants, { id: crypto.randomUUID(), title: "", price: form.price, stock: form.stock }] })}
                   >
                     Add Variant
                   </Button>
@@ -141,13 +141,13 @@ export function ProductsTab({ products, setProducts, userId }: Props) {
                         <div className="sm:col-span-2">
                           <Label className="text-[10px] uppercase">Variant Name (e.g. 1Liter, Green)</Label>
                           <Input 
-                            value={v.name} 
+                            value={v.title} 
                             onChange={e => {
                               const newVariants = [...form.variants];
-                              newVariants[idx].name = e.target.value;
+                              newVariants[idx].title = e.target.value;
                               setForm({ ...form, variants: newVariants });
                             }} 
-                            placeholder="Variant name"
+                            placeholder="Variant title"
                             required
                           />
                         </div>

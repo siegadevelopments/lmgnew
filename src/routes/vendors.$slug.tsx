@@ -3,6 +3,7 @@ import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import MuxPlayer from "@mux/mux-player-react";
 import { Badge } from "@/components/ui/badge";
+import { ProductCard } from "@/components/ProductCard";
 
 export const Route = createFileRoute("/vendors/$slug")({
   loader: async ({ context: { queryClient }, params: { slug } }) => {
@@ -104,28 +105,7 @@ function VendorPage() {
             {vendorProducts && vendorProducts.length > 0 ? (
               <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {vendorProducts.map((product) => (
-                  <Link
-                    key={product.id}
-                    to="/products/$slug"
-                    params={{ slug: product.slug }}
-                    className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all hover:-translate-y-1 hover:shadow-card"
-                  >
-                    <div className="aspect-[4/3] overflow-hidden bg-muted">
-                      {product.image_url ? (
-                        <img src={product.image_url} alt={product.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-muted-foreground bg-muted/50">No Image</div>
-                      )}
-                    </div>
-                    <div className="p-4 flex flex-col flex-1">
-                      <h3 className="text-base font-bold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
-                        {product.title}
-                      </h3>
-                      <div className="mt-auto pt-3">
-                        <p className="text-base font-bold text-primary">${product.price}</p>
-                      </div>
-                    </div>
-                  </Link>
+                  <ProductCard key={product.id} product={product} />
                 ))}
               </div>
             ) : (

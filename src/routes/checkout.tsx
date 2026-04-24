@@ -90,8 +90,9 @@ function CheckoutPage() {
       // Create order items
       const orderItems = items.map((item) => ({
         order_id: order.id,
-        product_id: item.id,
-        product_name: item.name,
+        product_id: item.product_id, // Use original product ID
+        variant_id: item.variant_id || null,
+        product_name: item.variant_name && item.variant_name !== "Default Title" ? `${item.name} (${item.variant_name})` : item.name,
         product_image: item.image || null,
         product_slug: item.slug,
         price: item.price,
@@ -275,6 +276,9 @@ function CheckoutPage() {
                       {item.image && <img src={item.image} alt={item.name} className="h-14 w-14 rounded-md object-cover" />}
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
+                        {item.variant_name && item.variant_name !== "Default Title" && (
+                          <p className="text-xs text-muted-foreground">{item.variant_name}</p>
+                        )}
                         <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                       </div>
                       <p className="text-sm font-medium">${(item.price * item.quantity).toFixed(2)}</p>

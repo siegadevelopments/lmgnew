@@ -55,6 +55,12 @@ function ProductPage() {
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const [selectedVariant, setSelectedVariant] = useState<any>(
+    product.variants && product.variants.length > 0 ? product.variants[0] : null
+  );
+
+  const currentPrice = selectedVariant ? selectedVariant.price : product.price;
+  const currentStock = selectedVariant ? (selectedVariant.available ? product.stock : 0) : product.stock;
 
   const handleAddToCart = () => {
     if (!user) {
@@ -62,9 +68,12 @@ function ProductPage() {
       return;
     }
     addItem({
-      id: product.id,
+      id: selectedVariant ? `${product.id}-${selectedVariant.id}` : product.id,
+      product_id: product.id,
+      variant_id: selectedVariant?.id,
       name: product.title,
-      price: product.price,
+      variant_name: selectedVariant?.title,
+      price: currentPrice,
       quantity,
       image: product.image_url || undefined,
       slug: product.slug,
@@ -150,9 +159,33 @@ function ProductPage() {
               {reviews && reviews.length > 0 && <span className="text-sm text-muted-foreground">({reviews.length} reviews)</span>}
             </div>
 
-            <p className="mt-4 text-3xl font-bold text-primary">${product.price}</p>
-            {product.stock > 0 ? (
-              <Badge variant="outline" className="mt-4 text-green-600 bg-green-500/10 border-green-200">In Stock ({product.stock})</Badge>
+            <p className="mt-4 text-3xl font-bold text-primary">${currentPrice}</p>
+            
+            {product.variants && product.variants.length > 0 && (
+              <div className="mt-6 space-y-3">
+                <Label className="text-base font-semibold">Choose Your Size:</Label>
+                <div className="flex flex-wrap gap-2">
+                  {product.variants.map((v: any) => (
+                    <button
+                      key={v.id}
+                      onClick={() => setSelectedVariant(v)}
+                      className={`px-4 py-2 rounded-full border text-sm font-medium transition-all ${
+                        selectedVariant?.id === v.id
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-background text-foreground border-border hover:border-primary/50"
+                      }`}
+                    >
+                      {v.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {currentStock > 0 ? (
+              <Badge variant="outline" className="mt-4 text-green-600 bg-green-500/10 border-green-200">
+                In Stock {currentStock < 50 ? `(${currentStock})` : ""}
+              </Badge>
             ) : (
               <Badge variant="destructive" className="mt-4">Out of Stock</Badge>
             )}
@@ -178,8 +211,8 @@ function ProductPage() {
                   +
                 </button>
               </div>
-              <Button onClick={handleAddToCart} className="flex-1" size="lg" disabled={product.stock <= 0}>
-                {added ? "Added to Cart!" : product.stock <= 0 ? "Unavailable" : "Add to Cart"}
+              <Button onClick={handleAddToCart} className="flex-1" size="lg" disabled={currentStock <= 0}>
+                {added ? "Added to Cart!" : currentStock <= 0 ? "Unavailable" : "Add to Cart"}
               </Button>
             </div>
           </div>

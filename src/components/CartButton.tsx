@@ -54,6 +54,9 @@ export function CartButton() {
                       <Link to="/products/$slug" params={{ slug: item.slug }} className="font-medium hover:text-primary" onClick={() => setOpen(false)}>
                         {item.name}
                       </Link>
+                      {item.variant_name && item.variant_name !== "Default Title" && (
+                        <p className="text-xs text-muted-foreground">{item.variant_name}</p>
+                      )}
                       <p className="text-sm text-muted-foreground">${item.price.toFixed(2)}</p>
                       <div className="mt-2 flex items-center gap-2">
                         <button
