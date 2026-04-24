@@ -1,0 +1,29 @@
+[
+  {
+    "title": "Probiotic Fermented Sauerkraut",
+    "slug": "probiotic-fermented-sauerkraut",
+    "excerpt": "Learn how to make traditional probiotic-rich fermented sauerkraut at home for optimal gut health.",
+    "content": "<p>Sauerkraut is one of the best sources of probiotics. This traditional recipe uses only organic cabbage and sea salt to create a powerful digestive aid.</p><p><iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/D-Zp_R69L3Q\" title=\"YouTube video player\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" allowfullscreen></iframe></p>",
+    "image_url": "https://img.youtube.com/vi/D-Zp_R69L3Q/maxresdefault.jpg",
+    "prep_time": 20,
+    "cook_time": 0
+  },
+  {
+    "title": "Quick Nut Butter Milk",
+    "slug": "quick-nut-butter-milk",
+    "excerpt": "A fast and easy way to make creamy nut milk using organic nut butter without the need for straining.",
+    "content": "<p>Need nut milk in a hurry? Simply blend organic nut butter with filtered water for a creamy, nutrient-dense milk in seconds.</p><p><iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/F1824151754\" title=\"YouTube video player\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" allowfullscreen></iframe></p>",
+    "image_url": "https://img.youtube.com/vi/F1824151754/maxresdefault.jpg",
+    "prep_time": 5,
+    "cook_time": 0
+  },
+  {
+    "title": "Paleo Stove Top Pizza",
+    "slug": "paleo-stove-top-pizza",
+    "excerpt": "A delicious grain-free pizza that can be made quickly on the stove top using whole food ingredients.",
+    "content": "<p>This Paleo-friendly pizza uses a grain-free base and fresh toppings. Perfect for a quick, healthy meal without the need for an oven.</p><p><iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/N1824151812\" title=\"YouTube video player\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" allowfullscreen></iframe></p>",
+    "image_url": "https://img.youtube.com/vi/N1824151812/maxresdefault.jpg",
+    "prep_time": 15,
+    "cook_time": 10
+  }
+]

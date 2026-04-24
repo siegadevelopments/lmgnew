@@ -141,6 +141,11 @@ async function migrate() {
   const allProductsToInsert = [];
 
   for (const v of vendors) {
+    // Skip Daniella Hogarth as she has been migrated from a better source (WIX)
+    if (v.store_name?.includes("Daniella Hogarth") || v.id === 13 || v.id === "13") {
+      console.log(`Skipping Daniella Hogarth (WP ID: ${v.id}) - already migrated from WIX.`);
+      continue;
+    }
     const supabaseVendorId = await getOrCreateVendor(v);
     if (!supabaseVendorId) continue;
 
@@ -160,19 +165,33 @@ async function migrate() {
       const categories = (p.categories || []).map(c => decodeHtml(c.name));
       const tags = (p.tags || []).map(t => decodeHtml(t.name));
 
+      const images = (p.images || []).map(img => img.src);
+      const price = parseFloat(p.price) || 0;
+      const slug = p.slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
       allProductsToInsert.push({
         title,
-        slug: p.slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        slug,
         content,
         excerpt,
-        price: parseFloat(p.price) || 0,
-        image_url: p.images && p.images.length > 0 ? p.images[0].src : "",
+        price,
+        image_url: images[0] || "",
+        images: images,
         status: "published",
         vendor_id: supabaseVendorId,
         brand: brand,
         category: categories[0] || null,
         tags: tags,
-        stock: 50
+        stock: 50,
+        variants: [
+          {
+            id: p.id,
+            title: "Default",
+            price: price,
+            sku: slug.substring(0, 20).toUpperCase(),
+            available: true
+          }
+        ]
       });
     }
   }
