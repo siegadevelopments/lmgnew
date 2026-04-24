@@ -3,6 +3,7 @@ import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import MuxPlayer from "@mux/mux-player-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/ProductCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageCircle, Plus, Star, Users, Package, UserPlus, Clock, Calendar } from "lucide-react";
@@ -76,7 +77,7 @@ function VendorPage() {
                     <img src={vendor.store_logo_url} className="h-16 w-16 rounded-full border-2 border-white/20 object-cover" />
                   ) : (
                     <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-2xl font-bold border-2 border-white/20">
-                      {vendor.store_name.charAt(0)}
+                      {(vendor.store_name || "V").charAt(0)}
                     </div>
                   )}
                   <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-primary px-2 py-0.5 text-[8px] font-bold rounded-sm shadow-sm whitespace-nowrap">
@@ -84,7 +85,7 @@ function VendorPage() {
                   </div>
                 </div>
                 <div>
-                  <h1 className="text-lg font-bold truncate max-w-[180px]">{vendor.store_name}</h1>
+                  <h1 className="text-lg font-bold truncate max-w-[180px]">{vendor.store_name || "Vendor"}</h1>
                   <p className="text-[10px] text-white/60">Active 37 minutes ago</p>
                 </div>
               </div>
