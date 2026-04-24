@@ -64,7 +64,7 @@ async function fetchAll(url) {
 
 async function getOrCreateVendor(store) {
   const name = store.store_name || store.name;
-  if (!name || name === "E-training Group" || name === "Ernest Joseph Siega") return null;
+  if (!name || name === "E-training Group" || name === "Ernest Joseph Siega" || name === "A Better") return null;
 
   const email = (store.show_email && store.email) ? store.email : `${name.toLowerCase().replace(/[^a-z0-9]+/g, '')}@lifestylemedicinegateway.com`;
 
