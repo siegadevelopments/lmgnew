@@ -1,17 +1,17 @@
 [
   {
     "title": "Everyday Aura Spray",
-    "price": 65.0,
-    "regular_price": 80.0,
+    "price": 65,
+    "regular_price": 80,
     "description": "$65 includes the full set of everyday aura sprays. Includes blends for Grounding & Protection, Balance & Self Love, Clarity & Health, and Relaxation & Peace. Ingredients: Essential oils, Rose Quartz Crystal, Universal Healing Energy & Antibacterial Colloidal Silver.",
-    "image_url": "https://static.wixstatic.com/media/cc5c9f_d3b0e1b10a2f4a4eb8a614740e70a2f4~mv2.jpg/v1/fill/w_411,h_581,al_c,q_80,usm_0.66_1.00_0.01,enc_auto/cc5c9f_d3b0e1b10a2f4a4eb8a614740e70a2f4~mv2.jpg",
+    "image_url": "https://static.wixstatic.com/media/cc5c9f_c6b5586554dc432697455c84a04c036a~mv2.png/v1/fill/w_940,h_788,al_c/cc5c9f_c6b5586554dc432697455c84a04c036a~mv2.png",
     "slug": "everyday-aura-spray"
   },
   {
     "title": "SuperBinder - Heavy Metal Detox",
-    "price": 45.0,
+    "price": 45,
     "description": "PREMIUM BLEND OF TOXIN BINDERS & DIETARY FIBRE. GMO Free, Vegan, Gluten Free. Helps absorb unwanted toxins, heavy metals, herbicides, pesticides, and more from the GI tract.",
-    "image_url": "https://static.wixstatic.com/media/cc5c9f_4e5d7d3d7d7d4d7d8d7d7d7d7d7d7d7d~mv2.jpg",
+    "image_url": "https://static.wixstatic.com/media/cc5c9f_d0a8ac0f86b447c4b9126c2fa6769d06~mv2.png/v1/fill/w_674,h_1014,al_c/cc5c9f_d0a8ac0f86b447c4b9126c2fa6769d06~mv2.png",
     "slug": "superbinder-heavy-metal-detox"
   },
   {
@@ -23,179 +23,179 @@
   },
   {
     "title": "ParaTox - Parasite and Worm Cleanse",
-    "price": 70.0,
+    "price": 70,
     "description": "Natural parasite and worm cleanse to support digestive health and detoxification.",
-    "image_url": "https://static.wixstatic.com/media/cc5c9f_b1c2d3e4f5g6h7i8j9k0~mv2.jpg",
+    "image_url": "https://static.wixstatic.com/media/cc5c9f_eabf3cf3b2f54fdda21b89cf72125e9e~mv2.png/v1/fill/w_730,h_1204,al_c/cc5c9f_eabf3cf3b2f54fdda21b89cf72125e9e~mv2.png",
     "slug": "paratox-parasite-and-worm-cleanse"
   },
   {
     "title": "Qenda Everyday Fibre and Bowel Maintenance",
-    "price": 100.0,
+    "price": 100,
     "description": "High-quality dietary fibre for daily bowel maintenance and digestive support.",
-    "image_url": "https://static.wixstatic.com/media/cc5c9f_c1d2e3f4g5h6i7j8k9l0~mv2.jpg",
+    "image_url": "https://static.wixstatic.com/media/cc5c9f_fc5b82a015ef4691a451cde0fc86b509~mv2.png/v1/fill/w_624,h_882,al_c/cc5c9f_fc5b82a015ef4691a451cde0fc86b509~mv2.png",
     "slug": "qenda-everyday-fibre-and-bowel-maintenance"
   },
   {
     "title": "Qenda Ultimate Fibre - Bowel & Parasite Cleanse",
-    "price": 110.0,
+    "price": 110,
     "description": "Comprehensive bowel and parasite cleanse formula for deep detoxification.",
-    "image_url": "https://static.wixstatic.com/media/cc5c9f_d1e2f3g4h5i6j7k8l9m0~mv2.jpg",
+    "image_url": "https://static.wixstatic.com/media/cc5c9f_f877fe905e5a4ccdb3e4869d5df775e3~mv2.png/v1/fill/w_936,h_1286,al_c/cc5c9f_f877fe905e5a4ccdb3e4869d5df775e3~mv2.png",
     "slug": "qenda-ultimate-fibre-bowel-parasite-cleanse"
   },
   {
     "title": "Yoni Steam Bath Tea",
-    "price": 10.0,
+    "price": 10,
     "description": "Traditional herbal blend for Yoni steaming to support reproductive health.",
-    "image_url": "https://static.wixstatic.com/media/cc5c9f_e1f2g3h4i5j6k7l8m9n0~mv2.jpg",
+    "image_url": "https://static.wixstatic.com/media/cc5c9f_f0e03e12d3d04fc9a6f9d5e3cb6a038c~mv2.png/v1/fill/w_718,h_606,al_c/cc5c9f_f0e03e12d3d04fc9a6f9d5e3cb6a038c~mv2.png",
     "slug": "yoni-steam-bath-tea"
   },
   {
     "title": "Beef Bone Broth",
-    "price": 10.0,
+    "price": 10,
     "description": "Nutrient-rich beef bone broth for gut health and immune support.",
-    "image_url": "https://static.wixstatic.com/media/cc5c9f_f1g2h3i4j5k6l7m8n9o0~mv2.jpg",
+    "image_url": "https://static.wixstatic.com/media/cc5c9f_1c8c1a5cbc254db991061bca5f2ecd3c~mv2.png/v1/fill/w_595,h_398,al_c/cc5c9f_1c8c1a5cbc254db991061bca5f2ecd3c~mv2.png",
     "slug": "beef-bone-broth"
   },
   {
     "title": "Kombucha",
-    "price": 5.0,
+    "price": 5,
     "description": "Fresh, probiotic-rich kombucha in various natural flavours.",
-    "image_url": "https://static.wixstatic.com/media/cc5c9f_g1h2i3j4k5l6m7n8o9p0~mv2.jpg",
+    "image_url": "https://static.wixstatic.com/media/cc5c9f_80ec8ceb56164da8adad66ab82baba39~mv2.jpg/v1/fill/w_844,h_1500,al_c,q_85/cc5c9f_80ec8ceb56164da8adad66ab82baba39~mv2.jpg",
     "slug": "kombucha"
   },
   {
     "title": "Kombucha Starter",
-    "price": 20.0,
+    "price": 20,
     "description": "Everything you need to start brewing your own probiotic-rich kombucha at home.",
     "image_url": "https://static.wixstatic.com/media/cc5c9f_h1i2j3k4l5m6n7o8p9q0~mv2.jpg",
     "slug": "kombucha-starter"
   },
   {
     "title": "Colloidal Silver",
-    "price": 25.0,
+    "price": 25,
     "description": "High-quality antibacterial colloidal silver for multiple wellness uses.",
     "image_url": "https://static.wixstatic.com/media/cc5c9f_i1j2k3l4m5n6o7p8q9r0~mv2.jpg",
     "slug": "colloidal-silver"
   },
   {
     "title": "Magnesium Oil Spray",
-    "price": 10.0,
+    "price": 10,
     "description": "Pure magnesium oil spray for transdermal magnesium supplementation and muscle relaxation.",
-    "image_url": "https://static.wixstatic.com/media/cc5c9f_j1k2l3m4n5o6p7q8r9s0~mv2.jpg",
+    "image_url": "https://static.wixstatic.com/media/cc5c9f_d71e117240af451b980789d9b6bc0272~mv2.jpg/v1/fill/w_840,h_1197,al_c,q_85/cc5c9f_d71e117240af451b980789d9b6bc0272~mv2.jpg",
     "slug": "magnesium-oil-spray"
   },
   {
     "title": "Gift Certificate",
-    "price": 175.0,
+    "price": 175,
     "description": "Gift the experience of healing and wellness with a Daniella Hogarth gift certificate.",
-    "image_url": "https://static.wixstatic.com/media/cc5c9f_k1l2m3n4o5p6q7r8s9t0~mv2.jpg",
+    "image_url": "https://static.wixstatic.com/media/cc5c9f_f09093d0356d4ebca5ecf053b339ddf7~mv2.jpg/v1/fill/w_853,h_1280,al_c,q_85/cc5c9f_f09093d0356d4ebca5ecf053b339ddf7~mv2.jpg",
     "slug": "gift-certificate"
   },
   {
     "title": "Reusable Menstrual Pads Cloth Sanitary Panty Liners",
-    "price": 5.0,
-    "regular_price": 10.0,
+    "price": 5,
+    "regular_price": 10,
     "description": "Eco-friendly, reusable cloth menstrual pads for a sustainable period.",
-    "image_url": "https://static.wixstatic.com/media/cc5c9f_l1m2n3o4p5q6r7s8t9u0~mv2.jpg",
+    "image_url": "https://static.wixstatic.com/media/cc5c9f_1de5952d827c407dac794e27b0fa15a5~mv2.jpeg/v1/fill/w_1536,h_2048,al_c,q_85/cc5c9f_1de5952d827c407dac794e27b0fa15a5~mv2.jpeg",
     "slug": "reusable-menstrual-pads-cloth-sanitary-panty-liners"
   },
   {
     "title": "Reusable Silicon Menstrual Cups",
-    "price": 40.0,
+    "price": 40,
     "description": "High-quality medical-grade silicon menstrual cups for reliable and eco-friendly protection.",
-    "image_url": "https://static.wixstatic.com/media/cc5c9f_m1n2o3p4q5r6s7t8u9v0~mv2.jpg",
+    "image_url": "https://static.wixstatic.com/media/cc5c9f_80ffa773e87d48ca8a856aaaaf1de264~mv2.jpeg/v1/fill/w_1125,h_1012,al_c,q_85/cc5c9f_80ffa773e87d48ca8a856aaaaf1de264~mv2.jpeg",
     "slug": "reusable-silicon-menstrual-cups"
   },
   {
     "title": "eBook PDF Edition",
-    "price": 12.0,
-    "regular_price": 17.0,
+    "price": 12,
+    "regular_price": 17,
     "description": "Digital edition of Daniella's wellness guide in PDF format.",
     "image_url": "https://static.wixstatic.com/media/cc5c9f_n1o2p3q4r5s6t7u8v9w0~mv2.jpg",
     "slug": "ebook-pdf-edition"
   },
   {
     "title": "ULTIMATE CLEANSE - 2 Products",
-    "price": 155.0,
-    "regular_price": 235.0,
+    "price": 155,
+    "regular_price": 235,
     "description": "A powerful combination of two top-tier cleansing products for a full-body detox.",
-    "image_url": "https://static.wixstatic.com/media/cc5c9f_o1p2q3r4s5t6u7v8w9x0~mv2.jpg",
+    "image_url": "https://static.wixstatic.com/media/cc5c9f_fcb9bc6731d44353afd26f3833823552~mv2.jpg/v1/fill/w_437,h_252,al_c,q_85/cc5c9f_fcb9bc6731d44353afd26f3833823552~mv2.jpg",
     "slug": "ultimate-cleanse"
   },
   {
     "title": "Mind Your Gut Health",
-    "price": 25.0,
-    "regular_price": 35.0,
+    "price": 25,
+    "regular_price": 35,
     "description": "An online course focused on restoring gut health through natural methods.",
-    "image_url": "https://static.wixstatic.com/media/cc5c9f_p1q2r3s4t5u6v7w8x9y0~mv2.jpg",
+    "image_url": "https://static.wixstatic.com/media/cc5c9f_e056d08f507d45fe8eff1ec13700ea08~mv2.png/v1/fill/w_411,h_581,al_c/cc5c9f_e056d08f507d45fe8eff1ec13700ea08~mv2.png",
     "slug": "mind-your-gut-health"
   },
   {
     "title": "Organic Face Cream 120ml",
-    "price": 50.0,
+    "price": 50,
     "description": "Luxurious organic face cream made with pure, skin-loving ingredients.",
-    "image_url": "https://static.wixstatic.com/media/cc5c9f_q1r2s3t4u5v6w7x8y9z0~mv2.jpg",
+    "image_url": "https://static.wixstatic.com/media/cc5c9f_91922b0c369f46e091bf0e1458fd0c6e~mv2.jpeg/v1/fill/w_3024,h_3360,al_c,q_85/cc5c9f_91922b0c369f46e091bf0e1458fd0c6e~mv2.jpeg",
     "slug": "organic-face-cream"
   },
   {
     "title": "Organic Deodorant Aluminium Free",
-    "price": 25.0,
+    "price": 25,
     "description": "Safe and effective aluminium-free deodorant made with organic ingredients.",
-    "image_url": "https://static.wixstatic.com/media/cc5c9f_r1s2t3u4v5w6x7y8z9a0~mv2.jpg",
+    "image_url": "https://static.wixstatic.com/media/cc5c9f_e6a6732f15c14381b7b0b58876430bef~mv2.jpeg/v1/fill/w_2951,h_3333,al_c,q_85/cc5c9f_e6a6732f15c14381b7b0b58876430bef~mv2.jpeg",
     "slug": "organic-aluminium-free-deodorant"
   },
   {
     "title": "Organic Soap - Made from organic grass fed Tallow",
-    "price": 10.0,
+    "price": 10,
     "description": "Traditional tallow soap made from organic, grass-fed sources for deep skin nourishment.",
-    "image_url": "https://static.wixstatic.com/media/cc5c9f_s1t2u3v4w5x6y7z8a9b0~mv2.jpg",
+    "image_url": "https://static.wixstatic.com/media/cc5c9f_76fc9f77182346a1b62f05ea39e9a123~mv2.jpeg/v1/fill/w_3024,h_4032,al_c,q_85/cc5c9f_76fc9f77182346a1b62f05ea39e9a123~mv2.jpeg",
     "slug": "organic-soap-made-from-organic-grass-fed-tallow"
   },
   {
     "title": "Ceremonial Kava",
-    "price": 25.0,
+    "price": 25,
     "description": "Premium ceremonial-grade kava for relaxation and traditional rituals.",
-    "image_url": "https://static.wixstatic.com/media/cc5c9f_t1u2v3w4x5y6z7a8b9c0~mv2.jpg",
+    "image_url": "https://static.wixstatic.com/media/cc5c9f_9c912e92fc404f8393e6d0e856eaf760~mv2.jpg/v1/fill/w_1720,h_2068,al_c,q_85/cc5c9f_9c912e92fc404f8393e6d0e856eaf760~mv2.jpg",
     "slug": "ceremonial-kava"
   },
   {
     "title": "Raw Organic Ceremonial Cacao Block- 600g",
-    "price": 120.0,
+    "price": 120,
     "description": "Pure, raw ceremonial cacao block for spiritual and wellness rituals.",
-    "image_url": "https://static.wixstatic.com/media/cc5c9f_u1v2w3x4y5z6a7b8c9d0~mv2.jpg",
+    "image_url": "https://static.wixstatic.com/media/cc5c9f_fb19ff7b76104a449ae61abdf48b3352~mv2.png/v1/fill/w_4280,h_3676,al_c/cc5c9f_fb19ff7b76104a449ae61abdf48b3352~mv2.png",
     "slug": "raw-organic-ceremonial-cacao-1kg"
   },
   {
     "title": "Turmeric Latte`100g",
-    "price": 25.0,
+    "price": 25,
     "description": "Warm and grounding turmeric latte blend with potent healing spices.",
     "image_url": "https://static.wixstatic.com/media/cc5c9f_v1w2x3y4z5a6b7c8d9e0~mv2.jpg",
     "slug": "dirty-turmeric-latte"
   },
   {
     "title": "Organic Castor Oil 300ml",
-    "price": 20.0,
+    "price": 20,
     "description": "Pure, cold-pressed organic castor oil for skin, hair, and digestive health.",
-    "image_url": "https://static.wixstatic.com/media/cc5c9f_w1x2y3z4a5b6c7d8e9f0~mv2.jpg",
+    "image_url": "https://static.wixstatic.com/media/cc5c9f_b5ba438a9e544ca6836fe24382f17ccf~mv2.jpg/v1/fill/w_2250,h_2526,al_c,q_85/cc5c9f_b5ba438a9e544ca6836fe24382f17ccf~mv2.jpg",
     "slug": "organic-castor-oil"
   },
   {
     "title": "School & Work Roll Ons - All Ages",
-    "price": 55.0,
+    "price": 55,
     "description": "A set of essential oil roll-ons designed to support focus and calm during the day.",
-    "image_url": "https://static.wixstatic.com/media/cc5c9f_x1y2z3a4b5c6d7e8f9g0~mv2.jpg",
+    "image_url": "https://static.wixstatic.com/media/cc5c9f_8b5433114f0a4c4d86d644ab9515b425~mv2.jpg/v1/fill/w_1964,h_2049,al_c,q_85/cc5c9f_8b5433114f0a4c4d86d644ab9515b425~mv2.jpg",
     "slug": "everyday-aromareiki-roll-ons-all-ages"
   },
   {
     "title": "Cleanse, Balance & Protect Aura Spray (Course/Ebook Bundle)",
-    "price": 60.0,
+    "price": 60,
     "description": "Comprehensive bundle including the mind-gut health course and digital guide.",
     "image_url": "https://static.wixstatic.com/media/cc5c9f_y1z2a3b4c5d6e7f8g9h0~mv2.jpg",
     "slug": "online-course-ebook-bundle-mind-your-gut-health"
   },
   {
     "title": "Sensual & Intimate Roll On Set x 3",
-    "price": 55.0,
+    "price": 55,
     "description": "Unisex blends made from essential oils and rose quartz crystals to enhance connection and intimacy. Includes Sensual Connection, Sacred Love, and Intimate Alignment blends.",
     "image_url": "https://static.wixstatic.com/media/cc5c9f_z1a2b3c4d5e6f7g8h9i0~mv2.jpg",
     "slug": "sensual-intimate-roll-on-set-x-3"

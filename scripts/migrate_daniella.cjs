@@ -9,6 +9,18 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const VENDOR_ID = "f575958c-804b-4a51-ba44-a923275fe53d"; // Daniella Hogarth
 
+function fixWixUrl(url) {
+  if (!url) return null;
+  // Wix raw media URLs return 403 when hotlinked. 
+  // We must use the /v1/fill/ transformation service to get a working public URL.
+  if (url.includes('static.wixstatic.com/media/') && !url.includes('/v1/fill/')) {
+    const parts = url.split('/');
+    const id = parts[parts.length - 1];
+    return `https://static.wixstatic.com/media/${id}/v1/fill/w_800,h_800,al_c,q_85/${id}`;
+  }
+  return url;
+}
+
 async function migrate() {
   const products = JSON.parse(fs.readFileSync('scripts/daniella_raw.json', 'utf8'));
 
@@ -27,6 +39,7 @@ async function migrate() {
 
   const toInsert = products.map(p => {
     const slug = p.slug || p.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const imageUrl = fixWixUrl(p.image_url);
     return {
       vendor_id: VENDOR_ID,
       title: p.title,
@@ -34,8 +47,8 @@ async function migrate() {
       excerpt: p.description.substring(0, 150) + '...',
       content: p.description,
       price: p.price,
-      image_url: p.image_url || null,
-      images: p.image_url ? [p.image_url] : [],
+      image_url: imageUrl,
+      images: imageUrl ? [imageUrl] : [],
       stock: 100,
       status: 'published',
       brand: 'Daniella Hogarth',
