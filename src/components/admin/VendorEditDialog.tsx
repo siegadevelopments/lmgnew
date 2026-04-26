@@ -92,9 +92,12 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
     setLoading(true);
 
     try {
+      // Separate store data from stream data
+      const { mux_stream_key, mux_playback_id, ...storeData } = formData;
+
       const { error } = await (supabase.from("vendor_profiles") as any)
         .update({
-          ...formData,
+          ...storeData,
           updated_at: new Date().toISOString(),
         })
         .eq("id", vendor.id);
@@ -102,7 +105,6 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
       if (error) throw error;
 
       // Update or insert stream info
-      const { mux_stream_key, mux_playback_id } = formData as any;
       if (mux_stream_key || mux_playback_id) {
         await (supabase
           .from("vendor_streams") as any)
