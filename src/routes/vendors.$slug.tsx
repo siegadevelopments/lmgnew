@@ -19,7 +19,7 @@ export const Route = createFileRoute("/vendors/$slug")({
     // For vendors, we are currently passing ID in place of slug
     const { data: vendor } = await supabase
       .from("vendor_profiles")
-      .select("*")
+      .select("id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, created_at, updated_at")
       .eq("id", slug)
       .single();
     if (!vendor) throw notFound();
