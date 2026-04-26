@@ -80,29 +80,34 @@ export function ProductCard({ product, className }: ProductCardProps) {
           className
         )}
       >
-        <div className="relative aspect-square overflow-hidden bg-muted">
-          <AnimatePresence>
-            {isAdding && (
-              <motion.div
-                initial={{ scale: 1, opacity: 1, x: 0, y: 0 }}
-                animate={{ 
-                  scale: 0.2, 
-                  opacity: 0, 
-                  x: 400, // Move towards top right
-                  y: -800,
-                  rotate: 360
-                }}
-                transition={{ duration: 0.8, ease: "easeInOut" }}
-                className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none"
-              >
+        <AnimatePresence>
+          {isAdding && (
+            <motion.div
+              initial={{ scale: 1, opacity: 1, x: 0, y: 0 }}
+              animate={{ 
+                scale: 0.1, 
+                opacity: 0, 
+                x: 800, // Move towards top right
+                y: -1000,
+                rotate: 720
+              }}
+              transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+              className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none"
+            >
+              <div className="w-40 h-40">
                 {product.image_url ? (
-                  <img src={product.image_url} className="h-full w-full object-cover rounded-xl shadow-2xl" />
+                  <img src={product.image_url} className="h-full w-full object-cover rounded-xl shadow-2xl ring-4 ring-primary" />
                 ) : (
-                  <ShoppingCart className="h-12 w-12 text-primary" />
+                  <div className="bg-primary p-8 rounded-full shadow-2xl">
+                    <ShoppingCart className="h-20 w-20 text-white" />
+                  </div>
                 )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <div className="relative aspect-square overflow-hidden bg-muted">
 
           {product.image_url ? (
             <motion.img

@@ -51,15 +51,15 @@ function RootComponent() {
         <CartProvider>
           <div className="flex flex-col min-h-screen bg-background text-foreground">
             <Header />
-            <main className="flex-grow relative overflow-hidden">
-              <AnimatePresence mode="wait">
+            <main className="flex-grow relative">
+              <AnimatePresence mode="wait" initial={false}>
                 <motion.div
                   key={location.pathname}
-                  initial={{ opacity: 0, x: "100%" }}
+                  initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: "-100%" }}
-                  transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                  className="w-full"
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="w-full h-full"
                 >
                   <Outlet />
                 </motion.div>
