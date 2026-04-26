@@ -98,6 +98,8 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
     }
   }, [messages]);
 
+  const [isTyping, setIsTyping] = useState(false);
+
   const sendMessage = useMutation({
     mutationFn: async (content: string) => {
       if (!user) throw new Error("Login required");
@@ -131,6 +133,37 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
         .from("chat_conversations" as any)
         .update({ last_message_at: new Date().toISOString() })
         .eq("id", currentConvId);
+
+      // --- AI CHATBOT LOGIC ---
+      const { data: vendorProfile } = await supabase
+        .from("vendor_profiles")
+        .select("ai_enabled, ai_instructions")
+        .eq("id", vendorId)
+        .single();
+
+      if (vendorProfile?.ai_enabled) {
+        setIsTyping(true);
+        // Simulate thinking time
+        setTimeout(async () => {
+          const botResponse = `Hello! I'm ${vendorName}'s assistant. ${vendorProfile.ai_instructions || "How can I help you today?"}`;
+          
+          await supabase
+            .from("chat_messages" as any)
+            .insert({
+              conversation_id: currentConvId,
+              sender_id: vendorId, // Send as the vendor
+              content: botResponse,
+            });
+            
+          await supabase
+            .from("chat_conversations" as any)
+            .update({ last_message_at: new Date().toISOString() })
+            .eq("id", currentConvId);
+            
+          queryClient.invalidateQueries({ queryKey: ["chat_messages", currentConvId] });
+          setIsTyping(false);
+        }, 1500);
+      }
     },
     onSuccess: () => {
       setNewMessage("");
@@ -175,7 +208,18 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
                 </div>
               );
             })}
-            {messages.length === 0 && !isLoadingMessages && (
+            {isTyping && (
+              <div className="flex flex-col items-start">
+                <div className="bg-white border border-border rounded-2xl rounded-tl-none px-4 py-2 shadow-sm">
+                  <div className="flex gap-1">
+                    <motion.span animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 1 }} className="w-1 h-1 bg-muted-foreground rounded-full" />
+                    <motion.span animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="w-1 h-1 bg-muted-foreground rounded-full" />
+                    <motion.span animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="w-1 h-1 bg-muted-foreground rounded-full" />
+                  </div>
+                </div>
+              </div>
+            )}
+            {messages.length === 0 && !isLoadingMessages && !isTyping && (
               <div className="text-center py-8">
                 <div className="bg-primary/10 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
                   <MessageCircle className="h-6 w-6 text-primary" />

@@ -120,7 +120,7 @@ function VendorDashboardPage() {
     if (!user) return;
     setLoading(true);
     try {
-      const { data: vendorData } = await supabase.from("vendor_profiles").select("id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, created_at, updated_at").eq("id", user.id).single();
+      const { data: vendorData } = await supabase.from("vendor_profiles").select("id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, created_at, updated_at, ai_enabled, ai_instructions").eq("id", user.id).single();
       if (vendorData) {
         setProfile(vendorData as VendorProfile);
         const [prodRes, vidRes, artRes, orderRes] = await Promise.all([
