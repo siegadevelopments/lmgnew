@@ -1,4 +1,4 @@
-import { Outlet, Link, createRootRouteWithContext } from "@tanstack/react-router";
+import { Outlet, Link, createRootRouteWithContext, useLocation } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -6,6 +6,7 @@ import { BackToTop } from "@/components/BackToTop";
 import { CartProvider } from "@/hooks/use-cart";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Toaster } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 
 function NotFoundComponent() {
   return (
@@ -36,14 +37,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const location = useLocation();
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <CartProvider>
           <div className="flex flex-col min-h-screen bg-background text-foreground">
             <Header />
-            <main className="flex-grow">
-              <Outlet />
+            <main className="flex-grow relative overflow-hidden">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={location.pathname}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                >
+                  <Outlet />
+                </motion.div>
+              </AnimatePresence>
             </main>
             <Footer />
             <BackToTop />
