@@ -92,28 +92,43 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
     setLoading(true);
 
     try {
-      // Separate store data from stream data
-      const { mux_stream_key, mux_playback_id, ...storeData } = formData;
+      // Explicitly pick columns to avoid any "column not found" or schema cache issues
+      const updateData = {
+        store_name: formData.store_name,
+        store_description: formData.store_description,
+        store_logo_url: formData.store_logo_url,
+        store_banner_url: formData.store_banner_url,
+        website: formData.website,
+        instagram: formData.instagram,
+        facebook: formData.facebook,
+        twitter: formData.twitter,
+        updated_at: new Date().toISOString(),
+      };
 
-      const { error } = await (supabase.from("vendor_profiles") as any)
-        .update({
-          ...storeData,
-          updated_at: new Date().toISOString(),
-        })
+      const { error: profileError } = await supabase
+        .from("vendor_profiles")
+        .update(updateData as any)
         .eq("id", vendor.id);
 
-      if (error) throw error;
+      if (profileError) {
+        console.error("Profile update error:", profileError);
+        throw new Error(`Profile update failed: ${profileError.message}`);
+      }
 
       // Update or insert stream info
-      if (mux_stream_key || mux_playback_id) {
-        await (supabase
+      if (formData.mux_stream_key || formData.mux_playback_id) {
+        const { error: streamError } = await (supabase
           .from("vendor_streams") as any)
           .upsert({
             vendor_id: vendor.id,
-            mux_stream_key,
-            mux_playback_id,
+            mux_stream_key: formData.mux_stream_key,
+            mux_playback_id: formData.mux_playback_id,
             updated_at: new Date().toISOString()
           });
+        
+        if (streamError) {
+          console.error("Stream update error:", streamError);
+        }
       }
 
       toast.success("Vendor updated successfully");
