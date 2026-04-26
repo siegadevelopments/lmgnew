@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import heroBg from "@/assets/hero-bg.jpg";
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 
 export function HeroSection() {
   const navigate = useNavigate();
@@ -19,7 +19,7 @@ export function HeroSection() {
     navigate({ to: "/products", search: { q: "", category, page: 1 } });
   };
 
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
@@ -30,12 +30,12 @@ export function HeroSection() {
     },
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: { y: 20, opacity: 0 },
     visible: {
       y: 0,
       opacity: 1,
-      transition: { duration: 0.5, ease: "easeOut" },
+      transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
     },
   };
 
@@ -44,7 +44,7 @@ export function HeroSection() {
       <motion.img
         initial={{ scale: 1.1 }}
         animate={{ scale: 1 }}
-        transition={{ duration: 1.5, ease: "easeOut" }}
+        transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
         src={heroBg}
         alt="Wellness pathway through lush greenery"
         width={1920}
