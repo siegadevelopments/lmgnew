@@ -108,7 +108,9 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
       const { error: profileError } = await supabase
         .from("vendor_profiles")
         .update(updateData as any)
-        .eq("id", vendor.id);
+        .eq("id", vendor.id)
+        .select("id")
+        .single();
 
       if (profileError) {
         console.error("Profile update error:", profileError);

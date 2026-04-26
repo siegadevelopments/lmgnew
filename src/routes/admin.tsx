@@ -136,7 +136,7 @@ function AdminPage() {
           supabase.from("contact_messages").select("*").order("created_at", { ascending: false }).limit(50),
           supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(100),
           supabase.from("newsletter_subscribers").select("id", { count: "exact", head: true }),
-          supabase.from("vendor_profiles").select("*").order("created_at", { ascending: false }),
+          supabase.from("vendor_profiles").select("id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, created_at, updated_at").order("created_at", { ascending: false }),
           supabase.from("products").select("*, vendor_profiles(store_name)").order("created_at", { ascending: false }).limit(100),
         ]);
 
@@ -785,7 +785,7 @@ function AdminPage() {
             setEditingVendor(null);
           }}
           onSuccess={() => {
-            supabase.from("vendor_profiles").select("*").order("created_at", { ascending: false }).then(({ data }) => {
+            supabase.from("vendor_profiles").select("id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, created_at, updated_at").order("created_at", { ascending: false }).then(({ data }) => {
                if (data) setVendors(data);
             });
           }}
