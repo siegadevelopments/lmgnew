@@ -33,29 +33,27 @@ function VendorsPage() {
 
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
 
-        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="mt-12 grid grid-cols-2 gap-12 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {vendors.map((vendor) => (
             <Link
               key={vendor.id}
               to="/vendors/$slug"
               params={{ slug: vendor.id }}
-              className="group flex flex-col items-center rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:shadow-card hover:-translate-y-1"
+              className="group flex flex-col items-center gap-4 transition-all duration-300 hover:-translate-y-2"
             >
-              {vendor.store_logo_url ? (
-                <img src={vendor.store_logo_url} className="h-24 w-24 rounded-full object-cover" />
-              ) : (
-                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-wellness-muted text-3xl font-bold text-primary">
-                  {vendor.store_name.charAt(0)}
-                </div>
-              )}
-              <h3 className="mt-5 text-lg font-bold text-foreground group-hover:text-primary transition-colors text-center">
+              <div className="relative">
+                <div className="absolute -inset-3 rounded-full bg-primary/5 opacity-0 transition-opacity group-hover:opacity-100" />
+                {vendor.store_logo_url ? (
+                  <img src={vendor.store_logo_url} className="h-28 w-28 rounded-full object-cover shadow-sm transition-transform group-hover:scale-110" />
+                ) : (
+                  <div className="flex h-28 w-28 items-center justify-center rounded-full bg-wellness-muted text-4xl font-bold text-primary shadow-sm">
+                    {vendor.store_name.charAt(0)}
+                  </div>
+                )}
+              </div>
+              <h3 className="text-center text-lg font-bold text-foreground group-hover:text-primary transition-colors px-2">
                 {vendor.store_name}
               </h3>
-              {vendor.store_description && (
-                <p className="mt-2 text-sm text-muted-foreground text-center line-clamp-2">
-                  {vendor.store_description}
-                </p>
-              )}
             </Link>
           ))}
         </div>

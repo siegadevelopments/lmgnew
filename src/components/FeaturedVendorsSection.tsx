@@ -25,37 +25,34 @@ export function FeaturedVendorsSection() {
           </Link>
         </div>
 
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-10 grid grid-cols-2 gap-8 sm:grid-cols-4 lg:grid-cols-6">
           {isLoading
-            ? Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="rounded-xl border border-border bg-card p-6 shadow-soft">
-                  <Skeleton className="h-14 w-14 rounded-xl" />
-                  <Skeleton className="mt-4 h-5 w-3/4" />
-                  <Skeleton className="mt-2 h-3 w-1/2" />
+            ? Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex flex-col items-center gap-4">
+                  <Skeleton className="h-20 w-20 rounded-full" />
+                  <Skeleton className="h-4 w-20" />
                 </div>
               ))
-            : vendors?.slice(0, 4).map((vendor) => (
+            : vendors?.slice(0, 6).map((vendor) => (
                 <Link
                   key={vendor.id}
                   to="/vendors/$slug"
-                  params={{ slug: vendor.id }} // Using ID since vendors don't have slug yet
-                  className="group cursor-pointer rounded-xl border border-border bg-card p-6 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-card"
+                  params={{ slug: vendor.id }}
+                  className="group flex flex-col items-center gap-4 transition-all duration-300 hover:-translate-y-2"
                 >
-                  {vendor.store_logo_url ? (
-                    <img src={vendor.store_logo_url} className="h-14 w-14 rounded-xl object-cover" />
-                  ) : (
-                    <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-wellness-muted text-xl font-bold text-primary">
-                      {vendor.store_name.charAt(0)}
-                    </div>
-                  )}
-                  <h3 className="mt-4 text-base font-semibold text-card-foreground group-hover:text-primary transition-colors">
+                  <div className="relative">
+                    <div className="absolute -inset-2 rounded-full bg-primary/5 opacity-0 transition-opacity group-hover:opacity-100" />
+                    {vendor.store_logo_url ? (
+                      <img src={vendor.store_logo_url} className="h-20 w-20 rounded-full object-cover shadow-sm transition-transform group-hover:scale-110" />
+                    ) : (
+                      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-wellness-muted text-2xl font-bold text-primary shadow-sm">
+                        {vendor.store_name.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                  <h3 className="text-center text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
                     {vendor.store_name}
                   </h3>
-                  {vendor.store_description && (
-                    <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
-                      {vendor.store_description}
-                    </p>
-                  )}
                 </Link>
               ))}
         </div>
