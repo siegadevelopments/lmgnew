@@ -30,35 +30,14 @@ const exploreItems = [
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [anyVendorLive, setAnyVendorLive] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const { user, role, loading, signOut } = useAuth();
   const router = useRouter();
 
+  // Close mobile menu on route change
   useEffect(() => {
-    const checkLiveVendors = async () => {
-      const { data } = await supabase
-        .from("vendor_profiles")
-        .select("id")
-        .eq("is_live", true)
-        .limit(1);
-      setAnyVendorLive(!!data && data.length > 0);
-    };
-
-    checkLiveVendors();
-    
-    // Subscribe to changes
-    const channel = supabase
-      .channel("live_vendors")
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "vendor_profiles" }, () => {
-        checkLiveVendors();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+    setMobileOpen(false);
+  }, [router.state.location.pathname]);
 
   const handleBecomeVendor = () => {
     window.location.href = "/signup?role=vendor";
@@ -110,12 +89,6 @@ export function Header() {
               activeProps={{ className: "active" }}
             >
               {item.label}
-              {item.label === "Vendors" && anyVendorLive && (
-                <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive"></span>
-                </span>
-              )}
             </Link>
           ))}
         </nav>
@@ -282,12 +255,6 @@ export function Header() {
               onClick={() => setMobileOpen(false)}
             >
               {item.label}
-              {item.label === "Vendors" && anyVendorLive && (
-                <span className="absolute top-3 right-3 flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive"></span>
-                </span>
-              )}
             </Link>
           ))}
           {(role === 'admin' || user?.email === 'siegaej@gmail.com' || user?.email === 'siegadevelopments@gmail.com' || user?.email === 'siegapython@gmail.com') && (

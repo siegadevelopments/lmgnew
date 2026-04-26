@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Mail } from "lucide-react";
+import { Loader2, Mail, Upload } from "lucide-react";
+import { uploadMedia } from "@/lib/upload";
 
 interface VendorEditDialogProps {
   vendor: any;
@@ -19,6 +20,7 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
   const [loading, setLoading] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+  const [uploading, setUploading] = useState<string | null>(null);
   const [email, setEmail] = useState(vendor?.email || "");
   const [formData, setFormData] = useState({
     store_name: vendor?.store_name || "",
@@ -157,22 +159,64 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
 
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="store_logo_url">Logo URL</Label>
-                <Input
-                  id="store_logo_url"
-                  name="store_logo_url"
-                  value={formData.store_logo_url}
-                  onChange={handleChange}
-                />
+                <Label htmlFor="store_logo_url">Store Logo</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="store_logo_url"
+                    name="store_logo_url"
+                    value={formData.store_logo_url}
+                    onChange={handleChange}
+                    className="flex-1"
+                  />
+                  <label className="shrink-0">
+                    <Button type="button" variant="secondary" size="icon" className="h-10 w-10" asChild disabled={!!uploading}>
+                      <span>{uploading === "logo" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}</span>
+                    </Button>
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      accept="image/*" 
+                      onChange={async e => {
+                        if (e.target.files?.[0]) { 
+                          setUploading("logo"); 
+                          const url = await uploadMedia(e.target.files[0], `stores/${vendor.id}/logo`); 
+                          if (url) setFormData(prev => ({ ...prev, store_logo_url: url })); 
+                          setUploading(null); 
+                        }
+                      }} 
+                    />
+                  </label>
+                </div>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="store_banner_url">Banner URL</Label>
-                <Input
-                  id="store_banner_url"
-                  name="store_banner_url"
-                  value={formData.store_banner_url}
-                  onChange={handleChange}
-                />
+                <Label htmlFor="store_banner_url">Store Banner</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="store_banner_url"
+                    name="store_banner_url"
+                    value={formData.store_banner_url}
+                    onChange={handleChange}
+                    className="flex-1"
+                  />
+                  <label className="shrink-0">
+                    <Button type="button" variant="secondary" size="icon" className="h-10 w-10" asChild disabled={!!uploading}>
+                      <span>{uploading === "banner" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}</span>
+                    </Button>
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      accept="image/*" 
+                      onChange={async e => {
+                        if (e.target.files?.[0]) { 
+                          setUploading("banner"); 
+                          const url = await uploadMedia(e.target.files[0], `stores/${vendor.id}/banner`); 
+                          if (url) setFormData(prev => ({ ...prev, store_banner_url: url })); 
+                          setUploading(null); 
+                        }
+                      }} 
+                    />
+                  </label>
+                </div>
               </div>
             </div>
           </div>

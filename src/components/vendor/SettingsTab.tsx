@@ -9,7 +9,8 @@ import { uploadMedia } from "@/lib/upload";
 
 interface VendorProfile {
   id: string; store_name: string; store_description: string | null;
-  store_logo_url: string | null; website: string | null; is_approved: boolean;
+  store_logo_url: string | null; store_banner_url: string | null; 
+  website: string | null; is_approved: boolean;
   store_categories?: string[];
 }
 
@@ -28,8 +29,11 @@ export function SettingsTab({ profile, setProfile, userId }: Props) {
     e.preventDefault();
     setSubmitting(true);
     await (supabase.from("vendor_profiles") as any).update({
-      store_name: profile.store_name, store_description: profile.store_description,
-      store_logo_url: profile.store_logo_url, website: profile.website,
+      store_name: profile.store_name, 
+      store_description: profile.store_description,
+      store_logo_url: profile.store_logo_url, 
+      store_banner_url: profile.store_banner_url,
+      website: profile.website,
       store_categories: profile.store_categories || [],
     }).eq("id", userId);
     setSubmitting(false);
@@ -60,12 +64,24 @@ export function SettingsTab({ profile, setProfile, userId }: Props) {
               <label className="shrink-0">
                 <Button type="button" variant="secondary" asChild disabled={uploading}><span>{uploading ? "..." : "Upload"}</span></Button>
                 <input type="file" className="hidden" accept="image/*" onChange={async e => {
-                  if (e.target.files?.[0]) { setUploading(true); const url = await uploadMedia(e.target.files[0], `stores/${userId}`); if (url) setProfile({ ...profile, store_logo_url: url }); setUploading(false); }
+                  if (e.target.files?.[0]) { setUploading(true); const url = await uploadMedia(e.target.files[0], `stores/${userId}/logo`); if (url) setProfile({ ...profile, store_logo_url: url }); setUploading(false); }
                 }} />
               </label>
             </div>
           </div>
           <div className="space-y-2">
+            <Label>Banner</Label>
+            <div className="flex gap-2">
+              <Input value={profile.store_banner_url || ""} onChange={e => setProfile({ ...profile, store_banner_url: e.target.value })} className="flex-1" />
+              <label className="shrink-0">
+                <Button type="button" variant="secondary" asChild disabled={uploading}><span>{uploading ? "..." : "Upload"}</span></Button>
+                <input type="file" className="hidden" accept="image/*" onChange={async e => {
+                  if (e.target.files?.[0]) { setUploading(true); const url = await uploadMedia(e.target.files[0], `stores/${userId}/banner`); if (url) setProfile({ ...profile, store_banner_url: url }); setUploading(false); }
+                }} />
+              </label>
+            </div>
+          </div>
+          <div className="space-y-2 sm:col-span-2">
             <Label>Website (optional)</Label>
             <Input value={profile.website || ""} onChange={e => setProfile({ ...profile, website: e.target.value })} placeholder="https://" />
           </div>

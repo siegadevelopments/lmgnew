@@ -14,6 +14,7 @@ import { ArticlesTab } from "@/components/vendor/ArticlesTab";
 import { WithdrawTab } from "@/components/vendor/WithdrawTab";
 import { SettingsTab } from "@/components/vendor/SettingsTab";
 import { VendorLiveStream } from "@/components/vendor/VendorLiveStream";
+import { ChatTab } from "@/components/vendor/ChatTab";
 import { BulkImportTab } from "@/components/vendor/BulkImportTab";
 import { 
   LayoutDashboard, 
@@ -194,6 +195,7 @@ function VendorDashboardPage() {
     { id: "live", label: "Live Stream", icon: Radio },
     { id: "videos", label: "Videos", icon: Video },
     { id: "orders", label: `Orders (${orderItems.length})`, icon: ShoppingBag },
+    { id: "messages", label: "Messages", icon: MessageCircle },
     { id: "articles", label: "Articles", icon: FileText },
     { id: "withdraw", label: "Withdrawals", icon: Wallet },
     { id: "import", label: "Bulk Import", icon: Upload },
@@ -432,6 +434,14 @@ function VendorDashboardPage() {
                   })
                 )}
               </div>
+            </TabsContent>
+
+            <TabsContent value="messages" className="mt-0 border-0 p-0">
+              <div className="mb-6 flex flex-col gap-1">
+                <h1 className="text-2xl font-bold tracking-tight">Customer Messages</h1>
+                <p className="text-muted-foreground">Chat with your customers and answer their questions.</p>
+              </div>
+              <ChatTab vendorId={profile.id} />
             </TabsContent>
 
             <TabsContent value="articles" className="mt-0 border-0 p-0">

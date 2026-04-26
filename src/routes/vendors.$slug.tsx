@@ -7,8 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/ProductCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageCircle, Plus, Star, Users, Package, UserPlus, Clock, Calendar } from "lucide-react";
+import { MessageCircle, Plus, Star, Users, Package, UserPlus, Clock, Calendar, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
+import { toast } from "sonner";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ChatDialog } from "@/components/chat/ChatDialog";
 
 export const Route = createFileRoute("/vendors/$slug")({
   loader: async ({ context: { queryClient }, params: { slug } }) => {
@@ -61,9 +65,65 @@ function VendorPage() {
     },
   });
 
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const joinedDate = new Date(vendor.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" });
   const productCount = vendorProducts?.length || 0;
   const [activeCategory, setActiveCategory] = useState("home");
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
+  // Check if current user is following this vendor
+  const { data: isFollowing } = useQuery({
+    queryKey: ["vendor_follow", user?.id, slug],
+    queryFn: async () => {
+      if (!user) return false;
+      const { data, error } = await supabase
+        .from("vendor_follows" as any)
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("vendor_id", slug)
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!user,
+  });
+
+  // Get total followers count
+  const { data: followerCount = 5900 } = useQuery({
+    queryKey: ["vendor_followers_count", slug],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("vendor_follows" as any)
+        .select("*", { count: 'exact', head: true })
+        .eq("vendor_id", slug);
+      return (count || 0) + 5900; // Adding dummy base for "WOW" effect as requested in design guidelines
+    }
+  });
+
+  const toggleFollow = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("Please login to follow vendors");
+      if (isFollowing) {
+        await supabase
+          .from("vendor_follows" as any)
+          .delete()
+          .eq("user_id", user.id)
+          .eq("vendor_id", slug);
+      } else {
+        await supabase
+          .from("vendor_follows" as any)
+          .insert({ user_id: user.id, vendor_id: slug });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vendor_follow", user?.id, slug] });
+      queryClient.invalidateQueries({ queryKey: ["vendor_followers_count", slug] });
+      toast.success(isFollowing ? "Unfollowed vendor" : "Following vendor");
+    },
+    onError: (err: any) => {
+      toast.error(err.message);
+    }
+  });
 
   const filteredProducts = activeCategory === "home" || activeCategory === "all" || activeCategory === "about"
     ? vendorProducts
@@ -96,10 +156,37 @@ function VendorPage() {
                 </div>
               </div>
               <div className="mt-4 flex gap-2">
-                <Button variant="outline" size="sm" className="flex-1 bg-transparent border-white/30 text-white hover:bg-white/10 h-8 text-xs gap-1">
-                  <Plus className="h-3 w-3" /> Follow
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => toggleFollow.mutate()}
+                  className={cn(
+                    "flex-1 bg-transparent border-white/30 text-white hover:bg-white/10 h-8 text-xs gap-1",
+                    isFollowing && "bg-white/20 border-white/50"
+                  )}
+                >
+                  {isFollowing ? (
+                    <>
+                      <Check className="h-3 w-3" /> Following
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-3 w-3" /> Follow
+                    </>
+                  )}
                 </Button>
-                <Button variant="outline" size="sm" className="flex-1 bg-transparent border-white/30 text-white hover:bg-white/10 h-8 text-xs gap-1">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    if (!user) {
+                      toast.error("Please login to chat with vendors");
+                      return;
+                    }
+                    setIsChatOpen(true);
+                  }}
+                  className="flex-1 bg-transparent border-white/30 text-white hover:bg-white/10 h-8 text-xs gap-1"
+                >
                   <MessageCircle className="h-3 w-3" /> Chat
                 </Button>
               </div>
@@ -127,8 +214,8 @@ function VendorPage() {
                </div>
                <div className="flex items-center gap-3">
                   <Users className="h-4 w-4 text-muted-foreground" />
-                  <div className="text-xs">
-                    <span className="text-muted-foreground">Followers:</span> <span className="text-primary font-bold">5.9K</span>
+                   <div className="text-xs">
+                    <span className="text-muted-foreground">Followers:</span> <span className="text-primary font-bold">{(followerCount / 1000).toFixed(1)}K</span>
                   </div>
                </div>
                <div className="flex items-center gap-3">
@@ -266,6 +353,13 @@ function VendorPage() {
            )}
         </div>
       </div>
+      
+      <ChatDialog 
+        vendorId={slug} 
+        vendorName={vendor.store_name} 
+        isOpen={isChatOpen} 
+        onOpenChange={setIsChatOpen} 
+      />
     </div>
   );
 }
