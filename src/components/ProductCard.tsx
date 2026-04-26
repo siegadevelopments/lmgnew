@@ -84,12 +84,22 @@ export function ProductCard({ product, className }: ProductCardProps) {
           <AnimatePresence>
             {isAdding && (
               <motion.div
-                initial={{ scale: 0.5, opacity: 1, y: 0 }}
-                animate={{ scale: 1.5, opacity: 0, y: -100 }}
-                exit={{ opacity: 0 }}
+                initial={{ scale: 1, opacity: 1, x: 0, y: 0 }}
+                animate={{ 
+                  scale: 0.2, 
+                  opacity: 0, 
+                  x: 400, // Move towards top right
+                  y: -800,
+                  rotate: 360
+                }}
+                transition={{ duration: 0.8, ease: "easeInOut" }}
                 className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none"
               >
-                <ShoppingCart className="h-12 w-12 text-primary" />
+                {product.image_url ? (
+                  <img src={product.image_url} className="h-full w-full object-cover rounded-xl shadow-2xl" />
+                ) : (
+                  <ShoppingCart className="h-12 w-12 text-primary" />
+                )}
               </motion.div>
             )}
           </AnimatePresence>
