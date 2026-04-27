@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import { SettingsTab } from "@/components/vendor/SettingsTab";
 import { VendorLiveStream } from "@/components/vendor/VendorLiveStream";
 import { ChatTab } from "@/components/vendor/ChatTab";
 import { BulkImportTab } from "@/components/vendor/BulkImportTab";
+import { OrdersTab } from "@/components/vendor/OrdersTab";
 import { 
   LayoutDashboard, 
   Package, 
@@ -29,7 +30,9 @@ import {
   Menu,
   LogOut,
   Store,
-  Upload
+  Upload,
+  MessageCircle,
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -44,8 +47,19 @@ export const Route = createFileRoute("/vendor")({
 });
 
 interface VendorProfile {
-  id: string; store_name: string; store_description: string | null;
-  store_logo_url: string | null; website: string | null; is_approved: boolean;
+  id: string; 
+  store_name: string; 
+  store_description: string | null;
+  store_logo_url: string | null; 
+  store_banner_url?: string | null;
+  website: string | null; 
+  instagram?: string | null;
+  facebook?: string | null;
+  twitter?: string | null;
+  is_approved: boolean;
+  ai_enabled?: boolean;
+  ai_instructions?: string;
+  store_categories?: string[];
 }
 interface Product { id: number; title: string; price: number; stock: number; status: string; image_url: string | null; }
 interface OrderItem { 
@@ -58,23 +72,17 @@ interface OrderItem {
   created_at: string;
   status: string;
   tracking_number: string | null;
-  orders?: {
-    first_name: string;
-    last_name: string;
-    email: string;
-    phone: string | null;
-    address: string;
-    city: string;
-    state: string;
-    zip: string;
-  }
 }
 interface VideoData { id: string; title: string; embed_url: string; description: string | null; created_at: string | null; }
-interface Article { id: number; title: string; slug: string; excerpt: string | null; image_url: string | null; created_at: string; }
+interface Article { id: number; title: string; slug: string; excerpt: string | null; image_url: string | null; created_at: string; content?: string; }
 
 function VendorDashboardPage() {
   const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
+  const searchParams = Route.useSearch() as any;
+  const activeTabParam = searchParams.tab;
+  const orderIdParam = searchParams.orderId;
+
   const [profile, setProfile] = useState<VendorProfile | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -82,8 +90,12 @@ function VendorDashboardPage() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState("analytics");
+  const [activeTab, setActiveTab] = useState(activeTabParam || "analytics");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const totalSales = useMemo(() => {
+    return orderItems.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.quantity || 1)), 0);
+  }, [orderItems]);
 
   useEffect(() => {
     if (!authLoading && !user) { 
@@ -92,21 +104,15 @@ function VendorDashboardPage() {
       return; 
     }
     if (user) loadVendorData();
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading]);
 
   useEffect(() => {
-    // --- Handle deep-linking and scrolling ---
-    if (loading || orderItems.length === 0) return;
-
-    const params = new URLSearchParams(window.location.search);
-    const tabParam = params.get('tab');
-    const orderIdParam = params.get('orderId');
-
-    if (tabParam && tabParam !== activeTab) {
-      setActiveTab(tabParam);
+    if (activeTabParam && activeTabParam !== activeTab) {
+      setActiveTab(activeTabParam);
     }
 
     if (orderIdParam) {
+      setActiveTab("orders");
       setTimeout(() => {
         const element = document.getElementById(`order-${orderIdParam}`);
         if (element) {
@@ -114,14 +120,21 @@ function VendorDashboardPage() {
         }
       }, 500);
     }
-  }, [loading, orderItems.length, activeTab]);
+  }, [orderIdParam, activeTabParam]);
 
   async function loadVendorData() {
     if (!user) return;
     setLoading(true);
     try {
-      const { data: vendorData } = await supabase.from("vendor_profiles").select("id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, created_at, updated_at, ai_enabled, ai_instructions").eq("id", user.id).single();
+      console.log("Loading vendor data for user:", user.id);
+      const { data: vendorData, error: vError } = await supabase.from("vendor_profiles").select("id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, created_at, updated_at, ai_enabled, ai_instructions, store_categories").eq("id", user.id).single();
+      
+      if (vError && vError.code !== 'PGRST116') {
+        console.error("Vendor profile fetch error:", vError);
+      }
+
       if (vendorData) {
+        console.log("Vendor profile found:", vendorData.store_name);
         setProfile(vendorData as VendorProfile);
         const [prodRes, vidRes, artRes, orderRes] = await Promise.all([
           (supabase.from("products") as any).select("*").eq("vendor_id", user.id).order("created_at", { ascending: false }),
@@ -129,42 +142,44 @@ function VendorDashboardPage() {
           (supabase.from("articles") as any).select("*").eq("author_id", user.id).order("created_at", { ascending: false }),
           (supabase.from("order_items") as any).select("*, orders(*)").eq("vendor_id", user.id).order("created_at", { ascending: false }),
         ]);
+        
+        if (prodRes.error) console.error("Products error:", prodRes.error);
+        if (vidRes.error) console.error("Videos error:", vidRes.error);
+        if (artRes.error) console.error("Articles error:", artRes.error);
+        if (orderRes.error) console.error("Orders error:", orderRes.error);
+
         if (prodRes.data) setProducts(prodRes.data);
         if (vidRes.data) setVideos(vidRes.data as VideoData[]);
         if (artRes.data) setArticles(artRes.data as Article[]);
         if (orderRes.data) setOrderItems(orderRes.data as any);
+      } else {
+        console.log("No vendor profile found for this user.");
       }
     } catch (err) {
-      console.error("Error loading vendor data:", err);
+      console.error("Critical error in loadVendorData:", err);
     } finally {
       setLoading(false);
     }
   }
 
-  const updateOrderItem = async (id: string, payload: any) => {
-    const { error } = await (supabase
-      .from("order_items") as any)
-      .update(payload)
-      .eq("id", id);
-    
-    if (error) {
-      console.error("Error updating order item:", error);
-      alert("Failed to update: " + error.message);
-    } else {
-      loadVendorData();
-      alert("Status updated successfully!");
-    }
-  };
-
   const handleCreateStore = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
     setIsSubmitting(true);
-    const storeName = (e.target as HTMLFormElement).store_name.value;
-    await (supabase.from("profiles") as any).update({ role: "vendor" }).eq("id", user.id);
-    const { data } = await (supabase.from("vendor_profiles") as any).insert({ id: user.id, store_name: storeName, is_approved: false } as any).select().single();
-    if (data) { setProfile(data as VendorProfile); navigate({ to: "/vendor" }); }
-    setIsSubmitting(false);
+    try {
+      const storeName = (e.target as HTMLFormElement).store_name.value;
+      await (supabase.from("profiles") as any).update({ role: "vendor" }).eq("id", user.id);
+      const { data, error } = await (supabase.from("vendor_profiles") as any).insert({ id: user.id, store_name: storeName, is_approved: false } as any).select().single();
+      if (error) throw error;
+      if (data) { 
+        setProfile(data as VendorProfile); 
+        loadVendorData();
+      }
+    } catch (err) {
+      console.error("Error creating store:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (authLoading || loading) {
@@ -186,8 +201,6 @@ function VendorDashboardPage() {
       </div>
     );
   }
-
-  const totalSales = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
   const sidebarItems = [
     { id: "analytics", label: "Dashboard", icon: LayoutDashboard },
@@ -274,7 +287,7 @@ function VendorDashboardPage() {
               <div className="flex items-center justify-between mb-8">
                 <h2 className="text-xl font-bold">Store Menu</h2>
                 <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)}>
-                  <ChevronRight className="h-5 w-5 rotate-180" />
+                  <X className="h-5 w-5" />
                 </Button>
               </div>
               <nav className="space-y-2">
@@ -306,7 +319,7 @@ function VendorDashboardPage() {
                 <h1 className="text-2xl font-bold tracking-tight">Sales Analytics</h1>
                 <p className="text-muted-foreground">Track your store's performance and growth.</p>
               </div>
-              <AnalyticsTab totalSales={totalSales} productCount={products.length} orderCount={orderItems.length} articleCount={articles.length} videoCount={videos.length} />
+              <AnalyticsTab totalSales={totalSales} productCount={products.length} orderCount={orderItems.length} articleCount={articles.length} videoCount={videos.length} orderItems={orderItems} />
             </TabsContent>
 
             <TabsContent value="products" className="mt-0 border-0 p-0">
@@ -314,7 +327,7 @@ function VendorDashboardPage() {
                 <h1 className="text-2xl font-bold tracking-tight">Product Catalog</h1>
                 <p className="text-muted-foreground">Add and manage the products you sell.</p>
               </div>
-              <ProductsTab products={products} setProducts={setProducts} userId={user!.id} />
+              <ProductsTab products={products} setProducts={setProducts} userId={user!.id} storeCategories={profile?.store_categories || []} />
             </TabsContent>
 
             <TabsContent value="live" className="mt-0 border-0 p-0">
@@ -338,102 +351,7 @@ function VendorDashboardPage() {
                 <h1 className="text-2xl font-bold tracking-tight">Recent Orders</h1>
                 <p className="text-muted-foreground">Fulfill and track customer purchases.</p>
               </div>
-              <div className="space-y-4">
-                {orderItems.length === 0 ? (
-                  <Card><CardContent className="py-12 text-center text-muted-foreground">No orders yet.</CardContent></Card>
-                ) : (
-                  orderItems.map(item => {
-                    const params = new URLSearchParams(window.location.search);
-                    const isHighlighted = params.get('orderId') === item.order_id;
-                    
-                    return (
-                    <Card key={item.id} id={`order-${item.order_id}`} className={cn(
-                      "overflow-hidden border-border/50 transition-all duration-500",
-                      isHighlighted ? "border-primary ring-1 ring-primary shadow-lg scale-[1.02]" : ""
-                    )}>
-                      <div className="flex flex-col md:flex-row">
-                        <div className="flex-1 p-6">
-                          <div className="flex items-center justify-between mb-4">
-                            <span className="text-[10px] uppercase font-black tracking-widest text-muted-foreground">Order ID: {item.order_id.slice(0,8)}</span>
-                            <span className={cn(
-                              "text-[10px] uppercase font-bold px-2 py-1 rounded-full",
-                              item.status === 'shipped' ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
-                            )}>
-                              {item.status}
-                            </span>
-                          </div>
-                          <h3 className="text-lg font-bold mb-1">{item.product_name}</h3>
-                          <p className="text-sm text-muted-foreground mb-4">Quantity: {item.quantity} • Price: ${(item.price * item.quantity).toFixed(2)}</p>
-                          
-                          <div className="grid gap-4 sm:grid-cols-2 p-4 rounded-lg bg-muted/30 border border-border/50">
-                            <div>
-                              <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Customer</p>
-                              <p className="text-sm font-medium">{item.orders?.first_name} {item.orders?.last_name}</p>
-                              <p className="text-xs text-muted-foreground">{item.orders?.email}</p>
-                              <p className="text-xs text-muted-foreground">{item.orders?.phone}</p>
-                            </div>
-                            <div>
-                              <p className="text-[10px] uppercase font-bold text-muted-foreground mb-1">Shipping Address</p>
-                              <p className="text-xs leading-relaxed">
-                                {item.orders?.address}<br />
-                                {item.orders?.city}, {item.orders?.state} {item.orders?.zip}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="w-full md:w-72 bg-muted/10 border-t md:border-t-0 md:border-l border-border/50 p-6 flex flex-col justify-center gap-4">
-                          <div className="space-y-2">
-                            <Label className="text-xs">Tracking Number</Label>
-                            <Input 
-                              placeholder="Add tracking #" 
-                              defaultValue={item.tracking_number || ""}
-                              onBlur={(e) => {
-                                if (e.target.value !== item.tracking_number) {
-                                  updateOrderItem(item.id, { tracking_number: e.target.value });
-                                }
-                              }}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            {item.status !== 'delivered' && (
-                              <Button 
-                                className="w-full" 
-                                variant={item.status === 'shipped' ? "outline" : "default"}
-                                onClick={() => {
-                                  const nextStatus = item.status === 'shipped' ? 'delivered' : 'shipped';
-                                  console.log("Updating item", item.id, "to", nextStatus);
-                                  updateOrderItem(item.id, { status: nextStatus });
-                                }}
-                              >
-                                {item.status === 'shipped' ? "Mark as Delivered" : "Mark as Shipped"}
-                              </Button>
-                            )}
-                            
-                            {item.status === 'delivered' && (
-                              <Button className="w-full" variant="secondary" disabled>
-                                Order Delivered ✅
-                              </Button>
-                            )}
-                            
-                            {(item.status === 'shipped' || item.status === 'delivered') && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="w-full text-xs text-muted-foreground"
-                                onClick={() => updateOrderItem(item.id, { status: 'pending' })}
-                              >
-                                Reset to Pending
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                    );
-                  })
-                )}
-              </div>
+              <OrdersTab orderItems={orderItems} onUpdate={loadVendorData} />
             </TabsContent>
 
             <TabsContent value="messages" className="mt-0 border-0 p-0">
@@ -457,7 +375,7 @@ function VendorDashboardPage() {
                 <h1 className="text-2xl font-bold tracking-tight">Payouts & Withdrawals</h1>
                 <p className="text-muted-foreground">Manage your earnings and transfer funds.</p>
               </div>
-              <WithdrawTab totalSales={totalSales} />
+              <WithdrawTab totalSales={totalSales} vendorId={user?.id} />
             </TabsContent>
 
             <TabsContent value="import" className="mt-0 border-0 p-0">

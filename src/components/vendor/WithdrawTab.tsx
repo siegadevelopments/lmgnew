@@ -3,16 +3,56 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
-interface Props { totalSales: number; }
+interface Props { 
+  totalSales: number; 
+  vendorId?: string;
+}
 
-export function WithdrawTab({ totalSales }: Props) {
+export function WithdrawTab({ totalSales, vendorId }: Props) {
   const [amount, setAmount] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    if (!vendorId) {
+      toast.error("Vendor ID not found. Please refresh.");
+      return;
+    }
+
+    setLoading(true);
+    const formData = new FormData(e.currentTarget as HTMLFormElement);
+    const paypalEmail = formData.get("paypal_email") as string;
+    
+    try {
+      const { error } = await (supabase.from("vendor_withdrawals") as any).insert({
+        vendor_id: vendorId,
+        amount: parseFloat(amount),
+        paypal_email: paypalEmail,
+        status: 'pending'
+      });
+
+      if (error) {
+        // If the table doesn't exist yet, we'll fall back to showing a message
+        if (error.code === 'PGRST116' || error.message.includes('relation "public.vendor_withdrawals" does not exist')) {
+          console.error("Table vendor_withdrawals missing:", error);
+          toast.error("Database table missing. Please contact admin to run migrations.");
+        } else {
+          toast.error(error.message);
+        }
+      } else {
+        setSubmitted(true);
+        toast.success("Withdrawal request submitted!");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -29,7 +69,7 @@ export function WithdrawTab({ totalSales }: Props) {
         </div>
 
         {submitted ? (
-          <div className="rounded-xl border border-primary/30 bg-primary/5 p-6 text-center">
+          <div className="rounded-xl border border-primary/30 bg-primary/5 p-6 text-center animate-in fade-in zoom-in duration-300">
             <div className="text-3xl mb-2">✅</div>
             <h3 className="font-semibold text-foreground">Withdrawal Request Submitted</h3>
             <p className="text-sm text-muted-foreground mt-1">
@@ -40,8 +80,10 @@ export function WithdrawTab({ totalSales }: Props) {
         ) : (
           <form onSubmit={handleSubmit} className="max-w-sm space-y-4">
             <div className="space-y-2">
-              <Label>Amount to Withdraw</Label>
+              <Label htmlFor="amount">Amount to Withdraw</Label>
               <Input
+                id="amount"
+                name="amount"
                 type="number" step="0.01" min="10" max={totalSales}
                 required value={amount} onChange={e => setAmount(e.target.value)}
                 placeholder="Enter amount..."
@@ -49,10 +91,19 @@ export function WithdrawTab({ totalSales }: Props) {
               <p className="text-xs text-muted-foreground">Minimum withdrawal: $10.00</p>
             </div>
             <div className="space-y-2">
-              <Label>PayPal Email</Label>
-              <Input type="email" required placeholder="your@paypal.com" />
+              <Label htmlFor="paypal_email">PayPal Email</Label>
+              <Input 
+                id="paypal_email"
+                name="paypal_email"
+                type="email" 
+                required 
+                placeholder="your@paypal.com" 
+              />
             </div>
-            <Button type="submit" disabled={!amount || parseFloat(amount) < 10}>Request Withdrawal</Button>
+            <Button type="submit" disabled={loading || !amount || parseFloat(amount) < 10} className="w-full">
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {loading ? "Submitting..." : "Request Withdrawal"}
+            </Button>
           </form>
         )}
       </CardContent>
