@@ -149,45 +149,56 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
           let botResponse = "";
           const lowerContent = content.toLowerCase();
           
-          // Fetch vendor products for context
-          const { data: products } = await (supabase
+          // Fetch more vendor products for better matching
+          const { data: allProducts } = await (supabase
             .from("products") as any)
             .select("title, price")
             .eq("vendor_id", vendorId)
             .eq("status", "published")
-            .limit(5);
+            .limit(20);
 
-          const productList = (products || []).map(p => p.title).join(", ");
+          const productList = (allProducts || []).map(p => p.title).join(", ");
           const instructions = vendorProfile.ai_instructions || "";
-          console.log("AI Analysis [v1.3] - content:", lowerContent);
+          
+          // Helper to find related products
+          const findRelated = (keywords: string[]) => {
+            return (allProducts || [])
+              .filter(p => keywords.some(k => p.title.toLowerCase().includes(k)))
+              .map(p => p.title)
+              .slice(0, 3)
+              .join(", ");
+          };
+
+          const cleaningProducts = findRelated(["clean", "soap", "wash", "detergent", "scrub", "dish"]);
+          const healthProducts = findRelated(["supplement", "vitamin", "organic", "tea", "oil", "health"]);
 
           // Advanced Intent Analysis using Regex for better matching
           if (/\b(price|cost|how much|\$)\b/.test(lowerContent)) {
-            const productMatch = products?.find(p => lowerContent.includes(p.title.toLowerCase()));
+            const productMatch = allProducts?.find(p => lowerContent.includes(p.title.toLowerCase()));
             if (productMatch) {
               botResponse = `The ${productMatch.title} is currently priced at $${productMatch.price}.`;
             } else {
-              botResponse = `Our wellness collection includes ${productList || "various health products"}, with prices tailored to each item.`;
+              botResponse = `Our prices vary. We have items like ${allProducts?.[0]?.title || "various wellness products"}.`;
             }
           } else if (/\b(recommend|best|sell|products|collection|items)\b/.test(lowerContent)) {
-            botResponse = `I'd highly recommend checking out our items: ${productList || "our featured wellness collection"}.`;
+            botResponse = `I'd highly recommend: ${productList.slice(0, 100)}...`;
           } else if (/\b(clean|bathroom|home|house|soap|wash)\b/.test(lowerContent)) {
-            botResponse = `We have several natural cleaning solutions! ${productList.toLowerCase().includes("clean") ? "I'd suggest our cleaning products." : "Please browse our 'Home' or 'Cleaning' categories for organic supplies."}`;
+            botResponse = cleaningProducts 
+              ? `For cleaning, I recommend: ${cleaningProducts}.` 
+              : `We have several natural cleaning solutions! Please browse our 'Home' or 'Cleaning' categories for organic supplies.`;
+          } else if (/\b(health|supplement|vitamin|organic|wellness)\b/.test(lowerContent)) {
+            botResponse = healthProducts 
+              ? `For wellness, you might like: ${healthProducts}.` 
+              : `We have a great range of health products! Check out our 'Wellness' category.`;
           } else if (/\b(shipping|delivery|arrive|track)\b/.test(lowerContent)) {
             botResponse = `We typically ship orders within 1-2 business days.`;
           } else if (/\b(hello|hi|hey|greetings)\b/.test(lowerContent)) {
-            botResponse = `Hello! I'm the wellness assistant for ${vendorName}. It's great to meet you!`;
-          } else if (/\b(info|about|tell me|who are)\b/.test(lowerContent)) {
-            botResponse = `I can certainly help you with information about ${vendorName}. We focus on healthy living and quality wellness products.`;
-          } else if (/\b(thank|thanks|great|cool)\b/.test(lowerContent)) {
-            botResponse = `You're very welcome! We're happy to help.`;
+            botResponse = `Hello! I'm the wellness assistant for ${vendorName}.`;
           } else {
-            // Default intelligent fallback
-            botResponse = `Thank you for your message! I'm the AI assistant for ${vendorName}. How can I assist you with our wellness products? [v1.3]`;
+            botResponse = `Thank you for your message! I'm the AI assistant for ${vendorName}. How can I assist you?`;
           }
           
-          // CRITICAL: Ensure instructions are NOT appended literally
-          const finalResponse = `${botResponse.trim()} [v1.3]`;
+          const finalResponse = `${botResponse.trim()} [v1.4]`;
           
           await (supabase
             .from("chat_messages" as any) as any)
