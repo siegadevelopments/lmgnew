@@ -1,12 +1,16 @@
--- Create chat_conversations table
 CREATE TABLE IF NOT EXISTS chat_conversations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  customer_id UUID NOT NULL REFERENCES profiles(id),
+  customer_id UUID NOT NULL,
   vendor_id UUID NOT NULL REFERENCES vendor_profiles(id),
   last_message_at TIMESTAMPTZ DEFAULT now(),
   created_at TIMESTAMPTZ DEFAULT now(),
+  CONSTRAINT chat_conversations_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES profiles(id),
   UNIQUE(customer_id, vendor_id)
 );
+
+-- Ensure the foreign key exists even if the table was already created
+ALTER TABLE chat_conversations DROP CONSTRAINT IF EXISTS chat_conversations_customer_id_fkey;
+ALTER TABLE chat_conversations ADD CONSTRAINT chat_conversations_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES profiles(id);
 
 -- Create chat_messages table
 CREATE TABLE IF NOT EXISTS chat_messages (
@@ -16,6 +20,10 @@ CREATE TABLE IF NOT EXISTS chat_messages (
   content TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Ensure foreign keys for messages
+ALTER TABLE chat_messages DROP CONSTRAINT IF EXISTS chat_messages_sender_id_fkey;
+ALTER TABLE chat_messages ADD CONSTRAINT chat_messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES profiles(id);
 
 -- Enable RLS
 ALTER TABLE chat_conversations ENABLE ROW LEVEL SECURITY;

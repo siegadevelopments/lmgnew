@@ -149,14 +149,36 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
           let botResponse = "";
           const lowerContent = content.toLowerCase();
           
-          if (lowerContent.includes("price") || lowerContent.includes("how much")) {
-            botResponse = `Thanks for asking about our products! ${vendorProfile.ai_instructions || "Please check our product catalog for the latest pricing and details."}`;
-          } else if (lowerContent.includes("shipping") || lowerContent.includes("delivery")) {
-            botResponse = `We strive for fast delivery! ${vendorProfile.ai_instructions || "Orders are typically processed within 1-2 business days."}`;
-          } else if (lowerContent.includes("hello") || lowerContent.includes("hi")) {
-            botResponse = `Hello there! I'm the AI assistant for ${vendorName}. How can I help you with our wellness products today?`;
+          // Fetch vendor products for context
+          const { data: products } = await (supabase
+            .from("products") as any)
+            .select("title, price")
+            .eq("vendor_id", vendorId)
+            .eq("status", "published")
+            .limit(5);
+
+          const productList = (products || []).map(p => p.title).join(", ");
+          const instructions = vendorProfile.ai_instructions || "";
+
+          // Advanced Intent Analysis
+          if (lowerContent.includes("price") || lowerContent.includes("how much") || lowerContent.includes("$")) {
+            const productMatch = products?.find(p => lowerContent.includes(p.title.toLowerCase()));
+            if (productMatch) {
+              botResponse = `The ${productMatch.title} is currently priced at $${productMatch.price}. ${instructions}`;
+            } else {
+              botResponse = `Our prices vary by product. For example, we have ${productList}. ${instructions}`;
+            }
+          } else if (lowerContent.includes("recommend") || lowerContent.includes("best") || lowerContent.includes("what do you sell")) {
+            botResponse = `I'd highly recommend checking out our top items: ${productList}. ${instructions}`;
+          } else if (lowerContent.includes("shipping") || lowerContent.includes("delivery") || lowerContent.includes("arrive")) {
+            botResponse = `We typically ship orders within 1-2 business days. ${instructions || "You'll receive a tracking number once it's on the way!"}`;
+          } else if (lowerContent.includes("hello") || lowerContent.includes("hi") || lowerContent.includes("hey")) {
+            botResponse = `Hello! I'm the AI wellness assistant for ${vendorName}. ${instructions || "How can I help you discover our healthy lifestyle products today?"}`;
+          } else if (lowerContent.includes("thank")) {
+            botResponse = `You're very welcome! Is there anything else you'd like to know about ${vendorName}?`;
           } else {
-            botResponse = vendorProfile.ai_instructions || `Thank you for your message! Our team at ${vendorName} will get back to you as soon as possible. In the meantime, how else can I assist you?`;
+            // Default intelligent fallback
+            botResponse = instructions || `That's an interesting question! While I'm just an assistant, I can tell you that ${vendorName} specializes in wellness and quality products like ${productList.split(',')[0] || "health supplements"}. How can I help further?`;
           }
           
           await (supabase
