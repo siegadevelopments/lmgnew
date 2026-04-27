@@ -33,6 +33,8 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
     twitter: vendor?.twitter || "",
     mux_stream_key: vendor?.stream?.mux_stream_key || "",
     mux_playback_id: vendor?.stream?.mux_playback_id || "",
+    ai_enabled: vendor?.ai_enabled || false,
+    ai_instructions: vendor?.ai_instructions || "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -102,6 +104,8 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
         instagram: formData.instagram,
         facebook: formData.facebook,
         twitter: formData.twitter,
+        ai_enabled: (formData as any).ai_enabled,
+        ai_instructions: (formData as any).ai_instructions,
         updated_at: new Date().toISOString(),
       };
 
@@ -354,6 +358,36 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
                 onChange={handleChange}
                 placeholder="Centralized Mux Playback ID"
               />
+            </div>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-primary">AI Assistant Settings</h3>
+            <div className="flex items-center gap-2 mb-2">
+              <input
+                type="checkbox"
+                id="ai_enabled"
+                name="ai_enabled"
+                checked={(formData as any).ai_enabled}
+                onChange={(e) => setFormData(prev => ({ ...prev, ai_enabled: e.target.checked }))}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <Label htmlFor="ai_enabled" className="font-bold cursor-pointer">Enable AI Chatbot Assistant</Label>
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="ai_instructions">AI Instructions / Personality</Label>
+              <Textarea
+                id="ai_instructions"
+                name="ai_instructions"
+                value={(formData as any).ai_instructions}
+                onChange={handleChange}
+                placeholder="e.g. You are a helpful wellness expert. Answer questions about organic supplements..."
+                rows={4}
+              />
+              <p className="text-[10px] text-muted-foreground italic">These instructions guide how the bot responds to customers.</p>
             </div>
           </div>
 
