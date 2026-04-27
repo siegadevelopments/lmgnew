@@ -35,21 +35,35 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
   // Hydrate botProducts from existing messages
   useEffect(() => {
     const hydrateProducts = async () => {
-      const productIds = messages
-        .map(m => {
-          const match = m.content.match(/\[PRODUCT:(.*?)\]/);
-          return match ? match[1] : null;
-        })
-        .filter((id): id is string => id !== null && !botProducts.some(p => String(p.id) === id));
+      const productIds: string[] = [];
+      messages.forEach(m => {
+        // Use a global match to find ALL products in a message
+        const matches = m.content.matchAll(/\[PRODUCT:(.*?)\]/g);
+        for (const match of matches) {
+          const id = match[1];
+          if (id && !botProducts.some(p => String(p.id) === id) && !productIds.includes(id)) {
+            productIds.push(id);
+          }
+        }
+      });
 
       if (productIds.length > 0) {
+        console.log("Hydrating products for chat:", productIds);
         const { data } = await (supabase
           .from("products") as any)
           .select("id, title, price, slug, image_url, status")
           .in("id", productIds);
         
         if (data) {
-          setBotProducts(prev => [...prev, ...data]);
+          setBotProducts(prev => {
+            const newProducts = [...prev];
+            data.forEach(p => {
+              if (!newProducts.some(np => np.id === p.id)) {
+                newProducts.push(p);
+              }
+            });
+            return newProducts;
+          });
         }
       }
     };
@@ -57,7 +71,14 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
     if (messages.length > 0) {
       hydrateProducts();
     }
-  }, [messages, botProducts.length]);
+  }, [messages]);
+
+  // Scroll to bottom on new messages
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, isTyping, botProducts.length]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [botProducts, setBotProducts] = useState<any[]>([]);
