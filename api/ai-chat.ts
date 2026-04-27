@@ -18,25 +18,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { content, vendor_id, history } = req.body;
 
+    console.log(`Processing AI chat for vendor: ${vendor_id}`);
+
+    if (!process.env.VITE_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error("Missing Supabase credentials in environment variables");
+      return res.status(500).json({ error: 'Server configuration error (Supabase)' });
+    }
+
     const supabase = createClient(
-      process.env.VITE_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+      process.env.VITE_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
     // 1. Fetch Vendor Context
-    const { data: vendor } = await supabase
+    const { data: vendor, error: vendorError } = await supabase
       .from('vendor_profiles')
       .select('store_name, store_description, ai_instructions')
       .eq('id', vendor_id)
       .single();
 
+    if (vendorError) {
+      console.error("Vendor fetch error:", vendorError);
+      return res.status(500).json({ error: 'Failed to fetch vendor context' });
+    }
+
     // 2. Fetch Product Context
-    const { data: products } = await supabase
+    const { data: products, error: productsError } = await supabase
       .from('products')
       .select('id, title, price, slug, image_url')
       .eq('vendor_id', vendor_id)
       .eq('status', 'published')
       .limit(15);
+
+    if (productsError) {
+      console.error("Products fetch error:", productsError);
+    }
 
     const productContext = (products || [])
       .map(p => `- [PRODUCT:${p.id}] ${p.title} ($${p.price})`)
