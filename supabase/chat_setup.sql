@@ -53,7 +53,6 @@ DROP POLICY IF EXISTS "Users can send messages in their conversations" ON chat_m
 CREATE POLICY "Users can send messages in their conversations" 
 ON chat_messages FOR INSERT 
 WITH CHECK (
-  auth.uid() = sender_id AND
   EXISTS (
     SELECT 1 FROM chat_conversations 
     WHERE id = chat_messages.conversation_id 

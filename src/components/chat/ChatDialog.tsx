@@ -146,7 +146,18 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
         setIsTyping(true);
         // Simulate thinking time
         setTimeout(async () => {
-          const botResponse = `Hello! I'm ${vendorName}'s assistant. ${vendorProfile.ai_instructions || "How can I help you today?"}`;
+          let botResponse = "";
+          const lowerContent = content.toLowerCase();
+          
+          if (lowerContent.includes("price") || lowerContent.includes("how much")) {
+            botResponse = `Thanks for asking about our products! ${vendorProfile.ai_instructions || "Please check our product catalog for the latest pricing and details."}`;
+          } else if (lowerContent.includes("shipping") || lowerContent.includes("delivery")) {
+            botResponse = `We strive for fast delivery! ${vendorProfile.ai_instructions || "Orders are typically processed within 1-2 business days."}`;
+          } else if (lowerContent.includes("hello") || lowerContent.includes("hi")) {
+            botResponse = `Hello there! I'm the AI assistant for ${vendorName}. How can I help you with our wellness products today?`;
+          } else {
+            botResponse = vendorProfile.ai_instructions || `Thank you for your message! Our team at ${vendorName} will get back to you as soon as possible. In the meantime, how else can I assist you?`;
+          }
           
           await (supabase
             .from("chat_messages" as any) as any)

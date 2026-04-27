@@ -65,21 +65,34 @@ export function ChatTab({ vendorId }: { vendorId: string }) {
   });
 
   useEffect(() => {
-    if (!selectedConv?.id) return;
+    if (!vendorId) return;
 
+    // Global subscription for all messages for this vendor
     const channel = supabase
-      .channel(`vendor_chat:${selectedConv.id}`)
+      .channel(`vendor_global_chat:${vendorId}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "chat_messages",
-          filter: `conversation_id=eq.${selectedConv.id}`,
         },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["chat_messages", selectedConv.id] });
-          queryClient.invalidateQueries({ queryKey: ["vendor_conversations", vendorId] });
+        async (payload) => {
+          const newMsg = payload.new as Message;
+          // Check if this message belongs to one of our conversations
+          const { data: conv } = await (supabase
+            .from("chat_conversations" as any) as any)
+            .select("id")
+            .eq("id", newMsg.conversation_id)
+            .eq("vendor_id", vendorId)
+            .maybeSingle();
+
+          if (conv) {
+            queryClient.invalidateQueries({ queryKey: ["vendor_conversations", vendorId] });
+            if (selectedConv?.id === newMsg.conversation_id) {
+              queryClient.invalidateQueries({ queryKey: ["chat_messages", selectedConv.id] });
+            }
+          }
         }
       )
       .subscribe();
@@ -87,7 +100,7 @@ export function ChatTab({ vendorId }: { vendorId: string }) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [selectedConv?.id, queryClient, vendorId]);
+  }, [vendorId, selectedConv?.id, queryClient]);
 
   useEffect(() => {
     if (scrollRef.current) {
