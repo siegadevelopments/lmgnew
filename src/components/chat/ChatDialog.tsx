@@ -136,12 +136,18 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
     }
   }, [messages]);
 
-  // Scroll to bottom on new messages
+  // Scroll to bottom on new messages or when dialog opens
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (isOpen && scrollRef.current) {
+      // Use a small timeout to ensure content is rendered before scrolling
+      const timer = setTimeout(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [messages, isTyping, botProducts.length]);
+  }, [messages, isTyping, botProducts.length, isOpen]);
 
   const sendMessage = useMutation({
     mutationFn: async (content: string) => {
