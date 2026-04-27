@@ -210,23 +210,30 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
           const productList = (allProducts || []).map(p => p.title).join(", ");
           const instructions = vendorProfile.ai_instructions || "";
           
-          // Helper to find related products with links and reasons
-          const findRelated = (keywords: string[], categoryName: string) => {
+          // Helper to find related products based on ANY keywords in content
+          const findMatches = (content: string) => {
+            const words = content.toLowerCase().split(/\s+/).filter(w => w.length > 2);
             const matches = (allProducts || [])
-              .filter((p: any) => keywords.some(k => p.title.toLowerCase().includes(k)))
+              .filter((p: any) => {
+                const titleLower = p.title.toLowerCase();
+                return words.some(word => titleLower.includes(word));
+              })
               .slice(0, 2);
             
             if (matches.length > 0) {
-              setBotProducts(prev => [...prev, ...matches]);
-              return matches.map((p: any) => {
-                return `**[PRODUCT:${p.id}]**\n*This is a top-rated ${categoryName} solution in our store.*`;
-              }).join("\n\n");
+              setBotProducts(prev => {
+                const newProducts = [...prev];
+                matches.forEach(m => {
+                  if (!newProducts.some(p => p.id === m.id)) newProducts.push(m);
+                });
+                return newProducts;
+              });
+              return matches.map((p: any) => `**[PRODUCT:${p.id}]**\n*This is one of our featured products that matches your request.*`).join("\n\n");
             }
             return null;
           };
 
-          const cleaningProducts = findRelated(["clean", "soap", "wash", "detergent", "scrub", "dish"], "natural cleaning");
-          const healthProducts = findRelated(["supplement", "vitamin", "organic", "tea", "oil", "health"], "wellness");
+          const dynamicMatches = findMatches(lowerContent);
 
           // Advanced Intent Analysis using Regex for better matching
           if (/\b(price|cost|how much|\$)\b/.test(lowerContent)) {
@@ -235,26 +242,20 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
               setBotProducts(prev => [...prev, productMatch]);
               botResponse = `The **[PRODUCT:${productMatch.id}]** is currently priced at $${productMatch.price}. It's one of our best-sellers!`;
             } else {
-              botResponse = `Our prices vary. We have items like ${allProducts?.[0]?.title || "various wellness products"}.`;
+              botResponse = `Our prices vary depending on the item. You can see our full range in the store catalog!`;
             }
+          } else if (dynamicMatches) {
+             botResponse = `Yes, we have products that match your request! Here are some suggestions:\n\n${dynamicMatches}`;
           } else if (/\b(recommend|best|sell|products|collection|items)\b/.test(lowerContent)) {
             const topProducts = (allProducts || []).slice(0, 2);
             setBotProducts(prev => [...prev, ...topProducts]);
-            botResponse = `I'd highly recommend these favorites:\n\n${topProducts.map((p: any) => `**[PRODUCT:${p.id}]**\n*Excellent quality and highly recommended.*`).join("\n\n")}`;
-          } else if (/\b(clean|bathroom|home|house|soap|wash)\b/.test(lowerContent)) {
-            botResponse = cleaningProducts 
-              ? `For a healthy home, I recommend these products:\n\n${cleaningProducts}` 
-              : `We have several natural cleaning solutions! Please browse our 'Home' or 'Cleaning' categories for organic supplies.`;
-          } else if (/\b(health|supplement|vitamin|organic|wellness)\b/.test(lowerContent)) {
-            botResponse = healthProducts 
-              ? `To support your wellness journey, I suggest:\n\n${healthProducts}` 
-              : `We have a great range of health products! Check out our 'Wellness' category.`;
+            botResponse = `I'd highly recommend these favorites from our collection:\n\n${topProducts.map((p: any) => `**[PRODUCT:${p.id}]**\n*Excellent quality and highly recommended.*`).join("\n\n")}`;
           } else if (/\b(shipping|delivery|arrive|track)\b/.test(lowerContent)) {
             botResponse = `We typically ship orders within 1-2 business days. We take great care in packaging to ensure your wellness products arrive safely.`;
           } else if (/\b(hello|hi|hey|greetings)\b/.test(lowerContent)) {
             botResponse = `Hello! I'm the wellness assistant for ${vendorName}. How can I help you find the perfect natural products today?`;
           } else {
-            botResponse = `Thank you for your message! I'm the AI assistant for ${vendorName}. How can I assist you?`;
+            botResponse = `Thank you for your message! I'm the AI assistant for ${vendorName}. I couldn't find a specific match for that, but feel free to browse our full collection or ask about our shipping and prices!`;
           }
           
           const finalResponse = botResponse.trim();
