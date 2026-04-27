@@ -39,8 +39,8 @@ export function ChatTab({ vendorId }: { vendorId: string }) {
   const { data: conversations = [], isLoading: isLoadingConvs } = useQuery({
     queryKey: ["vendor_conversations", vendorId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("chat_conversations" as any)
+      const { data, error } = await (supabase
+        .from("chat_conversations" as any) as any)
         .select("*, profiles:customer_id(full_name, avatar_url)")
         .eq("vendor_id", vendorId)
         .order("last_message_at", { ascending: false });
@@ -53,8 +53,8 @@ export function ChatTab({ vendorId }: { vendorId: string }) {
     queryKey: ["chat_messages", selectedConv?.id],
     queryFn: async () => {
       if (!selectedConv?.id) return [];
-      const { data, error } = await supabase
-        .from("chat_messages" as any)
+      const { data, error } = await (supabase
+        .from("chat_messages" as any) as any)
         .select("*")
         .eq("conversation_id", selectedConv.id)
         .order("created_at", { ascending: true });
@@ -99,8 +99,8 @@ export function ChatTab({ vendorId }: { vendorId: string }) {
     mutationFn: async (content: string) => {
       if (!user || !selectedConv) return;
       
-      const { error: msgError } = await supabase
-        .from("chat_messages" as any)
+      const { error: msgError } = await (supabase
+        .from("chat_messages" as any) as any)
         .insert({
           conversation_id: selectedConv.id,
           sender_id: user.id,
@@ -109,8 +109,8 @@ export function ChatTab({ vendorId }: { vendorId: string }) {
       
       if (msgError) throw msgError;
 
-      await supabase
-        .from("chat_conversations" as any)
+      await (supabase
+        .from("chat_conversations" as any) as any)
         .update({ last_message_at: new Date().toISOString() })
         .eq("id", selectedConv.id);
     },
@@ -192,7 +192,7 @@ export function ChatTab({ vendorId }: { vendorId: string }) {
               </div>
             </CardHeader>
             
-            <ScrollArea className="flex-1 p-4 bg-muted/20" viewportRef={scrollRef}>
+            <div className="flex-1 p-4 bg-muted/20 overflow-y-auto" ref={scrollRef}>
               <div className="space-y-4">
                 {messages.map((msg) => {
                   const isMe = msg.sender_id === user?.id;
@@ -211,7 +211,7 @@ export function ChatTab({ vendorId }: { vendorId: string }) {
                   );
                 })}
               </div>
-            </ScrollArea>
+            </div>
 
             <form onSubmit={handleSubmit} className="p-4 border-t bg-white flex gap-2">
               <Input 

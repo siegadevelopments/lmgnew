@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface ChatDialogProps {
   vendorId: string;
@@ -38,8 +39,8 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
       if (!user) return null;
       
       // Try to find existing
-      let { data, error } = await supabase
-        .from("chat_conversations" as any)
+      let { data, error } = await (supabase
+        .from("chat_conversations" as any) as any)
         .select("*")
         .eq("customer_id", user.id)
         .eq("vendor_id", vendorId)
@@ -56,8 +57,8 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
     queryKey: ["chat_messages", conversation?.id],
     queryFn: async () => {
       if (!conversation?.id) return [];
-      const { data, error } = await supabase
-        .from("chat_messages" as any)
+      const { data, error } = await (supabase
+        .from("chat_messages" as any) as any)
         .select("*")
         .eq("conversation_id", conversation.id)
         .order("created_at", { ascending: true });
@@ -108,8 +109,8 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
       
       // Create conversation if it doesn't exist
       if (!currentConvId) {
-        const { data: newConv, error: convError } = await supabase
-          .from("chat_conversations" as any)
+        const { data: newConv, error: convError } = await (supabase
+          .from("chat_conversations" as any) as any)
           .insert({ customer_id: user.id, vendor_id: vendorId })
           .select()
           .single();
@@ -118,8 +119,8 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
         queryClient.invalidateQueries({ queryKey: ["chat_conversation", user.id, vendorId] });
       }
 
-      const { error: msgError } = await supabase
-        .from("chat_messages" as any)
+      const { error: msgError } = await (supabase
+        .from("chat_messages" as any) as any)
         .insert({
           conversation_id: currentConvId,
           sender_id: user.id,
@@ -129,14 +130,14 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
       if (msgError) throw msgError;
 
       // Update last_message_at
-      await supabase
-        .from("chat_conversations" as any)
+      await (supabase
+        .from("chat_conversations" as any) as any)
         .update({ last_message_at: new Date().toISOString() })
         .eq("id", currentConvId);
 
       // --- AI CHATBOT LOGIC ---
-      const { data: vendorProfile } = await supabase
-        .from("vendor_profiles")
+      const { data: vendorProfile } = await (supabase
+        .from("vendor_profiles") as any)
         .select("ai_enabled, ai_instructions")
         .eq("id", vendorId)
         .single();
@@ -147,16 +148,16 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
         setTimeout(async () => {
           const botResponse = `Hello! I'm ${vendorName}'s assistant. ${vendorProfile.ai_instructions || "How can I help you today?"}`;
           
-          await supabase
-            .from("chat_messages" as any)
+          await (supabase
+            .from("chat_messages" as any) as any)
             .insert({
               conversation_id: currentConvId,
               sender_id: vendorId, // Send as the vendor
               content: botResponse,
             });
             
-          await supabase
-            .from("chat_conversations" as any)
+          await (supabase
+            .from("chat_conversations" as any) as any)
             .update({ last_message_at: new Date().toISOString() })
             .eq("id", currentConvId);
             
@@ -190,7 +191,7 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
           </DialogTitle>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 p-4 bg-muted/30" viewportRef={scrollRef}>
+        <div className="flex-1 p-4 bg-muted/30 overflow-y-auto" ref={scrollRef}>
           <div className="space-y-4">
             {messages.map((msg) => {
               const isMe = msg.sender_id === user?.id;
@@ -228,7 +229,7 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
               </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
 
         <form onSubmit={handleSubmit} className="p-4 border-t bg-white flex gap-2">
           <Input 
