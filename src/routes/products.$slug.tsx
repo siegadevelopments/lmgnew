@@ -145,7 +145,15 @@ function ProductPage() {
   return (
     <article className="py-10 sm:py-16">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
-        <Link to="/products" className="text-sm font-medium text-primary hover:underline">← Back to products</Link>
+        {product.vendor ? (
+          <Link to="/vendors/$slug" params={{ slug: product.vendor.id }} className="text-sm font-medium text-primary hover:underline">
+            ← Back to {product.vendor.store_name}
+          </Link>
+        ) : (
+          <Link to="/products" className="text-sm font-medium text-primary hover:underline">
+            ← Back to products
+          </Link>
+        )}
 
         <div className="mt-6 grid gap-8 lg:grid-cols-2">
           {product.image_url && (
