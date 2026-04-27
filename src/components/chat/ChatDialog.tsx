@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Link } from "@tanstack/react-router";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -160,45 +161,52 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
           const productList = (allProducts || []).map(p => p.title).join(", ");
           const instructions = vendorProfile.ai_instructions || "";
           
-          // Helper to find related products
-          const findRelated = (keywords: string[]) => {
+          // Helper to find related products with links and reasons
+          const findRelated = (keywords: string[], categoryName: string) => {
             return (allProducts || [])
               .filter(p => keywords.some(k => p.title.toLowerCase().includes(k)))
-              .map(p => p.title)
-              .slice(0, 3)
-              .join(", ");
+              .map(p => {
+                const slug = p.title.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "");
+                return `**[${p.title}](/products/${slug})** - This is a top-rated ${categoryName} solution in our store.`;
+              })
+              .slice(0, 2)
+              .join("\n\n");
           };
 
-          const cleaningProducts = findRelated(["clean", "soap", "wash", "detergent", "scrub", "dish"]);
-          const healthProducts = findRelated(["supplement", "vitamin", "organic", "tea", "oil", "health"]);
+          const cleaningProducts = findRelated(["clean", "soap", "wash", "detergent", "scrub", "dish"], "natural cleaning");
+          const healthProducts = findRelated(["supplement", "vitamin", "organic", "tea", "oil", "health"], "wellness");
 
           // Advanced Intent Analysis using Regex for better matching
           if (/\b(price|cost|how much|\$)\b/.test(lowerContent)) {
             const productMatch = allProducts?.find(p => lowerContent.includes(p.title.toLowerCase()));
             if (productMatch) {
-              botResponse = `The ${productMatch.title} is currently priced at $${productMatch.price}.`;
+              const slug = productMatch.title.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "");
+              botResponse = `The **[${productMatch.title}](/products/${slug})** is currently priced at $${productMatch.price}. It's one of our best-sellers!`;
             } else {
               botResponse = `Our prices vary. We have items like ${allProducts?.[0]?.title || "various wellness products"}.`;
             }
           } else if (/\b(recommend|best|sell|products|collection|items)\b/.test(lowerContent)) {
-            botResponse = `I'd highly recommend: ${productList.slice(0, 100)}...`;
+            botResponse = `I'd highly recommend these favorites:\n\n${(allProducts || []).slice(0, 2).map(p => {
+              const slug = p.title.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "");
+              return `**[${p.title}](/products/${slug})** - Excellent quality and highly recommended by our community.`;
+            }).join("\n\n")}`;
           } else if (/\b(clean|bathroom|home|house|soap|wash)\b/.test(lowerContent)) {
             botResponse = cleaningProducts 
-              ? `For cleaning, I recommend: ${cleaningProducts}.` 
+              ? `For a healthy home, I recommend these products:\n\n${cleaningProducts}` 
               : `We have several natural cleaning solutions! Please browse our 'Home' or 'Cleaning' categories for organic supplies.`;
           } else if (/\b(health|supplement|vitamin|organic|wellness)\b/.test(lowerContent)) {
             botResponse = healthProducts 
-              ? `For wellness, you might like: ${healthProducts}.` 
+              ? `To support your wellness journey, I suggest:\n\n${healthProducts}` 
               : `We have a great range of health products! Check out our 'Wellness' category.`;
           } else if (/\b(shipping|delivery|arrive|track)\b/.test(lowerContent)) {
-            botResponse = `We typically ship orders within 1-2 business days.`;
+            botResponse = `We typically ship orders within 1-2 business days. We take great care in packaging to ensure your wellness products arrive safely.`;
           } else if (/\b(hello|hi|hey|greetings)\b/.test(lowerContent)) {
-            botResponse = `Hello! I'm the wellness assistant for ${vendorName}.`;
+            botResponse = `Hello! I'm the wellness assistant for ${vendorName}. How can I help you find the perfect natural products today?`;
           } else {
             botResponse = `Thank you for your message! I'm the AI assistant for ${vendorName}. How can I assist you?`;
           }
           
-          const finalResponse = `${botResponse.trim()} [v1.4]`;
+          const finalResponse = botResponse.trim();
           
           await (supabase
             .from("chat_messages" as any) as any)
@@ -251,10 +259,24 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
               return (
                 <div key={msg.id} className={cn("flex flex-col", isMe ? "items-end" : "items-start")}>
                   <div className={cn(
-                    "max-w-[80%] rounded-2xl px-4 py-2 text-sm shadow-sm",
+                    "max-w-[80%] rounded-2xl px-4 py-2 text-sm shadow-sm whitespace-pre-wrap",
                     isMe ? "bg-primary text-primary-foreground rounded-tr-none" : "bg-white text-foreground rounded-tl-none border border-border"
                   )}>
-                    {msg.content}
+                    {msg.content.split(/(\*\*\[.*?\]\(.*?\)\*\*)/g).map((part, i) => {
+                      const match = part.match(/\*\*\[(.*?)\]\((.*?)\)\*\*/);
+                      if (match) {
+                        return (
+                          <Link 
+                            key={i} 
+                            to={match[2] as any} 
+                            className="font-bold underline text-primary hover:text-primary/80 transition-colors"
+                          >
+                            {match[1]}
+                          </Link>
+                        );
+                      }
+                      return part;
+                    })}
                   </div>
                   <span className="text-[10px] text-muted-foreground mt-1 px-1">
                     {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
