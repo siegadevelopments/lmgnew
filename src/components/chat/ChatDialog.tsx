@@ -11,6 +11,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { ProductCard } from "@/components/ProductCard";
 
 interface ChatDialogProps {
   vendorId: string;
@@ -32,6 +33,7 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
   const queryClient = useQueryClient();
   const [newMessage, setNewMessage] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [botProducts, setBotProducts] = useState<any[]>([]);
 
   // Get or create conversation
   const { data: conversation, isLoading: isLoadingConv } = useQuery({
@@ -163,14 +165,17 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
           
           // Helper to find related products with links and reasons
           const findRelated = (keywords: string[], categoryName: string) => {
-            return (allProducts || [])
+            const matches = (allProducts || [])
               .filter(p => keywords.some(k => p.title.toLowerCase().includes(k)))
-              .map(p => {
-                const slug = p.title.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "");
-                return `**[${p.title}](/products/${slug})** - This is a top-rated ${categoryName} solution in our store.`;
-              })
-              .slice(0, 2)
-              .join("\n\n");
+              .slice(0, 2);
+            
+            if (matches.length > 0) {
+              setBotProducts(prev => [...prev, ...matches]);
+              return matches.map(p => {
+                return `**[PRODUCT:${p.id}]**\n*This is a top-rated ${categoryName} solution in our store.*`;
+              }).join("\n\n");
+            }
+            return null;
           };
 
           const cleaningProducts = findRelated(["clean", "soap", "wash", "detergent", "scrub", "dish"], "natural cleaning");
@@ -180,16 +185,15 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
           if (/\b(price|cost|how much|\$)\b/.test(lowerContent)) {
             const productMatch = allProducts?.find(p => lowerContent.includes(p.title.toLowerCase()));
             if (productMatch) {
-              const slug = productMatch.title.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "");
-              botResponse = `The **[${productMatch.title}](/products/${slug})** is currently priced at $${productMatch.price}. It's one of our best-sellers!`;
+              setBotProducts(prev => [...prev, productMatch]);
+              botResponse = `The **[PRODUCT:${productMatch.id}]** is currently priced at $${productMatch.price}. It's one of our best-sellers!`;
             } else {
               botResponse = `Our prices vary. We have items like ${allProducts?.[0]?.title || "various wellness products"}.`;
             }
           } else if (/\b(recommend|best|sell|products|collection|items)\b/.test(lowerContent)) {
-            botResponse = `I'd highly recommend these favorites:\n\n${(allProducts || []).slice(0, 2).map(p => {
-              const slug = p.title.toLowerCase().replace(/ /g, "-").replace(/[^\w-]+/g, "");
-              return `**[${p.title}](/products/${slug})** - Excellent quality and highly recommended by our community.`;
-            }).join("\n\n")}`;
+            const topProducts = (allProducts || []).slice(0, 2);
+            setBotProducts(prev => [...prev, ...topProducts]);
+            botResponse = `I'd highly recommend these favorites:\n\n${topProducts.map(p => `**[PRODUCT:${p.id}]**\n*Excellent quality and highly recommended.*`).join("\n\n")}`;
           } else if (/\b(clean|bathroom|home|house|soap|wash)\b/.test(lowerContent)) {
             botResponse = cleaningProducts 
               ? `For a healthy home, I recommend these products:\n\n${cleaningProducts}` 
@@ -262,20 +266,40 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
                     "max-w-[80%] rounded-2xl px-4 py-2 text-sm shadow-sm whitespace-pre-wrap",
                     isMe ? "bg-primary text-primary-foreground rounded-tr-none" : "bg-white text-foreground rounded-tl-none border border-border"
                   )}>
-                    {msg.content.split(/(\*\*\[.*?\]\(.*?\)\*\*)/g).map((part, i) => {
-                      const match = part.match(/\*\*\[(.*?)\]\((.*?)\)\*\*/);
+                    {msg.content.split(/(\*\*\[PRODUCT:.*?\]\*\*)/g).map((part, i) => {
+                      const match = part.match(/\*\*\[PRODUCT:(.*?)\]\*\*/);
                       if (match) {
-                        return (
-                          <Link 
-                            key={i} 
-                            to={match[2] as any} 
-                            className="font-bold underline text-primary hover:text-primary/80 transition-colors"
-                          >
-                            {match[1]}
-                          </Link>
-                        );
+                        const productId = match[1];
+                        const product = botProducts.find(p => String(p.id) === productId);
+                        
+                        if (product) {
+                          return (
+                            <div key={i} className="my-4 w-full max-w-[280px]">
+                              <ProductCard 
+                                product={product} 
+                                className="scale-90 origin-top-left shadow-lg border-primary/20" 
+                              />
+                            </div>
+                          );
+                        }
                       }
-                      return part;
+                      
+                      // Fallback to Markdown link rendering if it's not a product tag
+                      return part.split(/(\*\*\[.*?\]\(.*?\)\*\*)/g).map((subPart, j) => {
+                        const subMatch = subPart.match(/\*\*\[(.*?)\]\((.*?)\)\*\*/);
+                        if (subMatch) {
+                          return (
+                            <Link 
+                              key={`${i}-${j}`} 
+                              to={subMatch[2] as any} 
+                              className="font-bold underline text-primary hover:text-primary/80 transition-colors"
+                            >
+                              {subMatch[1]}
+                            </Link>
+                          );
+                        }
+                        return subPart;
+                      });
                     })}
                   </div>
                   <span className="text-[10px] text-muted-foreground mt-1 px-1">
