@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "@tanstack/react-router";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -220,8 +220,13 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
             setIsTyping(false);
             return;
           }
-          console.warn("LLM Agent fallback activated (Vercel API error).");
-        } catch (err) {
+          
+          const errorMessage = aiData?.error || "Unknown server error";
+          console.warn(`LLM Agent failed: ${errorMessage}. Falling back.`);
+          
+          // Optionally show a "System Notice" message (invisible to customer, only in console/logs for now)
+          // Or just let it fallback
+        } catch (err: any) {
           console.error("AI Agent error:", err);
         }
 
@@ -327,13 +332,23 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px] h-[500px] flex flex-col p-0 overflow-hidden">
-        <DialogHeader className="p-4 border-b bg-primary text-primary-foreground">
-          <DialogTitle className="flex items-center gap-2 text-sm font-bold">
-            <MessageCircle className="h-4 w-4" />
-            Chat with {vendorName}
-          </DialogTitle>
+      <DialogContent className="sm:max-w-[440px] h-[600px] flex flex-col p-0 overflow-hidden border-none shadow-2xl">
+        <DialogHeader className="bg-primary p-4 text-white flex-row items-center justify-between space-y-0">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 p-2 rounded-full">
+              <MessageCircle className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <DialogTitle className="text-white text-sm font-bold">Chat with {vendorName}</DialogTitle>
+              <p className="text-[10px] text-white/70">Online • AI Assistant v2.0</p>
+            </div>
+          </div>
         </DialogHeader>
+        
+        {/* Hidden description for accessibility */}
+        <div className="sr-only">
+          <DialogDescription>Chat conversation with {vendorName} AI wellness assistant.</DialogDescription>
+        </div>
         
         <div className="flex-1 p-4 bg-muted/30 overflow-y-auto" ref={scrollRef}>
           <div className="space-y-4">
