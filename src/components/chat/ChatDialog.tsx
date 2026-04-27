@@ -152,10 +152,10 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
           let botResponse = "";
           const lowerContent = content.toLowerCase();
           
-          // Fetch more vendor products for better matching
+          // Fetch more vendor products for better matching with ALL required fields
           const { data: allProducts } = await (supabase
             .from("products") as any)
-            .select("title, price")
+            .select("id, title, price, slug, image_url, status")
             .eq("vendor_id", vendorId)
             .eq("status", "published")
             .limit(20);
