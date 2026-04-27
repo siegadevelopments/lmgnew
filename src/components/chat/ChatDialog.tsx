@@ -32,6 +32,33 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [newMessage, setNewMessage] = useState("");
+  // Hydrate botProducts from existing messages
+  useEffect(() => {
+    const hydrateProducts = async () => {
+      const productIds = messages
+        .map(m => {
+          const match = m.content.match(/\[PRODUCT:(.*?)\]/);
+          return match ? match[1] : null;
+        })
+        .filter((id): id is string => id !== null && !botProducts.some(p => String(p.id) === id));
+
+      if (productIds.length > 0) {
+        const { data } = await (supabase
+          .from("products") as any)
+          .select("id, title, price, slug, image_url, status")
+          .in("id", productIds);
+        
+        if (data) {
+          setBotProducts(prev => [...prev, ...data]);
+        }
+      }
+    };
+
+    if (messages.length > 0) {
+      hydrateProducts();
+    }
+  }, [messages, botProducts.length]);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const [botProducts, setBotProducts] = useState<any[]>([]);
 
