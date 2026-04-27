@@ -102,10 +102,12 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
     const hydrateProducts = async () => {
       const productIds: string[] = [];
       messages.forEach(m => {
+        // Use a global match to find ALL products in a message
         const matches = m.content.matchAll(/\[PRODUCT:(.*?)\]/g);
         for (const match of matches) {
           const id = match[1];
-          if (id && !botProducts.some((p: any) => String(p.id) === id) && !productIds.includes(id)) {
+          // Strict check to avoid "undefined" string or null IDs
+          if (id && id !== "undefined" && !botProducts.some((p: any) => String(p.id) === id) && !productIds.includes(id)) {
             productIds.push(id);
           }
         }
