@@ -196,27 +196,31 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
         setIsTyping(true);
 
         try {
-          // 1. Attempt to call the real AI Agent (Supabase Edge Function)
-          const { data: aiResponse, error: aiError } = await (supabase.functions as any).invoke("ai-chat", {
-            body: { 
+          // 1. Attempt to call the real AI Agent (Vercel Serverless Function)
+          const response = await fetch("/api/ai-chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
               content: content, 
               vendor_id: vendorId,
               history: messages.slice(-5) 
-            }
+            })
           });
 
-          if (!aiError && aiResponse?.response) {
+          const aiData = await response.json();
+
+          if (response.ok && aiData?.response) {
             await (supabase
               .from("chat_messages" as any) as any)
               .insert({
                 conversation_id: currentConvId,
                 sender_id: vendorId,
-                content: aiResponse.response,
+                content: aiData.response,
               });
             setIsTyping(false);
             return;
           }
-          console.warn("LLM Agent fallback activated.");
+          console.warn("LLM Agent fallback activated (Vercel API error).");
         } catch (err) {
           console.error("AI Agent error:", err);
         }
