@@ -10,21 +10,7 @@ import { Instagram, Facebook, Twitter, Globe, Info, Settings2 } from "lucide-rea
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-interface VendorProfile {
-  id: string; 
-  store_name: string; 
-  store_description: string | null;
-  store_logo_url: string | null; 
-  store_banner_url: string | null; 
-  website: string | null; 
-  instagram?: string | null;
-  facebook?: string | null;
-  twitter?: string | null;
-  is_approved: boolean;
-  store_categories?: string[];
-  ai_enabled?: boolean;
-  ai_instructions?: string;
-}
+import { VendorProfile } from "@/routes/vendor";
 
 interface Props {
   profile: VendorProfile;

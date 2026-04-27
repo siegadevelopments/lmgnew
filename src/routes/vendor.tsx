@@ -46,12 +46,12 @@ export const Route = createFileRoute("/vendor")({
   component: VendorDashboardPage,
 });
 
-interface VendorProfile {
+export interface VendorProfile {
   id: string; 
   store_name: string; 
   store_description: string | null;
   store_logo_url: string | null; 
-  store_banner_url?: string | null;
+  store_banner_url: string | null; 
   website: string | null; 
   instagram?: string | null;
   facebook?: string | null;
@@ -127,7 +127,7 @@ function VendorDashboardPage() {
     setLoading(true);
     try {
       console.log("Loading vendor data for user:", user.id);
-      const { data: vendorData, error: vError } = await supabase.from("vendor_profiles").select("id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, created_at, updated_at, ai_enabled, ai_instructions, store_categories").eq("id", user.id).single();
+      const { data: vendorData, error: vError } = await (supabase.from("vendor_profiles") as any).select("id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, created_at, updated_at, ai_enabled, ai_instructions, store_categories").eq("id", user.id).single();
       
       if (vError && vError.code !== 'PGRST116') {
         console.error("Vendor profile fetch error:", vError);
