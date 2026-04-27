@@ -177,20 +177,16 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
             lowerContent.includes("collection")
           ) {
             botResponse = `I'd highly recommend checking out our items: ${productList || "our featured wellness collection"}.`;
-          } else if (lowerContent.includes("shipping") || lowerContent.includes("delivery") || lowerContent.includes("arrive")) {
-            botResponse = `We typically ship orders within 1-2 business days.`;
-          } else if (lowerContent.includes("hello") || lowerContent.includes("hi") || lowerContent.includes("hey")) {
-            botResponse = `Hello! I'm the wellness assistant for ${vendorName}. It's great to meet you!`;
-          } else if (lowerContent.includes("info") || lowerContent.includes("about") || lowerContent.includes("tell me")) {
-            botResponse = `I can certainly help you with information about ${vendorName}. We focus on healthy living and quality wellness products.`;
+          } else if (lowerContent.includes("clean") || lowerContent.includes("bathroom") || lowerContent.includes("home")) {
+            botResponse = `We have several natural cleaning solutions! ${productList.includes("Clean") ? "I'd suggest our cleaning products." : "Please browse our 'Home' category for organic cleaning supplies."}`;
           } else if (lowerContent.includes("thank")) {
             botResponse = `You're very welcome! We're happy to help.`;
           } else {
             // Default intelligent fallback
-            botResponse = `Thank you for your message! I'm the AI assistant for ${vendorName}.`;
+            botResponse = `Thank you for your message! I'm the AI assistant for ${vendorName}. How can I help you today? [v1.2]`;
           }
           
-          // Use the generated response directly without appending the internal instructions
+          // CRITICAL: Ensure instructions are NOT appended literally
           const finalResponse = botResponse.trim();
           
           await (supabase
