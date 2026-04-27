@@ -159,31 +159,31 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
 
           const productList = (products || []).map(p => p.title).join(", ");
           const instructions = vendorProfile.ai_instructions || "";
-          let responsePrefix = "";
+          console.log("AI Analysis [v1.3] - content:", lowerContent);
 
-          // Advanced Intent Analysis
-          if (lowerContent.includes("price") || lowerContent.includes("how much") || lowerContent.includes("$")) {
+          // Advanced Intent Analysis using Regex for better matching
+          if (/\b(price|cost|how much|\$)\b/.test(lowerContent)) {
             const productMatch = products?.find(p => lowerContent.includes(p.title.toLowerCase()));
             if (productMatch) {
               botResponse = `The ${productMatch.title} is currently priced at $${productMatch.price}.`;
             } else {
               botResponse = `Our wellness collection includes ${productList || "various health products"}, with prices tailored to each item.`;
             }
-          } else if (
-            lowerContent.includes("recommend") || 
-            lowerContent.includes("best") || 
-            lowerContent.includes("what do you sell") || 
-            lowerContent.includes("products") ||
-            lowerContent.includes("collection")
-          ) {
+          } else if (/\b(recommend|best|sell|products|collection|items)\b/.test(lowerContent)) {
             botResponse = `I'd highly recommend checking out our items: ${productList || "our featured wellness collection"}.`;
-          } else if (lowerContent.includes("clean") || lowerContent.includes("bathroom") || lowerContent.includes("home")) {
-            botResponse = `We have several natural cleaning solutions! ${productList.includes("Clean") ? "I'd suggest our cleaning products." : "Please browse our 'Home' category for organic cleaning supplies."}`;
-          } else if (lowerContent.includes("thank")) {
+          } else if (/\b(clean|bathroom|home|house|soap|wash)\b/.test(lowerContent)) {
+            botResponse = `We have several natural cleaning solutions! ${productList.toLowerCase().includes("clean") ? "I'd suggest our cleaning products." : "Please browse our 'Home' or 'Cleaning' categories for organic supplies."}`;
+          } else if (/\b(shipping|delivery|arrive|track)\b/.test(lowerContent)) {
+            botResponse = `We typically ship orders within 1-2 business days.`;
+          } else if (/\b(hello|hi|hey|greetings)\b/.test(lowerContent)) {
+            botResponse = `Hello! I'm the wellness assistant for ${vendorName}. It's great to meet you!`;
+          } else if (/\b(info|about|tell me|who are)\b/.test(lowerContent)) {
+            botResponse = `I can certainly help you with information about ${vendorName}. We focus on healthy living and quality wellness products.`;
+          } else if (/\b(thank|thanks|great|cool)\b/.test(lowerContent)) {
             botResponse = `You're very welcome! We're happy to help.`;
           } else {
             // Default intelligent fallback
-            botResponse = `Thank you for your message! I'm the AI assistant for ${vendorName}. How can I help you today? [v1.2]`;
+            botResponse = `Thank you for your message! I'm the AI assistant for ${vendorName}. How can I assist you with our wellness products? [v1.3]`;
           }
           
           // CRITICAL: Ensure instructions are NOT appended literally
