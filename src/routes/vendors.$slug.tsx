@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/ProductCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageCircle, Plus, Star, Users, Package, UserPlus, Clock, Calendar, Check } from "lucide-react";
+import { MessageCircle, Plus, Star, Users, Package, UserPlus, Clock, Calendar, Check, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -71,6 +71,7 @@ function VendorPage() {
   const productCount = vendorProducts?.length || 0;
   const [activeCategory, setActiveCategory] = useState("home");
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Check if current user is following this vendor
   const { data: isFollowing } = useQuery({
@@ -125,9 +126,11 @@ function VendorPage() {
     }
   });
 
-  const filteredProducts = activeCategory === "home" || activeCategory === "all" || activeCategory === "about"
-    ? vendorProducts
-    : vendorProducts?.filter(p => p.category === activeCategory);
+  const filteredProducts = vendorProducts?.filter(p => {
+    const matchesCategory = activeCategory === "home" || activeCategory === "all" || activeCategory === "about" || p.category === activeCategory;
+    const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
   return (
     <div className="bg-[#f5f5f5] min-h-screen">
@@ -234,18 +237,36 @@ function VendorPage() {
           </div>
         </div>
 
-        {/* Tab Navigation */}
+        {/* Tab Navigation & Search */}
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-           <Tabs value={activeCategory} onValueChange={setActiveCategory} className="w-full">
-              <TabsList className="bg-transparent border-b-0 h-12 gap-4 sm:gap-8 p-0 overflow-x-auto overflow-y-hidden no-scrollbar">
-                 <TabsTrigger value="home" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">Home</TabsTrigger>
-                 <TabsTrigger value="all" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">All Products</TabsTrigger>
-                 {(vendor.store_categories || []).map((cat: string) => (
-                   <TabsTrigger key={cat} value={cat} className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">{cat}</TabsTrigger>
-                 ))}
-                 <TabsTrigger value="about" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">Profile</TabsTrigger>
-              </TabsList>
-           </Tabs>
+           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <Tabs value={activeCategory} onValueChange={setActiveCategory} className="w-full md:w-auto">
+                 <TabsList className="bg-transparent border-b-0 h-12 gap-4 sm:gap-8 p-0 overflow-x-auto overflow-y-hidden no-scrollbar">
+                    <TabsTrigger value="home" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">Home</TabsTrigger>
+                    <TabsTrigger value="all" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">All Products</TabsTrigger>
+                    {(vendor.store_categories || []).map((cat: string) => (
+                      <TabsTrigger key={cat} value={cat} className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">{cat}</TabsTrigger>
+                    ))}
+                    <TabsTrigger value="about" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">Profile</TabsTrigger>
+                 </TabsList>
+              </Tabs>
+
+              <div className="relative w-full md:w-64 mb-3 md:mb-0">
+                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                 <input
+                    type="text"
+                    placeholder="Search in this shop"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      if (e.target.value && activeCategory === "home") {
+                        setActiveCategory("all");
+                      }
+                    }}
+                    className="w-full bg-muted/50 border border-border/50 rounded-full py-2 pl-10 pr-4 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                 />
+              </div>
+           </div>
         </div>
       </div>
 
