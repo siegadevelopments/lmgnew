@@ -159,34 +159,38 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
 
           const productList = (products || []).map(p => p.title).join(", ");
           const instructions = vendorProfile.ai_instructions || "";
+          let responsePrefix = "";
 
           // Advanced Intent Analysis
           if (lowerContent.includes("price") || lowerContent.includes("how much") || lowerContent.includes("$")) {
             const productMatch = products?.find(p => lowerContent.includes(p.title.toLowerCase()));
             if (productMatch) {
-              botResponse = `The ${productMatch.title} is currently priced at $${productMatch.price}. ${instructions}`;
+              botResponse = `The ${productMatch.title} is currently priced at $${productMatch.price}.`;
             } else {
-              botResponse = `Our prices vary by product. For example, we have ${productList}. ${instructions}`;
+              botResponse = `Our wellness collection includes ${productList || "various health products"}, with prices tailored to each item.`;
             }
           } else if (lowerContent.includes("recommend") || lowerContent.includes("best") || lowerContent.includes("what do you sell")) {
-            botResponse = `I'd highly recommend checking out our top items: ${productList}. ${instructions}`;
+            botResponse = `I'd highly recommend checking out our top items: ${productList || "our featured wellness collection"}.`;
           } else if (lowerContent.includes("shipping") || lowerContent.includes("delivery") || lowerContent.includes("arrive")) {
-            botResponse = `We typically ship orders within 1-2 business days. ${instructions || "You'll receive a tracking number once it's on the way!"}`;
+            botResponse = `We typically ship orders within 1-2 business days.`;
           } else if (lowerContent.includes("hello") || lowerContent.includes("hi") || lowerContent.includes("hey")) {
-            botResponse = `Hello! I'm the AI wellness assistant for ${vendorName}. ${instructions || "How can I help you discover our healthy lifestyle products today?"}`;
+            botResponse = `Hello! I'm the wellness assistant for ${vendorName}. It's great to meet you!`;
           } else if (lowerContent.includes("thank")) {
-            botResponse = `You're very welcome! Is there anything else you'd like to know about ${vendorName}?`;
+            botResponse = `You're very welcome! We're happy to help.`;
           } else {
             // Default intelligent fallback
-            botResponse = instructions || `That's an interesting question! While I'm just an assistant, I can tell you that ${vendorName} specializes in wellness and quality products like ${productList.split(',')[0] || "health supplements"}. How can I help further?`;
+            botResponse = `Thank you for your inquiry about ${vendorName}! I'm looking into that for you.`;
           }
+          
+          // Combine the generated response with the vendor's specific instructions
+          const finalResponse = `${botResponse} ${instructions}`.trim();
           
           await (supabase
             .from("chat_messages" as any) as any)
             .insert({
               conversation_id: currentConvId,
               sender_id: vendorId, // Send as the vendor
-              content: botResponse,
+              content: finalResponse,
             });
             
           await (supabase
