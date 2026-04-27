@@ -190,8 +190,8 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
             botResponse = `Thank you for your message! I'm the AI assistant for ${vendorName}.`;
           }
           
-          // Combine the generated response with the vendor's specific instructions
-          const finalResponse = `${botResponse} ${instructions}`.trim();
+          // Use the generated response directly without appending the internal instructions
+          const finalResponse = botResponse.trim();
           
           await (supabase
             .from("chat_messages" as any) as any)
