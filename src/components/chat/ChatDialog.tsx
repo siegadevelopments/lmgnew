@@ -187,7 +187,7 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
           }
           
           // CRITICAL: Ensure instructions are NOT appended literally
-          const finalResponse = botResponse.trim();
+          const finalResponse = `${botResponse.trim()} [v1.3]`;
           
           await (supabase
             .from("chat_messages" as any) as any)
