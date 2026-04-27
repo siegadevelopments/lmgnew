@@ -169,17 +169,25 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
             } else {
               botResponse = `Our wellness collection includes ${productList || "various health products"}, with prices tailored to each item.`;
             }
-          } else if (lowerContent.includes("recommend") || lowerContent.includes("best") || lowerContent.includes("what do you sell")) {
-            botResponse = `I'd highly recommend checking out our top items: ${productList || "our featured wellness collection"}.`;
+          } else if (
+            lowerContent.includes("recommend") || 
+            lowerContent.includes("best") || 
+            lowerContent.includes("what do you sell") || 
+            lowerContent.includes("products") ||
+            lowerContent.includes("collection")
+          ) {
+            botResponse = `I'd highly recommend checking out our items: ${productList || "our featured wellness collection"}.`;
           } else if (lowerContent.includes("shipping") || lowerContent.includes("delivery") || lowerContent.includes("arrive")) {
             botResponse = `We typically ship orders within 1-2 business days.`;
           } else if (lowerContent.includes("hello") || lowerContent.includes("hi") || lowerContent.includes("hey")) {
             botResponse = `Hello! I'm the wellness assistant for ${vendorName}. It's great to meet you!`;
+          } else if (lowerContent.includes("info") || lowerContent.includes("about") || lowerContent.includes("tell me")) {
+            botResponse = `I can certainly help you with information about ${vendorName}. We focus on healthy living and quality wellness products.`;
           } else if (lowerContent.includes("thank")) {
             botResponse = `You're very welcome! We're happy to help.`;
           } else {
             // Default intelligent fallback
-            botResponse = `Thank you for your inquiry about ${vendorName}! I'm looking into that for you.`;
+            botResponse = `Thank you for your message! I'm the AI assistant for ${vendorName}.`;
           }
           
           // Combine the generated response with the vendor's specific instructions
