@@ -32,56 +32,9 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [newMessage, setNewMessage] = useState("");
-  // Hydrate botProducts from existing messages
-  useEffect(() => {
-    const hydrateProducts = async () => {
-      const productIds: string[] = [];
-      messages.forEach(m => {
-        // Use a global match to find ALL products in a message
-        const matches = m.content.matchAll(/\[PRODUCT:(.*?)\]/g);
-        for (const match of matches) {
-          const id = match[1];
-          if (id && !botProducts.some(p => String(p.id) === id) && !productIds.includes(id)) {
-            productIds.push(id);
-          }
-        }
-      });
-
-      if (productIds.length > 0) {
-        console.log("Hydrating products for chat:", productIds);
-        const { data } = await (supabase
-          .from("products") as any)
-          .select("id, title, price, slug, image_url, status")
-          .in("id", productIds);
-        
-        if (data) {
-          setBotProducts(prev => {
-            const newProducts = [...prev];
-            data.forEach(p => {
-              if (!newProducts.some(np => np.id === p.id)) {
-                newProducts.push(p);
-              }
-            });
-            return newProducts;
-          });
-        }
-      }
-    };
-
-    if (messages.length > 0) {
-      hydrateProducts();
-    }
-  }, [messages]);
-
-  // Scroll to bottom on new messages
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages, isTyping, botProducts.length]);
-
   const scrollRef = useRef<HTMLDivElement>(null);
   const [botProducts, setBotProducts] = useState<any[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
 
   // Get or create conversation
   const { data: conversation, isLoading: isLoadingConv } = useQuery({
@@ -144,13 +97,51 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
     };
   }, [conversation?.id, queryClient]);
 
+  // Hydrate botProducts from existing messages
+  useEffect(() => {
+    const hydrateProducts = async () => {
+      const productIds: string[] = [];
+      messages.forEach(m => {
+        const matches = m.content.matchAll(/\[PRODUCT:(.*?)\]/g);
+        for (const match of matches) {
+          const id = match[1];
+          if (id && !botProducts.some((p: any) => String(p.id) === id) && !productIds.includes(id)) {
+            productIds.push(id);
+          }
+        }
+      });
+
+      if (productIds.length > 0) {
+        const { data } = await (supabase
+          .from("products") as any)
+          .select("id, title, price, slug, image_url, status")
+          .in("id", productIds);
+        
+        if (data) {
+          setBotProducts(prev => {
+            const newProducts = [...prev];
+            (data as any[]).forEach(p => {
+              if (!newProducts.some(np => np.id === p.id)) {
+                newProducts.push(p);
+              }
+            });
+            return newProducts;
+          });
+        }
+      }
+    };
+
+    if (messages.length > 0) {
+      hydrateProducts();
+    }
+  }, [messages]);
+
+  // Scroll to bottom on new messages
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
-
-  const [isTyping, setIsTyping] = useState(false);
+  }, [messages, isTyping, botProducts.length]);
 
   const sendMessage = useMutation({
     mutationFn: async (content: string) => {
@@ -214,12 +205,12 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
           // Helper to find related products with links and reasons
           const findRelated = (keywords: string[], categoryName: string) => {
             const matches = (allProducts || [])
-              .filter(p => keywords.some(k => p.title.toLowerCase().includes(k)))
+              .filter((p: any) => keywords.some(k => p.title.toLowerCase().includes(k)))
               .slice(0, 2);
             
             if (matches.length > 0) {
               setBotProducts(prev => [...prev, ...matches]);
-              return matches.map(p => {
+              return matches.map((p: any) => {
                 return `**[PRODUCT:${p.id}]**\n*This is a top-rated ${categoryName} solution in our store.*`;
               }).join("\n\n");
             }
@@ -231,7 +222,7 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
 
           // Advanced Intent Analysis using Regex for better matching
           if (/\b(price|cost|how much|\$)\b/.test(lowerContent)) {
-            const productMatch = allProducts?.find(p => lowerContent.includes(p.title.toLowerCase()));
+            const productMatch = allProducts?.find((p: any) => lowerContent.includes(p.title.toLowerCase()));
             if (productMatch) {
               setBotProducts(prev => [...prev, productMatch]);
               botResponse = `The **[PRODUCT:${productMatch.id}]** is currently priced at $${productMatch.price}. It's one of our best-sellers!`;
@@ -241,7 +232,7 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
           } else if (/\b(recommend|best|sell|products|collection|items)\b/.test(lowerContent)) {
             const topProducts = (allProducts || []).slice(0, 2);
             setBotProducts(prev => [...prev, ...topProducts]);
-            botResponse = `I'd highly recommend these favorites:\n\n${topProducts.map(p => `**[PRODUCT:${p.id}]**\n*Excellent quality and highly recommended.*`).join("\n\n")}`;
+            botResponse = `I'd highly recommend these favorites:\n\n${topProducts.map((p: any) => `**[PRODUCT:${p.id}]**\n*Excellent quality and highly recommended.*`).join("\n\n")}`;
           } else if (/\b(clean|bathroom|home|house|soap|wash)\b/.test(lowerContent)) {
             botResponse = cleaningProducts 
               ? `For a healthy home, I recommend these products:\n\n${cleaningProducts}` 
