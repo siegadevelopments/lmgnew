@@ -60,7 +60,7 @@ function VendorPage() {
         .from("vendor_streams") as any)
         .select("*")
         .eq("vendor_id", slug)
-        .single();
+        .maybeSingle();
       return data;
     },
   });

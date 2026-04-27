@@ -41,7 +41,7 @@ export function ChatTab({ vendorId }: { vendorId: string }) {
     queryFn: async () => {
       const { data, error } = await (supabase
         .from("chat_conversations" as any) as any)
-        .select("*, profiles:customer_id(full_name, avatar_url)")
+        .select("*, profiles!chat_conversations_customer_id_fkey(full_name, avatar_url)")
         .eq("vendor_id", vendorId)
         .order("last_message_at", { ascending: false });
       if (error) throw error;

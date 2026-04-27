@@ -171,7 +171,8 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
       queryClient.invalidateQueries({ queryKey: ["chat_messages", conversation?.id] });
     },
     onError: (err: any) => {
-      toast.error("Failed to send message: " + err.message);
+      console.error("Chat send error:", err);
+      toast.error("Failed to send message: " + (err.message || "Unknown error"));
     }
   });
 
@@ -213,9 +214,9 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
               <div className="flex flex-col items-start">
                 <div className="bg-white border border-border rounded-2xl rounded-tl-none px-4 py-2 shadow-sm">
                   <div className="flex gap-1">
-                    <motion.span animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 1 }} className="w-1 h-1 bg-muted-foreground rounded-full" />
-                    <motion.span animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="w-1 h-1 bg-muted-foreground rounded-full" />
-                    <motion.span animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="w-1 h-1 bg-muted-foreground rounded-full" />
+                    <span className="w-1 h-1 bg-muted-foreground rounded-full animate-pulse" />
+                    <span className="w-1 h-1 bg-muted-foreground rounded-full animate-pulse delay-75" />
+                    <span className="w-1 h-1 bg-muted-foreground rounded-full animate-pulse delay-150" />
                   </div>
                 </div>
               </div>
