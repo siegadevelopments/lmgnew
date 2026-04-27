@@ -194,7 +194,34 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
 
       if (vendorProfile?.ai_enabled) {
         setIsTyping(true);
-        // Simulate thinking time
+
+        try {
+          // 1. Attempt to call the real AI Agent (Supabase Edge Function)
+          const { data: aiResponse, error: aiError } = await (supabase.functions as any).invoke("ai-chat", {
+            body: { 
+              content: content, 
+              vendor_id: vendorId,
+              history: messages.slice(-5) 
+            }
+          });
+
+          if (!aiError && aiResponse?.response) {
+            await (supabase
+              .from("chat_messages" as any) as any)
+              .insert({
+                conversation_id: currentConvId,
+                sender_id: vendorId,
+                content: aiResponse.response,
+              });
+            setIsTyping(false);
+            return;
+          }
+          console.warn("LLM Agent fallback activated.");
+        } catch (err) {
+          console.error("AI Agent error:", err);
+        }
+
+        // 2. Fallback to Local Simulation Logic
         setTimeout(async () => {
           let botResponse = "";
           const lowerContent = content.toLowerCase();
