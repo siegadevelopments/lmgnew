@@ -63,14 +63,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (articleMatches.length > 0 || productMatches.length > 0) {
       if (articleMatches.length > 0) {
-        const articleLinks = articleMatches.map(a => `[**${a.title}**](/articles/${a.slug})`).join(", ");
-        responseText += `I found some helpful reading for you on this topic: ${articleLinks}. `;
+        const articleLinks = articleMatches.map(a => `\n- 📖 Read more: [**${a.title}**](/articles/${a.slug})`).join("");
+        responseText += `I found some helpful reading for you on this topic:${articleLinks}\n`;
       }
 
       if (productMatches.length > 0) {
         const productList = productMatches.map(p => `**[PRODUCT:${p.id}]**`).join(", ");
         if (responseText) {
-          responseText += `\n\nYou might also find these products from ${contextName} useful: ${productList}`;
+          responseText += `\nRecommended items from ${contextName}: ${productList}`;
         } else {
           responseText = `I recommend checking out these items from ${contextName}: ${productList}`;
         }
