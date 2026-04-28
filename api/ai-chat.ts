@@ -28,10 +28,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    const { data: allArticles } = await supabase.from('articles').select('id, title, slug').limit(100);
-    const { data: allProducts } = await productsQuery.limit(100);
+    // Parallel fetching for performance
+    const [articlesRes, productsRes, recipesRes] = await Promise.all([
+      supabase.from('articles').select('id, title, slug').limit(100),
+      productsQuery.limit(100),
+      supabase.from('recipes').select('id, title, slug').limit(100)
+    ]);
 
-    // 1. ADVANCED KEYWORD ENGINE
+    const allArticles = articlesRes.data || [];
+    const allProducts = productsRes.data || [];
+    const allRecipes = recipesRes.data || [];
+
+    // 1. KEYWORD ENGINE
     const STOP_WORDS = new Set(['can', 'you', 'me', 'tell', 'about', 'the', 'and', 'for', 'with', 'your', 'this', 'that', 'have', 'from', 'some', 'what', 'there', 'here', 'when', 'where', 'how', 'who', 'why']);
     
     const queryWords = lowerContent.split(/\s+/)
@@ -39,12 +47,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .filter(w => w.length > 2 && !STOP_WORDS.has(w));
 
     if (queryWords.length === 0) {
-      return res.status(200).json({ response: `Hello! I'm your wellness assistant for ${contextName}. How can I help you find specific products or wellness articles today?` });
+      return res.status(200).json({ response: `Hello! I'm your wellness assistant for ${contextName}. I can help you find products, health articles, or delicious recipes! What are you looking for today?` });
     }
 
     // 2. WHOLE-WORD MATCHING
     const findMatches = (list: any[]) => {
-      return (list || []).filter(item => {
+      return list.filter(item => {
         const text = (item.title + ' ' + (item.slug || '')).toLowerCase();
         return queryWords.some(word => {
           const regex = new RegExp(`\\b${word}\\b`, 'i');
@@ -53,27 +61,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     };
 
-    const articleMatches = findMatches(allArticles || []).slice(0, 3);
-    const productMatches = findMatches(allProducts || []).slice(0, 3);
+    const articleMatches = findMatches(allArticles).slice(0, 2);
+    const productMatches = findMatches(allProducts).slice(0, 3);
+    const recipeMatches = findMatches(allRecipes).slice(0, 2);
 
-    // 3. SYNTHESIS
+    // 3. RESPONSE SYNTHESIS
     let responseText = "";
 
-    if (articleMatches.length > 0 || productMatches.length > 0) {
+    if (articleMatches.length > 0 || productMatches.length > 0 || recipeMatches.length > 0) {
       const mainTopic = queryWords[0].charAt(0).toUpperCase() + queryWords[0].slice(1);
-      responseText = `I've found some relevant information regarding **${mainTopic}** for you:`;
+      responseText = `I've found some great resources regarding **${mainTopic}** across the marketplace:`;
 
       if (articleMatches.length > 0) {
         responseText += `\n\n**Helpful Articles:**` + articleMatches.map(a => `\n- 📖 [**${a.title}**](/articles/${a.slug})`).join("");
+      }
+
+      if (recipeMatches.length > 0) {
+        responseText += `\n\n**Delicious Recipes:**` + recipeMatches.map(r => `\n- 🍳 [**${r.title}**](/recipes/${r.slug})`).join("");
       }
 
       if (productMatches.length > 0) {
         responseText += `\n\n**Recommended Products from ${contextName}:**` + productMatches.map(p => `\n- **[PRODUCT:${p.id}]**`).join("");
       }
       
-      responseText += `\n\nIs there anything else you'd like to know about this?`;
+      responseText += `\n\nWould you like more details on any of these?`;
     } else {
-      responseText = `I couldn't find any specific articles or products for "**${queryWords.join(' ')}**" at ${contextName} right now. \n\nFeel free to try different keywords or browse our **[Explore](/shop)** section!`;
+      responseText = `I couldn't find any specific articles, recipes, or products for "**${queryWords.join(' ')}**" at ${contextName} right now. \n\nFeel free to try different keywords or browse our sections!`;
     }
 
     return res.status(200).json({ response: responseText });
