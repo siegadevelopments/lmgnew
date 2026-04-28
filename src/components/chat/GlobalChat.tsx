@@ -32,7 +32,7 @@ export function GlobalChat() {
       </AnimatePresence>
 
       <ChatDialog
-        vendorName="Marketplace Guide"
+        vendorName="your wellness assistant"
         isOpen={isOpen}
         onOpenChange={setIsOpen}
       />
