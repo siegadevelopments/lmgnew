@@ -46,8 +46,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     ]);
     
     const queryWords = lowerContent.split(/\s+/)
-      .map(w => w.replace(/[^a-z0-9]/g, ''))
-      .filter(w => w.length > 2 && !STOP_WORDS.has(w));
+      .map((w: string) => w.replace(/[^a-z0-9]/g, ''))
+      .filter((w: string) => w.length > 2 && !STOP_WORDS.has(w));
 
     if (queryWords.length === 0) {
       return res.status(200).json({ response: `Hello! I'm your wellness guide for ${contextName}. How can I help you today?` });
@@ -58,7 +58,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return list.map(item => {
         const text = (item.title + ' ' + (item.slug || '')).toLowerCase();
         let score = 0;
-        queryWords.forEach(word => {
+        queryWords.forEach((word: string) => {
           const regex = new RegExp(`\\b${word}\\b`, 'i');
           if (regex.test(text)) score += 2;
           else if (text.includes(word)) score += 1;
@@ -76,7 +76,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (articleMatches.length > 0 || productMatches.length > 0 || recipeMatches.length > 0) {
       // Find the most relevant word for the header
-      const bestWord = queryWords.reduce((prev, curr) => {
+      const bestWord = queryWords.reduce((prev: string, curr: string) => {
         const prevCount = [...articleMatches, ...productMatches, ...recipeMatches].filter(i => (i.title + (i.slug||'')).toLowerCase().includes(prev)).length;
         const currCount = [...articleMatches, ...productMatches, ...recipeMatches].filter(i => (i.title + (i.slug||'')).toLowerCase().includes(curr)).length;
         return currCount > prevCount ? curr : prev;
