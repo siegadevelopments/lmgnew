@@ -222,7 +222,8 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
           }
           
           const errorMessage = aiData?.error || "Unknown server error";
-          console.warn(`LLM Agent failed: ${errorMessage}. Falling back.`);
+          const errorDetails = aiData?.details || "";
+          console.warn(`LLM Agent failed: ${errorMessage}. Details: ${errorDetails}. Falling back.`);
           
           // Optionally show a "System Notice" message (invisible to customer, only in console/logs for now)
           // Or just let it fallback

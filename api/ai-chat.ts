@@ -39,7 +39,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (vendorError) {
       console.error("Vendor fetch error:", vendorError);
-      return res.status(500).json({ error: 'Failed to fetch vendor context' });
+      return res.status(500).json({ 
+        error: 'Failed to fetch vendor context', 
+        details: vendorError.message,
+        hint: vendorError.hint
+      });
     }
 
     // 2. Fetch Product Context
