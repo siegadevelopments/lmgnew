@@ -216,99 +216,77 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
           return;
         }
           
-          const errorMessage = aiData?.error || "Unknown server error";
-          const errorDetails = aiData?.details || "";
-          console.warn(`LLM Agent failed: ${errorMessage}. Details: ${errorDetails}. Falling back.`);
-          
-          // Optionally show a "System Notice" message (invisible to customer, only in console/logs for now)
-          // Or just let it fallback
-        } catch (err: any) {
-          console.error("AI Agent error:", err);
-        }
-
-        // 2. Fallback to Local Simulation Logic
-        setTimeout(async () => {
-          let botResponse = "";
-          const lowerContent = content.toLowerCase();
-          
-          // Fetch more vendor products for better matching with ALL required fields
-          const { data: allProducts } = await (supabase
-            .from("products") as any)
-            .select("id, title, price, slug, image_url, status")
-            .eq("vendor_id", vendorId)
-            .eq("status", "published")
-            .limit(20);
-
-          const productList = (allProducts || []).map(p => p.title).join(", ");
-          const instructions = vendorProfile.ai_instructions || "";
-          
-          // Helper to find related products based on ANY keywords in content
-          const findMatches = (content: string) => {
-            const words = content.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-            const matches = (allProducts || [])
-              .filter((p: any) => {
-                const titleLower = p.title.toLowerCase();
-                return words.some(word => titleLower.includes(word));
-              })
-              .slice(0, 2);
-            
-            if (matches.length > 0) {
-              setBotProducts(prev => {
-                const newProducts = [...prev];
-                matches.forEach(m => {
-                  if (!newProducts.some(p => p.id === m.id)) newProducts.push(m);
-                });
-                return newProducts;
-              });
-              return matches.map((p: any) => `**[PRODUCT:${p.id}]**\n*This is one of our featured products that matches your request.*`).join("\n\n");
-            }
-            return null;
-          };
-
-          const dynamicMatches = findMatches(lowerContent);
-
-          // Advanced Intent Analysis using Regex for better matching
-          if (/\b(price|cost|how much|\$)\b/.test(lowerContent)) {
-            const productMatch = allProducts?.find((p: any) => lowerContent.includes(p.title.toLowerCase()));
-            if (productMatch) {
-              setBotProducts(prev => [...prev, productMatch]);
-              botResponse = `The **[PRODUCT:${productMatch.id}]** is currently priced at $${productMatch.price}. It's one of our best-sellers!`;
-            } else {
-              botResponse = `Our prices vary depending on the item. You can see our full range in the store catalog!`;
-            }
-          } else if (dynamicMatches) {
-             botResponse = `Yes, we have products that match your request! Here are some suggestions:\n\n${dynamicMatches}`;
-          } else if (/\b(recommend|best|sell|products|collection|items)\b/.test(lowerContent)) {
-            const topProducts = (allProducts || []).slice(0, 2);
-            setBotProducts(prev => [...prev, ...topProducts]);
-            botResponse = `I'd highly recommend these favorites from our collection:\n\n${topProducts.map((p: any) => `**[PRODUCT:${p.id}]**\n*Excellent quality and highly recommended.*`).join("\n\n")}`;
-          } else if (/\b(shipping|delivery|arrive|track)\b/.test(lowerContent)) {
-            botResponse = `We typically ship orders within 1-2 business days. We take great care in packaging to ensure your wellness products arrive safely.`;
-          } else if (/\b(hello|hi|hey|greetings)\b/.test(lowerContent)) {
-            botResponse = `Hello! I'm the wellness assistant for ${vendorName}. How can I help you find the perfect natural products today?`;
-          } else {
-            botResponse = `Thank you for your message! I'm the AI assistant for ${vendorName}. I couldn't find a specific match for that, but feel free to browse our full collection or ask about our shipping and prices!`;
-          }
-          
-          const finalResponse = botResponse.trim();
-          
-          await (supabase
-            .from("chat_messages" as any) as any)
-            .insert({
-              conversation_id: currentConvId,
-              sender_id: vendorId, // Send as the vendor
-              content: finalResponse,
-            });
-            
-          await (supabase
-            .from("chat_conversations" as any) as any)
-            .update({ last_message_at: new Date().toISOString() })
-            .eq("id", currentConvId);
-            
-          queryClient.invalidateQueries({ queryKey: ["chat_messages", currentConvId] });
-          setIsTyping(false);
-        }, 1500);
+        const errorMessage = aiData?.error || "Unknown server error";
+        console.warn(`AI Agent failed: ${errorMessage}. Falling back to simulation.`);
+      } catch (err: any) {
+        console.error("AI Agent error:", err);
       }
+
+      // 2. Fallback to Local Simulation Logic
+      setTimeout(async () => {
+        let botResponse = "";
+        const lowerContent = content.toLowerCase();
+        
+        // Fetch products for matching
+        const { data: allProducts } = await (supabase
+          .from("products") as any)
+          .select("id, title, price, slug, image_url, status")
+          .eq("status", "published")
+          .limit(20);
+
+        // Helper to find related products
+        const findMatches = (content: string) => {
+          const words = content.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+          const matches = (allProducts || [])
+            .filter((p: any) => {
+              const titleLower = p.title.toLowerCase();
+              return words.some(word => titleLower.includes(word));
+            })
+            .slice(0, 2);
+          
+          if (matches.length > 0) {
+            setBotProducts(prev => {
+              const newProducts = [...prev];
+              matches.forEach(m => {
+                if (!newProducts.some(p => p.id === m.id)) newProducts.push(m);
+              });
+              return newProducts;
+            });
+            return matches.map((p: any) => `**[PRODUCT:${p.id}]**\n*One of our recommendations.*`).join("\n\n");
+          }
+          return null;
+        };
+
+        const dynamicMatches = findMatches(lowerContent);
+
+        if (/\b(price|cost|how much|\$)\b/.test(lowerContent)) {
+          const productMatch = allProducts?.find((p: any) => lowerContent.includes(p.title.toLowerCase()));
+          if (productMatch) {
+            setBotProducts(prev => [...prev, productMatch]);
+            botResponse = `The **[PRODUCT:${productMatch.id}]** is priced at $${productMatch.price}.`;
+          } else {
+            botResponse = `Our prices vary by item. You can see the full catalog for details!`;
+          }
+        } else if (dynamicMatches) {
+           botResponse = `I found these products for you:\n\n${dynamicMatches}`;
+        } else if (/\b(hello|hi|hey)\b/.test(lowerContent)) {
+          botResponse = `Hello! I'm your wellness assistant for ${vendorName}. How can I help?`;
+        } else {
+          botResponse = `I'd love to help you find something at ${vendorName}! Tell me more about what you're looking for.`;
+        }
+        
+        const finalResponse = botResponse.trim();
+        
+        await (supabase
+          .from("chat_messages" as any) as any)
+          .insert({
+            conversation_id: currentConvId,
+            sender_id: effectiveVendorId,
+            content: finalResponse,
+          });
+          
+        setIsTyping(false);
+      }, 1000);
     },
     onSuccess: () => {
       setNewMessage("");
@@ -316,7 +294,7 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
     },
     onError: (err: any) => {
       console.error("Chat send error:", err);
-      toast.error("Failed to send message: " + (err.message || "Unknown error"));
+      toast.error("Failed to send message");
     }
   });
 
