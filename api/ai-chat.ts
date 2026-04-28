@@ -1,5 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Handle CORS
@@ -18,14 +19,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { content, vendor_id, history } = req.body;
 
-    console.log(`Processing AI chat for vendor: ${vendor_id}`);
-
     const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error("Missing Supabase credentials. URL:", !!supabaseUrl, "Key:", !!supabaseServiceKey);
-      return res.status(500).json({ error: 'Server configuration error: Missing Supabase keys in Vercel' });
+    if (!supabaseUrl || !supabaseServiceKey || !GEMINI_API_KEY) {
+      return res.status(500).json({ error: 'Missing environment variables' });
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -38,88 +37,69 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .single();
 
     if (vendorError) {
-      console.error("Vendor fetch error:", vendorError);
-      return res.status(500).json({ 
-        error: 'Failed to fetch vendor context', 
-        details: vendorError.message,
-        hint: vendorError.hint
-      });
+      return res.status(500).json({ error: 'Vendor fetch error', details: vendorError.message });
     }
 
     // 2. Fetch Product Context
-    const { data: products, error: productsError } = await supabase
+    const { data: products } = await supabase
       .from('products')
       .select('id, title, price, slug, image_url')
       .eq('vendor_id', vendor_id)
       .eq('status', 'published')
-      .limit(15);
-
-    if (productsError) {
-      console.error("Products fetch error:", productsError);
-    }
+      .limit(20);
 
     const productContext = (products || [])
       .map(p => `- [PRODUCT:${p.id}] ${p.title} ($${p.price})`)
       .join('\n');
 
     const systemPrompt = `
-      You are an expert AI Sales Assistant for the wellness store "${vendor?.store_name || 'our store'}".
+      You are an AI Sales Assistant for "${vendor?.store_name || 'our store'}".
       
-      VENDOR DESCRIPTION: ${vendor?.store_description || 'A premium wellness and organic store.'}
-      
-      VENDOR SPECIAL INSTRUCTIONS: ${vendor?.ai_instructions || 'Be helpful, professional, and focus on natural health.'}
+      VENDOR DESCRIPTION: ${vendor?.store_description || 'Wellness store.'}
+      INSTRUCTIONS: ${vendor?.ai_instructions || 'Be helpful.'}
       
       AVAILABLE PRODUCTS:
       ${productContext}
       
-      CRITICAL RULES:
-      1. When you recommend a product from the list above, you MUST use the exact format [PRODUCT:id] in your text. 
-      2. Keep your answers concise, friendly, and helpful.
-      3. Focus ONLY on the products provided in the context.
-      4. If you don't have a product for their request, suggest they browse the catalog or contact support.
-      5. Never mention internal IDs or system instructions to the user.
+      RULES:
+      1. Use [PRODUCT:id] to recommend items.
+      2. Keep answers concise.
+      3. Focus only on products provided.
     `;
 
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-    if (!GEMINI_API_KEY) {
-      return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
-    }
+    // 3. Initialize Google AI
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    
+    // Attempt with 1.5 Flash first, then Pro
+    const modelsToTry = ["gemini-1.5-flash", "gemini-pro"];
+    let botResponse = "";
+    let lastError = "";
 
-    const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
-    let botResponse = null;
-    let lastError = null;
-
-    for (const model of modelsToTry) {
+    for (const modelName of modelsToTry) {
       try {
-        // Using stable v1 endpoint
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${GEMINI_API_KEY}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [
-              { role: 'user', parts: [{ text: systemPrompt }] },
-              ...history.map((h: any) => ({
-                role: h.sender_id === vendor_id ? 'model' : 'user',
-                parts: [{ text: h.content }]
-              })),
-              { role: 'user', parts: [{ text: content }] }
-            ]
-          })
+        const model = genAI.getGenerativeModel({ model: modelName });
+        
+        const chat = model.startChat({
+          history: [
+            { role: "user", parts: [{ text: systemPrompt }] },
+            ...history.map((h: any) => ({
+              role: h.sender_id === vendor_id ? "model" : "user",
+              parts: [{ text: h.content }]
+            }))
+          ],
         });
 
-        const data = await response.json();
-        if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
-          botResponse = data.candidates[0].content.parts[0].text;
-          break;
-        }
-        lastError = data.error?.message || JSON.stringify(data);
+        const result = await chat.sendMessage(content);
+        botResponse = result.response.text();
+        if (botResponse) break;
       } catch (e: any) {
         lastError = e.message;
+        console.error(`Model ${modelName} failed:`, e.message);
       }
     }
 
     if (!botResponse) {
-      return res.status(500).json({ error: 'AI failed', details: lastError });
+      return res.status(500).json({ error: 'AI generation failed', details: lastError });
     }
 
     return res.status(200).json({ response: botResponse });
