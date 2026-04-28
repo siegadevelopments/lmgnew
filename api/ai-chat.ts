@@ -18,7 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
 
     let contextName = "the Marketplace";
-    let productsQuery = supabase.from('products').select('id, title, price, slug').eq('status', 'published');
+    let productsQuery = supabase.from('products').select('id, title, price, slug, excerpt').eq('status', 'published');
 
     if (vendor_id) {
       const { data: vendor } = await supabase.from('vendor_profiles').select('store_name').eq('id', vendor_id).single();
@@ -29,16 +29,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const [articlesRes, productsRes, recipesRes] = await Promise.all([
-      supabase.from('articles').select('id, title, slug').limit(150),
+      supabase.from('articles').select('id, title, slug, excerpt').limit(150),
       productsQuery.limit(150),
-      supabase.from('recipes').select('id, title, slug').limit(150)
+      supabase.from('recipes').select('id, title, slug, excerpt').limit(150)
     ]);
 
     const allArticles = articlesRes.data || [];
     const allProducts = productsRes.data || [];
     const allRecipes = recipesRes.data || [];
 
-    // 1. ADVANCED TOPIC DETECTION
     const STOP_WORDS = new Set([
       'can', 'you', 'me', 'tell', 'about', 'the', 'and', 'for', 'with', 'your', 'this', 'that', 'have', 'from', 'some', 'what', 'there', 'here', 'when', 'where', 'how', 'who', 'why',
       'meant', 'mean', 'want', 'look', 'find', 'show', 'give', 'tell', 'need', 'help', 'search', 'find', 'think', 'thought', 'like', 'does', 'did', 'was', 'were', 'been', 'being',
@@ -53,10 +52,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ response: `Hello! I'm your wellness guide for ${contextName}. How can I help you today?` });
     }
 
-    // 2. SEARCH & RANKING
     const findMatches = (list: any[]) => {
       return list.map(item => {
-        const text = (item.title + ' ' + (item.slug || '')).toLowerCase();
+        const text = (item.title + ' ' + (item.slug || '') + ' ' + (item.excerpt || '')).toLowerCase();
         let score = 0;
         queryWords.forEach((word: string) => {
           const regex = new RegExp(`\\b${word}\\b`, 'i');
@@ -71,11 +69,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const productMatches = findMatches(allProducts).slice(0, 3);
     const recipeMatches = findMatches(allRecipes).slice(0, 3);
 
-    // 3. DYNAMIC PERSONA SYNTHESIS
     let responseText = "";
 
     if (articleMatches.length > 0 || productMatches.length > 0 || recipeMatches.length > 0) {
-      // Find the most relevant word for the header
       const bestWord = queryWords.reduce((prev: string, curr: string) => {
         const prevCount = [...articleMatches, ...productMatches, ...recipeMatches].filter(i => (i.title + (i.slug||'')).toLowerCase().includes(prev)).length;
         const currCount = [...articleMatches, ...productMatches, ...recipeMatches].filter(i => (i.title + (i.slug||'')).toLowerCase().includes(curr)).length;
@@ -86,20 +82,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       responseText = `I've found some relevant wellness resources regarding **${displayTopic}**:`;
 
       if (articleMatches.length > 0) {
-        responseText += `\n\n**Expert Articles:**` + articleMatches.map(a => `\n- 📖 [**${a.title}**](/articles/${a.slug})`).join("");
+        responseText += `\n\n**📖 Expert Articles:**` + articleMatches.map(a => `\n\n- [**${a.title}**](/articles/${a.slug})\n  _${a.excerpt ? a.excerpt.substring(0, 80) + '...' : 'Learn more about this topic.'}_`).join("");
       }
 
       if (recipeMatches.length > 0) {
-        responseText += `\n\n**Wellness Recipes:**` + recipeMatches.map(r => `\n- 🍳 [**${r.title}**](/recipes/${r.slug})`).join("");
+        responseText += `\n\n**🍳 Wellness Recipes:**` + recipeMatches.map(r => `\n\n- [**${r.title}**](/recipes/${r.slug})\n  _${r.excerpt ? r.excerpt.substring(0, 80) + '...' : 'View the full recipe details.'}_`).join("");
       }
 
       if (productMatches.length > 0) {
-        responseText += `\n\n**Curated Products from ${contextName}:**` + productMatches.map(p => `\n- **[PRODUCT:${p.id}]**`).join("");
+        responseText += `\n\n**🛒 Recommended for you:**` + productMatches.map(p => `\n- **[PRODUCT:${p.id}]**`).join("");
       }
       
-      responseText += `\n\nIs there a specific part of ${displayTopic} you'd like to explore further?`;
+      responseText += `\n\nIs there a specific part of **${displayTopic}** you'd like to dive into?`;
     } else {
-      responseText = `I couldn't find a direct match for "**${queryWords.join(' ')}**" in our database yet. \n\nPerhaps try searching for broader terms like "hormones," "stress," or "nutrition"?`;
+      responseText = `I couldn't find a direct match for "**${queryWords.join(' ')}**" at ${contextName} right now. \n\nPerhaps try searching for broader terms like "hormones," "stress," or "nutrition"?`;
     }
 
     return res.status(200).json({ response: responseText });
