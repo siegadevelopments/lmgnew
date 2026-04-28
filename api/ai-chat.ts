@@ -21,14 +21,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let instructions = "Be a helpful wellness guide. Recommend products naturally.";
     let productsQuery = supabase.from('products').select('id, title, price, slug, image_url').eq('status', 'published');
 
-    // 1. Context Awareness (Vendor vs Global)
+    // 1. Context Awareness
     if (vendor_id) {
       const { data: vendor } = await supabase
         .from('vendor_profiles')
         .select('store_name, ai_instructions')
         .eq('id', vendor_id)
         .single();
-      
       if (vendor) {
         contextName = vendor.store_name;
         instructions = vendor.ai_instructions || instructions;
@@ -36,37 +35,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    const { data: allProducts } = await productsQuery.limit(50);
+    // 2. Fetch Data
+    const { data: allArticles } = await supabase.from('articles').select('id, title, slug').limit(100);
+    const { data: allProducts } = await productsQuery.limit(100);
 
-    // 2. Semantic Keyword Engine (Enhanced)
+    // 3. Keyword Matching
     const words = lowerContent.split(/\s+/).filter((w: string) => w.length > 2);
-    const matches = (allProducts || []).filter((p: any) => {
+    
+    const productMatches = (allProducts || []).filter((p: any) => {
       const titleLower = p.title.toLowerCase();
-      const slugLower = (p.slug || "").toLowerCase();
-      
       return words.some((word: string) => {
         const stem = word.endsWith('s') ? word.slice(0, -1) : word;
-        return titleLower.includes(stem) || slugLower.includes(stem);
+        return titleLower.includes(stem);
       });
     }).slice(0, 3);
 
-    // 3. Response Generation (Persona-Based)
+    const articleMatches = (allArticles || []).filter((a: any) => {
+      const titleLower = a.title.toLowerCase();
+      return words.some((word: string) => {
+        const stem = word.endsWith('s') ? word.slice(0, -1) : word;
+        return titleLower.includes(stem);
+      });
+    }).slice(0, 2);
+
+    // 4. Smart Response Building
     let responseText = "";
 
-    if (matches.length > 0) {
-      const productList = matches.map(p => `**[PRODUCT:${p.id}]**`).join(", ");
-      if (/\b(how much|price|cost|\$)\b/.test(lowerContent)) {
-        const p = matches[0];
-        responseText = `The **[PRODUCT:${p.id}]** is currently available for $${p.price}. Would you like to see more details?`;
-      } else {
-        responseText = `Based on your request, I highly recommend checking out ${productList} from ${contextName}. They are some of our most popular wellness items!`;
+    if (articleMatches.length > 0 || productMatches.length > 0) {
+      if (articleMatches.length > 0) {
+        const articleLinks = articleMatches.map(a => `[**${a.title}**](/articles/${a.slug})`).join(", ");
+        responseText += `I found some helpful reading for you on this topic: ${articleLinks}. `;
+      }
+
+      if (productMatches.length > 0) {
+        const productList = productMatches.map(p => `**[PRODUCT:${p.id}]**`).join(", ");
+        if (responseText) {
+          responseText += `\n\nYou might also find these products from ${contextName} useful: ${productList}`;
+        } else {
+          responseText = `I recommend checking out these items from ${contextName}: ${productList}`;
+        }
       }
     } else if (/\b(hello|hi|hey|greet)\b/.test(lowerContent)) {
-      responseText = `Hello! I'm your wellness assistant for ${contextName}. How can I help you find the perfect natural products today?`;
-    } else if (/\b(delivery|shipping|time|long)\b/.test(lowerContent)) {
-      responseText = `Shipping times vary by location, but most orders from ${contextName} are processed within 2-3 business days.`;
+      responseText = `Hello! I'm your wellness guide for ${contextName}. I can help you find products or relevant health articles. What's on your mind today?`;
     } else {
-      responseText = `I'd love to help you find something at ${contextName}! Could you tell me more about what you're looking for? You can ask about prices, recommendations, or specific wellness goals.`;
+      responseText = `I'd love to help you find information or products at ${contextName}! Could you tell me more about what you're looking for (e.g., "asthma tips" or "skin care")?`;
     }
 
     return res.status(200).json({ response: responseText });
