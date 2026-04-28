@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageCircle, Send, User } from "lucide-react";
+import { MessageCircle, Send, User, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -430,11 +430,30 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 border-t bg-white flex gap-2">
+        <form onSubmit={handleSubmit} className="p-4 border-t bg-white flex items-center gap-2">
+          <input
+            type="file"
+            id="image-upload"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                // Future: Add image preview and base64 handling
+              }
+            }}
+          />
+          <label 
+            htmlFor="image-upload"
+            className="p-2 hover:bg-gray-100 rounded-full cursor-pointer transition-colors"
+            title="Upload image (Meme, Chart, etc.)"
+          >
+            <ImageIcon className="h-5 w-5 text-gray-500" />
+          </label>
           <Input 
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Type a message..."
+            placeholder="Type a message or describe an image..."
             className="flex-1 h-9 text-sm"
             disabled={sendMessage.isPending}
           />
