@@ -43,7 +43,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       'can', 'you', 'me', 'tell', 'about', 'the', 'and', 'for', 'with', 'your', 'this', 'that', 'have', 'from', 'some', 'what', 'there', 'here', 'when', 'where', 'how', 'who', 'why',
       'meant', 'mean', 'want', 'look', 'find', 'show', 'give', 'tell', 'need', 'help', 'search', 'find', 'think', 'thought', 'like', 'does', 'did', 'was', 'were', 'been', 'being',
       'information', 'info', 'products', 'product', 'items', 'item', 'articles', 'article', 'tips', 'tip', 'details', 'detail', 'guide', 'guides', 'website', 'site',
-      'more', 'most', 'each', 'every', 'all', 'any', 'some', 'than', 'then', 'also', 'just', 'only', 'very', 'really', 'would', 'could', 'should', 'shall', 'will', 'must'
+      'more', 'most', 'each', 'every', 'all', 'any', 'some', 'than', 'then', 'also', 'just', 'only', 'very', 'really', 'would', 'could', 'should', 'shall', 'will', 'must',
+      'please', 'thanks', 'thank', 'hello', 'hi', 'hey', 'greetings', 'welcome', 'anyone', 'someone', 'everything', 'anything', 'nothing', 'something',
+      'again', 'further', 'once', 'too', 'very', 'between', 'among', 'through', 'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 'in', 'out', 'on', 'off', 'over', 'under',
+      'again', 'then', 'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'any', 'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 'just', 'should', 'now'
     ]);
     
     const queryWords = lowerContent.split(/\s+/)
