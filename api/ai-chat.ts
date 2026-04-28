@@ -1,6 +1,5 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -10,7 +9,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    const { content, vendor_id, history } = req.body;
+    const { content, vendor_id } = req.body;
     const lowerContent = content.toLowerCase();
 
     const supabase = createClient(
@@ -18,62 +17,63 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       process.env.SUPABASE_SERVICE_ROLE_KEY || ''
     );
 
-    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-    // 1. RETRIEVAL (The "R" in RAG)
+    let contextName = "the Marketplace";
     let productsQuery = supabase.from('products').select('id, title, price, slug').eq('status', 'published');
-    if (vendor_id) productsQuery = productsQuery.eq('vendor_id', vendor_id);
 
-    const { data: allProducts } = await productsQuery.limit(40);
-    const { data: allArticles } = await supabase.from('articles').select('id, title, slug').limit(40);
+    if (vendor_id) {
+      const { data: vendor } = await supabase.from('vendor_profiles').select('store_name').eq('id', vendor_id).single();
+      if (vendor) {
+        contextName = vendor.store_name;
+        productsQuery = productsQuery.eq('vendor_id', vendor_id);
+      }
+    }
 
-    // 3. Keyword Matching (Precise)
-    const STOP_WORDS = new Set(['about', 'tell', 'your', 'have', 'this', 'that', 'with', 'from', 'some', 'what']);
-    const words = lowerContent.split(/\s+/).filter((w: string) => w.length > 2 && !STOP_WORDS.has(w));
+    const { data: allArticles } = await supabase.from('articles').select('id, title, slug').limit(100);
+    const { data: allProducts } = await productsQuery.limit(100);
+
+    // 1. ADVANCED KEYWORD ENGINE
+    const STOP_WORDS = new Set(['can', 'you', 'me', 'tell', 'about', 'the', 'and', 'for', 'with', 'your', 'this', 'that', 'have', 'from', 'some', 'what', 'there', 'here', 'when', 'where', 'how', 'who', 'why']);
     
-    const relevantProducts = (allProducts || []).filter((p: any) => 
-      words.some((word: string) => p.title.toLowerCase().includes(word.endsWith('s') ? word.slice(0, -1) : word))
-    ).slice(0, 5);
+    const queryWords = lowerContent.split(/\s+/)
+      .map(w => w.replace(/[^a-z0-9]/g, ''))
+      .filter(w => w.length > 2 && !STOP_WORDS.has(w));
 
-    const relevantArticles = (allArticles || []).filter((a: any) => 
-      words.some((word: string) => a.title.toLowerCase().includes(word.endsWith('s') ? word.slice(0, -1) : word))
-    ).slice(0, 5);
+    if (queryWords.length === 0) {
+      return res.status(200).json({ response: `Hello! I'm your wellness assistant for ${contextName}. How can I help you find specific products or wellness articles today?` });
+    }
 
-    // 2. AUGMENTATION (The "A" in RAG)
-    const context = `
-      KNOWLEDGE BASE:
-      ARTICLES: ${relevantArticles.map(a => `${a.title} (/articles/${a.slug})`).join(', ') || 'None found.'}
-      PRODUCTS: ${relevantProducts.map(p => `${p.title} [PRODUCT:${p.id}]`).join(', ') || 'None found.'}
-      
-      RULES:
-      - Use [PRODUCT:id] for products.
-      - Use Markdown links for articles.
-      - If no relevant knowledge is found, say you don't know but suggest browsing the shop.
-    `;
+    // 2. WHOLE-WORD MATCHING
+    const findMatches = (list: any[]) => {
+      return (list || []).filter(item => {
+        const text = (item.title + ' ' + (item.slug || '')).toLowerCase();
+        return queryWords.some(word => {
+          const regex = new RegExp(`\\b${word}\\b`, 'i');
+          return regex.test(text);
+        });
+      });
+    };
 
-    const systemPrompt = `You are a wellness assistant. Use this context to answer: ${context}`;
+    const articleMatches = findMatches(allArticles || []).slice(0, 3);
+    const productMatches = findMatches(allProducts || []).slice(0, 3);
 
-    // 3. GENERATION (High-Fidelity RAG Synthesis)
+    // 3. SYNTHESIS
     let responseText = "";
 
-    if (relevantArticles.length > 0 || relevantProducts.length > 0) {
-      const topicMatch = relevantArticles.length > 0 ? relevantArticles[0].title : (relevantProducts.length > 0 ? relevantProducts[0].title : "wellness");
-      
-      responseText = `I've looked through our wellness guide for you. Regarding **${topicMatch}**, here is what I found:`;
+    if (articleMatches.length > 0 || productMatches.length > 0) {
+      const mainTopic = queryWords[0].charAt(0).toUpperCase() + queryWords[0].slice(1);
+      responseText = `I've found some relevant information regarding **${mainTopic}** for you:`;
 
-      if (relevantArticles.length > 0) {
-        const articleLinks = relevantArticles.map(a => `\n- 📖 Insight: [**${a.title}**](/articles/${a.slug})`).join("");
-        responseText += `\n\n**Helpful Reading:**${articleLinks}`;
+      if (articleMatches.length > 0) {
+        responseText += `\n\n**Helpful Articles:**` + articleMatches.map(a => `\n- 📖 [**${a.title}**](/articles/${a.slug})`).join("");
       }
 
-      if (relevantProducts.length > 0) {
-        const productList = relevantProducts.map(p => `**[PRODUCT:${p.id}]**`).join(", ");
-        responseText += `\n\n**Recommended for you:**\nBased on your interest, I suggest looking at ${productList}. They are specifically curated for wellness goals like yours.`;
+      if (productMatches.length > 0) {
+        responseText += `\n\n**Recommended Products from ${contextName}:**` + productMatches.map(p => `\n- **[PRODUCT:${p.id}]**`).join("");
       }
       
-      responseText += `\n\nIs there anything specific about these that you'd like to know more about?`;
+      responseText += `\n\nIs there anything else you'd like to know about this?`;
     } else {
-      responseText = `I couldn't find a specific match in our current articles or shop, but I'm constantly learning! You might find what you're looking for by browsing our **[Explore](/shop)** section or checking out our latest **[Wellness Articles](/articles)**.`;
+      responseText = `I couldn't find any specific articles or products for "**${queryWords.join(' ')}**" at ${contextName} right now. \n\nFeel free to try different keywords or browse our **[Explore](/shop)** section!`;
     }
 
     return res.status(200).json({ response: responseText });
