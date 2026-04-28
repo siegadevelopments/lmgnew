@@ -51,7 +51,7 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
         const { data: firstVendor } = await supabase
           .from("vendor_profiles")
           .select("id")
-          .eq("status", "approved")
+          .eq("is_approved", true)
           .limit(1)
           .single();
         
@@ -184,7 +184,7 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
         const { data: firstVendor } = await supabase
           .from("vendor_profiles")
           .select("id")
-          .eq("status", "approved")
+          .eq("is_approved", true)
           .limit(1)
           .single();
         if (!firstVendor) throw new Error("No vendors available to host chat");
