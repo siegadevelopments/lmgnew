@@ -14,7 +14,7 @@ import { motion } from "framer-motion";
 import { ProductCard } from "@/components/ProductCard";
 
 interface ChatDialogProps {
-  vendorId: string;
+  vendorId?: string; // Optional for global mode
   vendorName: string;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
@@ -36,9 +36,11 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
   const [botProducts, setBotProducts] = useState<any[]>([]);
   const [isTyping, setIsTyping] = useState(false);
 
+  const effectiveVendorId = vendorId || "marketplace_assistant";
+
   // Get or create conversation
   const { data: conversation, isLoading: isLoadingConv } = useQuery({
-    queryKey: ["chat_conversation", user?.id, vendorId],
+    queryKey: ["chat_conversation", user?.id, effectiveVendorId],
     queryFn: async () => {
       if (!user) return null;
       
@@ -47,7 +49,7 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
         .from("chat_conversations" as any) as any)
         .select("*")
         .eq("customer_id", user.id)
-        .eq("vendor_id", vendorId)
+        .eq("vendor_id", effectiveVendorId)
         .maybeSingle();
       
       if (error && error.code !== "PGRST116") throw error;
@@ -161,12 +163,12 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
       if (!currentConvId) {
         const { data: newConv, error: convError } = await (supabase
           .from("chat_conversations" as any) as any)
-          .insert({ customer_id: user.id, vendor_id: vendorId })
+          .insert({ customer_id: user.id, vendor_id: effectiveVendorId })
           .select()
           .single();
         if (convError) throw convError;
         currentConvId = newConv.id;
-        queryClient.invalidateQueries({ queryKey: ["chat_conversation", user.id, vendorId] });
+        queryClient.invalidateQueries({ queryKey: ["chat_conversation", user.id, effectiveVendorId] });
       }
 
       const { error: msgError } = await (supabase
@@ -186,40 +188,33 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
         .eq("id", currentConvId);
 
       // --- AI CHATBOT LOGIC ---
-      const { data: vendorProfile } = await (supabase
-        .from("vendor_profiles") as any)
-        .select("ai_enabled, ai_instructions")
-        .eq("id", vendorId)
-        .single();
+      setIsTyping(true);
 
-      if (vendorProfile?.ai_enabled) {
-        setIsTyping(true);
+      try {
+        // 1. Attempt to call the real AI Agent (Vercel Serverless Function)
+        const response = await fetch("/api/ai-chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            content: content, 
+            vendor_id: vendorId, // Pass original vendorId (null for global)
+            history: messages.slice(-5) 
+          })
+        });
 
-        try {
-          // 1. Attempt to call the real AI Agent (Vercel Serverless Function)
-          const response = await fetch("/api/ai-chat", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-              content: content, 
-              vendor_id: vendorId,
-              history: messages.slice(-5) 
-            })
-          });
+        const aiData = await response.json();
 
-          const aiData = await response.json();
-
-          if (response.ok && aiData?.response) {
-            await (supabase
-              .from("chat_messages" as any) as any)
-              .insert({
-                conversation_id: currentConvId,
-                sender_id: vendorId,
-                content: aiData.response,
-              });
-            setIsTyping(false);
-            return;
-          }
+        if (response.ok && aiData?.response) {
+          await (supabase
+            .from("chat_messages" as any) as any)
+            .insert({
+              conversation_id: currentConvId,
+              sender_id: effectiveVendorId,
+              content: aiData.response,
+            });
+          setIsTyping(false);
+          return;
+        }
           
           const errorMessage = aiData?.error || "Unknown server error";
           const errorDetails = aiData?.details || "";
