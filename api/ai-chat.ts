@@ -27,8 +27,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { data: allProducts } = await productsQuery.limit(40);
     const { data: allArticles } = await supabase.from('articles').select('id, title, slug').limit(40);
 
-    // Filter to find the most relevant context for the LLM
-    const words = lowerContent.split(/\s+/).filter((w: string) => w.length > 2);
+    // 3. Keyword Matching (Precise)
+    const STOP_WORDS = new Set(['about', 'tell', 'your', 'have', 'this', 'that', 'with', 'from', 'some', 'what']);
+    const words = lowerContent.split(/\s+/).filter((w: string) => w.length > 2 && !STOP_WORDS.has(w));
+    
     const relevantProducts = (allProducts || []).filter((p: any) => 
       words.some((word: string) => p.title.toLowerCase().includes(word.endsWith('s') ? word.slice(0, -1) : word))
     ).slice(0, 5);
