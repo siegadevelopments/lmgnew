@@ -41,7 +41,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // 1. ADVANCED TOPIC DETECTION
     const STOP_WORDS = new Set([
       'can', 'you', 'me', 'tell', 'about', 'the', 'and', 'for', 'with', 'your', 'this', 'that', 'have', 'from', 'some', 'what', 'there', 'here', 'when', 'where', 'how', 'who', 'why',
-      'meant', 'mean', 'want', 'look', 'find', 'show', 'give', 'tell', 'need', 'help', 'search', 'find', 'think', 'thought', 'like', 'does', 'did', 'was', 'were', 'been', 'being'
+      'meant', 'mean', 'want', 'look', 'find', 'show', 'give', 'tell', 'need', 'help', 'search', 'find', 'think', 'thought', 'like', 'does', 'did', 'was', 'were', 'been', 'being',
+      'information', 'info', 'products', 'product', 'items', 'item', 'articles', 'article', 'tips', 'tip', 'details', 'detail', 'guide', 'guides', 'website', 'site'
     ]);
     
     const queryWords = lowerContent.split(/\s+/)
