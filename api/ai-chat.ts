@@ -38,12 +38,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const { data: allProducts } = await productsQuery.limit(50);
 
-    // 2. Semantic Keyword Engine
+    // 2. Semantic Keyword Engine (Enhanced)
     const words = lowerContent.split(/\s+/).filter((w: string) => w.length > 2);
     const matches = (allProducts || []).filter((p: any) => {
       const titleLower = p.title.toLowerCase();
-      return words.some((word: string) => titleLower.includes(word)) || 
-             (vendor_id ? false : words.some((word: string) => p.slug?.includes(word)));
+      const slugLower = (p.slug || "").toLowerCase();
+      
+      return words.some((word: string) => {
+        const stem = word.endsWith('s') ? word.slice(0, -1) : word;
+        return titleLower.includes(stem) || slugLower.includes(stem);
+      });
     }).slice(0, 3);
 
     // 3. Response Generation (Persona-Based)
