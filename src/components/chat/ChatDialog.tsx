@@ -40,16 +40,35 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
 
   // Get or create conversation
   const { data: conversation, isLoading: isLoadingConv } = useQuery({
-    queryKey: ["chat_conversation", user?.id, effectiveVendorId],
+    queryKey: ["chat_conversation", user?.id, vendorId || "global"],
     queryFn: async () => {
       if (!user) return null;
+      
+      let targetVendorId = vendorId;
+
+      // If no vendorId, find the first available vendor to host the global chat
+      if (!targetVendorId) {
+        const { data: firstVendor } = await supabase
+          .from("vendor_profiles")
+          .select("id")
+          .eq("status", "approved")
+          .limit(1)
+          .single();
+        
+        if (firstVendor) {
+          targetVendorId = firstVendor.id;
+        } else {
+          // Fallback if no vendors exist at all
+          return null;
+        }
+      }
       
       // Try to find existing
       let { data, error } = await (supabase
         .from("chat_conversations" as any) as any)
         .select("*")
         .eq("customer_id", user.id)
-        .eq("vendor_id", effectiveVendorId)
+        .eq("vendor_id", targetVendorId)
         .maybeSingle();
       
       if (error && error.code !== "PGRST116") throw error;
@@ -158,17 +177,30 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
       if (!user) throw new Error("Login required");
       
       let currentConvId = conversation?.id;
-      
+      let targetVendorId = vendorId;
+
+      // Find a host vendor for global chat if needed
+      if (!targetVendorId) {
+        const { data: firstVendor } = await supabase
+          .from("vendor_profiles")
+          .select("id")
+          .eq("status", "approved")
+          .limit(1)
+          .single();
+        if (!firstVendor) throw new Error("No vendors available to host chat");
+        targetVendorId = firstVendor.id;
+      }
+
       // Create conversation if it doesn't exist
       if (!currentConvId) {
         const { data: newConv, error: convError } = await (supabase
           .from("chat_conversations" as any) as any)
-          .insert({ customer_id: user.id, vendor_id: effectiveVendorId })
+          .insert({ customer_id: user.id, vendor_id: targetVendorId })
           .select()
           .single();
         if (convError) throw convError;
         currentConvId = newConv.id;
-        queryClient.invalidateQueries({ queryKey: ["chat_conversation", user.id, effectiveVendorId] });
+        queryClient.invalidateQueries({ queryKey: ["chat_conversation", user.id, vendorId || "global"] });
       }
 
       const { error: msgError } = await (supabase
@@ -191,13 +223,13 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
       setIsTyping(true);
 
       try {
-        // 1. Attempt to call the real AI Agent (Vercel Serverless Function)
+        // 1. Attempt to call the real AI Agent
         const response = await fetch("/api/ai-chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ 
             content: content, 
-            vendor_id: vendorId, // Pass original vendorId (null for global)
+            vendor_id: vendorId, 
             history: messages.slice(-5) 
           })
         });
@@ -209,7 +241,7 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
             .from("chat_messages" as any) as any)
             .insert({
               conversation_id: currentConvId,
-              sender_id: effectiveVendorId,
+              sender_id: targetVendorId,
               content: aiData.response,
             });
           setIsTyping(false);
@@ -281,7 +313,7 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
           .from("chat_messages" as any) as any)
           .insert({
             conversation_id: currentConvId,
-            sender_id: effectiveVendorId,
+            sender_id: targetVendorId,
             content: finalResponse,
           });
           
