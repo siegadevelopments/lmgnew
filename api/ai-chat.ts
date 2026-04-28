@@ -67,17 +67,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       3. Focus only on products provided.
     `;
 
-    // 3. Initialize Google AI
+    // 3. Initialize Google AI (FORCING STABLE v1 VERSION)
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    
-    // Attempt with 1.5 Flash first, then Pro
     const modelsToTry = ["gemini-1.5-flash", "gemini-pro"];
     let botResponse = "";
     let lastError = "";
 
     for (const modelName of modelsToTry) {
       try {
-        const model = genAI.getGenerativeModel({ model: modelName });
+        // Use v1 instead of v1beta
+        const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: "v1" });
         
         const chat = model.startChat({
           history: [
