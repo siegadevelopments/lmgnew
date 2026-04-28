@@ -85,45 +85,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
     }
 
-    // Call Gemini API (using high-compatibility gemini-pro on v1beta)
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          { role: 'user', parts: [{ text: systemPrompt }] },
-          ...history.map((h: any) => ({
-            role: h.sender_id === vendor_id ? 'model' : 'user',
-            parts: [{ text: h.content }]
-          })),
-          { role: 'user', parts: [{ text: content }] }
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 500,
-        }
-      })
-    });
+    const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
+    let botResponse = null;
+    let lastError = null;
 
-    const result = await response.json();
-    
-    if (!response.ok) {
-      console.error("Gemini API Error:", result);
-      return res.status(response.status).json({ 
-        error: 'Gemini API failed', 
-        details: result.error?.message || JSON.stringify(result) 
-      });
+    for (const model of modelsToTry) {
+      try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [
+              { role: 'user', parts: [{ text: systemPrompt }] },
+              ...history.map((h: any) => ({
+                role: h.sender_id === vendor_id ? 'model' : 'user',
+                parts: [{ text: h.content }]
+              })),
+              { role: 'user', parts: [{ text: content }] }
+            ]
+          })
+        });
+
+        const data = await response.json();
+        if (response.ok && data.candidates?.[0]?.content?.parts?.[0]?.text) {
+          botResponse = data.candidates[0].content.parts[0].text;
+          break;
+        }
+        lastError = data.error?.message || JSON.stringify(data);
+      } catch (e: any) {
+        lastError = e.message;
+      }
     }
 
-    const botResponse = result.candidates?.[0]?.content?.parts?.[0]?.text;
-    
     if (!botResponse) {
-      const finishReason = result.candidates?.[0]?.finishReason || "UNKNOWN";
-      return res.status(200).json({ 
-        response: `[SYSTEM NOTICE: Gemini unable to generate text. Reason: ${finishReason}]` 
-      });
+      return res.status(500).json({ error: 'AI failed', details: lastError });
     }
 
     return res.status(200).json({ response: botResponse });
