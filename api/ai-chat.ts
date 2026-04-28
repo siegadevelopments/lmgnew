@@ -108,7 +108,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
 
     const result = await response.json();
-    const botResponse = result.candidates?.[0]?.content?.parts?.[0]?.text || "I'm sorry, I'm having trouble processing that right now.";
+    
+    if (!response.ok) {
+      console.error("Gemini API Error:", result);
+      return res.status(response.status).json({ 
+        error: 'Gemini API failed', 
+        details: result.error?.message || JSON.stringify(result) 
+      });
+    }
+
+    const botResponse = result.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!botResponse) {
+      const finishReason = result.candidates?.[0]?.finishReason || "UNKNOWN";
+      return res.status(200).json({ 
+        response: `[SYSTEM NOTICE: Gemini unable to generate text. Reason: ${finishReason}]` 
+      });
+    }
 
     return res.status(200).json({ response: botResponse });
   } catch (error: any) {
