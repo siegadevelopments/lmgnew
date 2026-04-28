@@ -36,7 +36,7 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
   const [botProducts, setBotProducts] = useState<any[]>([]);
   const [isTyping, setIsTyping] = useState(false);
 
-  const effectiveVendorId = vendorId || "marketplace_assistant";
+  const effectiveVendorId = vendorId || "00000000-0000-0000-0000-000000000000";
 
   // Get or create conversation
   const { data: conversation, isLoading: isLoadingConv } = useQuery({
