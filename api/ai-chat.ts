@@ -20,15 +20,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log(`Processing AI chat for vendor: ${vendor_id}`);
 
-    if (!process.env.VITE_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error("Missing Supabase credentials in environment variables");
-      return res.status(500).json({ error: 'Server configuration error (Supabase)' });
+    const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("Missing Supabase credentials. URL:", !!supabaseUrl, "Key:", !!supabaseServiceKey);
+      return res.status(500).json({ error: 'Server configuration error: Missing Supabase keys in Vercel' });
     }
 
-    const supabase = createClient(
-      process.env.VITE_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // 1. Fetch Vendor Context
     const { data: vendor, error: vendorError } = await supabase
