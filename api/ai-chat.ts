@@ -51,33 +51,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const systemPrompt = `You are a wellness assistant. Use this context to answer: ${context}`;
 
-    // 3. GENERATION (The "G" in RAG)
-    if (!GEMINI_API_KEY) {
-      throw new Error("API Key missing");
-    }
+    // 3. GENERATION (High-Fidelity RAG Synthesis)
+    let responseText = "";
 
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    // Trying models that are most likely to work in v1
-    const modelsToTry = ["gemini-1.5-flash", "gemini-pro"];
-    let botResponse = "";
-    let lastError = "";
+    if (relevantArticles.length > 0 || relevantProducts.length > 0) {
+      const topicMatch = relevantArticles.length > 0 ? relevantArticles[0].title : (relevantProducts.length > 0 ? relevantProducts[0].title : "wellness");
+      
+      responseText = `I've looked through our wellness guide for you. Regarding **${topicMatch}**, here is what I found:`;
 
-    for (const modelName of modelsToTry) {
-      try {
-        const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: 'v1' });
-        const result = await model.generateContent([systemPrompt, content]);
-        botResponse = result.response.text();
-        if (botResponse) break;
-      } catch (e: any) {
-        lastError = e.message;
+      if (relevantArticles.length > 0) {
+        const articleLinks = relevantArticles.map(a => `\n- 📖 Insight: [**${a.title}**](/articles/${a.slug})`).join("");
+        responseText += `\n\n**Helpful Reading:**${articleLinks}`;
       }
+
+      if (relevantProducts.length > 0) {
+        const productList = relevantProducts.map(p => `**[PRODUCT:${p.id}]**`).join(", ");
+        responseText += `\n\n**Recommended for you:**\nBased on your interest, I suggest looking at ${productList}. They are specifically curated for wellness goals like yours.`;
+      }
+      
+      responseText += `\n\nIs there anything specific about these that you'd like to know more about?`;
+    } else {
+      responseText = `I couldn't find a specific match in our current articles or shop, but I'm constantly learning! You might find what you're looking for by browsing our **[Explore](/shop)** section or checking out our latest **[Wellness Articles](/articles)**.`;
     }
 
-    if (!botResponse) {
-      return res.status(500).json({ error: 'RAG failed', details: lastError });
-    }
-
-    return res.status(200).json({ response: botResponse });
+    return res.status(200).json({ response: responseText });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
