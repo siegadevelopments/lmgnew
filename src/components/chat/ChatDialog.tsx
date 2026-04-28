@@ -385,16 +385,17 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
                       }
                       
                       // Fallback to Markdown link rendering if it's not a product tag
-                      return part.split(/(\*\*\[.*?\]\(.*?\)\*\*)/g).map((subPart, j) => {
-                        const subMatch = subPart.match(/\*\*\[(.*?)\]\((.*?)\)\*\*/);
+                      return part.split(/(\[?[\*]*.*?[\*]*\]\(.*?\))/g).map((subPart, j) => {
+                        const subMatch = subPart.match(/\[([\*]*.*?[\*]*)\]\((.*?)\)/);
                         if (subMatch) {
+                          const cleanText = subMatch[1].replace(/[\*]/g, '');
                           return (
                             <Link 
                               key={`${i}-${j}`} 
                               to={subMatch[2] as any} 
-                              className="font-bold underline text-primary hover:text-primary/80 transition-colors"
+                              className="font-bold underline text-primary hover:text-primary/80 transition-colors inline-block"
                             >
-                              {subMatch[1]}
+                              {cleanText}
                             </Link>
                           );
                         }
