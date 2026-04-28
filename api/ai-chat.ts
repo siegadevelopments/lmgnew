@@ -1,5 +1,6 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -9,7 +10,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   try {
-    const { content, vendor_id } = req.body;
+    const { content, vendor_id, history } = req.body;
     const lowerContent = content.toLowerCase();
 
     const supabase = createClient(
@@ -17,71 +18,66 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       process.env.SUPABASE_SERVICE_ROLE_KEY || ''
     );
 
-    let contextName = "the Marketplace";
-    let instructions = "Be a helpful wellness guide. Recommend products naturally.";
-    let productsQuery = supabase.from('products').select('id, title, price, slug, image_url').eq('status', 'published');
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-    // 1. Context Awareness
-    if (vendor_id) {
-      const { data: vendor } = await supabase
-        .from('vendor_profiles')
-        .select('store_name, ai_instructions')
-        .eq('id', vendor_id)
-        .single();
-      if (vendor) {
-        contextName = vendor.store_name;
-        instructions = vendor.ai_instructions || instructions;
-        productsQuery = productsQuery.eq('vendor_id', vendor_id);
-      }
-    }
+    // 1. RETRIEVAL (The "R" in RAG)
+    let productsQuery = supabase.from('products').select('id, title, price, slug').eq('status', 'published');
+    if (vendor_id) productsQuery = productsQuery.eq('vendor_id', vendor_id);
 
-    // 2. Fetch Data
-    const { data: allArticles } = await supabase.from('articles').select('id, title, slug').limit(100);
-    const { data: allProducts } = await productsQuery.limit(100);
+    const { data: allProducts } = await productsQuery.limit(40);
+    const { data: allArticles } = await supabase.from('articles').select('id, title, slug').limit(40);
 
-    // 3. Keyword Matching
+    // Filter to find the most relevant context for the LLM
     const words = lowerContent.split(/\s+/).filter((w: string) => w.length > 2);
-    
-    const productMatches = (allProducts || []).filter((p: any) => {
-      const titleLower = p.title.toLowerCase();
-      return words.some((word: string) => {
-        const stem = word.endsWith('s') ? word.slice(0, -1) : word;
-        return titleLower.includes(stem);
-      });
-    }).slice(0, 3);
+    const relevantProducts = (allProducts || []).filter((p: any) => 
+      words.some((word: string) => p.title.toLowerCase().includes(word.endsWith('s') ? word.slice(0, -1) : word))
+    ).slice(0, 5);
 
-    const articleMatches = (allArticles || []).filter((a: any) => {
-      const titleLower = a.title.toLowerCase();
-      return words.some((word: string) => {
-        const stem = word.endsWith('s') ? word.slice(0, -1) : word;
-        return titleLower.includes(stem);
-      });
-    }).slice(0, 2);
+    const relevantArticles = (allArticles || []).filter((a: any) => 
+      words.some((word: string) => a.title.toLowerCase().includes(word.endsWith('s') ? word.slice(0, -1) : word))
+    ).slice(0, 5);
 
-    // 4. Smart Response Building
-    let responseText = "";
+    // 2. AUGMENTATION (The "A" in RAG)
+    const context = `
+      KNOWLEDGE BASE:
+      ARTICLES: ${relevantArticles.map(a => `${a.title} (/articles/${a.slug})`).join(', ') || 'None found.'}
+      PRODUCTS: ${relevantProducts.map(p => `${p.title} [PRODUCT:${p.id}]`).join(', ') || 'None found.'}
+      
+      RULES:
+      - Use [PRODUCT:id] for products.
+      - Use Markdown links for articles.
+      - If no relevant knowledge is found, say you don't know but suggest browsing the shop.
+    `;
 
-    if (articleMatches.length > 0 || productMatches.length > 0) {
-      if (articleMatches.length > 0) {
-        const articleLinks = articleMatches.map(a => `\n- 📖 Read more: [**${a.title}**](/articles/${a.slug})`).join("");
-        responseText += `I found some helpful reading for you on this topic:${articleLinks}\n`;
-      }
+    const systemPrompt = `You are a wellness assistant. Use this context to answer: ${context}`;
 
-      if (productMatches.length > 0) {
-        const productList = productMatches.map(p => `**[PRODUCT:${p.id}]**`).join(", ");
-        if (responseText) {
-          responseText += `\nRecommended items from ${contextName}: ${productList}`;
-        } else {
-          responseText = `I recommend checking out these items from ${contextName}: ${productList}`;
-        }
-      }
-    } else if (/\b(hello|hi|hey|greet)\b/.test(lowerContent)) {
-      responseText = `Hello! I'm your wellness guide for ${contextName}. I can help you find products or relevant health articles. What's on your mind today?`;
-    } else {
-      responseText = `I'd love to help you find information or products at ${contextName}! Could you tell me more about what you're looking for (e.g., "asthma tips" or "skin care")?`;
+    // 3. GENERATION (The "G" in RAG)
+    if (!GEMINI_API_KEY) {
+      throw new Error("API Key missing");
     }
 
-    return res.status(200).json({ response: responseText });
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    // Trying models that are most likely to work in v1
+    const modelsToTry = ["gemini-1.5-flash", "gemini-pro"];
+    let botResponse = "";
+    let lastError = "";
+
+    for (const modelName of modelsToTry) {
+      try {
+        const model = genAI.getGenerativeModel({ model: modelName }, { apiVersion: 'v1' });
+        const result = await model.generateContent([systemPrompt, content]);
+        botResponse = result.response.text();
+        if (botResponse) break;
+      } catch (e: any) {
+        lastError = e.message;
+      }
+    }
+
+    if (!botResponse) {
+      return res.status(500).json({ error: 'RAG failed', details: lastError });
+    }
+
+    return res.status(200).json({ response: botResponse });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
