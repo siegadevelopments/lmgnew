@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,9 +6,18 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Pencil, Trash2, Plus, Video as VideoIcon } from "lucide-react";
+import { Pencil, Trash2, Plus, Video as VideoIcon, Upload, Link as LinkIcon, Loader2 } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 
-interface Video { id: string; title: string; embed_url: string; description: string | null; created_at: string | null; }
+interface Video { 
+  id: string; 
+  title: string; 
+  embed_url: string; 
+  description: string | null; 
+  created_at: string | null;
+  status?: string;
+}
 
 interface Props {
   videos: Video[];
@@ -18,19 +27,51 @@ interface Props {
 
 export function VideosTab({ videos, setVideos, userId }: Props) {
   const [isEditing, setIsEditing] = useState(false);
+  const [uploadMode, setUploadMode] = useState<"url" | "file">("url");
   const [form, setForm] = useState({ id: "", title: "", embed_url: "", description: "" });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setUploadProgress(0);
     
     try {
+      let finalEmbedUrl = form.embed_url;
+      let initialStatus = "ready";
+
+      if (uploadMode === "file" && selectedFile && !form.id) {
+        initialStatus = "uploading";
+        
+        // 1. Upload to Supabase Storage
+        const fileExt = selectedFile.name.split('.').pop();
+        const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `${userId}/${fileName}`;
+
+        console.log("Uploading to storage:", filePath);
+        
+        const { error: uploadError, data } = await supabase.storage
+          .from('video-uploads')
+          .upload(filePath, selectedFile, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (uploadError) throw uploadError;
+
+        // Use the actual storage path so the Edge Function knows where to look
+        finalEmbedUrl = `storage://${filePath}`;
+      }
+
       const payload: any = {
         title: form.title, 
-        embed_url: form.embed_url, 
+        embed_url: finalEmbedUrl, 
         description: form.description || null,
         author_id: userId,
+        status: initialStatus,
         updated_at: new Date().toISOString()
       };
 
@@ -59,17 +100,32 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
         if (error) throw error;
         if (data) {
           setVideos([data as Video, ...videos]);
-          toast.success("Video added successfully!");
+          
+          if (uploadMode === "file") {
+            toast.info("Video uploaded! It is now being processed for YouTube.");
+            // Here we would call the Edge Function:
+            // supabase.functions.invoke('upload-to-youtube', { body: { videoId: data.id, filePath: filePath } });
+          } else {
+            toast.success("Video added successfully!");
+          }
         }
       }
       
-      setIsEditing(false);
-      setForm({ id: "", title: "", embed_url: "", description: "" });
+      resetForm();
     } catch (err: any) {
+      console.error("Save error:", err);
       toast.error(err.message || "Failed to save video");
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const resetForm = () => {
+    setIsEditing(false);
+    setForm({ id: "", title: "", embed_url: "", description: "" });
+    setSelectedFile(null);
+    setUploadProgress(0);
+    setUploadMode("url");
   };
 
   const handleEdit = (v: Video) => {
@@ -79,6 +135,7 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
       embed_url: v.embed_url,
       description: v.description || ""
     });
+    setUploadMode("url"); // Edit only supports URL for now
     setIsEditing(true);
   };
 
@@ -108,27 +165,96 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
         {isEditing && (
           <div className="mb-8 rounded-xl border border-primary/20 p-6 bg-primary/5 animate-in fade-in slide-in-from-top-2 duration-300">
             <h3 className="text-lg font-bold mb-4">{form.id ? "Edit Video" : "Add New Video"}</h3>
+            
+            {!form.id && (
+              <div className="mb-6">
+                <Label className="mb-2 block">Upload Method</Label>
+                <Tabs value={uploadMode} onValueChange={(v: any) => setUploadMode(v)} className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="url" className="flex items-center gap-2">
+                      <LinkIcon className="h-4 w-4" /> Paste Link
+                    </TabsTrigger>
+                    <TabsTrigger value="file" className="flex items-center gap-2">
+                      <Upload className="h-4 w-4" /> Upload File
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+            )}
+
             <form onSubmit={handleSave} className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <Label>Title</Label>
                 <Input required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Enter video title" />
               </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label>YouTube / Embed URL</Label>
-                <Input required value={form.embed_url} onChange={e => setForm({ ...form, embed_url: e.target.value })} placeholder="https://www.youtube.com/embed/..." />
-                <p className="text-[10px] text-muted-foreground mt-1">Paste a YouTube embed URL or any video embed link.</p>
-              </div>
+              
+              {uploadMode === "url" || form.id ? (
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>YouTube / Embed URL</Label>
+                  <Input required value={form.embed_url} onChange={e => setForm({ ...form, embed_url: e.target.value })} placeholder="https://www.youtube.com/embed/..." />
+                  <p className="text-[10px] text-muted-foreground mt-1">Paste a YouTube embed URL or any video embed link.</p>
+                </div>
+              ) : (
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Video File</Label>
+                  <div 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex flex-col items-center justify-center border-2 border-dashed border-primary/20 rounded-lg p-8 bg-background cursor-pointer hover:bg-accent/50 transition-all"
+                  >
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      className="hidden" 
+                      accept="video/*" 
+                      onChange={e => setSelectedFile(e.target.files?.[0] || null)}
+                    />
+                    {selectedFile ? (
+                      <div className="flex flex-col items-center">
+                        <VideoIcon className="h-10 w-10 text-primary mb-2" />
+                        <p className="text-sm font-medium">{selectedFile.name}</p>
+                        <p className="text-xs text-muted-foreground">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center">
+                        <Upload className="h-10 w-10 text-muted-foreground mb-2" />
+                        <p className="text-sm font-medium">Click to select video</p>
+                        <p className="text-xs text-muted-foreground">MP4, MOV, or WEBM (Max 100MB recommended)</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2 sm:col-span-2">
                 <Label>Description (optional)</Label>
                 <Textarea rows={3} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Briefly describe this video" />
               </div>
+
+              {submitting && uploadProgress > 0 && (
+                <div className="space-y-2 sm:col-span-2">
+                  <div className="flex justify-between text-xs">
+                    <span>Uploading to storage...</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <Progress value={uploadProgress} className="h-2" />
+                </div>
+              )}
+
               <div className="flex gap-2 sm:col-span-2 pt-2">
-                <Button type="submit" disabled={submitting}>{submitting ? "Saving..." : form.id ? "Update Video" : "Upload Video"}</Button>
-                <Button type="button" variant="outline" onClick={() => setIsEditing(false)}>Cancel</Button>
+                <Button type="submit" disabled={submitting || (uploadMode === "file" && !selectedFile && !form.id)}>
+                  {submitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {uploadMode === "file" ? "Uploading..." : "Saving..."}
+                    </>
+                  ) : form.id ? "Update Video" : "Upload & Save"}
+                </Button>
+                <Button type="button" variant="outline" onClick={resetForm}>Cancel</Button>
               </div>
             </form>
           </div>
         )}
+
         <div className="space-y-3">
           {videos.length === 0 && !isEditing && (
             <div className="py-12 text-center text-muted-foreground bg-muted/20 rounded-xl border border-dashed border-border">
@@ -139,11 +265,22 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
             <div key={v.id} className="flex items-center justify-between rounded-xl border border-border/50 p-4 hover:bg-muted/30 transition-all group">
               <div className="flex items-center gap-4 min-w-0 flex-1">
                 <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <VideoIcon className="h-5 w-5 text-primary" />
+                  {v.status === 'uploading' ? (
+                    <Loader2 className="h-5 w-5 text-primary animate-spin" />
+                  ) : (
+                    <VideoIcon className="h-5 w-5 text-primary" />
+                  )}
                 </div>
                 <div className="min-w-0">
-                  <p className="font-bold text-foreground truncate group-hover:text-primary transition-colors">{v.title}</p>
-                  <p className="text-xs text-muted-foreground truncate max-w-md">{v.embed_url}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-bold text-foreground truncate group-hover:text-primary transition-colors">{v.title}</p>
+                    {v.status === 'uploading' && (
+                      <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">Processing</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate max-w-md">
+                    {v.status === 'uploading' ? "Uploading to YouTube..." : v.embed_url}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-1">
