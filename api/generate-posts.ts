@@ -84,17 +84,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const geminiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || '';
     if (!geminiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
 
-    const { numWeeks = 4, startDate, selectedDays = [1, 3, 5] } = req.body || {};
-    const postsPerWeek = selectedDays.length;
-    const totalPostsCount = numWeeks * postsPerWeek;
+    const { numWeeks = 4, startDate, selectedDays = [1, 3, 5], specificDates = null } = req.body || {};
+    const postsPerWeek = selectedDays ? selectedDays.length : 0;
+    const totalPostsCount = specificDates ? specificDates.length : (numWeeks * postsPerWeek);
 
-    if (postsPerWeek === 0) return res.status(400).json({ error: 'At least one day must be selected' });
+    if (totalPostsCount === 0) return res.status(400).json({ error: 'No dates selected for generation' });
 
     const genAI = new GoogleGenerativeAI(geminiKey);
 
-    // Day names for prompt
+    // Day names or dates for prompt
     const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const activeDaysText = selectedDays.map((d: number) => dayNames[d]).join(", ");
+    const scheduleText = specificDates 
+      ? `Specific dates: ${specificDates.join(", ")}` 
+      : `${postsPerWeek} posts per week, on: ${selectedDays.map((d: number) => dayNames[d]).join(", ")}`;
 
     // Keep content summaries small to reduce token usage
     const contentSummary = JSON.stringify({
@@ -105,16 +107,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const generationPrompt = `${AUDIENCE_PROMPT}
 
-TASK: Generate exactly ${totalPostsCount} social media posts for the next ${numWeeks} weeks.
-SCHEDULE: ${postsPerWeek} posts per week, on these specific days: ${activeDaysText}.
+TASK: Generate exactly ${totalPostsCount} social media posts for the following schedule.
+SCHEDULE: ${scheduleText}
 
 CONTENT TO PROMOTE:
 ${contentSummary}
 
 DISTRIBUTION STRATEGY:
 - Mix educational articles (40%), product features (40%), and recipes/lifestyle (20%).
-- Ensure content rotates logically across the selected days (${activeDaysText}).
-- Focus on building trust early in the week and converting towards the weekend.
+- Ensure content rotates logically across the selected days.
+- Focus on building trust early and converting towards the end of the batch.
 
 POST TYPES TO ROTATE:
 1. "Did You Know?" — Educational hook with article link
@@ -179,10 +181,7 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
       });
     }
 
-    // 4. Schedule posts based on selected days
-    const baseDate = startDate ? new Date(startDate) : new Date();
-    baseDate.setHours(0, 0, 0, 0);
-
+    // 4. Schedule posts
     const timeSlots: Record<string, number> = {
       morning: 9,
       midday: 12,
@@ -190,19 +189,18 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
     };
 
     const scheduledPosts = [];
-    let currentDate = new Date(baseDate);
-    currentDate.setDate(currentDate.getDate() + 1); // Start tomorrow
-
-    let postIndex = 0;
-    while (postIndex < posts.length) {
-      if (selectedDays.includes(currentDate.getDay())) {
-        const post = posts[postIndex];
-        const postDate = new Date(currentDate);
+    
+    if (specificDates && specificDates.length > 0) {
+      // Use exact specific dates
+      posts.forEach((post, index) => {
+        const dateStr = specificDates[index];
+        if (!dateStr) return;
+        const postDate = new Date(dateStr);
         const hour = timeSlots[post.time_slot] || 9;
         postDate.setHours(hour, 0, 0, 0);
 
         scheduledPosts.push({
-          title: post.title || `Post ${postIndex + 1}`,
+          title: post.title || `Post ${index + 1}`,
           caption: post.caption || '',
           hashtags: Array.isArray(post.hashtags) ? post.hashtags : [],
           image_url: post.image_url || null,
@@ -213,10 +211,39 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
           scheduled_at: postDate.toISOString(),
           status: 'draft',
         });
-        postIndex++;
+      });
+    } else {
+      // Use weekly pattern logic
+      const baseDate = startDate ? new Date(startDate) : new Date();
+      baseDate.setHours(0, 0, 0, 0);
+      let currentDate = new Date(baseDate);
+      currentDate.setDate(currentDate.getDate() + 1); // Start tomorrow
+
+      let postIndex = 0;
+      while (postIndex < posts.length) {
+        if (selectedDays.includes(currentDate.getDay())) {
+          const post = posts[postIndex];
+          const postDate = new Date(currentDate);
+          const hour = timeSlots[post.time_slot] || 9;
+          postDate.setHours(hour, 0, 0, 0);
+
+          scheduledPosts.push({
+            title: post.title || `Post ${postIndex + 1}`,
+            caption: post.caption || '',
+            hashtags: Array.isArray(post.hashtags) ? post.hashtags : [],
+            image_url: post.image_url || null,
+            source_type: post.source_type || 'custom',
+            source_id: post.source_id ? String(post.source_id) : null,
+            source_url: post.source_url || null,
+            platforms: ['facebook', 'instagram'],
+            scheduled_at: postDate.toISOString(),
+            status: 'draft',
+          });
+          postIndex++;
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+        if (scheduledPosts.length > 500) break; // Safety
       }
-      currentDate.setDate(currentDate.getDate() + 1);
-      if (scheduledPosts.length > 500) break; // Safety
     }
 
     // 5. Insert into database

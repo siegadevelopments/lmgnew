@@ -62,6 +62,8 @@ export function AdminMarketingTab() {
   const [generating, setGenerating] = useState(false);
   const [numWeeks, setNumWeeks] = useState(4);
   const [selectedDays, setSelectedDays] = useState<number[]>([1, 3, 5]); // Mon, Wed, Fri
+  const [selectionMode, setSelectionMode] = useState<"weekly" | "manual">("weekly");
+  const [selectedSpecificDates, setSelectedSpecificDates] = useState<string[]>([]);
   const [publishing, setPublishing] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<ScheduledPost | null>(null);
   const [editCaption, setEditCaption] = useState("");
@@ -133,6 +135,8 @@ export function AdminMarketingTab() {
   };
 
   const previewDates = useMemo(() => {
+    if (selectionMode === "manual") return selectedSpecificDates;
+
     const dates: string[] = [];
     const totalPosts = numWeeks * selectedDays.length;
     
@@ -152,7 +156,7 @@ export function AdminMarketingTab() {
       if (dates.length > 200) break; // Safety
     }
     return dates;
-  }, [numWeeks, selectedDays]);
+  }, [numWeeks, selectedDays, selectionMode, selectedSpecificDates]);
 
   // Generate 30 days
   async function handleGenerate() {
@@ -170,7 +174,8 @@ export function AdminMarketingTab() {
         body: JSON.stringify({ 
           startDate: new Date().toISOString(),
           numWeeks,
-          selectedDays
+          selectedDays: selectionMode === "weekly" ? selectedDays : null,
+          specificDates: selectionMode === "manual" ? selectedSpecificDates : null
         }),
       });
 
@@ -364,6 +369,15 @@ export function AdminMarketingTab() {
 
   // Click on a date to add a post (Buffer-style)
   function handleDateClick(day: Date) {
+    if (selectionMode === "manual") {
+      const dateStr = day.toDateString();
+      if (selectedSpecificDates.includes(dateStr)) {
+        setSelectedSpecificDates(prev => prev.filter(d => d !== dateStr));
+      } else {
+        setSelectedSpecificDates(prev => [...prev, dateStr].sort());
+      }
+      return;
+    }
     const d = new Date(day);
     d.setHours(9, 0, 0, 0);
     // Format to datetime-local: YYYY-MM-DDTHH:MM
@@ -417,67 +431,100 @@ export function AdminMarketingTab() {
                 <Sparkles className="h-6 w-6" />
                 Marketing Automation
               </h3>
-              <p className="text-sm text-muted-foreground max-w-2xl">
-                AI-generated strategy targeted at midlife wellness seekers, 
-                supportive buyers & preventative wellness women.
-              </p>
+              <div className="flex items-center gap-1 bg-muted/50 p-0.5 rounded-lg border border-border/50 w-fit">
+                <Button 
+                  variant={selectionMode === "weekly" ? "secondary" : "ghost"} 
+                  size="sm" 
+                  className="h-7 text-[10px] px-3 font-bold"
+                  onClick={() => setSelectionMode("weekly")}
+                >
+                  Weekly Pattern
+                </Button>
+                <Button 
+                  variant={selectionMode === "manual" ? "secondary" : "ghost"} 
+                  size="sm" 
+                  className="h-7 text-[10px] px-3 font-bold"
+                  onClick={() => setSelectionMode("manual")}
+                >
+                  Select Specific Dates
+                </Button>
+              </div>
             </div>
             <div className="flex flex-wrap items-center gap-4">
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Days of Week</span>
-                <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg border border-border/50">
-                  {[
-                    { l: "S", v: 0 },
-                    { l: "M", v: 1 },
-                    { l: "T", v: 2 },
-                    { l: "W", v: 3 },
-                    { l: "T", v: 4 },
-                    { l: "F", v: 5 },
-                    { l: "S", v: 6 },
-                  ].map((d) => (
-                    <button
-                      key={d.v}
-                      onClick={() => {
-                        if (selectedDays.includes(d.v)) {
-                          setSelectedDays(selectedDays.filter(day => day !== d.v));
-                        } else {
-                          setSelectedDays([...selectedDays, d.v].sort());
-                        }
-                      }}
-                      className={cn(
-                        "w-7 h-7 rounded-md text-[10px] font-bold transition-all",
-                        selectedDays.includes(d.v) 
-                          ? "bg-primary text-primary-foreground shadow-sm" 
-                          : "bg-background text-muted-foreground hover:bg-muted"
-                      )}
-                    >
-                      {d.l}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              {selectionMode === "weekly" ? (
+                <>
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Days of Week</span>
+                    <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg border border-border/50">
+                      {[
+                        { l: "S", v: 0 },
+                        { l: "M", v: 1 },
+                        { l: "T", v: 2 },
+                        { l: "W", v: 3 },
+                        { l: "T", v: 4 },
+                        { l: "F", v: 5 },
+                        { l: "S", v: 6 },
+                      ].map((d) => (
+                        <button
+                          key={d.v}
+                          onClick={() => {
+                            if (selectedDays.includes(d.v)) {
+                              setSelectedDays(selectedDays.filter(day => day !== d.v));
+                            } else {
+                              setSelectedDays([...selectedDays, d.v].sort());
+                            }
+                          }}
+                          className={cn(
+                            "w-7 h-7 rounded-md text-[10px] font-bold transition-all",
+                            selectedDays.includes(d.v) 
+                              ? "bg-primary text-primary-foreground shadow-sm" 
+                              : "bg-background text-muted-foreground hover:bg-muted"
+                          )}
+                        >
+                          {d.l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-              <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Duration</span>
-                <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border border-border/50 h-9">
-                  <select 
-                    className="h-full rounded-md border-0 bg-transparent px-2 py-0 text-sm font-semibold focus:ring-0 cursor-pointer"
-                    value={numWeeks}
-                    onChange={(e) => setNumWeeks(Number(e.target.value))}
-                    disabled={generating}
-                  >
-                    <option value={1}>1 Week</option>
-                    <option value={2}>2 Weeks</option>
-                    <option value={4}>4 Weeks</option>
-                    <option value={8}>8 Weeks</option>
-                  </select>
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Duration</span>
+                    <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border border-border/50 h-9">
+                      <select 
+                        className="h-full rounded-md border-0 bg-transparent px-2 py-0 text-sm font-semibold focus:ring-0 cursor-pointer"
+                        value={numWeeks}
+                        onChange={(e) => setNumWeeks(Number(e.target.value))}
+                        disabled={generating}
+                      >
+                        <option value={1}>1 Week</option>
+                        <option value={2}>2 Weeks</option>
+                        <option value={4}>4 Weeks</option>
+                        <option value={8}>8 Weeks</option>
+                      </select>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Selection</span>
+                  <div className="flex items-center gap-3 bg-muted/50 px-4 py-1.5 rounded-lg border border-border/50 h-9">
+                    <span className="text-sm font-bold text-primary">{selectedSpecificDates.length} Dates Selected</span>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 text-[10px] text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => setSelectedSpecificDates([])}
+                    >
+                      Clear All
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="pt-5 flex items-center gap-3">
                 <Button
                   onClick={handleGenerate}
-                  disabled={generating || selectedDays.length === 0}
+                  disabled={generating || (selectionMode === "weekly" && selectedDays.length === 0) || (selectionMode === "manual" && selectedSpecificDates.length === 0)}
                   className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 shadow-lg min-w-[140px] h-10"
                 >
                   {generating ? (
