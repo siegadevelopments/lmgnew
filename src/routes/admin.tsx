@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminGalleriesTab } from "@/components/admin/AdminGalleriesTab";
 import { AdminContentTab } from "@/components/admin/AdminContentTab";
+import { AdminMarketingTab } from "@/components/admin/AdminMarketingTab";
 import { VendorEditDialog } from "@/components/admin/VendorEditDialog";
 import { UserEditDialog } from "@/components/admin/UserEditDialog";
 import { toast } from "sonner";
@@ -27,7 +28,8 @@ import {
   Menu,
   LogOut,
   Key,
-  Radio
+  Radio,
+  Megaphone
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -255,6 +257,7 @@ function AdminPage() {
     { id: "products", label: `Products (${products.length})`, icon: Package },
     { id: "content", label: "Content Manager", icon: FileText },
     { id: "galleries", label: "Galleries", icon: ImageIcon },
+    { id: "marketing", label: "Marketing", icon: Megaphone },
     { id: "messages", label: "Messages", icon: Mail, badge: stats.contactMessages },
     { id: "users", label: `Users (${users.length})`, icon: Users },
   ];
@@ -771,6 +774,15 @@ function AdminPage() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* MARKETING AUTOMATION */}
+            <TabsContent value="marketing" className="mt-0 border-0 p-0">
+              <div className="mb-6 flex flex-col gap-1">
+                <h1 className="text-2xl font-bold tracking-tight">Marketing Automation</h1>
+                <p className="text-muted-foreground">Generate and schedule AI-powered social media posts.</p>
+              </div>
+              <AdminMarketingTab />
             </TabsContent>
           </Tabs>
         </div>
