@@ -298,6 +298,26 @@ export function AdminMarketingTab() {
     setEditImageUrl(post.image_url || "");
   }
 
+  // Click on a date to add a post (Buffer-style)
+  function handleDateClick(day: Date) {
+    const d = new Date(day);
+    d.setHours(9, 0, 0, 0);
+    // Format to datetime-local: YYYY-MM-DDTHH:MM
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const localStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    setManualForm({
+      title: "",
+      caption: "",
+      hashtags: "",
+      image_url: "",
+      scheduled_at: localStr,
+      source_url: "",
+    });
+    setShowManualForm(true);
+    // Scroll to form
+    setTimeout(() => document.getElementById("manual-post-form")?.scrollIntoView({ behavior: "smooth", block: "center" }), 100);
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -379,13 +399,13 @@ export function AdminMarketingTab() {
       {showManualForm && (
         <Card className="border-primary/20 bg-primary/5 animate-in fade-in slide-in-from-top-2 duration-300">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Plus className="h-5 w-5" /> Create Post Manually
+         <CardTitle className="text-lg flex items-center gap-2">
+              <Plus className="h-5 w-5" /> Create Post {manualForm.scheduled_at ? `for ${new Date(manualForm.scheduled_at).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}` : "Manually"}
             </CardTitle>
             <CardDescription>Schedule a custom social media post without AI generation.</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleManualCreate} className="grid gap-4 sm:grid-cols-2">
+            <form id="manual-post-form" onSubmit={handleManualCreate} className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <Label>Title (internal only)</Label>
                 <Input
@@ -504,23 +524,34 @@ export function AdminMarketingTab() {
                   <div
                     key={day.toISOString()}
                     className={cn(
-                      "min-h-[80px] rounded-lg border border-border/30 p-1.5 transition-all hover:border-primary/30",
+                      "min-h-[100px] rounded-lg border border-border/30 p-1.5 transition-all hover:border-primary/40 hover:shadow-sm cursor-pointer group/day relative",
                       isToday && "bg-primary/5 border-primary/40"
                     )}
+                    onClick={(e) => {
+                      // Only trigger if clicking the day cell itself, not a post button
+                      if ((e.target as HTMLElement).closest("button[data-post]")) return;
+                      handleDateClick(day);
+                    }}
                   >
-                    <p className={cn(
-                      "text-xs font-bold mb-1",
-                      isToday ? "text-primary" : "text-muted-foreground"
-                    )}>
-                      {day.getDate()}
-                    </p>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className={cn(
+                        "text-xs font-bold",
+                        isToday ? "text-primary" : "text-muted-foreground"
+                      )}>
+                        {day.getDate()}
+                      </p>
+                      <span className="h-4 w-4 rounded-full bg-primary/0 group-hover/day:bg-primary/10 flex items-center justify-center transition-all opacity-0 group-hover/day:opacity-100">
+                        <Plus className="h-2.5 w-2.5 text-primary" />
+                      </span>
+                    </div>
                     <div className="space-y-0.5">
                       {dayPosts.slice(0, 3).map((p) => {
                         const cfg = statusConfig[p.status] || statusConfig.draft;
                         return (
                           <button
                             key={p.id}
-                            onClick={() => openEditor(p)}
+                            data-post="true"
+                            onClick={(e) => { e.stopPropagation(); openEditor(p); }}
                             className={cn(
                               "w-full text-left text-[9px] leading-tight font-medium px-1 py-0.5 rounded truncate transition-all hover:opacity-80",
                               cfg.color
