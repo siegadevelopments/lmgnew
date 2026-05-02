@@ -61,6 +61,7 @@ export function AdminMarketingTab() {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [numWeeks, setNumWeeks] = useState(4);
+  const [selectedDays, setSelectedDays] = useState<number[]>([1, 3, 5]); // Mon, Wed, Fri
   const [publishing, setPublishing] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<ScheduledPost | null>(null);
   const [editCaption, setEditCaption] = useState("");
@@ -133,24 +134,25 @@ export function AdminMarketingTab() {
 
   const previewDates = useMemo(() => {
     const dates: string[] = [];
-    const targetDays = [1, 3, 5]; // Mon, Wed, Fri
-    const totalPosts = numWeeks * 3;
+    const totalPosts = numWeeks * selectedDays.length;
     
+    if (selectedDays.length === 0) return [];
+
     let current = new Date();
     current.setHours(0, 0, 0, 0);
     current.setDate(current.getDate() + 1); // tomorrow
 
     let count = 0;
     while (count < totalPosts) {
-      if (targetDays.includes(current.getDay())) {
+      if (selectedDays.includes(current.getDay())) {
         dates.push(current.toDateString());
         count++;
       }
       current.setDate(current.getDate() + 1);
-      if (dates.length > 100) break; // Safety
+      if (dates.length > 200) break; // Safety
     }
     return dates;
-  }, [numWeeks]);
+  }, [numWeeks, selectedDays]);
 
   // Generate 30 days
   async function handleGenerate() {
@@ -167,7 +169,8 @@ export function AdminMarketingTab() {
         },
         body: JSON.stringify({ 
           startDate: new Date().toISOString(),
-          numWeeks
+          numWeeks,
+          selectedDays
         }),
       });
 
@@ -415,59 +418,98 @@ export function AdminMarketingTab() {
                 Marketing Automation
               </h3>
               <p className="text-sm text-muted-foreground max-w-2xl">
-                AI-generated strategy: <strong>3 posts/week (Mon, Wed, Fri)</strong> targeted at midlife wellness seekers, 
+                AI-generated strategy targeted at midlife wellness seekers, 
                 supportive buyers & preventative wellness women.
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border border-border/50">
-                <span className="text-xs font-medium px-2 text-muted-foreground uppercase tracking-wider">Plan:</span>
-                <select 
-                  className="h-8 rounded-md border-0 bg-transparent px-2 py-0 text-sm font-semibold focus:ring-0 cursor-pointer"
-                  value={numWeeks}
-                  onChange={(e) => setNumWeeks(Number(e.target.value))}
-                  disabled={generating}
-                >
-                  <option value={1}>1 Week (3 posts)</option>
-                  <option value={2}>2 Weeks (6 posts)</option>
-                  <option value={4}>4 Weeks (12 posts)</option>
-                  <option value={8}>8 Weeks (24 posts)</option>
-                </select>
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Days of Week</span>
+                <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg border border-border/50">
+                  {[
+                    { l: "S", v: 0 },
+                    { l: "M", v: 1 },
+                    { l: "T", v: 2 },
+                    { l: "W", v: 3 },
+                    { l: "T", v: 4 },
+                    { l: "F", v: 5 },
+                    { l: "S", v: 6 },
+                  ].map((d) => (
+                    <button
+                      key={d.v}
+                      onClick={() => {
+                        if (selectedDays.includes(d.v)) {
+                          setSelectedDays(selectedDays.filter(day => day !== d.v));
+                        } else {
+                          setSelectedDays([...selectedDays, d.v].sort());
+                        }
+                      }}
+                      className={cn(
+                        "w-7 h-7 rounded-md text-[10px] font-bold transition-all",
+                        selectedDays.includes(d.v) 
+                          ? "bg-primary text-primary-foreground shadow-sm" 
+                          : "bg-background text-muted-foreground hover:bg-muted"
+                      )}
+                    >
+                      {d.l}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <Button
-                onClick={handleGenerate}
-                disabled={generating}
-                className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 shadow-lg min-w-[160px]"
-              >
-                {generating ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Zap className="mr-2 h-4 w-4" />
-                    Generate Strategy
-                  </>
-                )}
-              </Button>
-              <div className="flex items-center gap-2 h-10 px-1 border-l border-border/50 ml-1">
-                <Button variant="outline" size="sm" onClick={handleBulkApprove} disabled={stats.drafts === 0} className="h-9">
-                  <CheckCircle2 className="mr-2 h-4 w-4" />
-                  Approve ({stats.drafts})
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Duration</span>
+                <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border border-border/50 h-9">
+                  <select 
+                    className="h-full rounded-md border-0 bg-transparent px-2 py-0 text-sm font-semibold focus:ring-0 cursor-pointer"
+                    value={numWeeks}
+                    onChange={(e) => setNumWeeks(Number(e.target.value))}
+                    disabled={generating}
+                  >
+                    <option value={1}>1 Week</option>
+                    <option value={2}>2 Weeks</option>
+                    <option value={4}>4 Weeks</option>
+                    <option value={8}>8 Weeks</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-5 flex items-center gap-3">
+                <Button
+                  onClick={handleGenerate}
+                  disabled={generating || selectedDays.length === 0}
+                  className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 shadow-lg min-w-[140px] h-10"
+                >
+                  {generating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="mr-2 h-4 w-4" />
+                      Generate
+                    </>
+                  )}
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleClearDrafts} disabled={stats.drafts === 0} className="h-9 text-destructive hover:text-destructive hover:bg-destructive/10">
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Clear
-                </Button>
-                <Button variant="ghost" size="icon" onClick={loadPosts} className="h-9 w-9">
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
-                <Button variant="secondary" size="sm" onClick={() => setShowManualForm(!showManualForm)} className="h-9">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Post
-                </Button>
+
+                <div className="flex items-center gap-2 h-10 px-1 border-l border-border/50 ml-1">
+                  <Button variant="outline" size="sm" onClick={handleBulkApprove} disabled={stats.drafts === 0} className="h-9">
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    Approve ({stats.drafts})
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleClearDrafts} disabled={stats.drafts === 0} className="h-9 text-destructive hover:text-destructive hover:bg-destructive/10">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Clear
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={loadPosts} className="h-9 w-9">
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={() => setShowManualForm(!showManualForm)} className="h-9">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Post
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

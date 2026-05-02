@@ -84,10 +84,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const geminiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || '';
     if (!geminiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
 
-    const { numWeeks = 4, startDate } = req.body || {};
-    const totalPostsCount = numWeeks * 3;
+    const { numWeeks = 4, startDate, selectedDays = [1, 3, 5] } = req.body || {};
+    const postsPerWeek = selectedDays.length;
+    const totalPostsCount = numWeeks * postsPerWeek;
+
+    if (postsPerWeek === 0) return res.status(400).json({ error: 'At least one day must be selected' });
 
     const genAI = new GoogleGenerativeAI(geminiKey);
+
+    // Day names for prompt
+    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const activeDaysText = selectedDays.map((d: number) => dayNames[d]).join(", ");
 
     // Keep content summaries small to reduce token usage
     const contentSummary = JSON.stringify({
@@ -98,22 +105,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const generationPrompt = `${AUDIENCE_PROMPT}
 
-TASK: Generate exactly ${totalPostsCount} social media posts for the next ${numWeeks} weeks (3 posts per week: Monday, Wednesday, Friday).
+TASK: Generate exactly ${totalPostsCount} social media posts for the next ${numWeeks} weeks.
+SCHEDULE: ${postsPerWeek} posts per week, on these specific days: ${activeDaysText}.
 
 CONTENT TO PROMOTE:
 ${contentSummary}
 
 DISTRIBUTION STRATEGY:
-- Mondays: Educational articles — BUILD TRUST
-- Wednesdays: Recipes or soft wellness tips — NURTURE
-- Fridays: Product features or promotions — CONVERT
+- Mix educational articles (40%), product features (40%), and recipes/lifestyle (20%).
+- Ensure content rotates logically across the selected days (${activeDaysText}).
+- Focus on building trust early in the week and converting towards the weekend.
 
 POST TYPES TO ROTATE:
 1. "Did You Know?" — Educational hook with article link
 2. "Try This" — Practical tip with recipe link  
 3. "Meet [Product]" — Gentle product feature with benefits
 4. "Real Talk" — Empathetic post about a common symptom, then solution
-5. "Self-Care Sunday" (now for weekends) — Wellness ritual suggestion
+5. "Self-Care Ritual" — Wellness suggestion
 6. "Quick Win" — One small change that makes a big difference
 7. "Community Question" — Engagement post asking for experiences
 
@@ -171,7 +179,7 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
       });
     }
 
-    // 4. Schedule posts: Monday, Wednesday, Friday
+    // 4. Schedule posts based on selected days
     const baseDate = startDate ? new Date(startDate) : new Date();
     baseDate.setHours(0, 0, 0, 0);
 
@@ -181,16 +189,13 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
       evening: 18,
     };
 
-    const targetDays = [1, 3, 5]; // Mon, Wed, Fri
     const scheduledPosts = [];
-    
     let currentDate = new Date(baseDate);
-    // Advance to tomorrow
-    currentDate.setDate(currentDate.getDate() + 1);
+    currentDate.setDate(currentDate.getDate() + 1); // Start tomorrow
 
     let postIndex = 0;
     while (postIndex < posts.length) {
-      if (targetDays.includes(currentDate.getDay())) {
+      if (selectedDays.includes(currentDate.getDay())) {
         const post = posts[postIndex];
         const postDate = new Date(currentDate);
         const hour = timeSlots[post.time_slot] || 9;
@@ -211,6 +216,7 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
         postIndex++;
       }
       currentDate.setDate(currentDate.getDate() + 1);
+      if (scheduledPosts.length > 500) break; // Safety
     }
 
     // 5. Insert into database
@@ -227,7 +233,7 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
     return res.status(200).json({
       success: true,
       count: inserted?.length || 0,
-      message: `Generated ${inserted?.length || 0} posts for the next ${numWeeks} weeks (Mon, Wed, Fri)!`,
+      message: `Generated ${inserted?.length || 0} posts across ${numWeeks} weeks!`,
     });
 
   } catch (error: any) {
