@@ -131,6 +131,27 @@ export function AdminMarketingTab() {
     });
   };
 
+  const previewDates = useMemo(() => {
+    const dates: string[] = [];
+    const targetDays = [1, 3, 5]; // Mon, Wed, Fri
+    const totalPosts = numWeeks * 3;
+    
+    let current = new Date();
+    current.setHours(0, 0, 0, 0);
+    current.setDate(current.getDate() + 1); // tomorrow
+
+    let count = 0;
+    while (count < totalPosts) {
+      if (targetDays.includes(current.getDay())) {
+        dates.push(current.toDateString());
+        count++;
+      }
+      current.setDate(current.getDate() + 1);
+      if (dates.length > 100) break; // Safety
+    }
+    return dates;
+  }, [numWeeks]);
+
   // Generate 30 days
   async function handleGenerate() {
     setGenerating(true);
@@ -585,6 +606,16 @@ export function AdminMarketingTab() {
       {view === "calendar" && (
         <Card className="border-border/50 overflow-hidden">
           <CardHeader className="pb-2">
+            <div className="flex items-center gap-4 text-[10px] text-muted-foreground font-medium bg-muted/30 px-3 py-1 rounded-full border border-border/50 mb-2">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-primary/20 border border-primary/40 shadow-sm" />
+                <span>Proposed Slot</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-primary border border-primary shadow-sm" />
+                <span>Today</span>
+              </div>
+            </div>
             <div className="flex items-center justify-between">
               <Button variant="ghost" size="icon" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))}>
                 <ChevronLeft className="h-4 w-4" />
@@ -613,13 +644,15 @@ export function AdminMarketingTab() {
 
                 const dayPosts = getPostsForDate(day);
                 const isToday = day.toDateString() === new Date().toDateString();
+                const isProposed = previewDates.includes(day.toDateString());
 
                 return (
                   <div
                     key={day.toISOString()}
                     className={cn(
                       "min-h-[100px] rounded-lg border border-border/30 p-1.5 transition-all hover:border-primary/40 hover:shadow-sm cursor-pointer group/day relative",
-                      isToday && "bg-primary/5 border-primary/40"
+                      isToday && "bg-primary/5 border-primary/40 ring-1 ring-primary/20",
+                      isProposed && !isToday && "bg-primary/10 border-primary/40 ring-1 ring-primary/10"
                     )}
                     onClick={(e) => {
                       // Only trigger if clicking the day cell itself, not a post button
@@ -630,13 +663,18 @@ export function AdminMarketingTab() {
                     <div className="flex items-center justify-between mb-1">
                       <p className={cn(
                         "text-xs font-bold",
-                        isToday ? "text-primary" : "text-muted-foreground"
+                        isToday ? "text-primary" : isProposed ? "text-primary/70" : "text-muted-foreground"
                       )}>
                         {day.getDate()}
                       </p>
-                      <span className="h-4 w-4 rounded-full bg-primary/0 group-hover/day:bg-primary/10 flex items-center justify-center transition-all opacity-0 group-hover/day:opacity-100">
-                        <Plus className="h-2.5 w-2.5 text-primary" />
-                      </span>
+                      <div className="flex items-center gap-1">
+                        {isProposed && (
+                          <Sparkles className="h-2.5 w-2.5 text-primary/40 animate-pulse" />
+                        )}
+                        <span className="h-4 w-4 rounded-full bg-primary/0 group-hover/day:bg-primary/10 flex items-center justify-center transition-all opacity-0 group-hover/day:opacity-100">
+                          <Plus className="h-2.5 w-2.5 text-primary" />
+                        </span>
+                      </div>
                     </div>
                     <div className="space-y-0.5">
                       {dayPosts.slice(0, 3).map((p) => {
