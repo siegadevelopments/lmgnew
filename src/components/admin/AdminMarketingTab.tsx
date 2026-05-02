@@ -60,6 +60,7 @@ export function AdminMarketingTab() {
   const [posts, setPosts] = useState<ScheduledPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [numWeeks, setNumWeeks] = useState(4);
   const [publishing, setPublishing] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<ScheduledPost | null>(null);
   const [editCaption, setEditCaption] = useState("");
@@ -143,7 +144,10 @@ export function AdminMarketingTab() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ startDate: new Date().toISOString() }),
+        body: JSON.stringify({ 
+          startDate: new Date().toISOString(),
+          numWeeks
+        }),
       });
 
       const data = await response.json();
@@ -378,23 +382,39 @@ export function AdminMarketingTab() {
       </div>
 
       {/* Action Bar */}
-      <Card className="border-border/50">
+      <Card className="border-border/50 shadow-md bg-white/50 backdrop-blur-sm">
         <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-bold flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+            <div className="space-y-1">
+              <h3 className="text-xl font-bold flex items-center gap-2 text-primary">
+                <Sparkles className="h-6 w-6" />
                 Marketing Automation
               </h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                AI-generated posts targeted at midlife wellness seekers, supportive buyers & preventative wellness women.
+              <p className="text-sm text-muted-foreground max-w-2xl">
+                AI-generated strategy: <strong>3 posts/week (Mon, Wed, Fri)</strong> targeted at midlife wellness seekers, 
+                supportive buyers & preventative wellness women.
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border border-border/50">
+                <span className="text-xs font-medium px-2 text-muted-foreground uppercase tracking-wider">Plan:</span>
+                <select 
+                  className="h-8 rounded-md border-0 bg-transparent px-2 py-0 text-sm font-semibold focus:ring-0 cursor-pointer"
+                  value={numWeeks}
+                  onChange={(e) => setNumWeeks(Number(e.target.value))}
+                  disabled={generating}
+                >
+                  <option value={1}>1 Week (3 posts)</option>
+                  <option value={2}>2 Weeks (6 posts)</option>
+                  <option value={4}>4 Weeks (12 posts)</option>
+                  <option value={8}>8 Weeks (24 posts)</option>
+                </select>
+              </div>
+
               <Button
                 onClick={handleGenerate}
                 disabled={generating}
-                className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 shadow-lg"
+                className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 shadow-lg min-w-[160px]"
               >
                 {generating ? (
                   <>
@@ -404,25 +424,27 @@ export function AdminMarketingTab() {
                 ) : (
                   <>
                     <Zap className="mr-2 h-4 w-4" />
-                    Generate 30 Days
+                    Generate Strategy
                   </>
                 )}
               </Button>
-              <Button variant="outline" size="sm" onClick={handleBulkApprove} disabled={stats.drafts === 0}>
-                <CheckCircle2 className="mr-2 h-4 w-4" />
-                Approve All ({stats.drafts})
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleClearDrafts} disabled={stats.drafts === 0} className="text-destructive hover:text-destructive">
-                <Trash2 className="mr-2 h-4 w-4" />
-                Clear Drafts
-              </Button>
-              <Button variant="ghost" size="sm" onClick={loadPosts}>
-                <RefreshCw className="h-4 w-4" />
-              </Button>
-              <Button variant="secondary" size="sm" onClick={() => setShowManualForm(!showManualForm)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Post
-              </Button>
+              <div className="flex items-center gap-2 h-10 px-1 border-l border-border/50 ml-1">
+                <Button variant="outline" size="sm" onClick={handleBulkApprove} disabled={stats.drafts === 0} className="h-9">
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  Approve ({stats.drafts})
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleClearDrafts} disabled={stats.drafts === 0} className="h-9 text-destructive hover:text-destructive hover:bg-destructive/10">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Clear
+                </Button>
+                <Button variant="ghost" size="icon" onClick={loadPosts} className="h-9 w-9">
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => setShowManualForm(!showManualForm)} className="h-9">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Post
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>

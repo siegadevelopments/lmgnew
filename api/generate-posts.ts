@@ -84,6 +84,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const geminiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || '';
     if (!geminiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
 
+    const { numWeeks = 4, startDate } = req.body || {};
+    const totalPostsCount = numWeeks * 3;
+
     const genAI = new GoogleGenerativeAI(geminiKey);
 
     // Keep content summaries small to reduce token usage
@@ -95,23 +98,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const generationPrompt = `${AUDIENCE_PROMPT}
 
-TASK: Generate exactly 30 social media posts for the next 30 days.
+TASK: Generate exactly ${totalPostsCount} social media posts for the next ${numWeeks} weeks (3 posts per week: Monday, Wednesday, Friday).
 
 CONTENT TO PROMOTE:
 ${contentSummary}
 
 DISTRIBUTION STRATEGY:
-- Week 1 (Days 1-7): 60% educational articles, 20% recipes, 20% soft product mentions — BUILD TRUST
-- Week 2 (Days 8-14): 40% articles, 30% product features, 30% recipes — NURTURE
-- Week 3 (Days 15-21): 30% articles, 40% product promotions, 30% engagement posts — CONVERT
-- Week 4 (Days 22-30): Mix of best-performing styles, 50% product-focused, 30% testimonial-style, 20% community
+- Mondays: Educational articles — BUILD TRUST
+- Wednesdays: Recipes or soft wellness tips — NURTURE
+- Fridays: Product features or promotions — CONVERT
 
 POST TYPES TO ROTATE:
 1. "Did You Know?" — Educational hook with article link
 2. "Try This" — Practical tip with recipe link  
 3. "Meet [Product]" — Gentle product feature with benefits
 4. "Real Talk" — Empathetic post about a common symptom, then solution
-5. "Self-Care Sunday" — Weekend wellness ritual suggestion
+5. "Self-Care Sunday" (now for weekends) — Wellness ritual suggestion
 6. "Quick Win" — One small change that makes a big difference
 7. "Community Question" — Engagement post asking for experiences
 
@@ -125,7 +127,7 @@ REQUIREMENTS FOR EACH POST:
 - "image_url": the image URL from the source content, or null
 - "time_slot": "morning" | "midday" | "evening"
 
-OUTPUT: Return ONLY a valid JSON array of 30 objects. No markdown, no explanation, just the JSON array.`;
+OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdown, no explanation, just the JSON array.`;
 
     // Try with retry and model fallback for rate limiting
     const MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash'];
@@ -167,10 +169,8 @@ OUTPUT: Return ONLY a valid JSON array of 30 objects. No markdown, no explanatio
       });
     }
 
-    // 4. Schedule posts across 30 days
-    const { startDate } = req.body || {};
+    // 4. Schedule posts: Monday, Wednesday, Friday
     const baseDate = startDate ? new Date(startDate) : new Date();
-    baseDate.setDate(baseDate.getDate() + 1);
     baseDate.setHours(0, 0, 0, 0);
 
     const timeSlots: Record<string, number> = {
@@ -179,25 +179,37 @@ OUTPUT: Return ONLY a valid JSON array of 30 objects. No markdown, no explanatio
       evening: 18,
     };
 
-    const scheduledPosts = posts.slice(0, 30).map((post: any, index: number) => {
-      const postDate = new Date(baseDate);
-      postDate.setDate(postDate.getDate() + index);
-      const hour = timeSlots[post.time_slot] || 9;
-      postDate.setHours(hour, 0, 0, 0);
+    const targetDays = [1, 3, 5]; // Mon, Wed, Fri
+    const scheduledPosts = [];
+    
+    let currentDate = new Date(baseDate);
+    // Advance to tomorrow
+    currentDate.setDate(currentDate.getDate() + 1);
 
-      return {
-        title: post.title || `Day ${index + 1} Post`,
-        caption: post.caption || '',
-        hashtags: Array.isArray(post.hashtags) ? post.hashtags : [],
-        image_url: post.image_url || null,
-        source_type: post.source_type || 'custom',
-        source_id: post.source_id ? String(post.source_id) : null,
-        source_url: post.source_url || null,
-        platforms: ['facebook', 'instagram'],
-        scheduled_at: postDate.toISOString(),
-        status: 'draft',
-      };
-    });
+    let postIndex = 0;
+    while (postIndex < posts.length) {
+      if (targetDays.includes(currentDate.getDay())) {
+        const post = posts[postIndex];
+        const postDate = new Date(currentDate);
+        const hour = timeSlots[post.time_slot] || 9;
+        postDate.setHours(hour, 0, 0, 0);
+
+        scheduledPosts.push({
+          title: post.title || `Post ${postIndex + 1}`,
+          caption: post.caption || '',
+          hashtags: Array.isArray(post.hashtags) ? post.hashtags : [],
+          image_url: post.image_url || null,
+          source_type: post.source_type || 'custom',
+          source_id: post.source_id ? String(post.source_id) : null,
+          source_url: post.source_url || null,
+          platforms: ['facebook', 'instagram'],
+          scheduled_at: postDate.toISOString(),
+          status: 'draft',
+        });
+        postIndex++;
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
 
     // 5. Insert into database
     const { data: inserted, error: insertError } = await supabase
@@ -213,7 +225,7 @@ OUTPUT: Return ONLY a valid JSON array of 30 objects. No markdown, no explanatio
     return res.status(200).json({
       success: true,
       count: inserted?.length || 0,
-      message: `Generated ${inserted?.length || 0} posts for the next 30 days!`,
+      message: `Generated ${inserted?.length || 0} posts for the next ${numWeeks} weeks (Mon, Wed, Fri)!`,
     });
 
   } catch (error: any) {
