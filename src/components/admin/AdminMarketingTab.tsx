@@ -609,13 +609,13 @@ export function AdminMarketingTab() {
       {view === "calendar" && (
         <Card className="border-border/50 overflow-hidden">
           <CardHeader className="pb-2">
-            <div className="flex items-center gap-4 text-[10px] text-muted-foreground font-medium bg-muted/30 px-3 py-1 rounded-full border border-border/50 mb-2">
+            <div className="flex items-center gap-4 text-[10px] text-muted-foreground font-medium bg-muted/30 px-3 py-1 rounded-full border border-border/50 mb-4">
               <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-primary/20 border border-primary/40 shadow-sm" />
+                <div className="w-2.5 h-2.5 rounded bg-primary/20 border border-primary/60 border-dashed shadow-sm" />
                 <span>Proposed Slot</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-primary border border-primary shadow-sm" />
+                <div className="w-2.5 h-2.5 rounded bg-primary/20 border border-primary ring-1 ring-primary/20 shadow-sm" />
                 <span>Today</span>
               </div>
             </div>
@@ -653,9 +653,9 @@ export function AdminMarketingTab() {
                   <div
                     key={day.toISOString()}
                     className={cn(
-                      "min-h-[100px] rounded-lg border border-border/30 p-1.5 transition-all hover:border-primary/40 hover:shadow-sm cursor-pointer group/day relative",
-                      isToday && "bg-primary/5 border-primary/40 ring-1 ring-primary/20",
-                      isProposed && !isToday && "bg-primary/10 border-primary/40 ring-1 ring-primary/10"
+                      "min-h-[100px] rounded-lg border p-1.5 transition-all hover:shadow-md cursor-pointer group/day relative",
+                      isToday ? "bg-primary/10 border-primary ring-2 ring-primary/20 shadow-sm" : 
+                      isProposed ? "bg-primary/[0.15] border-primary/60 border-dashed shadow-sm" : "border-border/30"
                     )}
                     onClick={(e) => {
                       // Only trigger if clicking the day cell itself, not a post button
@@ -672,7 +672,7 @@ export function AdminMarketingTab() {
                       </p>
                       <div className="flex items-center gap-1">
                         {isProposed && (
-                          <Sparkles className="h-2.5 w-2.5 text-primary/40 animate-pulse" />
+                          <Sparkles className="h-3 w-3 text-primary animate-pulse drop-shadow-sm" />
                         )}
                         <span className="h-4 w-4 rounded-full bg-primary/0 group-hover/day:bg-primary/10 flex items-center justify-center transition-all opacity-0 group-hover/day:opacity-100">
                           <Plus className="h-2.5 w-2.5 text-primary" />
