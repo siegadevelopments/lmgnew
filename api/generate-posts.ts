@@ -130,12 +130,12 @@ REQUIREMENTS FOR EACH POST:
 OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdown, no explanation, just the JSON array.`;
 
     // Try with retry and model fallback for rate limiting
-    const MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+    const MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
     let posts: any[] | null = null;
     let lastError = '';
 
     for (const modelName of MODELS) {
-      for (let attempt = 0; attempt < 3; attempt++) {
+      for (let attempt = 0; attempt < 2; attempt++) {
         try {
           console.log(`Attempt ${attempt + 1} with model ${modelName}`);
           const model = genAI.getGenerativeModel({ model: modelName });
@@ -143,7 +143,7 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
           const responseText = result.response.text();
 
           const jsonMatch = responseText.match(/\[[\s\S]*\]/);
-          if (!jsonMatch) throw new Error('No JSON array found in AI response');
+          if (!jsonMatch) throw new Error('AI response did not contain a valid JSON array');
           posts = JSON.parse(jsonMatch[0]);
           break;
         } catch (err: any) {
@@ -151,7 +151,7 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
           console.error(`Model ${modelName} attempt ${attempt + 1} failed:`, lastError);
 
           if (lastError.includes('429') || lastError.includes('quota') || lastError.includes('Too Many Requests')) {
-            const waitMs = Math.pow(2, attempt + 1) * 2000;
+            const waitMs = (attempt + 1) * 3000;
             console.log(`Rate limited. Waiting ${waitMs}ms before retry...`);
             await new Promise(resolve => setTimeout(resolve, waitMs));
           } else {
@@ -163,9 +163,11 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
     }
 
     if (!posts || posts.length === 0) {
+      const isQuotaError = lastError.includes('quota') || lastError.includes('429');
       return res.status(429).json({
-        error: 'AI generation temporarily unavailable due to rate limits. Please try again in a few minutes.',
+        error: isQuotaError ? 'AI Rate Limit Reached' : 'AI Generation Failed',
         details: lastError,
+        suggestion: isQuotaError ? 'The AI is currently busy or out of quota. Please wait 1-2 minutes and try again.' : 'Check your Gemini API key and try again.'
       });
     }
 

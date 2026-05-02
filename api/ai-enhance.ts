@@ -90,8 +90,9 @@ Return ONLY a comma-separated list of hashtags like: #Tag1, #Tag2, #Tag3`;
     }
 
     // Try models with fallback
-    const MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+    const MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
     let result = '';
+    let lastError = '';
 
     for (const modelName of MODELS) {
       try {
@@ -102,8 +103,9 @@ Return ONLY a comma-separated list of hashtags like: #Tag1, #Tag2, #Tag3`;
         result = result.replace(/^["']|["']$/g, '').replace(/^```[\s\S]*?\n|```$/g, '').trim();
         break;
       } catch (err: any) {
-        console.error(`Model ${modelName} failed:`, err.message);
-        if (err.message?.includes('429') || err.message?.includes('quota')) {
+        lastError = err.message || 'Unknown error';
+        console.error(`Model ${modelName} failed:`, lastError);
+        if (lastError.includes('429') || lastError.includes('quota') || lastError.includes('Too Many Requests')) {
           await new Promise(resolve => setTimeout(resolve, 3000));
           continue;
         }
@@ -112,7 +114,12 @@ Return ONLY a comma-separated list of hashtags like: #Tag1, #Tag2, #Tag3`;
     }
 
     if (!result) {
-      return res.status(429).json({ error: 'AI temporarily unavailable. Please try again shortly.' });
+      const isQuotaError = lastError.includes('quota') || lastError.includes('429');
+      return res.status(429).json({
+        error: isQuotaError ? 'AI Rate Limit Reached' : 'AI Enhancement Failed',
+        details: lastError,
+        suggestion: isQuotaError ? 'The AI is currently busy. Please wait 30 seconds and try again.' : 'Please check your connection and try again.'
+      });
     }
 
     return res.status(200).json({ result });

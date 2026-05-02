@@ -172,12 +172,15 @@ export function AdminMarketingTab() {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Generation failed");
+      if (!response.ok) throw new Error(data.suggestion || data.error || "Generation failed");
 
       toast.success(data.message || `Generated ${data.count} posts!`);
       await loadPosts();
     } catch (err: any) {
-      toast.error(err.message || "Failed to generate posts");
+      const message = err.message || "Failed to generate posts";
+      toast.error(message, {
+        duration: 5000,
+      });
       console.error("Generation error:", err);
     } finally {
       setGenerating(false);
@@ -337,7 +340,7 @@ export function AdminMarketingTab() {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "AI enhancement failed");
+      if (!response.ok) throw new Error(data.suggestion || data.error || "AI enhancement failed");
 
       setManualForm(prev => ({ ...prev, [field]: data.result }));
       toast.success(`${field.charAt(0).toUpperCase() + field.slice(1)} enhanced by AI!`);
