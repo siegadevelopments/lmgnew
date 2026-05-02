@@ -92,7 +92,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (articleMatches.length > 0 || productMatches.length > 0 || recipeMatches.length > 0) {
       // Use the full search phrase for the header
-      const displayTopic = searchPhrase.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      const displayTopic = searchPhrase.split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
       
       responseText = `I've found some relevant wellness resources regarding **${displayTopic}**:`;
 
