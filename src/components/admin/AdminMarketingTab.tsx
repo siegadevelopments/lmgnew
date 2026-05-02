@@ -68,6 +68,7 @@ export function AdminMarketingTab() {
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [view, setView] = useState<"calendar" | "list">("calendar");
   const [showManualForm, setShowManualForm] = useState(false);
+  const [enhancingField, setEnhancingField] = useState<string | null>(null);
   const [manualForm, setManualForm] = useState({
     title: "",
     caption: "",
@@ -290,6 +291,38 @@ export function AdminMarketingTab() {
     }
   }
 
+  // AI Enhance a field
+  async function aiEnhance(field: "title" | "caption" | "hashtags") {
+    setEnhancingField(field);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const response = await fetch("/api/ai-enhance", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          field,
+          value: manualForm[field],
+          context: field === "title" ? manualForm.caption : field === "hashtags" ? manualForm.caption || manualForm.title : manualForm.title,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "AI enhancement failed");
+
+      setManualForm(prev => ({ ...prev, [field]: data.result }));
+      toast.success(`${field.charAt(0).toUpperCase() + field.slice(1)} enhanced by AI!`);
+    } catch (err: any) {
+      toast.error(err.message || "AI enhancement failed");
+    } finally {
+      setEnhancingField(null);
+    }
+  }
+
   // Open editor
   function openEditor(post: ScheduledPost) {
     setSelectedPost(post);
@@ -407,7 +440,20 @@ export function AdminMarketingTab() {
           <CardContent>
             <form id="manual-post-form" onSubmit={handleManualCreate} className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
-                <Label>Title (internal only)</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Title</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs text-primary hover:text-primary gap-1.5"
+                    disabled={enhancingField === "title"}
+                    onClick={() => aiEnhance("title")}
+                  >
+                    {enhancingField === "title" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                    {enhancingField === "title" ? "Enhancing..." : manualForm.title ? "Improve with AI" : "Generate with AI"}
+                  </Button>
+                </div>
                 <Input
                   required
                   value={manualForm.title}
@@ -416,17 +462,43 @@ export function AdminMarketingTab() {
                 />
               </div>
               <div className="space-y-2 sm:col-span-2">
-                <Label>Caption</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Caption</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs text-primary hover:text-primary gap-1.5"
+                    disabled={enhancingField === "caption"}
+                    onClick={() => aiEnhance("caption")}
+                  >
+                    {enhancingField === "caption" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                    {enhancingField === "caption" ? "Writing..." : manualForm.caption ? "Rewrite with AI" : "Write with AI"}
+                  </Button>
+                </div>
                 <Textarea
                   required
                   rows={5}
                   value={manualForm.caption}
                   onChange={e => setManualForm({ ...manualForm, caption: e.target.value })}
-                  placeholder="Write your post caption here..."
+                  placeholder="Write your post caption here... or click 'Write with AI' to generate one"
                 />
               </div>
               <div className="space-y-2">
-                <Label>Hashtags (comma-separated)</Label>
+                <div className="flex items-center justify-between">
+                  <Label>Hashtags</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs text-primary hover:text-primary gap-1.5"
+                    disabled={enhancingField === "hashtags"}
+                    onClick={() => aiEnhance("hashtags")}
+                  >
+                    {enhancingField === "hashtags" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                    {enhancingField === "hashtags" ? "Generating..." : "Auto-generate"}
+                  </Button>
+                </div>
                 <Input
                   value={manualForm.hashtags}
                   onChange={e => setManualForm({ ...manualForm, hashtags: e.target.value })}
