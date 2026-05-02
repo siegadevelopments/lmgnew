@@ -26,6 +26,7 @@ import {
   Zap,
   BarChart3,
   RefreshCw,
+  Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -66,6 +67,15 @@ export function AdminMarketingTab() {
   const [editImageUrl, setEditImageUrl] = useState("");
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [view, setView] = useState<"calendar" | "list">("calendar");
+  const [showManualForm, setShowManualForm] = useState(false);
+  const [manualForm, setManualForm] = useState({
+    title: "",
+    caption: "",
+    hashtags: "",
+    image_url: "",
+    scheduled_at: "",
+    source_url: "",
+  });
 
   useEffect(() => {
     loadPosts();
@@ -251,6 +261,35 @@ export function AdminMarketingTab() {
     }
   }
 
+  // Create manual post
+  async function handleManualCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!manualForm.title || !manualForm.caption || !manualForm.scheduled_at) {
+      toast.error("Title, caption, and scheduled date are required");
+      return;
+    }
+    try {
+      const { error } = await (supabase.from("scheduled_posts") as any).insert({
+        title: manualForm.title,
+        caption: manualForm.caption,
+        hashtags: manualForm.hashtags.split(",").map((h: string) => h.trim()).filter(Boolean),
+        image_url: manualForm.image_url || null,
+        source_type: "custom",
+        source_url: manualForm.source_url || null,
+        platforms: ["facebook", "instagram"],
+        scheduled_at: new Date(manualForm.scheduled_at).toISOString(),
+        status: "draft",
+      });
+      if (error) throw error;
+      toast.success("Post created!");
+      setManualForm({ title: "", caption: "", hashtags: "", image_url: "", scheduled_at: "", source_url: "" });
+      setShowManualForm(false);
+      await loadPosts();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  }
+
   // Open editor
   function openEditor(post: ScheduledPost) {
     setSelectedPost(post);
@@ -327,10 +366,88 @@ export function AdminMarketingTab() {
               <Button variant="ghost" size="sm" onClick={loadPosts}>
                 <RefreshCw className="h-4 w-4" />
               </Button>
+              <Button variant="secondary" size="sm" onClick={() => setShowManualForm(!showManualForm)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Post
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Manual Post Form */}
+      {showManualForm && (
+        <Card className="border-primary/20 bg-primary/5 animate-in fade-in slide-in-from-top-2 duration-300">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Plus className="h-5 w-5" /> Create Post Manually
+            </CardTitle>
+            <CardDescription>Schedule a custom social media post without AI generation.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleManualCreate} className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Title (internal only)</Label>
+                <Input
+                  required
+                  value={manualForm.title}
+                  onChange={e => setManualForm({ ...manualForm, title: e.target.value })}
+                  placeholder="e.g. Monday Motivation — Gut Health Tips"
+                />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Caption</Label>
+                <Textarea
+                  required
+                  rows={5}
+                  value={manualForm.caption}
+                  onChange={e => setManualForm({ ...manualForm, caption: e.target.value })}
+                  placeholder="Write your post caption here..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Hashtags (comma-separated)</Label>
+                <Input
+                  value={manualForm.hashtags}
+                  onChange={e => setManualForm({ ...manualForm, hashtags: e.target.value })}
+                  placeholder="#NaturalWellness, #MenopauseSupport"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Schedule Date & Time</Label>
+                <Input
+                  type="datetime-local"
+                  required
+                  value={manualForm.scheduled_at}
+                  onChange={e => setManualForm({ ...manualForm, scheduled_at: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Image URL (optional)</Label>
+                <Input
+                  value={manualForm.image_url}
+                  onChange={e => setManualForm({ ...manualForm, image_url: e.target.value })}
+                  placeholder="https://..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Link URL (optional)</Label>
+                <Input
+                  value={manualForm.source_url}
+                  onChange={e => setManualForm({ ...manualForm, source_url: e.target.value })}
+                  placeholder="/articles/my-article-slug"
+                />
+              </div>
+              <div className="flex gap-2 sm:col-span-2 pt-2">
+                <Button type="submit">
+                  <Plus className="mr-2 h-4 w-4" /> Create Post
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setShowManualForm(false)}>Cancel</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       {/* View Toggle */}
       <div className="flex items-center gap-2">

@@ -139,7 +139,7 @@ function AdminPage() {
           supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(100),
           supabase.from("newsletter_subscribers").select("id", { count: "exact", head: true }),
           supabase.from("vendor_profiles").select("id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, created_at, updated_at, ai_enabled, ai_instructions").order("created_at", { ascending: false }),
-          supabase.from("products").select("*, vendor_profiles(store_name)").order("created_at", { ascending: false }).limit(100),
+          supabase.from("products").select("*, vendor_profiles(store_name)").order("created_at", { ascending: false }).limit(500),
         ]);
 
         if (ordersRes.error) console.error("Orders error:", ordersRes.error);

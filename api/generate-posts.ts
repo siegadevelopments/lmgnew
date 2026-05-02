@@ -85,12 +85,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!geminiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
 
     const genAI = new GoogleGenerativeAI(geminiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
+    // Keep content summaries small to reduce token usage
     const contentSummary = JSON.stringify({
-      articles: articles.map(a => ({ id: a.id, title: a.title, slug: a.slug, excerpt: (a.excerpt || '').substring(0, 150), category: a.category_name, image: a.image_url })),
-      products: products.map(p => ({ id: p.id, title: p.title, slug: p.slug, price: p.price, excerpt: (p.excerpt || '').substring(0, 150), category: p.category, brand: p.brand, image: p.image_url })),
-      recipes: recipes.map(r => ({ id: r.id, title: r.title, slug: r.slug, excerpt: (r.excerpt || '').substring(0, 150), image: r.image_url })),
+      articles: articles.slice(0, 20).map(a => ({ id: a.id, title: a.title, slug: a.slug, excerpt: (a.excerpt || '').substring(0, 100), category: a.category_name, image: a.image_url })),
+      products: products.slice(0, 20).map(p => ({ id: p.id, title: p.title, slug: p.slug, price: p.price, excerpt: (p.excerpt || '').substring(0, 100), category: p.category, brand: p.brand, image: p.image_url })),
+      recipes: recipes.slice(0, 10).map(r => ({ id: r.id, title: r.title, slug: r.slug, excerpt: (r.excerpt || '').substring(0, 100), image: r.image_url })),
     });
 
     const generationPrompt = `${AUDIENCE_PROMPT}
@@ -127,36 +127,56 @@ REQUIREMENTS FOR EACH POST:
 
 OUTPUT: Return ONLY a valid JSON array of 30 objects. No markdown, no explanation, just the JSON array.`;
 
-    const result = await model.generateContent(generationPrompt);
-    const responseText = result.response.text();
-    
-    // Parse JSON from response (handle potential markdown wrapping)
-    let posts: any[];
-    try {
-      const jsonMatch = responseText.match(/\[[\s\S]*\]/);
-      if (!jsonMatch) throw new Error('No JSON array found in AI response');
-      posts = JSON.parse(jsonMatch[0]);
-    } catch (parseErr: any) {
-      console.error('AI response parse error:', parseErr.message);
-      console.error('Raw response:', responseText.substring(0, 500));
-      return res.status(500).json({ error: 'Failed to parse AI response', details: parseErr.message });
+    // Try with retry and model fallback for rate limiting
+    const MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+    let posts: any[] | null = null;
+    let lastError = '';
+
+    for (const modelName of MODELS) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          console.log(`Attempt ${attempt + 1} with model ${modelName}`);
+          const model = genAI.getGenerativeModel({ model: modelName });
+          const result = await model.generateContent(generationPrompt);
+          const responseText = result.response.text();
+
+          const jsonMatch = responseText.match(/\[[\s\S]*\]/);
+          if (!jsonMatch) throw new Error('No JSON array found in AI response');
+          posts = JSON.parse(jsonMatch[0]);
+          break;
+        } catch (err: any) {
+          lastError = err.message || 'Unknown error';
+          console.error(`Model ${modelName} attempt ${attempt + 1} failed:`, lastError);
+
+          if (lastError.includes('429') || lastError.includes('quota') || lastError.includes('Too Many Requests')) {
+            const waitMs = Math.pow(2, attempt + 1) * 2000;
+            console.log(`Rate limited. Waiting ${waitMs}ms before retry...`);
+            await new Promise(resolve => setTimeout(resolve, waitMs));
+          } else {
+            break;
+          }
+        }
+      }
+      if (posts && posts.length > 0) break;
     }
 
-    if (!Array.isArray(posts) || posts.length === 0) {
-      return res.status(500).json({ error: 'AI returned empty or invalid posts array' });
+    if (!posts || posts.length === 0) {
+      return res.status(429).json({
+        error: 'AI generation temporarily unavailable due to rate limits. Please try again in a few minutes.',
+        details: lastError,
+      });
     }
 
     // 4. Schedule posts across 30 days
     const { startDate } = req.body || {};
     const baseDate = startDate ? new Date(startDate) : new Date();
-    // Set to next day start
     baseDate.setDate(baseDate.getDate() + 1);
     baseDate.setHours(0, 0, 0, 0);
 
     const timeSlots: Record<string, number> = {
-      morning: 9,   // 9:00 AM AEST
-      midday: 12,   // 12:00 PM AEST
-      evening: 18,  // 6:00 PM AEST
+      morning: 9,
+      midday: 12,
+      evening: 18,
     };
 
     const scheduledPosts = posts.slice(0, 30).map((post: any, index: number) => {
