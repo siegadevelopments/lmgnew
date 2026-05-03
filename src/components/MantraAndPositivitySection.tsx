@@ -36,9 +36,6 @@ export function MantraAndPositivitySection() {
                   </li>
                 ))}
               </ul>
-              <p className="mt-4 text-xs italic text-muted-foreground">
-                Make your own ‘Good before Bad’ statements here to follow. WRITE THEM NOW, don’t ponder, just write.
-              </p>
             </div>
           </div>
 

@@ -277,7 +277,7 @@ function ProfilePage() {
                              {!isPast && booking.status !== 'cancelled' && (
                                <Button variant="ghost" size="sm" className="text-xs text-destructive hover:bg-destructive/5" onClick={async () => {
                                  if (confirm("Are you sure you want to cancel this booking?")) {
-                                   await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', booking.id);
+                                   await (supabase.from('bookings') as any).update({ status: 'cancelled' }).eq('id', booking.id);
                                    setBookings(prev => prev.map(b => b.id === booking.id ? { ...b, status: 'cancelled' } : b));
                                    toast.success("Booking cancelled");
                                  }

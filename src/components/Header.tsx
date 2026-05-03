@@ -94,7 +94,7 @@ export function Header() {
             const isServiceDetail = isProductsPath && loaderData?.product_type === 'service';
 
             let isActive = false;
-            if (item.to === '/') {
+            if ((item.to as string) === '/') {
               isActive = router.state.location.pathname === '/';
             } else if (item.to === '/services') {
               isActive = router.state.location.pathname.startsWith('/services') || isServiceDetail;
@@ -275,7 +275,7 @@ export function Header() {
             const isServiceDetail = isProductsPath && loaderData?.product_type === 'service';
 
             let isActive = false;
-            if (item.to === '/') {
+            if ((item.to as string) === '/') {
               isActive = router.state.location.pathname === '/';
             } else if (item.to === '/services') {
               isActive = router.state.location.pathname.startsWith('/services') || isServiceDetail;
