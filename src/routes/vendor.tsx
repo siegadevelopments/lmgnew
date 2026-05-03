@@ -279,12 +279,12 @@ function VendorDashboardPage() {
     { id: "analytics", label: "Dashboard", icon: LayoutDashboard },
     { id: "products", label: profile.vendor_type === "services" ? "My Services" : "My Products", icon: Package },
     { id: "live", label: "Live Stream", icon: Radio },
-    { id: "videos", label: "Videos", icon: Video },
+    { id: "videos", label: "Video Content", icon: Video },
     { id: "orders", label: `Orders (${orderItems.length})`, icon: ShoppingBag },
     { id: "messages", label: "Messages", icon: MessageCircle },
     { id: "articles", label: "Articles", icon: FileText },
-    { id: "withdraw", label: "Withdrawals", icon: Wallet },
-    { id: "import", label: "Bulk Import", icon: Upload },
+    { id: "withdraw", label: "Earnings", icon: Wallet },
+    ...(profile.vendor_type !== "services" ? [{ id: "import", label: "Bulk Import", icon: Upload }] : []),
     { id: "settings", label: "Store Settings", icon: Settings },
   ];
 
@@ -451,13 +451,15 @@ function VendorDashboardPage() {
               <WithdrawTab totalSales={totalSales} vendorId={user?.id} />
             </TabsContent>
 
-            <TabsContent value="import" className="mt-0 border-0 p-0">
-              <div className="mb-6 flex flex-col gap-1">
-                <h1 className="text-2xl font-bold tracking-tight">Bulk Import</h1>
-                <p className="text-muted-foreground">Import products from Shopify or WooCommerce.</p>
-              </div>
-              <BulkImportTab userId={user!.id} onSuccess={loadVendorData} />
-            </TabsContent>
+            {profile.vendor_type !== "services" && (
+              <TabsContent value="import" className="mt-0 border-0 p-0">
+                <div className="mb-6 flex flex-col gap-1">
+                  <h1 className="text-2xl font-bold tracking-tight">Bulk Import</h1>
+                  <p className="text-muted-foreground">Import products from Shopify or WooCommerce.</p>
+                </div>
+                <BulkImportTab userId={user!.id} onSuccess={loadVendorData} />
+              </TabsContent>
+            )}
 
             <TabsContent value="settings" className="mt-0 border-0 p-0">
               <div className="mb-6 flex flex-col gap-1">

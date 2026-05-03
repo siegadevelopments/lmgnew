@@ -15,6 +15,7 @@ import {
 
 const topNavItems = [
   { to: "/products" as const, label: "Shop" },
+  { to: "/services" as const, label: "Services" },
   { to: "/vendors" as const, label: "Vendors" },
   { to: "/affiliates" as const, label: "Affiliates" },
 ];

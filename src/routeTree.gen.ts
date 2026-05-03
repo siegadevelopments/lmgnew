@@ -31,6 +31,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as VendorsIndexRouteImport } from './routes/vendors.index'
+import { Route as ServicesIndexRouteImport } from './routes/services.index'
 import { Route as RecipesIndexRouteImport } from './routes/recipes.index'
 import { Route as ProductsIndexRouteImport } from './routes/products.index'
 import { Route as ArticlesIndexRouteImport } from './routes/articles.index'
@@ -149,6 +150,11 @@ const VendorsIndexRoute = VendorsIndexRouteImport.update({
   path: '/vendors/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ServicesIndexRoute = ServicesIndexRouteImport.update({
+  id: '/services/',
+  path: '/services/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RecipesIndexRoute = RecipesIndexRouteImport.update({
   id: '/recipes/',
   path: '/recipes/',
@@ -214,6 +220,7 @@ export interface FileRoutesByFullPath {
   '/articles/': typeof ArticlesIndexRoute
   '/products/': typeof ProductsIndexRoute
   '/recipes/': typeof RecipesIndexRoute
+  '/services/': typeof ServicesIndexRoute
   '/vendors/': typeof VendorsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -245,6 +252,7 @@ export interface FileRoutesByTo {
   '/articles': typeof ArticlesIndexRoute
   '/products': typeof ProductsIndexRoute
   '/recipes': typeof RecipesIndexRoute
+  '/services': typeof ServicesIndexRoute
   '/vendors': typeof VendorsIndexRoute
 }
 export interface FileRoutesById {
@@ -277,6 +285,7 @@ export interface FileRoutesById {
   '/articles/': typeof ArticlesIndexRoute
   '/products/': typeof ProductsIndexRoute
   '/recipes/': typeof RecipesIndexRoute
+  '/services/': typeof ServicesIndexRoute
   '/vendors/': typeof VendorsIndexRoute
 }
 export interface FileRouteTypes {
@@ -310,6 +319,7 @@ export interface FileRouteTypes {
     | '/articles/'
     | '/products/'
     | '/recipes/'
+    | '/services/'
     | '/vendors/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -341,6 +351,7 @@ export interface FileRouteTypes {
     | '/articles'
     | '/products'
     | '/recipes'
+    | '/services'
     | '/vendors'
   id:
     | '__root__'
@@ -372,6 +383,7 @@ export interface FileRouteTypes {
     | '/articles/'
     | '/products/'
     | '/recipes/'
+    | '/services/'
     | '/vendors/'
   fileRoutesById: FileRoutesById
 }
@@ -404,6 +416,7 @@ export interface RootRouteChildren {
   ArticlesIndexRoute: typeof ArticlesIndexRoute
   ProductsIndexRoute: typeof ProductsIndexRoute
   RecipesIndexRoute: typeof RecipesIndexRoute
+  ServicesIndexRoute: typeof ServicesIndexRoute
   VendorsIndexRoute: typeof VendorsIndexRoute
 }
 
@@ -563,6 +576,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VendorsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/services/': {
+      id: '/services/'
+      path: '/services'
+      fullPath: '/services/'
+      preLoaderRoute: typeof ServicesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/recipes/': {
       id: '/recipes/'
       path: '/recipes'
@@ -644,6 +664,7 @@ const rootRouteChildren: RootRouteChildren = {
   ArticlesIndexRoute: ArticlesIndexRoute,
   ProductsIndexRoute: ProductsIndexRoute,
   RecipesIndexRoute: RecipesIndexRoute,
+  ServicesIndexRoute: ServicesIndexRoute,
   VendorsIndexRoute: VendorsIndexRoute,
 }
 export const routeTree = rootRouteImport

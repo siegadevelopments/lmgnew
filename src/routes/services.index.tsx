@@ -9,25 +9,24 @@ import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/products/")({
-// ... (omitting lines for brevity in instruction, will apply correctly)
+export const Route = createFileRoute("/services/")({
   loader: ({ context: { queryClient } }) => {
     return queryClient.ensureQueryData(productsQueryOptions());
   },
   head: () => ({
     meta: [
-      { title: "Wellness Marketplace — Shop Healthy Products | Lifestyle Medicine Gateway" },
-      { name: "description", content: "Shop a curated selection of wellness products, organic supplements, and healthy living equipment from trusted vendors." },
-      { property: "og:title", content: "Wellness Marketplace | Lifestyle Medicine Gateway" },
-      { property: "og:description", content: "Discover and shop the best wellness products for your lifestyle medicine journey." },
+      { title: "Wellness Services — Book Appointments | Lifestyle Medicine Gateway" },
+      { name: "description", content: "Book curated health and wellness services from trusted professionals." },
+      { property: "og:title", content: "Wellness Services | Lifestyle Medicine Gateway" },
+      { property: "og:description", content: "Discover and book the best wellness services for your lifestyle medicine journey." },
     ],
   }),
-  component: ProductsPage,
+  component: ServicesPage,
   errorComponent: ({ error }) => {
     const router = useRouter();
     return (
       <div className="mx-auto max-w-7xl px-4 py-20 text-center">
-        <h1 className="text-2xl font-bold text-foreground">Failed to load products</h1>
+        <h1 className="text-2xl font-bold text-foreground">Failed to load services</h1>
         <p className="mt-2 text-muted-foreground">{error.message}</p>
         <button onClick={() => router.invalidate()} className="mt-4 rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground">Retry</button>
       </div>
@@ -35,19 +34,19 @@ export const Route = createFileRoute("/products/")({
   },
 });
 
-function ProductsPage() {
+function ServicesPage() {
   const { data: products } = useSuspenseQuery(productsQueryOptions());
   const [searchInput, setSearchInput] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
 
-  const categories = ["All", "Supplements", "Equipment", "Food", "Books", "Digital"];
+  const categories = ["All", "Consultation", "Therapy", "Coaching", "Workshop", "Fitness"];
 
-  const filteredProducts = useMemo(() => {
+  const filteredServices = useMemo(() => {
     return products.filter((p) => {
-      const isProduct = p.product_type !== 'service';
+      const isService = p.product_type === 'service';
       const matchesSearch = p.title.toLowerCase().includes(searchInput.toLowerCase());
       const matchesCategory = activeCategory === "All" || p.category === activeCategory;
-      return isProduct && matchesSearch && matchesCategory;
+      return isService && matchesSearch && matchesCategory;
     });
   }, [products, searchInput, activeCategory]);
 
@@ -57,10 +56,10 @@ function ProductsPage() {
       <div className="bg-wellness-muted py-12 sm:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-            Wellness Marketplace
+            Wellness Services
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-            Trusted products for your lifestyle medicine journey.
+            Book professional services for your lifestyle medicine journey.
           </p>
           
           <div className="mx-auto mt-8 max-w-2xl">
@@ -102,21 +101,21 @@ function ProductsPage() {
       {/* Product Grid */}
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4">
-          {filteredProducts.map((product) => (
+          {filteredServices.map((product) => (
             <ProductCard key={product.id} product={product as any} />
           ))}
         </div>
 
-        {filteredProducts.length === 0 && (
+        {filteredServices.length === 0 && (
           <div className="text-center py-20">
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-wellness-muted">
               <svg className="h-10 w-10 text-primary/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
                 <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 01-8 0" />
               </svg>
             </div>
-            <h2 className="mt-6 text-xl font-semibold text-foreground">No products found</h2>
+            <h2 className="mt-6 text-xl font-semibold text-foreground">No services found</h2>
             <p className="mt-2 text-muted-foreground">
-              {searchInput ? "Try adjusting your search" : "Products from vendors will appear here once they're published."}
+              {searchInput ? "Try adjusting your search" : "Services from professionals will appear here once they're published."}
             </p>
           </div>
         )}

@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format, addMinutes, parseISO, startOfToday } from "date-fns";
 import { Loader2, Calendar as CalendarIcon, Clock } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Props {
   productId: number;
@@ -112,16 +113,18 @@ export function BookingCalendar({ productId, vendorId, onSelect }: Props) {
   }
 
   return (
-    <Card className="border-border/50 overflow-hidden shadow-sm">
-      <CardHeader className="bg-primary/5 pb-4">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <CalendarIcon className="h-5 w-5 text-primary" />
+    <Card className="border-border/50 overflow-hidden shadow-md bg-card/50 backdrop-blur-sm">
+      <CardHeader className="bg-wellness-muted/30 pb-4 border-b border-border/50">
+        <CardTitle className="text-xl flex items-center gap-3 text-foreground">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <CalendarIcon className="h-5 w-5 text-primary" />
+          </div>
           Select Date & Time
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-4 sm:p-6">
-        <div className="flex flex-col md:flex-row gap-8">
-          <div className="flex-shrink-0">
+      <CardContent className="p-6">
+        <div className="flex flex-col lg:flex-row gap-10">
+          <div className="flex-shrink-0 flex justify-center lg:justify-start">
             <Calendar
               mode="single"
               selected={selectedDate}
@@ -131,42 +134,58 @@ export function BookingCalendar({ productId, vendorId, onSelect }: Props) {
                 onSelect(null);
               }}
               disabled={(date) => date < startOfToday() || !availability?.some(a => a.day_of_week === date.getDay())}
-              className="rounded-md border shadow-sm"
+              className="rounded-xl border border-border/50 shadow-inner bg-background p-4"
             />
           </div>
 
-          <div className="flex-1 space-y-4">
-            <h4 className="font-semibold flex items-center gap-2 text-foreground">
-              <Clock className="h-4 w-4 text-primary" />
-              Available Slots
-              {selectedDate && <span className="text-xs font-normal text-muted-foreground ml-auto">{format(selectedDate, "EEE, MMM do")}</span>}
-            </h4>
+          <div className="flex-1 space-y-6">
+            <div className="flex items-center justify-between">
+              <h4 className="font-bold flex items-center gap-2 text-foreground text-lg">
+                <Clock className="h-5 w-5 text-primary" />
+                Available Slots
+              </h4>
+              {selectedDate && (
+                <div className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-semibold">
+                  {format(selectedDate, "EEEE, MMMM do")}
+                </div>
+              )}
+            </div>
             
             {(loadingBookings) ? (
-               <div className="flex h-32 items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+               <div className="flex h-64 items-center justify-center">
+                 <Loader2 className="h-8 w-8 animate-spin text-primary/30" />
+               </div>
             ) : slots.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 max-h-[400px] overflow-y-auto pr-3 custom-scrollbar">
                 {slots.map((slot) => {
                   const id = slot.start.toISOString();
                   return (
                     <Button
                       key={id}
                       variant={selectedSlot === id ? "default" : "outline"}
-                      size="sm"
                       onClick={() => handleSlotSelect(slot)}
-                      className="text-xs py-5 transition-all duration-200"
+                      className={cn(
+                        "h-14 flex flex-col items-center justify-center gap-0.5 rounded-xl transition-all duration-300",
+                        selectedSlot === id 
+                          ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105" 
+                          : "hover:border-primary/50 hover:bg-primary/5 border-border/50"
+                      )}
                     >
-                      {format(slot.start, "h:mm a")}
+                      <span className="text-sm font-bold">{format(slot.start, "h:mm a")}</span>
+                      <span className="text-[10px] opacity-70">Available</span>
                     </Button>
                   );
                 })}
               </div>
             ) : (
-              <div className="flex h-32 items-center justify-center rounded-lg bg-muted/50 text-center p-4">
-                <p className="text-sm text-muted-foreground italic">
+              <div className="flex flex-col items-center justify-center h-64 rounded-2xl bg-muted/30 border-2 border-dashed border-border/50 text-center p-8">
+                <div className="p-4 bg-background rounded-full mb-4 shadow-sm">
+                  <Clock className="h-8 w-8 text-muted-foreground/30" />
+                </div>
+                <p className="text-sm font-medium text-muted-foreground max-w-[200px]">
                   {selectedDate 
-                    ? "No available slots for this date." 
-                    : "Please select a date on the calendar."}
+                    ? "No available slots for this date. Please try another day." 
+                    : "Please select a date on the calendar to see available times."}
                 </p>
               </div>
             )}
