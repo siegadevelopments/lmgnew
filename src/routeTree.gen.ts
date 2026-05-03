@@ -14,6 +14,7 @@ import { Route as VendorRouteImport } from './routes/vendor'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as StudiesRouteImport } from './routes/studies'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as SellWithUsRouteImport } from './routes/sell-with-us'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as RefundPolicyRouteImport } from './routes/refund-policy'
 import { Route as ProfileRouteImport } from './routes/profile'
@@ -61,6 +62,11 @@ const StudiesRoute = StudiesRouteImport.update({
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SellWithUsRoute = SellWithUsRouteImport.update({
+  id: '/sell-with-us',
+  path: '/sell-with-us',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SearchRoute = SearchRouteImport.update({
@@ -195,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/refund-policy': typeof RefundPolicyRoute
   '/search': typeof SearchRoute
+  '/sell-with-us': typeof SellWithUsRoute
   '/signup': typeof SignupRoute
   '/studies': typeof StudiesRoute
   '/terms': typeof TermsRoute
@@ -225,6 +232,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/refund-policy': typeof RefundPolicyRoute
   '/search': typeof SearchRoute
+  '/sell-with-us': typeof SellWithUsRoute
   '/signup': typeof SignupRoute
   '/studies': typeof StudiesRoute
   '/terms': typeof TermsRoute
@@ -256,6 +264,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/refund-policy': typeof RefundPolicyRoute
   '/search': typeof SearchRoute
+  '/sell-with-us': typeof SellWithUsRoute
   '/signup': typeof SignupRoute
   '/studies': typeof StudiesRoute
   '/terms': typeof TermsRoute
@@ -288,6 +297,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/refund-policy'
     | '/search'
+    | '/sell-with-us'
     | '/signup'
     | '/studies'
     | '/terms'
@@ -318,6 +328,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/refund-policy'
     | '/search'
+    | '/sell-with-us'
     | '/signup'
     | '/studies'
     | '/terms'
@@ -348,6 +359,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/refund-policy'
     | '/search'
+    | '/sell-with-us'
     | '/signup'
     | '/studies'
     | '/terms'
@@ -379,6 +391,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   RefundPolicyRoute: typeof RefundPolicyRoute
   SearchRoute: typeof SearchRoute
+  SellWithUsRoute: typeof SellWithUsRoute
   SignupRoute: typeof SignupRoute
   StudiesRoute: typeof StudiesRoute
   TermsRoute: typeof TermsRoute
@@ -429,6 +442,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sell-with-us': {
+      id: '/sell-with-us'
+      path: '/sell-with-us'
+      fullPath: '/sell-with-us'
+      preLoaderRoute: typeof SellWithUsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/search': {
@@ -611,6 +631,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   RefundPolicyRoute: RefundPolicyRoute,
   SearchRoute: SearchRoute,
+  SellWithUsRoute: SellWithUsRoute,
   SignupRoute: SignupRoute,
   StudiesRoute: StudiesRoute,
   TermsRoute: TermsRoute,

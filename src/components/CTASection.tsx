@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Link } from "@tanstack/react-router";
 
 export function CTASection() {
   return (
@@ -15,12 +16,16 @@ export function CTASection() {
           Getting equipped for a healthy lifestyle needs good products. Discover our full range of curated wellness items.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-          <Button variant="hero" size="lg" className="bg-background text-foreground hover:bg-background/90">
-            Become a Vendor
-          </Button>
-          <Button variant="hero-outline" size="lg">
-            Learn More
-          </Button>
+          <Link to="/signup">
+            <Button variant="hero" size="lg" className="bg-background text-foreground hover:bg-background/90">
+              Become a Vendor
+            </Button>
+          </Link>
+          <Link to="/sell-with-us">
+            <Button variant="hero-outline" size="lg">
+              Learn More
+            </Button>
+          </Link>
         </div>
       </div>
     </section>
