@@ -16,11 +16,15 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { to, subject, html } = await req.json()
+    const { to, subject, html, fromName, fromEmail } = await req.json()
 
     if (!RESEND_API_KEY) {
       throw new Error('RESEND_API_KEY not configured')
     }
+
+    // Default to noreply if not specified
+    const senderName = fromName || 'Lifestyle Medicine Gateway'
+    const senderEmail = fromEmail || 'noreply@lifestylemedicinegateway.com'
 
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -29,7 +33,7 @@ serve(async (req: Request) => {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'Lifestyle Medicine Gateway <noreply@lifestylemedicinegateway.com>',
+        from: `${senderName} <${senderEmail}>`,
         to: Array.isArray(to) ? to : [to],
         subject,
         html,

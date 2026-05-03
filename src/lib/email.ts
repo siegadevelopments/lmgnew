@@ -1,24 +1,37 @@
 /**
  * Email Service for Lifestyle Medicine Gateway
- * 
- * To enable live emails, provide your API keys for a service like Resend or SendGrid.
  */
-
-interface EmailPayload {
-  to: string;
-  subject: string;
-  html: string;
-  vendorId?: string;
-}
-
 import { supabase } from "@/integrations/supabase/client";
 
-export const sendEmail = async ({ to, subject, html }: EmailPayload) => {
+// Core sending addresses
+export const EMAIL_ADDRESSES = {
+  NOREPLY: "noreply@lifestylemedicinegateway.com",
+  ORDERS: "orders@lifestylemedicinegateway.com",
+  SALES: "sales@lifestylemedicinegateway.com",
+  BOOKINGS: "bookings@lifestylemedicinegateway.com",
+  SUPPORT: "support@lifestylemedicinegateway.com",
+};
+
+interface EmailPayload {
+  to: string | string[];
+  subject: string;
+  html: string;
+  fromName?: string;
+  fromEmail?: string;
+}
+
+export const sendEmail = async ({ to, subject, html, fromName, fromEmail }: EmailPayload) => {
   console.log(`[Email Service] Invoking Edge Function for: ${to} | Subject: ${subject}`);
   
   try {
     const { data, error } = await supabase.functions.invoke('send-email', {
-      body: { to, subject, html }
+      body: { 
+        to, 
+        subject, 
+        html, 
+        fromName: fromName || "Lifestyle Medicine Gateway",
+        fromEmail: fromEmail || EMAIL_ADDRESSES.NOREPLY
+      }
     });
 
     if (error) {
@@ -36,6 +49,8 @@ export const sendEmail = async ({ to, subject, html }: EmailPayload) => {
 
 export const emailTemplates = {
   orderConfirmation: (order: any) => ({
+    fromName: "LMG Orders",
+    fromEmail: EMAIL_ADDRESSES.ORDERS,
     subject: `Order Confirmed - #${order.id.slice(0, 8)}`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
@@ -50,12 +65,14 @@ export const emailTemplates = {
         </div>
         <p>We'll notify you as soon as your items have shipped.</p>
         <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-        <p style="font-size: 12px; color: #64748b;">If you have any questions, please contact our support team.</p>
+        <p style="font-size: 12px; color: #64748b;">If you have any questions, please contact our support team at ${EMAIL_ADDRESSES.SUPPORT}.</p>
       </div>
     `
   }),
   
   passwordReset: (token: string) => ({
+    fromName: "LMG Security",
+    fromEmail: EMAIL_ADDRESSES.NOREPLY,
     subject: "Reset Your Password - Lifestyle Medicine Gateway",
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
@@ -71,6 +88,8 @@ export const emailTemplates = {
   }),
   
   vendorApproval: (storeName: string) => ({
+    fromName: "LMG Partner Relations",
+    fromEmail: EMAIL_ADDRESSES.SALES,
     subject: "Your Vendor Store is Approved!",
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
@@ -86,6 +105,8 @@ export const emailTemplates = {
   }),
 
   vendorOrderNotification: (order: any, vendorItems: any[]) => ({
+    fromName: "LMG Vendor Orders",
+    fromEmail: EMAIL_ADDRESSES.ORDERS,
     subject: `New Order Received - LMG-${order.id.slice(0, 8).toUpperCase()}`,
     html: `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
