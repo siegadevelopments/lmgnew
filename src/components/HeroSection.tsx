@@ -11,7 +11,7 @@ export function HeroSection() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate({ to: "/products", search: { q: searchQuery, category: "", page: 1 } });
+      navigate({ to: "/search", search: { q: searchQuery } });
     }
   };
 

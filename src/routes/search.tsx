@@ -5,6 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/search")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    q: (search.q as string) || "",
+  }),
   head: () => ({
     meta: [
       { title: "Search — Lifestyle Medicine Gateway" },
@@ -16,6 +19,7 @@ export const Route = createFileRoute("/search")({
 
 function SearchPage() {
   const navigate = useNavigate();
+  const { q: initialQ } = Route.useSearch();
   const [results, setResults] = useState<{ 
     products: any[], 
     articles: any[], 
@@ -31,7 +35,7 @@ function SearchPage() {
   });
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQ || "");
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<any>(null);
 

@@ -38,6 +38,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 import { MarketingScripts } from "@/components/MarketingScripts";
 import { SchemaOrg } from "@/components/SchemaOrg";
+import { MessengerBubble } from "@/components/chat/GlobalChat";
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
@@ -71,6 +72,7 @@ function RootComponent() {
             </main>
             <Footer />
             <BackToTop />
+            <MessengerBubble />
             <Toaster position="bottom-right" richColors closeButton />
           </div>
         </CartProvider>
