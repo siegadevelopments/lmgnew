@@ -67,56 +67,18 @@ function SignupPage() {
     setIsLoading(false);
   };
 
-  if (success) {
-    return (
-      <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12">
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6 text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-              <svg
-                className="h-7 w-7 text-primary"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                />
-              </svg>
-            </div>
-            <h3 className="text-lg font-semibold text-foreground">
-              Check your email
-            </h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              We sent a confirmation link to <strong>{email}</strong>. Click the
-              link to verify your account and get started.
-            </p>
-            <Button
-              variant="outline"
-              className="mt-6"
-              onClick={() => navigate({ to: "/login" })}
-            >
-              Go to Login
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12">
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Create an account</CardTitle>
-          <CardDescription>
-            Join Lifestyle Medicine Gateway
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
+        {!success ? (
+          <div key="signup-form">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl">Create an account</CardTitle>
+              <CardDescription>
+                Join Lifestyle Medicine Gateway
+              </CardDescription>
+            </CardHeader>
+            <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             {error && (
               <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
@@ -201,14 +163,47 @@ function SignupPage() {
               Already have an account?{" "}
               <Link 
                 to="/login" 
-                search={{ redirect: redirectTo }} 
-                className="text-primary hover:underline"
+                    Sign in
+                  </Link>
+                </p>
+              </CardFooter>
+            </form>
+          </div>
+        ) : (
+          <div key="success-state">
+            <CardContent className="pt-6 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                <svg
+                  className="h-7 w-7 text-primary"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-foreground">
+                Check your email
+              </h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                We sent a confirmation link to <strong>{email}</strong>. Click the
+                link to verify your account and get started.
+              </p>
+              <Button
+                variant="outline"
+                className="mt-6"
+                onClick={() => navigate({ to: "/login" })}
               >
-                Sign in
-              </Link>
-            </p>
-          </CardFooter>
-        </form>
+                Go to Login
+              </Button>
+            </CardContent>
+          </div>
+        )}
       </Card>
     </div>
   );
