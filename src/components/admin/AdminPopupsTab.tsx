@@ -6,6 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription 
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
@@ -121,121 +128,121 @@ export function AdminPopupsTab() {
           <Plus className="h-4 w-4" /> Create Popup
         </Button>
       </div>
-
-      {showForm && (
-        <Card className="border-primary/20 bg-primary/5 animate-in fade-in slide-in-from-top-2">
-          <CardHeader>
-            <CardTitle>{editingPopup ? "Edit Popup" : "New Marketing Popup"}</CardTitle>
-            <CardDescription>Fill in the template below to configure your popup.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Popup Title</Label>
-                  <Input 
-                    required 
-                    value={form.title} 
-                    onChange={e => setForm({ ...form, title: e.target.value })}
-                    placeholder="e.g. Special Spring Sale! 🌸"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Image URL</Label>
-                  <Input 
-                    value={form.image_url || ""} 
-                    onChange={e => setForm({ ...form, image_url: e.target.value })}
-                    placeholder="https://images.unsplash.com/..."
-                  />
-                  {form.image_url && (
-                    <div className="mt-2 h-32 w-full rounded-lg overflow-hidden border border-border bg-muted">
-                      <img src={form.image_url} alt="" className="h-full w-full object-cover" />
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label>Content / Message</Label>
-                  <Textarea 
-                    rows={4} 
-                    value={form.content || ""} 
-                    onChange={e => setForm({ ...form, content: e.target.value })}
-                    placeholder="Tell your visitors what this popup is about..."
-                  />
-                </div>
+ 
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingPopup ? "Edit Popup" : "New Marketing Popup"}</DialogTitle>
+            <DialogDescription>Fill in the template below to configure your popup.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-2 pt-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Popup Title</Label>
+                <Input 
+                  required 
+                  value={form.title} 
+                  onChange={e => setForm({ ...form, title: e.target.value })}
+                  placeholder="e.g. Special Spring Sale! 🌸"
+                />
               </div>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Call to Action Type</Label>
-                  <div className="flex gap-2">
-                    <Button 
-                      type="button" 
-                      variant={form.cta_type === "url" ? "default" : "outline"}
-                      className="flex-1 gap-2"
-                      onClick={() => setForm({ ...form, cta_type: "url" })}
-                    >
-                      <LinkIcon className="h-4 w-4" /> Open URL
-                    </Button>
-                    <Button 
-                      type="button" 
-                      variant={form.cta_type === "email" ? "default" : "outline"}
-                      className="flex-1 gap-2"
-                      onClick={() => setForm({ ...form, cta_type: "email" })}
-                    >
-                      <Mail className="h-4 w-4" /> Email Signup
-                    </Button>
-                  </div>
-                </div>
-
-                {form.cta_type === "url" && (
-                  <div className="space-y-2">
-                    <Label>CTA URL</Label>
-                    <Input 
-                      value={form.cta_url || ""} 
-                      onChange={e => setForm({ ...form, cta_url: e.target.value })}
-                      placeholder="/shop or https://..."
-                    />
+              <div className="space-y-2">
+                <Label>Image URL</Label>
+                <Input 
+                  value={form.image_url || ""} 
+                  onChange={e => setForm({ ...form, image_url: e.target.value })}
+                  placeholder="https://images.unsplash.com/..."
+                />
+                {form.image_url && (
+                  <div className="mt-2 h-32 w-full rounded-lg overflow-hidden border border-border bg-muted">
+                    <img src={form.image_url} alt="" className="h-full w-full object-cover" />
                   </div>
                 )}
+              </div>
+              <div className="space-y-2">
+                <Label>Content / Message</Label>
+                <Textarea 
+                  rows={4} 
+                  value={form.content || ""} 
+                  onChange={e => setForm({ ...form, content: e.target.value })}
+                  placeholder="Tell your visitors what this popup is about..."
+                />
+              </div>
+            </div>
 
-                <div className="space-y-2">
-                  <Label>Button Text</Label>
-                  <Input 
-                    value={form.cta_button_text} 
-                    onChange={e => setForm({ ...form, cta_button_text: e.target.value })}
-                    placeholder="e.g. Shop Now"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Display Delay (ms)</Label>
-                    <Input 
-                      type="number"
-                      value={form.display_delay} 
-                      onChange={e => setForm({ ...form, display_delay: Number(e.target.value) })}
-                    />
-                  </div>
-                  <div className="flex items-center justify-end gap-2 pt-8">
-                    <Label className="cursor-pointer">Active</Label>
-                    <Switch 
-                      checked={form.is_active} 
-                      onCheckedChange={v => setForm({ ...form, is_active: v })}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-2 pt-4">
-                  <Button type="submit" className="flex-1 font-bold">
-                    {editingPopup ? "Save Changes" : "Create Popup"}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Call to Action Type</Label>
+                <div className="flex gap-2">
+                  <Button 
+                    type="button" 
+                    variant={form.cta_type === "url" ? "default" : "outline"}
+                    className="flex-1 gap-2"
+                    onClick={() => setForm({ ...form, cta_type: "url" })}
+                  >
+                    <LinkIcon className="h-4 w-4" /> Open URL
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                  <Button 
+                    type="button" 
+                    variant={form.cta_type === "email" ? "default" : "outline"}
+                    className="flex-1 gap-2"
+                    onClick={() => setForm({ ...form, cta_type: "email" })}
+                  >
+                    <Mail className="h-4 w-4" /> Email Signup
+                  </Button>
                 </div>
               </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
+
+              {form.cta_type === "url" && (
+                <div className="space-y-2">
+                  <Label>CTA URL</Label>
+                  <Input 
+                    value={form.cta_url || ""} 
+                    onChange={e => setForm({ ...form, cta_url: e.target.value })}
+                    placeholder="/shop or https://..."
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Button Text</Label>
+                <Input 
+                  value={form.cta_button_text} 
+                  onChange={e => setForm({ ...form, cta_button_text: e.target.value })}
+                  placeholder="e.g. Shop Now"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Display Delay (ms)</Label>
+                  <Input 
+                    type="number"
+                    value={form.display_delay} 
+                    onChange={e => setForm({ ...form, display_delay: Number(e.target.value) })}
+                  />
+                </div>
+                <div className="flex items-center justify-end gap-2 pt-8">
+                  <Label className="cursor-pointer">Active</Label>
+                  <Switch 
+                    checked={form.is_active} 
+                    onCheckedChange={v => setForm({ ...form, is_active: v })}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button type="submit" className="flex-1 font-bold">
+                  {editingPopup ? "Save Changes" : "Create Popup"}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+              </div>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {popups.map((popup) => (
