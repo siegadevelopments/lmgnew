@@ -64,6 +64,14 @@ const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
     description: "Win back inactive subscribers with a personalized message and a strong incentive.",
     type: "re-engagement",
     aiPrompt: "Write a soft, caring email for subscribers who haven't opened emails in a while. Ask for feedback on how we can improve and offer a 'welcome back' gift."
+  },
+  {
+    id: "sales-funnel",
+    name: "7-Day Sales Conversion",
+    subject: "The secret to lasting vitality... (Open inside) 🔓",
+    description: "A psychological 4-part sequence: Education -> Social Proof -> Value -> Scarcity. Designed for 40%+ conversion.",
+    type: "promo",
+    aiPrompt: "Generate a 4-part email sequence for a new wellness customer. Email 1: The 'Why' & Founders Story. Email 2: Common health myths vs facts. Email 3: Customer success stories and 'Before/After' results. Email 4: A limited 48-hour offer with strong urgency."
   }
 ];
 

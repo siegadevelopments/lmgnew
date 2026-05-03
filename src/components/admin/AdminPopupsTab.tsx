@@ -27,7 +27,8 @@ import {
   Clock,
   Sparkles,
   X,
-  CheckCircle2
+  CheckCircle2,
+  Target
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -244,9 +245,10 @@ export function AdminPopupsTab() {
 
 
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {popups.map((popup) => (
-          <Card key={popup.id} className={cn("overflow-hidden transition-all", popup.is_active ? "ring-2 ring-primary border-primary/20 shadow-md" : "opacity-75")}>
+      <div className="grid gap-6 lg:grid-cols-4">
+        <div className="lg:col-span-3 grid gap-4 sm:grid-cols-2">
+          {popups.map((popup) => (
+            <Card key={popup.id} className={cn("overflow-hidden transition-all", popup.is_active ? "ring-2 ring-primary border-primary/20 shadow-md" : "opacity-75")}>
             {popup.image_url && (
               <div className="h-40 w-full overflow-hidden bg-muted">
                 <img src={popup.image_url} alt="" className="h-full w-full object-cover" />
@@ -285,16 +287,55 @@ export function AdminPopupsTab() {
             </CardContent>
           </Card>
         ))}
-        {popups.length === 0 && !showForm && (
-          <div className="col-span-full py-20 text-center space-y-4">
-             <Settings2 className="h-12 w-12 mx-auto text-muted-foreground/20" />
-             <h3 className="text-lg font-bold">No popups yet</h3>
-             <p className="text-sm text-muted-foreground">Create your first marketing popup to engage your visitors.</p>
-             <Button onClick={() => setShowForm(true)} variant="outline">
-                <Plus className="h-4 w-4 mr-2" /> Create First Popup
-             </Button>
-          </div>
-        )}
+          {popups.length === 0 && !showForm && (
+            <div className="col-span-full py-20 text-center space-y-4">
+               <Settings2 className="h-12 w-12 mx-auto text-muted-foreground/20" />
+               <h3 className="text-lg font-bold">No popups yet</h3>
+               <p className="text-sm text-muted-foreground">Create your first marketing popup to engage your visitors.</p>
+               <Button onClick={() => setShowForm(true)} variant="outline">
+                  <Plus className="h-4 w-4 mr-2" /> Create First Popup
+               </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Marketing Insights Sidebar */}
+        <div className="space-y-4">
+          <Card className="bg-primary/5 border-primary/10">
+            <CardHeader className="pb-2">
+              <div className="flex items-center gap-2 text-primary">
+                <Sparkles className="h-4 w-4" />
+                <h3 className="text-sm font-bold uppercase tracking-wider">Conversion Tips</h3>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-foreground">1. Use Social Proof</p>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">"Join 5,000+ others" or "Trusted by experts" significantly boosts trust and signups.</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-foreground">2. The "Power of Free"</p>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">Offering a 10% discount or a "Welcome Gift" in exchange for an email is the #1 conversion driver.</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-foreground">3. High-Quality Visuals</p>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">Use calming, high-resolution wellness imagery from Unsplash to set the mood.</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-foreground">4. Smart Delay</p>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">Don't show popups instantly. A 5-8 second delay allows visitors to engage with your content first.</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-dashed border-2 opacity-60">
+            <CardContent className="p-4 py-8 text-center space-y-2">
+              <Target className="h-6 w-6 mx-auto text-muted-foreground" />
+              <p className="text-xs font-bold">Exit-Intent Coming Soon</p>
+              <p className="text-[10px] text-muted-foreground">Trigger popups only when a user is about to leave your site.</p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
