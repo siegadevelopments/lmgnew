@@ -13,6 +13,9 @@ import { useWishlist, type WishlistItem } from "@/hooks/use-wishlist";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadMedia } from "@/lib/upload";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { Clock, User } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/profile")({
   validateSearch: (search: Record<string, unknown>) => {
@@ -74,8 +77,10 @@ function ProfilePage() {
   const navigate = useNavigate();
   const { items: wishlistItems, removeFromWishlist } = useWishlist();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
   const [profile, setProfile] = useState<Profile>({ full_name: null, phone: null, avatar_url: null });
   const [loadingOrders, setLoadingOrders] = useState(true);
+  const [loadingBookings, setLoadingBookings] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -104,6 +109,17 @@ function ProfilePage() {
         const fetchedOrders = (data as unknown as Order[]) || [];
         setOrders(fetchedOrders);
         setLoadingOrders(false);
+      });
+
+    // Fetch bookings
+    supabase
+      .from("bookings")
+      .select("*, product:products(title, image_url, vendor:vendor_profiles(store_name))")
+      .eq("customer_id", user.id)
+      .order("start_time", { ascending: true })
+      .then(({ data }) => {
+        setBookings(data || []);
+        setLoadingBookings(false);
       });
   }, [user, authLoading, navigate]);
 
@@ -193,9 +209,92 @@ function ProfilePage() {
       <Tabs defaultValue="orders" className="mt-8">
         <TabsList>
           <TabsTrigger value="orders">Orders</TabsTrigger>
+          <TabsTrigger value="bookings">Bookings ({bookings.length})</TabsTrigger>
           <TabsTrigger value="wishlist">Wishlist ({wishlistItems.length})</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
+
+        {/* BOOKINGS */}
+        <TabsContent value="bookings" className="mt-4 space-y-4">
+          {loadingBookings ? (
+            <div className="flex justify-center py-12">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            </div>
+          ) : bookings.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <div className="mx-auto h-12 w-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+                  <Clock className="h-6 w-6" />
+                </div>
+                <h3 className="mt-4 text-lg font-semibold">No bookings yet</h3>
+                <p className="mt-1 text-sm text-muted-foreground">Schedule your first professional service today.</p>
+                <Button className="mt-4" asChild><Link to="/services">Explore Services</Link></Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {bookings.map((booking) => {
+                const startTime = new Date(booking.start_time);
+                const isPast = startTime < new Date();
+                
+                return (
+                  <Card key={booking.id} className={cn("overflow-hidden", isPast && "opacity-75")}>
+                    <CardContent className="p-0">
+                      <div className="flex flex-col sm:flex-row">
+                        <div className="flex flex-col items-center justify-center bg-muted/50 px-6 py-4 sm:w-32 border-r border-border/50">
+                          <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{format(startTime, "MMM")}</span>
+                          <span className="text-3xl font-black text-foreground">{format(startTime, "dd")}</span>
+                          <span className="text-xs font-medium text-muted-foreground">{format(startTime, "yyyy")}</span>
+                        </div>
+                        <div className="flex-1 p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                          <div className="flex items-center gap-4">
+                            {booking.product?.image_url && (
+                              <img src={booking.product.image_url} className="h-12 w-12 rounded-xl object-cover shadow-sm" alt="" />
+                            )}
+                            <div>
+                              <h4 className="font-bold text-foreground">{booking.product?.title || "Service Appointment"}</h4>
+                              <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                                <User className="h-3.5 w-3.5" /> {booking.product?.vendor?.store_name}
+                              </p>
+                              <div className="flex items-center gap-4 mt-2 text-xs font-semibold">
+                                <span className="flex items-center gap-1 text-primary">
+                                  <Clock className="h-3.5 w-3.5" /> {format(startTime, "h:mm a")}
+                                </span>
+                                {isPast && (
+                                  <Badge variant="secondary" className="text-[10px] uppercase font-bold px-1.5 py-0">Past Session</Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-2">
+                             <Badge className={cn(
+                               "uppercase text-[10px] font-bold px-2.5 py-1",
+                               booking.status === 'confirmed' ? "bg-emerald-500 hover:bg-emerald-600" :
+                               booking.status === 'pending' ? "bg-amber-500 hover:bg-amber-600" : "bg-muted text-muted-foreground"
+                             )}>
+                               {booking.status}
+                             </Badge>
+                             {!isPast && booking.status !== 'cancelled' && (
+                               <Button variant="ghost" size="sm" className="text-xs text-destructive hover:bg-destructive/5" onClick={async () => {
+                                 if (confirm("Are you sure you want to cancel this booking?")) {
+                                   await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', booking.id);
+                                   setBookings(prev => prev.map(b => b.id === booking.id ? { ...b, status: 'cancelled' } : b));
+                                   toast.success("Booking cancelled");
+                                 }
+                               }}>
+                                 Cancel
+                               </Button>
+                             )}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
 
         {/* ORDERS */}
         <TabsContent value="orders" className="mt-4 space-y-4">
