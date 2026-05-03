@@ -87,17 +87,33 @@ export function Header() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {topNavItems.map((item) => (
-            <Link
-              key={item.label}
-              to={item.to}
-              className="relative rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground [&.active]:text-foreground [&.active]:bg-accent/50"
-              activeOptions={{ exact: (item.to as string) === "/" }}
-              activeProps={{ className: "active" }}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {topNavItems.map((item) => {
+            const isProductsPath = router.state.location.pathname.startsWith('/products');
+            const match = router.state.matches.find(m => m.routeId === '/products/$slug');
+            const loaderData = match?.loaderData as any;
+            const isServiceDetail = isProductsPath && loaderData?.product_type === 'service';
+
+            let isActive = false;
+            if (item.to === '/') {
+              isActive = router.state.location.pathname === '/';
+            } else if (item.to === '/services') {
+              isActive = router.state.location.pathname.startsWith('/services') || isServiceDetail;
+            } else if (item.to === '/products') {
+              isActive = isProductsPath && !isServiceDetail;
+            } else {
+              isActive = router.state.location.pathname.startsWith(item.to);
+            }
+
+            return (
+              <Link
+                key={item.label}
+                to={item.to}
+                className={`relative rounded-md px-3 py-2 text-sm font-medium transition-colors hover:text-foreground ${isActive ? 'text-foreground bg-accent/50' : 'text-muted-foreground'}`}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
 
         {/* Actions */}
@@ -252,18 +268,34 @@ export function Header() {
             </Link>
           ))}
           <div className="h-px bg-border/50 my-2"></div>
-          {topNavItems.map((item) => (
-            <Link
-              key={item.label}
-              to={item.to}
-              className="relative rounded-md px-3 py-2.5 text-sm font-medium text-foreground hover:bg-accent hover:text-foreground transition-colors [&.active]:text-primary [&.active]:bg-primary/10"
-              activeOptions={{ exact: (item.to as string) === "/" }}
-              activeProps={{ className: "active" }}
-              onClick={() => setMobileOpen(false)}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {topNavItems.map((item) => {
+            const isProductsPath = router.state.location.pathname.startsWith('/products');
+            const match = router.state.matches.find(m => m.routeId === '/products/$slug');
+            const loaderData = match?.loaderData as any;
+            const isServiceDetail = isProductsPath && loaderData?.product_type === 'service';
+
+            let isActive = false;
+            if (item.to === '/') {
+              isActive = router.state.location.pathname === '/';
+            } else if (item.to === '/services') {
+              isActive = router.state.location.pathname.startsWith('/services') || isServiceDetail;
+            } else if (item.to === '/products') {
+              isActive = isProductsPath && !isServiceDetail;
+            } else {
+              isActive = router.state.location.pathname.startsWith(item.to);
+            }
+
+            return (
+              <Link
+                key={item.label}
+                to={item.to}
+                className={`relative rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${isActive ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-accent hover:text-foreground'}`}
+                onClick={() => setMobileOpen(false)}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
           {(role === 'admin' || user?.email === 'siegaej@gmail.com' || user?.email === 'siegadevelopments@gmail.com' || user?.email === 'siegapython@gmail.com') && (
             <Link
               to="/admin"
