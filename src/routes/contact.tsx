@@ -104,13 +104,13 @@ function ContactPage() {
         <Card>
           <CardContent className="pt-6">
             <h3 className="font-semibold">Email</h3>
-            <p className="mt-1 text-sm text-muted-foreground">hello@lifestylemedicinegateway.com</p>
+            <p className="mt-1 text-sm text-muted-foreground">info@lifestylemedicinegateway.com</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
             <h3 className="font-semibold">Location</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Wellness City, CA 90210</p>
+            <p className="mt-1 text-sm text-muted-foreground">Aspendale, Victoria Australia 3195</p>
           </CardContent>
         </Card>
       </div>
