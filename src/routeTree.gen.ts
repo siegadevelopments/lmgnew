@@ -25,6 +25,7 @@ import { Route as FaqRouteImport } from './routes/faq'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ChartsRouteImport } from './routes/charts'
+import { Route as AffiliatesRouteImport } from './routes/affiliates'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
@@ -117,6 +118,11 @@ const ChartsRoute = ChartsRouteImport.update({
   path: '/charts',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AffiliatesRoute = AffiliatesRouteImport.update({
+  id: '/affiliates',
+  path: '/affiliates',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -177,6 +183,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
+  '/affiliates': typeof AffiliatesRoute
   '/charts': typeof ChartsRoute
   '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
@@ -206,6 +213,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
+  '/affiliates': typeof AffiliatesRoute
   '/charts': typeof ChartsRoute
   '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
@@ -236,6 +244,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
+  '/affiliates': typeof AffiliatesRoute
   '/charts': typeof ChartsRoute
   '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
@@ -267,6 +276,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/affiliates'
     | '/charts'
     | '/checkout'
     | '/contact'
@@ -296,6 +306,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/affiliates'
     | '/charts'
     | '/checkout'
     | '/contact'
@@ -325,6 +336,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/admin'
+    | '/affiliates'
     | '/charts'
     | '/checkout'
     | '/contact'
@@ -355,6 +367,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRoute
+  AffiliatesRoute: typeof AffiliatesRoute
   ChartsRoute: typeof ChartsRoute
   CheckoutRoute: typeof CheckoutRoute
   ContactRoute: typeof ContactRoute
@@ -495,6 +508,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChartsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/affiliates': {
+      id: '/affiliates'
+      path: '/affiliates'
+      fullPath: '/affiliates'
+      preLoaderRoute: typeof AffiliatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -579,6 +599,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   AdminRoute: AdminRoute,
+  AffiliatesRoute: AffiliatesRoute,
   ChartsRoute: ChartsRoute,
   CheckoutRoute: CheckoutRoute,
   ContactRoute: ContactRoute,

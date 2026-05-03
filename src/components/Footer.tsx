@@ -10,6 +10,7 @@ const footerLinks = {
     { label: "Find Services", to: "/vendors" },
     { label: "Vendors", to: "/vendors" },
     { label: "Recipes", to: "/recipes" },
+    { label: "Affiliate Stores", to: "/affiliates" },
   ],
   Explore: [
     { label: "Articles", to: "/articles" },
