@@ -223,7 +223,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                                 // For bulk, we insert immediately
                                 if (files.length > 1) {
                                   const fileName = file.name.split('.').slice(0, -1).join('.');
-                                  await supabase.from('videos').insert({
+                                  await (supabase.from('videos') as any).insert({
                                     title: fileName,
                                     embed_url: url,
                                     author_id: selectedVendorId,
