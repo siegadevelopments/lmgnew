@@ -176,8 +176,21 @@ function VendorDashboardPage() {
     try {
       const storeName = (e.target as HTMLFormElement).store_name.value;
       const vendorType = (e.target as HTMLFormElement).vendor_type.value;
-      await (supabase.from("profiles") as any).update({ role: "vendor" }).eq("id", user.id);
-      const { data, error } = await (supabase.from("vendor_profiles") as any).insert({ id: user.id, store_name: storeName, vendor_type: vendorType, is_approved: false } as any).select().single();
+      // Ensure profile exists and has vendor role
+      const { error: profileError } = await (supabase.from("profiles") as any).upsert({ 
+        id: user.id, 
+        role: "vendor",
+        email: user.email // Add email if needed
+      }, { onConflict: 'id' });
+      
+      if (profileError) throw profileError;
+
+      const { data, error } = await (supabase.from("vendor_profiles") as any).insert({ 
+        id: user.id, 
+        store_name: storeName, 
+        vendor_type: vendorType, 
+        is_approved: false 
+      } as any).select().single();
       if (error) throw error;
       if (data) { 
         setProfile(data as VendorProfile); 
