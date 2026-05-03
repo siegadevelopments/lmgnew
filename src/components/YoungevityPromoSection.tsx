@@ -12,8 +12,7 @@ const promos = [
     price: 227.59,
     originalPrice: 284.89,
     url: `${AFFILIATE_BASE}/anti-aging-healthy-body-pak-2-0.html`,
-    // Official Youngevity media server image
-    image: "https://etraininggroup.youngevity.com/media/catalog/product/cache/1/small_image/365x/9df78eab33525d08d6e5fb8d27136e95/a/n/anti_aging_pak.jpg",
+    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80",
     badge: "Best Seller",
   },
   {
@@ -23,7 +22,7 @@ const promos = [
     price: 257.84,
     originalPrice: 322.29,
     url: `${AFFILIATE_BASE}/healthy-body-bone-and-joint-pak-2-0.html`,
-    image: "https://etraininggroup.youngevity.com/media/catalog/product/cache/1/small_image/365x/9df78eab33525d08d6e5fb8d27136e95/b/o/bone_joint_pak.jpg",
+    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80",
     badge: "Popular",
   },
   {
@@ -33,7 +32,7 @@ const promos = [
     price: 266.09,
     originalPrice: 333.29,
     url: `${AFFILIATE_BASE}/healthy-body-brain-and-heart-pak-2-0.html`,
-    image: "https://etraininggroup.youngevity.com/media/catalog/product/cache/1/small_image/365x/9df78eab33525d08d6e5fb8d27136e95/b/r/brain_heart_pak.jpg",
+    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80",
     badge: null,
   },
   {
@@ -43,7 +42,7 @@ const promos = [
     price: 245.08,
     originalPrice: 306.89,
     url: `${AFFILIATE_BASE}/healthy-body-digestion-pak-2-0.html`,
-    image: "https://etraininggroup.youngevity.com/media/catalog/product/cache/1/small_image/365x/9df78eab33525d08d6e5fb8d27136e95/d/i/digestion_pak.jpg",
+    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80",
     badge: null,
   },
   {
@@ -53,7 +52,7 @@ const promos = [
     price: 184.36,
     originalPrice: 230.99,
     url: `${AFFILIATE_BASE}/healthy-body-start-pak-2-0-liquid-osteo.html`,
-    image: "https://etraininggroup.youngevity.com/media/catalog/product/cache/1/small_image/365x/9df78eab33525d08d6e5fb8d27136e95/s/t/start_pak_liquid_osteo.jpg",
+    image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&q=80",
     badge: "Great Value",
   },
 ];

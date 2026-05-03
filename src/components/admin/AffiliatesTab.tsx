@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, ExternalLink, Store, GripVertical } from "lucide-react";
+import { Plus, Pencil, Trash2, ExternalLink, Store, GripVertical, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 interface AffiliateStore {
@@ -42,6 +42,7 @@ export function AffiliatesTab() {
   const [editTarget, setEditTarget] = useState<AffiliateStore | null>(null);
   const [form, setForm] = useState<Omit<AffiliateStore, "id">>(emptyForm);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const { data: affiliates = [], isLoading } = useQuery({
     queryKey: ["admin_affiliate_stores"],
@@ -148,6 +149,37 @@ export function AffiliatesTab() {
       return;
     }
     save.mutate();
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+      const filePath = `affiliates/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('media')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('media')
+        .getPublicUrl(filePath);
+
+      setForm({ ...form, logo_url: publicUrl });
+      toast.success("Logo uploaded successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to upload image");
+    } finally {
+      setUploading(false);
+      // Reset input
+      e.target.value = '';
+    }
   };
 
   return (
@@ -292,11 +324,27 @@ export function AffiliatesTab() {
 
             <div className="space-y-1.5">
               <Label>Logo URL</Label>
-              <Input
-                value={form.logo_url || ""}
-                onChange={e => setForm({ ...form, logo_url: e.target.value })}
-                placeholder="https://example.com/logo.png"
-              />
+              <div className="flex gap-2">
+                <Input
+                  value={form.logo_url || ""}
+                  onChange={e => setForm({ ...form, logo_url: e.target.value })}
+                  placeholder="https://example.com/logo.png"
+                  className="flex-1"
+                />
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                    disabled={uploading}
+                  />
+                  <Button type="button" variant="outline" className="gap-2" disabled={uploading}>
+                    <Upload className="h-4 w-4" />
+                    {uploading ? "Uploading..." : "Upload"}
+                  </Button>
+                </div>
+              </div>
               {form.logo_url && (
                 <div className="mt-2 flex items-center justify-center bg-muted rounded-lg p-4 h-20">
                   <img
