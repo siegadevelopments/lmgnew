@@ -1,16 +1,13 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "@tanstack/react-router";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageCircle, Send, User, Image as ImageIcon } from "lucide-react";
+import { MessageCircle, Send, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
 import { ProductCard } from "@/components/ProductCard";
 
 interface ChatDialogProps {
@@ -26,6 +23,51 @@ interface Message {
   sender_id: string;
   content: string;
   created_at: string;
+}
+
+/** Renders AI-generated message content safely:
+ *  - [PRODUCT:id] tags → inline ProductCard
+ *  - Markdown [text](url) links → native <a> tags (not Router Link, to avoid route validation errors)
+ *  - **bold** markers → <strong>
+ */
+function renderMessageContent(content: string, botProducts: any[], userId?: string, senderId?: string) {
+  return content.split(/(\*\*\[PRODUCT:.*?\]\*\*)/g).map((part, i) => {
+    // Product card block
+    const productMatch = part.match(/\*\*\[PRODUCT:(.*?)\]\*\*/);
+    if (productMatch) {
+      const product = botProducts.find(p => String(p.id) === productMatch[1]);
+      if (product) {
+        return (
+          <div key={i} className="my-3 w-full max-w-[260px]">
+            <ProductCard product={product} className="scale-90 origin-top-left shadow-md border-primary/20" />
+          </div>
+        );
+      }
+      return null;
+    }
+
+    // Render remaining text with markdown links as native anchors
+    return part.split(/(\[[^\]]+\]\([^)]+\))/g).map((subPart, j) => {
+      const linkMatch = subPart.match(/\[([^\]]+)\]\(([^)]+)\)/);
+      if (linkMatch) {
+        return (
+          <a
+            key={`${i}-${j}`}
+            href={linkMatch[2]}
+            className="font-bold underline text-primary hover:text-primary/80 transition-colors"
+          >
+            {linkMatch[1].replace(/\*/g, "")}
+          </a>
+        );
+      }
+      // Render **bold** inline
+      return subPart.split(/(\*\*[^*]+\*\*)/g).map((boldPart, k) => {
+        const boldMatch = boldPart.match(/\*\*([^*]+)\*\*/);
+        if (boldMatch) return <strong key={`${i}-${j}-${k}`}>{boldMatch[1]}</strong>;
+        return boldPart;
+      });
+    });
+  });
 }
 
 export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatDialogProps) {
@@ -366,42 +408,7 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
                     "max-w-[80%] rounded-2xl px-4 py-2 text-sm shadow-sm whitespace-pre-wrap",
                     isMe ? "bg-primary text-primary-foreground rounded-tr-none" : "bg-white text-foreground rounded-tl-none border border-border"
                   )}>
-                    {msg.content.split(/(\*\*\[PRODUCT:.*?\]\*\*)/g).map((part, i) => {
-                      const match = part.match(/\*\*\[PRODUCT:(.*?)\]\*\*/);
-                      if (match) {
-                        const productId = match[1];
-                        const product = botProducts.find(p => String(p.id) === productId);
-                        
-                        if (product) {
-                          return (
-                            <div key={i} className="my-4 w-full max-w-[280px]">
-                              <ProductCard 
-                                product={product} 
-                                className="scale-90 origin-top-left shadow-lg border-primary/20" 
-                              />
-                            </div>
-                          );
-                        }
-                      }
-                      
-                      // Fallback to Markdown link rendering if it's not a product tag
-                      return part.split(/(\[?[\*]*.*?[\*]*\]\(.*?\))/g).map((subPart, j) => {
-                        const subMatch = subPart.match(/\[([\*]*.*?[\*]*)\]\((.*?)\)/);
-                        if (subMatch) {
-                          const cleanText = subMatch[1].replace(/[\*]/g, '');
-                          return (
-                            <Link 
-                              key={`${i}-${j}`} 
-                              to={subMatch[2] as any} 
-                              className="font-bold underline text-primary hover:text-primary/80 transition-colors inline-block"
-                            >
-                              {cleanText}
-                            </Link>
-                          );
-                        }
-                        return subPart;
-                      });
-                    })}
+                    {renderMessageContent(msg.content, botProducts, user?.id, msg.sender_id)}
                   </div>
                   <span className="text-[10px] text-muted-foreground mt-1 px-1">
                     {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
