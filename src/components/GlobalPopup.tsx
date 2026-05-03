@@ -34,11 +34,15 @@ export function GlobalPopup() {
 
   useEffect(() => {
     async function checkPopups() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const isPreview = urlParams.get('preview_popup') === 'true';
+      
       // Check if user has already dismissed a popup in this session
       const lastDismissed = localStorage.getItem("lmg_popup_dismissed");
       const sessionDismissed = sessionStorage.getItem("lmg_popup_session_dismissed");
       
-      if (sessionDismissed) return;
+      // Only skip if not in preview mode
+      if (!isPreview && sessionDismissed) return;
 
       const { data, error } = await supabase
         .from("popups" as any)
@@ -50,18 +54,19 @@ export function GlobalPopup() {
 
       if (data && !error) {
         const popupData = data as any;
-        // If it's a different popup than the last dismissed one, or it's been more than 24h
-        if (lastDismissed === popupData.id) return;
+        
+        // Skip if this specific popup was already dismissed (unless previewing)
+        if (!isPreview && lastDismissed === popupData.id) return;
 
         setTimeout(() => {
           setPopup(popupData);
           setIsOpen(true);
-        }, popupData.display_delay || 3000);
+        }, isPreview ? 0 : (popupData.display_delay || 3000));
       }
     }
 
     checkPopups();
-  }, []);
+  }, [window.location.pathname, window.location.search]);
 
   const handleDismiss = () => {
     setIsOpen(false);
