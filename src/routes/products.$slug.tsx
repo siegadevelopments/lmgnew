@@ -260,18 +260,20 @@ function ProductPage() {
               </Button>
             </div>
 
-            {/* Booking Calendar for Services */}
-            {product.product_type === 'service' && (
-              <div className="mt-8">
-                <BookingCalendar 
-                  productId={product.id} 
-                  vendorId={product.vendor_id} 
-                  onSelect={setBooking} 
-                />
-              </div>
-            )}
           </div>
         </div>
+
+        {/* Booking Calendar for Services (Full Width) */}
+        {product.product_type === 'service' && (
+          <div className="mt-16">
+            <h2 className="text-2xl font-bold mb-8">Schedule Your Service</h2>
+            <BookingCalendar 
+              productId={product.id} 
+              vendorId={product.vendor_id} 
+              onSelect={setBooking} 
+            />
+          </div>
+        )}
 
         {product.content && (
           <div

@@ -126,9 +126,9 @@ export function BookingCalendar({ productId, vendorId, onSelect }: Props) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-8 w-full">
+      <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-start w-full">
         {/* Calendar Column */}
-        <div className="w-full bg-card rounded-3xl border border-border/50 p-4 sm:p-6 shadow-xl shadow-primary/5 ring-1 ring-border/50 flex items-center justify-center">
+        <div className="lg:col-span-5 bg-card rounded-3xl border border-border/50 p-6 shadow-xl shadow-primary/5 ring-1 ring-border/50 flex justify-center">
           <Calendar
             mode="single"
             selected={selectedDate}
@@ -150,7 +150,7 @@ export function BookingCalendar({ productId, vendorId, onSelect }: Props) {
         </div>
 
         {/* Slots Column */}
-        <div className="w-full space-y-6">
+        <div className="lg:col-span-7 space-y-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-primary" />
