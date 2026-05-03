@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/ProductCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageCircle, Plus, Star, Users, Package, UserPlus, Clock, Calendar, Check, Search } from "lucide-react";
+import { MessageCircle, Plus, Star, Users, Package, UserPlus, Clock, Calendar, Check, Search, Video, Play, Maximize2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -53,6 +53,17 @@ function VendorPage() {
     },
   });
 
+  const { data: vendorVideos } = useQuery({
+    queryKey: ["videos", "vendor", slug],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("videos")
+        .select("*")
+        .eq("author_id", slug);
+      return (data as any[]) || [];
+    },
+  });
+
   const { data: streamInfo } = useQuery({
     queryKey: ["vendor_stream", slug],
     queryFn: async () => {
@@ -72,6 +83,7 @@ function VendorPage() {
   const [activeCategory, setActiveCategory] = useState("home");
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [playingId, setPlayingId] = useState<string | null>(null);
 
   // Check if current user is following this vendor
   const { data: isFollowing } = useQuery({
@@ -244,6 +256,7 @@ function VendorPage() {
                  <TabsList className="bg-transparent border-b-0 h-12 gap-4 sm:gap-8 p-0 overflow-x-auto overflow-y-hidden no-scrollbar">
                     <TabsTrigger value="home" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">Home</TabsTrigger>
                     <TabsTrigger value="all" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">All Products</TabsTrigger>
+                    <TabsTrigger value="videos" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">Videos</TabsTrigger>
                     {(vendor.store_categories || []).map((cat: string) => (
                       <TabsTrigger key={cat} value={cat} className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">{cat}</TabsTrigger>
                     ))}
@@ -326,7 +339,7 @@ function VendorPage() {
              </>
            )}
 
-           {(activeCategory === "all" || (activeCategory !== "home" && activeCategory !== "about")) && (
+           {(activeCategory === "all" || (activeCategory !== "home" && activeCategory !== "about" && activeCategory !== "videos")) && (
              <section>
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
@@ -343,6 +356,64 @@ function VendorPage() {
                     </div>
                   )}
                 </div>
+             </section>
+           )}
+
+           {activeCategory === "videos" && (
+             <section className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Videos from {vendor.store_name}</h2>
+                </div>
+                {vendorVideos && vendorVideos.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {vendorVideos.map((video) => {
+                      const isPlaying = playingId === video.id;
+                      const isDirectVideo = !!video.embed_url?.match(/\.(mp4|webm|ogg|mov)$/i) || video.embed_url?.includes('supabase.co');
+                      
+                      return (
+                        <div key={video.id} className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm border border-border group transition-all hover:shadow-md">
+                          <div className="relative aspect-video bg-black overflow-hidden">
+                            {isPlaying ? (
+                              isDirectVideo ? (
+                                <video src={video.embed_url} controls autoPlay className="w-full h-full object-contain" />
+                              ) : (
+                                <iframe 
+                                  src={video.embed_url.includes('youtube.com') ? video.embed_url.replace('watch?v=', 'embed/') + '?autoplay=1' : video.embed_url} 
+                                  className="w-full h-full border-none" 
+                                  allow="autoplay; encrypted-media; fullscreen"
+                                />
+                              )
+                            ) : (
+                              <div className="w-full h-full cursor-pointer relative" onClick={() => setPlayingId(video.id)}>
+                                <img 
+                                  src={video.thumbnail_url || `https://img.youtube.com/vi/${video.embed_url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1] || ''}/maxresdefault.jpg`} 
+                                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                                  alt={video.title} 
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=800';
+                                  }}
+                                />
+                                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                                  <div className="h-12 w-12 rounded-full bg-white/90 text-primary flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
+                                    <Play className="h-6 w-6 fill-current" />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-4">
+                            <h3 className="font-bold text-foreground line-clamp-1 group-hover:text-primary transition-colors">{video.title}</h3>
+                            {video.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{video.description}</p>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="py-12 text-center text-muted-foreground bg-white rounded-xl border border-dashed">
+                    This vendor hasn't uploaded any videos yet.
+                  </div>
+                )}
              </section>
            )}
 
