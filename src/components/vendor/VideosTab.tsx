@@ -10,6 +10,7 @@ import { Pencil, Trash2, Plus, Video as VideoIcon, Upload, Link as LinkIcon, Loa
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { uploadMedia } from "@/lib/upload";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Video { 
   id: string; 
@@ -34,6 +35,7 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,6 +97,8 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
       }
       
       resetForm();
+      // Invalidate the public videos page cache
+      queryClient.invalidateQueries({ queryKey: ["videos", "list"] });
     } catch (err: any) {
       console.error("Save error:", err);
       toast.error(err.message || "Failed to save video");
@@ -125,9 +129,11 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this video?")) return;
     try {
-      const { error } = await supabase.from("videos").delete().eq("id", id);
+      const { error } = await (supabase.from("videos") as any).delete().eq("id", id);
       if (error) throw error;
       setVideos(videos.filter(v => v.id !== id));
+      // Invalidate the public videos page cache
+      queryClient.invalidateQueries({ queryKey: ["videos", "list"] });
       toast.success("Video deleted");
     } catch (err: any) {
       toast.error(err.message);
