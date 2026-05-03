@@ -1,19 +1,46 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Mail, Sparkles, User } from "lucide-react";
+import { toast } from "sonner";
 
 export function NewsletterSection() {
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
     setIsLoading(true);
-    await supabase.from("newsletter_subscribers").upsert({ email } as any, { onConflict: "email" });
-    setSubmitted(true);
+    
+    const { error } = await supabase
+      .from("newsletter_subscribers")
+      .upsert(
+        { email, full_name: name } as any, 
+        { onConflict: "email" }
+      );
+
+    if (error) {
+      toast.error(error.message || "Failed to subscribe");
+    } else {
+      setSubmitted(true);
+      setOpen(false);
+      toast.success("Welcome to the community!");
+    }
+    
     setIsLoading(false);
   };
 
@@ -26,51 +53,95 @@ export function NewsletterSection() {
 
       <div className="relative z-10 mx-auto max-w-2xl px-4 text-center sm:px-6">
         <div className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/10 px-4 py-1.5 text-xs font-semibold text-primary-foreground backdrop-blur-sm">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-            <polyline points="22,6 12,13 2,6" />
-          </svg>
+          <Mail className="h-3.5 w-3.5" />
           Stay Updated
         </div>
 
-        <h2 className="mt-5 text-2xl font-bold tracking-tight text-primary-foreground sm:text-3xl">
+        <h2 className="mt-5 text-2xl font-bold tracking-tight text-primary-foreground sm:text-4xl">
           Get Wellness Tips & Deals
         </h2>
-        <p className="mt-3 text-sm leading-relaxed text-primary-foreground/80 sm:text-base">
+        <p className="mt-3 text-sm leading-relaxed text-primary-foreground/80 sm:text-lg">
           Join 10,000+ wellness enthusiasts. Get exclusive product launches,
           expert articles, and special discounts delivered to your inbox.
         </p>
 
-        {submitted ? (
-          <div className="mt-8 inline-flex items-center gap-2 rounded-xl bg-primary-foreground/10 px-6 py-4 backdrop-blur-sm">
-            <svg className="h-5 w-5 text-wellness-light" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-            <span className="text-sm font-medium text-primary-foreground">
-              You're subscribed! Check your inbox.
-            </span>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="mt-8 flex max-w-md mx-auto gap-2">
-            <Input
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="flex-1 border-primary-foreground/20 bg-primary-foreground/10 text-primary-foreground placeholder:text-primary-foreground/50 focus-visible:ring-primary-foreground/30"
-            />
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="bg-background text-foreground hover:bg-background/90 shrink-0"
-            >
-              {isLoading ? "..." : "Subscribe"}
-            </Button>
-          </form>
-        )}
+        <div className="mt-8 flex justify-center">
+          {submitted ? (
+            <div className="inline-flex items-center gap-2 rounded-xl bg-primary-foreground/10 px-8 py-4 backdrop-blur-sm border border-primary-foreground/10">
+              <Sparkles className="h-5 w-5 text-wellness-light" />
+              <span className="text-sm font-medium text-primary-foreground">
+                You're subscribed! Check your inbox.
+              </span>
+            </div>
+          ) : (
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  size="lg"
+                  className="bg-background text-foreground hover:bg-background/90 h-12 px-10 text-base font-bold shadow-xl shadow-black/10 group"
+                >
+                  Join the Community
+                  <Mail className="ml-2 h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+                    <Sparkles className="h-6 w-6 text-primary" />
+                    Subscribe to LMG
+                  </DialogTitle>
+                  <DialogDescription>
+                    Get the latest wellness tips and exclusive deals delivered to your inbox.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Your Name</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="name"
+                        placeholder="John Doe"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        required
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Email Address</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="john@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  <Button 
+                    type="submit" 
+                    className="w-full h-11 text-base font-bold" 
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Subscribing..." : "Subscribe Now"}
+                  </Button>
+                </form>
+                <p className="text-[10px] text-center text-muted-foreground">
+                  By subscribing, you agree to our terms and privacy policy. 
+                  You can unsubscribe at any time.
+                </p>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
 
-        <p className="mt-4 text-xs text-primary-foreground/50">
+        <p className="mt-6 text-xs text-primary-foreground/50">
           No spam, ever. Unsubscribe anytime.
         </p>
       </div>

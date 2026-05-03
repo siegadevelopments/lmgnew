@@ -19,6 +19,7 @@ import {
 interface Subscriber {
   id: string;
   email: string;
+  full_name: string | null;
   created_at: string;
 }
 
@@ -50,15 +51,17 @@ export function AdminSubscribersTab() {
   }
 
   const filteredSubscribers = subscribers.filter(s => 
-    s.email.toLowerCase().includes(search.toLowerCase())
+    s.email.toLowerCase().includes(search.toLowerCase()) ||
+    (s.full_name || "").toLowerCase().includes(search.toLowerCase())
   );
 
   const handleExportCSV = () => {
     if (subscribers.length === 0) return;
     
-    const headers = ["ID", "Email", "Subscribed At"];
+    const headers = ["ID", "Name", "Email", "Subscribed At"];
     const rows = subscribers.map(s => [
       s.id,
+      s.full_name || "",
       s.email,
       new Date(s.created_at).toLocaleString()
     ]);
@@ -154,7 +157,7 @@ export function AdminSubscribersTab() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-muted-foreground">
-                    <th className="text-left py-3 px-4 font-semibold">Email Address</th>
+                    <th className="text-left py-3 px-4 font-semibold">Subscriber</th>
                     <th className="text-left py-3 px-4 font-semibold">Joined Date</th>
                     <th className="text-right py-3 px-4 font-semibold">Actions</th>
                   </tr>
@@ -162,11 +165,16 @@ export function AdminSubscribersTab() {
                 <tbody>
                   {filteredSubscribers.map((s) => (
                     <tr key={s.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors group">
-                      <td className="py-3 px-4 font-medium flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                          <Mail className="h-4 w-4" />
+                      <td className="py-3 px-4 font-medium">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                            <Mail className="h-4 w-4" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="font-bold">{s.full_name || "Anonymous"}</span>
+                            <span className="text-xs text-muted-foreground">{s.email}</span>
+                          </div>
                         </div>
-                        {s.email}
                       </td>
                       <td className="py-3 px-4 text-muted-foreground">
                         <div className="flex items-center gap-1.5">

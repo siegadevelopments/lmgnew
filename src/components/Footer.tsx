@@ -2,7 +2,18 @@ import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Mail, Sparkles, User } from "lucide-react";
+import { toast } from "sonner";
 
 const footerLinks = {
   Marketplace: [
@@ -76,14 +87,32 @@ const socialLinks = [
 
 export function Footer() {
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [subscribed, setSubscribed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) {
-      await supabase.from("newsletter_subscribers").upsert({ email } as any, { onConflict: "email" });
+    if (!email) return;
+    setIsLoading(true);
+    
+    const { error } = await supabase
+      .from("newsletter_subscribers")
+      .upsert(
+        { email, full_name: name } as any, 
+        { onConflict: "email" }
+      );
+
+    if (error) {
+      toast.error(error.message || "Failed to subscribe");
+    } else {
       setSubscribed(true);
+      setOpen(false);
+      toast.success("Welcome to the community!");
     }
+    
+    setIsLoading(false);
   };
 
   return (
@@ -108,21 +137,70 @@ export function Footer() {
 
             {/* Footer newsletter */}
             {subscribed ? (
-              <p className="mt-4 text-xs text-primary font-medium">✓ Subscribed! Thank you.</p>
+              <div className="mt-4 flex items-center gap-2 text-primary font-medium text-xs">
+                <Sparkles className="h-3 w-3" />
+                <span>Subscribed! Welcome.</span>
+              </div>
             ) : (
-              <form onSubmit={handleNewsletterSubmit} className="mt-4 flex max-w-xs gap-2">
-                <Input
-                  type="email"
-                  placeholder="Your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="h-8 text-xs"
-                />
-                <Button type="submit" size="sm" className="h-8 shrink-0 text-xs">
-                  Subscribe
-                </Button>
-              </form>
+              <div className="mt-4">
+                <Dialog open={open} onOpenChange={setOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="h-8 gap-2 px-4 shadow-sm">
+                      <Mail className="h-3.5 w-3.5" />
+                      Subscribe
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-primary" />
+                        Join Our Newsletter
+                      </DialogTitle>
+                      <DialogDescription>
+                        Get the latest wellness tips and exclusive deals.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleNewsletterSubmit} className="space-y-4 py-4">
+                      <div className="space-y-1">
+                        <Label htmlFor="footer-name" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Your Name</Label>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                          <Input
+                            id="footer-name"
+                            placeholder="John Doe"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            required
+                            className="pl-9 h-9"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="footer-email" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Email Address</Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                          <Input
+                            id="footer-email"
+                            type="email"
+                            placeholder="john@example.com"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                            className="pl-9 h-9"
+                          />
+                        </div>
+                      </div>
+                      <Button 
+                        type="submit" 
+                        className="w-full h-10 font-bold" 
+                        disabled={isLoading}
+                      >
+                        {isLoading ? "Subscribing..." : "Subscribe Now"}
+                      </Button>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </div>
             )}
 
             {/* Social Icons */}
