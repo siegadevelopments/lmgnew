@@ -221,57 +221,89 @@ function ProductPage() {
               </div>
             )}
 
-            {currentStock > 0 ? (
-              <Badge variant="outline" className="mt-4 text-green-600 bg-green-500/10 border-green-200">
-                In Stock {currentStock < 50 ? `(${currentStock})` : ""}
-              </Badge>
-            ) : (
-              <Badge variant="destructive" className="mt-4">Out of Stock</Badge>
+            {product.product_type !== 'service' && (
+              currentStock > 0 ? (
+                <Badge variant="outline" className="mt-4 text-green-600 bg-green-500/10 border-green-200">
+                  In Stock {currentStock < 50 ? `(${currentStock})` : ""}
+                </Badge>
+              ) : (
+                <Badge variant="destructive" className="mt-4">Out of Stock</Badge>
+              )
             )}
 
             {product.excerpt && (
               <p className="mt-6 text-sm text-muted-foreground leading-relaxed" dangerouslySetInnerHTML={{ __html: product.excerpt }} />
             )}
 
-            {/* Add to Cart */}
-            <div className="mt-6 flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="h-9 w-9 rounded-md border border-border text-lg"
+            {/* Add to Cart (Physical Products Only) */}
+            {product.product_type !== 'service' && (
+              <div className="mt-6 flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="h-9 w-9 rounded-md border border-border text-lg"
+                  >
+                    -
+                  </button>
+                  <span className="w-12 text-center font-medium">{quantity}</span>
+                  <button
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="h-9 w-9 rounded-md border border-border text-lg"
+                  >
+                    +
+                  </button>
+                </div>
+                <Button 
+                  onClick={handleAddToCart} 
+                  className="flex-1" 
+                  size="lg" 
+                  disabled={currentStock <= 0}
                 >
-                  -
-                </button>
-                <span className="w-12 text-center font-medium">{quantity}</span>
-                <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="h-9 w-9 rounded-md border border-border text-lg"
-                >
-                  +
-                </button>
+                  {added ? "Added to Cart!" : currentStock <= 0 ? "Unavailable" : "Add to Cart"}
+                </Button>
               </div>
-              <Button 
-                onClick={handleAddToCart} 
-                className="flex-1" 
-                size="lg" 
-                disabled={currentStock <= 0 || (product.product_type === 'service' && !booking)}
-              >
-                {added ? "Added to Cart!" : currentStock <= 0 ? "Unavailable" : product.product_type === 'service' ? (booking ? "Book Now" : "Select a slot") : "Add to Cart"}
-              </Button>
-            </div>
+            )}
 
           </div>
         </div>
 
         {/* Booking Calendar for Services (Full Width) */}
         {product.product_type === 'service' && (
-          <div className="mt-16">
-            <h2 className="text-2xl font-bold mb-8">Schedule Your Service</h2>
+          <div className="mt-16 max-w-5xl mx-auto">
+            <h2 className="text-2xl font-bold mb-8">Schedule Your Appointment</h2>
             <BookingCalendar 
               productId={product.id} 
               vendorId={product.vendor_id} 
               onSelect={setBooking} 
             />
+            
+            <div className="mt-8 flex flex-col sm:flex-row items-center gap-6 p-6 bg-card rounded-2xl border border-border/50 shadow-sm">
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Sessions:</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="h-12 w-12 rounded-xl border-2 border-border text-lg font-bold hover:border-primary/50 transition-colors"
+                  >
+                    -
+                  </button>
+                  <span className="w-12 text-center font-bold text-xl">{quantity}</span>
+                  <button
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="h-12 w-12 rounded-xl border-2 border-border text-lg font-bold hover:border-primary/50 transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+              <Button 
+                onClick={handleAddToCart} 
+                className="flex-1 w-full h-14 text-lg font-black shadow-xl shadow-primary/20 transition-all hover:scale-[1.02]" 
+                disabled={!booking}
+              >
+                {added ? "Booking Added to Cart!" : (booking ? "Confirm & Book Now" : "Select a time slot above to book")}
+              </Button>
+            </div>
           </div>
         )}
 
