@@ -1,6 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
 
 export const Route = createFileRoute("/refund-policy")({
   head: () => ({
@@ -15,7 +13,6 @@ export const Route = createFileRoute("/refund-policy")({
 function RefundPolicyPage() {
   return (
     <div className="min-h-screen bg-background">
-      <Header />
       <main className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="mb-12 text-center">
           <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">Refund & Return Policy</h1>
@@ -80,7 +77,6 @@ function RefundPolicyPage() {
           </section>
         </div>
       </main>
-      <Footer />
     </div>
   );
 }

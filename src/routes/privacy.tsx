@@ -1,6 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
 
 export const Route = createFileRoute("/privacy")({
   head: () => ({
@@ -15,7 +13,6 @@ export const Route = createFileRoute("/privacy")({
 function PrivacyPage() {
   return (
     <div className="min-h-screen bg-background">
-      <Header />
       <main className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="mb-12">
           <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">Privacy Policy</h1>
@@ -130,7 +127,6 @@ function PrivacyPage() {
           </p>
         </div>
       </main>
-      <Footer />
     </div>
   );
 }

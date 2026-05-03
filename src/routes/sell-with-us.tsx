@@ -12,8 +12,6 @@ import {
   Heart,
   ArrowRight
 } from "lucide-react";
-import { Footer } from "@/components/Footer";
-import { Header } from "@/components/Header";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/sell-with-us")({
@@ -29,8 +27,6 @@ export const Route = createFileRoute("/sell-with-us")({
 function SellWithUsPage() {
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-      
       <main>
         {/* Hero Section */}
         <section className="relative overflow-hidden bg-primary py-24 sm:py-32">
@@ -221,8 +217,6 @@ function SellWithUsPage() {
           </div>
         </section>
       </main>
-
-      <Footer />
     </div>
   );
 }
