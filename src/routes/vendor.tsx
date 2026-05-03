@@ -179,8 +179,7 @@ function VendorDashboardPage() {
       // Ensure profile exists and has vendor role
       const { error: profileError } = await (supabase.from("profiles") as any).upsert({ 
         id: user.id, 
-        role: "vendor",
-        email: user.email // Add email if needed
+        role: "vendor"
       }, { onConflict: 'id' });
       
       if (profileError) throw profileError;

@@ -15,12 +15,12 @@ export function MarketingScripts() {
       document.head.appendChild(script1);
 
       const script2 = document.createElement("script");
-      script2.innerHTML = `
+      script2.textContent = `
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
         gtag('config', '${gaId}');
-      `;
+      `.trim();
       document.head.appendChild(script2);
     }
 
@@ -28,7 +28,7 @@ export function MarketingScripts() {
     const pixelId = import.meta.env.VITE_META_PIXEL_ID;
     if (pixelId && pixelId !== "placeholder") {
       const script = document.createElement("script");
-      script.innerHTML = `
+      script.textContent = `
         !function(f,b,e,v,n,t,s)
         {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
         n.callMethod.apply(n,arguments):n.queue.push(arguments)};
@@ -39,7 +39,7 @@ export function MarketingScripts() {
         'https://connect.facebook.net/en_US/fbevents.js');
         fbq('init', '${pixelId}');
         fbq('track', 'PageView');
-      `;
+      `.trim();
       document.head.appendChild(script);
 
       const noscript = document.createElement("noscript");
@@ -51,7 +51,7 @@ export function MarketingScripts() {
     const hotjarId = import.meta.env.VITE_HOTJAR_ID;
     if (hotjarId && hotjarId !== "placeholder") {
       const script = document.createElement("script");
-      script.innerHTML = `
+      script.textContent = `
         (function(h,o,t,j,a,r){
             h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
             h._hjSettings={hjid:${hotjarId},hjsv:6};
@@ -60,7 +60,7 @@ export function MarketingScripts() {
             r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
             a.appendChild(r);
         })(window,document,'https://static.hotjar.com/c/hotjar-','.js?sv=');
-      `;
+      `.trim();
       document.head.appendChild(script);
     }
   }, []);
