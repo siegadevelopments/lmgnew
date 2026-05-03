@@ -17,6 +17,7 @@ interface ProductCardProps {
     slug: string;
     category?: string;
     variants?: any[];
+    product_type?: string;
   };
   className?: string;
 }
@@ -166,13 +167,14 @@ export function ProductCard({ product, className }: ProductCardProps) {
              animate={{ y: 0, opacity: 1 }}
              className="bg-primary text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-xl pointer-events-auto cursor-pointer" 
              onClick={(e) => {
-               if (product.variants && product.variants.length > 1) {
+               if ((product as any).product_type === 'service' || (product.variants && product.variants.length > 1)) {
+                 // For services or variants, let the Link navigate to the product page
                } else {
                  handleAddToCart(e);
                }
              }}
            >
-              {product.variants && product.variants.length > 1 ? "Select Options" : "Quick Add"}
+              {(product as any).product_type === 'service' ? "Book Now" : (product.variants && product.variants.length > 1 ? "Select Options" : "Quick Add")}
            </motion.div>
         </div>
       </Link>
