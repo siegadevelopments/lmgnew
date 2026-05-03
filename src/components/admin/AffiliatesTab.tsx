@@ -296,7 +296,7 @@ export function AffiliatesTab() {
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px]" onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>{editTarget ? "Edit Affiliate" : "Add Affiliate Store"}</DialogTitle>
           </DialogHeader>
