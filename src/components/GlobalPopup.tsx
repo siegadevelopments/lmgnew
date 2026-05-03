@@ -50,7 +50,7 @@ export function GlobalPopup() {
         .eq("is_active", true)
         .order("created_at", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (data && !error) {
         const popupData = data as any;
