@@ -202,13 +202,47 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                       <input 
                         type="file" 
                         accept="video/*" 
+                        multiple
                         className="absolute inset-0 cursor-pointer opacity-0"
                         onChange={async (e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
+                          const files = Array.from(e.target.files || []);
+                          if (files.length === 0) return;
+                          
+                          if (!selectedVendorId) {
+                            toast.error("Please select a vendor first for bulk upload");
+                            return;
+                          }
+
                           setUploadingVideo(true);
-                          const url = await uploadMedia(file, "admin_uploads");
-                          if (url) setEmbedUrl(url);
+                          let successCount = 0;
+
+                          for (const file of files) {
+                            try {
+                              const url = await uploadMedia(file, "admin_uploads");
+                              if (url) {
+                                // For bulk, we insert immediately
+                                if (files.length > 1) {
+                                  const fileName = file.name.split('.').slice(0, -1).join('.');
+                                  await supabase.from('videos').insert({
+                                    title: fileName,
+                                    embed_url: url,
+                                    author_id: selectedVendorId,
+                                    description: `Uploaded via bulk admin tool on ${new Date().toLocaleDateString()}`
+                                  });
+                                  successCount++;
+                                } else {
+                                  setEmbedUrl(url);
+                                }
+                              }
+                            } catch (err) {
+                              console.error("Bulk upload error:", err);
+                            }
+                          }
+
+                          if (files.length > 1) {
+                            toast.success(`Bulk upload complete! ${successCount} videos added.`);
+                            loadItems();
+                          }
                           setUploadingVideo(false);
                         }}
                       />
