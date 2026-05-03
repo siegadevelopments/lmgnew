@@ -24,10 +24,10 @@ export function FeaturedRecipesSection() {
           </Link>
         </div>
 
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-10 flex gap-4 overflow-x-auto pb-6 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:gap-6 sm:overflow-x-visible sm:pb-0 sm:grid-cols-2 lg:grid-cols-4">
           {isLoading
             ? Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="rounded-2xl border border-border bg-card p-4 shadow-soft">
+                <div key={i} className="flex-none w-[42%] sm:w-auto rounded-2xl border border-border bg-card p-4 shadow-soft">
                   <Skeleton className="aspect-square w-full rounded-xl" />
                   <div className="mt-4 space-y-2">
                     <Skeleton className="h-4 w-3/4" />
@@ -40,7 +40,7 @@ export function FeaturedRecipesSection() {
                   key={recipe.id}
                   to="/recipes/$slug"
                   params={{ slug: recipe.slug }}
-                  className="group block rounded-2xl border border-border bg-card p-4 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-card"
+                  className="flex-none w-[42%] sm:w-auto group block rounded-2xl border border-border bg-card p-4 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-card"
                 >
                   <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
                     {recipe.image_url && (

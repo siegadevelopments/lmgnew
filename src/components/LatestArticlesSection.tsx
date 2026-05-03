@@ -22,10 +22,10 @@ export function LatestArticlesSection() {
           </Link>
         </div>
 
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-10 flex gap-4 overflow-x-auto pb-6 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:gap-6 sm:overflow-x-visible sm:pb-0 sm:grid-cols-2 lg:grid-cols-4">
           {isLoading
             ? Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="rounded-xl border border-border bg-card shadow-soft">
+                <div key={i} className="flex-none w-[42%] sm:w-auto rounded-xl border border-border bg-card shadow-soft">
                   <Skeleton className="aspect-video w-full rounded-t-xl" />
                   <div className="p-5 space-y-2">
                     <Skeleton className="h-4 w-3/4" />
@@ -39,7 +39,7 @@ export function LatestArticlesSection() {
                   key={post.id}
                   to="/articles/$slug"
                   params={{ slug: post.slug }}
-                  className="group overflow-hidden rounded-xl border border-border bg-card shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-card"
+                  className="flex-none w-[42%] sm:w-auto group overflow-hidden rounded-xl border border-border bg-card shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-card"
                 >
                   <div className="aspect-video overflow-hidden bg-muted">
                     {post.image_url ? (
