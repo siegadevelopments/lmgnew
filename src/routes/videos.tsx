@@ -39,46 +39,81 @@ function decodeEntities(str: string): string {
     .replace(/&#039;/g, "'");
 }
 
-/** Extract YouTube video ID from various URL formats */
+/** Extract YouTube video ID from any known URL format */
 function extractYouTubeId(url: string): string | null {
   if (!url) return null;
-  // youtube.com/embed/ID
-  let match = url.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/);
-  if (match) return match[1];
-  // youtube.com/watch?v=ID
-  match = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/);
-  if (match) return match[1];
-  // youtu.be/ID
-  match = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
-  if (match) return match[1];
-  // youtube.com/v/ID
-  match = url.match(/youtube\.com\/v\/([a-zA-Z0-9_-]{11})/);
-  if (match) return match[1];
+  const patterns = [
+    /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/watch\?(?:.*&)?v=([a-zA-Z0-9_-]{11})/,
+    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+  ];
+  for (const re of patterns) {
+    const m = url.match(re);
+    if (m) return m[1];
+  }
   return null;
 }
 
-/** Build a proper embeddable YouTube URL with controls */
-function getEmbedUrl(url: string): string {
-  const ytId = extractYouTubeId(url);
-  if (ytId) {
-    return `https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1&playsinline=1`;
-  }
-  // Vimeo
-  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
-  if (vimeoMatch) {
-    return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
-  }
-  // Already an embed URL or unknown — return as-is
+/** Returns true if URL points to a raw video file or Supabase storage */
+function isDirectVideoUrl(url: string): boolean {
+  if (!url) return false;
+  return /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url) || url.includes("supabase.co/storage");
+}
+
+/** Build a clean YouTube embed URL (no autoplay yet) */
+function buildYouTubeEmbed(ytId: string): string {
+  return `https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1&playsinline=1`;
+}
+
+/** Build a Vimeo embed URL */
+function buildVimeoEmbed(url: string): string {
+  const m = url.match(/vimeo\.com\/(\d+)/);
+  if (m) return `https://player.vimeo.com/video/${m[1]}?dnt=1`;
   return url;
 }
 
-/** Get a thumbnail for the video */
-function getThumbnail(video: { thumbnail_url: string | null; embed_url: string }): string | null {
+/**
+ * Given any URL a vendor might store, returns an embeddable URL ready for an iframe.
+ * Appends `autoplay=1` when `autoplay` is true.
+ */
+function getEmbedUrl(url: string, autoplay = false): string {
+  if (!url) return "";
+
+  const ytId = extractYouTubeId(url);
+  if (ytId) {
+    const base = buildYouTubeEmbed(ytId);
+    return autoplay ? `${base}&autoplay=1` : base;
+  }
+
+  if (url.includes("vimeo.com")) {
+    const base = buildVimeoEmbed(url);
+    const sep = base.includes("?") ? "&" : "?";
+    return autoplay ? `${base}${sep}autoplay=1` : base;
+  }
+
+  // Already an embed URL or external — return as-is
+  return url;
+}
+
+/** Get thumbnail — YouTube gets hqdefault, others return null */
+function getThumbnail(video: { thumbnail_url?: string | null; embed_url: string }): string | null {
   if (video.thumbnail_url) return video.thumbnail_url;
   const ytId = extractYouTubeId(video.embed_url);
   if (ytId) return `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
   return null;
 }
+
+/** Can we play this URL inline? */
+function canEmbed(url: string): boolean {
+  if (!url) return false;
+  if (extractYouTubeId(url)) return true;
+  if (url.includes("vimeo.com")) return true;
+  if (isDirectVideoUrl(url)) return true;
+  return false;
+}
+
 
 function VideosPage() {
   const { data: videos } = useSuspenseQuery(videosQueryOptions());
@@ -182,12 +217,13 @@ function VideosPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredVideos.map((video) => {
               const isPlaying = playingId === video.id;
-              const embedUrl = getEmbedUrl(video.embed_url);
               const thumbnail = getThumbnail(video);
-              const title = decodeEntities(video.title);
-              const ytId = extractYouTubeId(video.embed_url);
-              const isDirectVideo = !!video.embed_url?.match(/\.(mp4|webm|ogg|mov)$/i) || video.embed_url?.includes('supabase.co');
-              const hasValidEmbed = !!ytId || video.embed_url?.includes("vimeo.com") || isDirectVideo;
+              const title = decodeEntities(video.title || "");
+              const isDirect = isDirectVideoUrl(video.embed_url);
+              const embeddable = canEmbed(video.embed_url);
+              // Build URLs
+              const embedSrc = getEmbedUrl(video.embed_url, false); // for fullscreen button
+              const autoplaySrc = getEmbedUrl(video.embed_url, true); // for inline play
 
               return (
                 <div
@@ -196,34 +232,40 @@ function VideosPage() {
                 >
                   {/* Video area */}
                   <div className="relative aspect-video overflow-hidden bg-black">
-                    {isPlaying && hasValidEmbed ? (
-                      /* Active player — YouTube/Vimeo iframe or raw video */
+                    {isPlaying ? (
+                      /* ── Active player ── */
                       <>
-                        {isDirectVideo ? (
+                        {isDirect ? (
+                          /* Raw file (mp4, mov, Supabase storage) */
                           <video
                             src={video.embed_url}
                             controls
                             autoPlay
+                            playsInline
                             className="absolute inset-0 w-full h-full object-contain bg-black"
                           />
                         ) : (
+                          /* YouTube / Vimeo / other embed */
                           <iframe
-                            src={`${embedUrl}&autoplay=1`}
-                            className="absolute inset-0 w-full h-full outline-none border-none"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            key={video.id} /* remount on change */
+                            src={autoplaySrc}
+                            className="absolute inset-0 w-full h-full border-none outline-none"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                             allowFullScreen
+                            referrerPolicy="strict-origin-when-cross-origin"
                           />
                         )}
-                        {/* Fullscreen + Close buttons */}
+
+                        {/* Controls overlay */}
                         <div className="absolute top-3 right-3 flex gap-2 z-10">
-                          {!isDirectVideo && (
+                          {!isDirect && embedSrc && (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setFullscreenVideo(embedUrl);
+                                setFullscreenVideo(embedSrc);
                               }}
                               className="rounded-full bg-black/60 p-2 text-white/90 backdrop-blur-sm transition-colors hover:bg-black/80"
-                              title="Fullscreen"
+                              title="Expand"
                             >
                               <Maximize2 className="h-4 w-4" />
                             </button>
@@ -234,17 +276,17 @@ function VideosPage() {
                               setPlayingId(null);
                             }}
                             className="rounded-full bg-black/60 p-2 text-white/90 backdrop-blur-sm transition-colors hover:bg-black/80"
-                            title="Close player"
+                            title="Close"
                           >
                             <X className="h-4 w-4" />
                           </button>
                         </div>
                       </>
                     ) : (
-                      /* Thumbnail + Play button overlay */
+                      /* ── Thumbnail / Play button ── */
                       <div
                         className="w-full h-full cursor-pointer group relative"
-                        onClick={() => hasValidEmbed && setPlayingId(video.id)}
+                        onClick={() => setPlayingId(video.id)}
                       >
                         {thumbnail ? (
                           <img
@@ -252,23 +294,25 @@ function VideosPage() {
                             alt={title}
                             loading="lazy"
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).style.display = "none";
+                            }}
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-wellness/10">
-                            <Play className="h-16 w-16 text-muted-foreground/30" />
-                          </div>
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 via-muted to-wellness/10" />
                         )}
-                        {/* Dark overlay + play button */}
-                        <div className="absolute inset-0 bg-black/20 transition-colors group-hover:bg-black/30" />
+                        {/* Dark overlay */}
+                        <div className="absolute inset-0 bg-black/20 transition-colors group-hover:bg-black/35" />
+                        {/* Play circle */}
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="rounded-full bg-primary/90 p-4 text-white shadow-lg transition-all group-hover:scale-110 group-hover:bg-primary">
+                          <div className="rounded-full bg-primary/90 p-4 text-white shadow-xl ring-4 ring-white/20 transition-all group-hover:scale-110 group-hover:bg-primary group-hover:ring-white/40">
                             <Play className="h-8 w-8 ml-0.5" fill="currentColor" />
                           </div>
                         </div>
-                        {/* Duration badge (visual flair) */}
-                        {!hasValidEmbed && (
-                          <div className="absolute bottom-3 left-3 rounded bg-black/70 px-2 py-0.5 text-xs text-white/80">
-                            External video
+                        {/* "External" badge for non-embeddable URLs */}
+                        {!embeddable && video.embed_url && (
+                          <div className="absolute bottom-3 right-3 rounded-md bg-black/70 px-2 py-0.5 text-xs text-white/80 backdrop-blur-sm">
+                            Opens externally
                           </div>
                         )}
                       </div>
@@ -285,7 +329,7 @@ function VideosPage() {
                         {decodeEntities(video.description.replace(/<\/?[^>]+(>|$)/g, ""))}
                       </p>
                     )}
-                    {!isPlaying && hasValidEmbed && (
+                    {!isPlaying && embeddable && (
                       <button
                         onClick={() => setPlayingId(video.id)}
                         className="mt-auto pt-4 text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center gap-1.5 self-start"
@@ -293,7 +337,7 @@ function VideosPage() {
                         <Play className="h-4 w-4" /> Watch Now
                       </button>
                     )}
-                    {!hasValidEmbed && video.embed_url && (
+                    {!embeddable && video.embed_url && (
                       <a
                         href={video.embed_url}
                         target="_blank"
@@ -318,10 +362,11 @@ function VideosPage() {
           {fullscreenVideo && (
             <div className="relative w-full aspect-video">
               <iframe
-                src={`${fullscreenVideo}&autoplay=1`}
+                src={getEmbedUrl(fullscreenVideo, true)}
                 className="absolute inset-0 w-full h-full outline-none border-none"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
+                referrerPolicy="strict-origin-when-cross-origin"
               />
             </div>
           )}
