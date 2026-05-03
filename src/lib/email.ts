@@ -104,6 +104,21 @@ export const emailTemplates = {
     `
   }),
 
+  vendorRegistration: (storeName: string) => ({
+    fromName: "LMG Partner Relations",
+    fromEmail: EMAIL_ADDRESSES.SALES,
+    subject: "Vendor Application Received",
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+        <h1 style="color: #10b981;">Application Received</h1>
+        <p>Hello,</p>
+        <p>Thank you for applying to become a vendor on the Lifestyle Medicine Gateway. We have received your application for <strong>${storeName}</strong>.</p>
+        <p>Our team is currently reviewing your details. You will receive another email once your store has been approved.</p>
+        <p>If you have any questions in the meantime, feel free to reply to this email.</p>
+      </div>
+    `
+  }),
+
   vendorOrderNotification: (order: any, vendorItems: any[]) => ({
     fromName: "LMG Vendor Orders",
     fromEmail: EMAIL_ADDRESSES.ORDERS,

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { sendEmail, emailTemplates } from "@/lib/email";
 import { AnalyticsTab } from "@/components/vendor/AnalyticsTab";
 import { ProductsTab } from "@/components/vendor/ProductsTab";
 import { VideosTab } from "@/components/vendor/VideosTab";
@@ -180,6 +181,11 @@ function VendorDashboardPage() {
       if (data) { 
         setProfile(data as VendorProfile); 
         loadVendorData();
+        
+        if (user.email) {
+          const { subject, html } = emailTemplates.vendorRegistration(storeName);
+          await sendEmail({ to: user.email, subject, html });
+        }
       }
     } catch (err) {
       console.error("Error creating store:", err);
