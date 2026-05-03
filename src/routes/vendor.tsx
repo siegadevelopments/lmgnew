@@ -180,6 +180,7 @@ function VendorDashboardPage() {
       if (error) throw error;
       if (data) { 
         setProfile(data as VendorProfile); 
+        setActiveTab("products"); // Take them straight to adding products/services
         loadVendorData();
         
         if (user.email) {
@@ -200,31 +201,63 @@ function VendorDashboardPage() {
 
   if (!profile) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center py-12 px-4">
-        <Card className="w-full max-w-md">
-          <CardHeader><CardTitle>Become a Vendor</CardTitle><CardDescription>Set up your store to start selling</CardDescription></CardHeader>
-          <CardContent>
-            <form onSubmit={handleCreateStore} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="store_name">Store Name</Label>
-                <Input id="store_name" name="store_name" placeholder="Your brand name" required />
+      <div className="flex min-h-[80vh] items-center justify-center py-12 px-4 bg-primary/5">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-lg"
+        >
+          <Card className="border-none shadow-2xl overflow-hidden bg-card/50 backdrop-blur-sm">
+            <div className="h-2 bg-gradient-to-r from-primary via-wellness-green to-primary" />
+            <CardHeader className="text-center pt-10 pb-6">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <Store className="h-8 w-8" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="vendor_type">What are you offering?</Label>
-                <select 
-                  id="vendor_type" 
-                  name="vendor_type" 
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  required
-                >
-                  <option value="products">Physical or Digital Products</option>
-                  <option value="services">Services / Bookings</option>
-                </select>
-              </div>
-              <Button type="submit" className="w-full" disabled={isSubmitting}>{isSubmitting ? "Creating..." : "Create Store"}</Button>
-            </form>
-          </CardContent>
-        </Card>
+              <CardTitle className="text-3xl font-black tracking-tight">Launch Your Store</CardTitle>
+              <CardDescription className="text-base">Join the Lifestyle Medicine Gateway community as a vendor.</CardDescription>
+            </CardHeader>
+            <CardContent className="px-8 pb-10">
+              <form onSubmit={handleCreateStore} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="store_name" className="text-sm font-bold uppercase tracking-wider opacity-70">Business / Store Name</Label>
+                  <Input 
+                    id="store_name" 
+                    name="store_name" 
+                    placeholder="e.g. Pure Wellness Co." 
+                    className="h-12 text-lg shadow-inner bg-background/50"
+                    required 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="vendor_type" className="text-sm font-bold uppercase tracking-wider opacity-70">What will you provide?</Label>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <label className="relative flex cursor-pointer rounded-xl border-2 border-border p-4 transition-all hover:bg-accent has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                      <input type="radio" name="vendor_type" value="products" className="peer sr-only" defaultChecked />
+                      <div className="flex flex-col gap-1">
+                        <span className="font-bold text-foreground">Physical Goods</span>
+                        <span className="text-xs text-muted-foreground leading-tight">Supplements, equipment, or healthy products.</span>
+                      </div>
+                    </label>
+                    <label className="relative flex cursor-pointer rounded-xl border-2 border-border p-4 transition-all hover:bg-accent has-[:checked]:border-primary has-[:checked]:bg-primary/5">
+                      <input type="radio" name="vendor_type" value="services" className="peer sr-only" />
+                      <div className="flex flex-col gap-1">
+                        <span className="font-bold text-foreground">Services</span>
+                        <span className="text-xs text-muted-foreground leading-tight">Consultations, coaching, or booking slots.</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+                <Button type="submit" className="w-full h-14 text-lg font-black shadow-xl shadow-primary/20 group" disabled={isSubmitting}>
+                  {isSubmitting ? "Building your dashboard..." : "Complete Setup"}
+                  <ChevronRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                </Button>
+                <p className="text-center text-[10px] text-muted-foreground uppercase tracking-widest font-bold opacity-50">
+                  By proceeding, you agree to our Vendor Terms & Conditions
+                </p>
+              </form>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
     );
   }
