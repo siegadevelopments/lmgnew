@@ -64,6 +64,7 @@ export interface VendorProfile {
   twitter?: string | null;
   is_approved: boolean;
   store_categories?: string[];
+  vendor_type?: 'products' | 'services' | 'both';
 }
 interface Product { id: number; title: string; price: number; stock: number; status: string; image_url: string | null; }
 interface OrderItem { 
@@ -131,7 +132,7 @@ function VendorDashboardPage() {
     setLoading(true);
     try {
       console.log("Loading vendor data for user:", user.id);
-      const { data: vendorData, error: vError } = await (supabase.from("vendor_profiles") as any).select("id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, created_at, updated_at, ai_enabled, ai_instructions, store_categories").eq("id", user.id).single();
+      const { data: vendorData, error: vError } = await (supabase.from("vendor_profiles") as any).select("id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, created_at, updated_at, ai_enabled, ai_instructions, store_categories, vendor_type").eq("id", user.id).single();
       
       if (vError && vError.code !== 'PGRST116') {
         console.error("Vendor profile fetch error:", vError);
@@ -172,8 +173,9 @@ function VendorDashboardPage() {
     setIsSubmitting(true);
     try {
       const storeName = (e.target as HTMLFormElement).store_name.value;
+      const vendorType = (e.target as HTMLFormElement).vendor_type.value;
       await (supabase.from("profiles") as any).update({ role: "vendor" }).eq("id", user.id);
-      const { data, error } = await (supabase.from("vendor_profiles") as any).insert({ id: user.id, store_name: storeName, is_approved: false } as any).select().single();
+      const { data, error } = await (supabase.from("vendor_profiles") as any).insert({ id: user.id, store_name: storeName, vendor_type: vendorType, is_approved: false } as any).select().single();
       if (error) throw error;
       if (data) { 
         setProfile(data as VendorProfile); 
@@ -197,7 +199,22 @@ function VendorDashboardPage() {
           <CardHeader><CardTitle>Become a Vendor</CardTitle><CardDescription>Set up your store to start selling</CardDescription></CardHeader>
           <CardContent>
             <form onSubmit={handleCreateStore} className="space-y-4">
-              <div className="space-y-2"><Label htmlFor="store_name">Store Name</Label><Input id="store_name" name="store_name" placeholder="Your brand name" required /></div>
+              <div className="space-y-2">
+                <Label htmlFor="store_name">Store Name</Label>
+                <Input id="store_name" name="store_name" placeholder="Your brand name" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="vendor_type">What are you offering?</Label>
+                <select 
+                  id="vendor_type" 
+                  name="vendor_type" 
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  required
+                >
+                  <option value="products">Physical or Digital Products</option>
+                  <option value="services">Services / Bookings</option>
+                </select>
+              </div>
               <Button type="submit" className="w-full" disabled={isSubmitting}>{isSubmitting ? "Creating..." : "Create Store"}</Button>
             </form>
           </CardContent>
@@ -208,7 +225,7 @@ function VendorDashboardPage() {
 
   const sidebarItems = [
     { id: "analytics", label: "Dashboard", icon: LayoutDashboard },
-    { id: "products", label: "My Products", icon: Package },
+    { id: "products", label: profile.vendor_type === "services" ? "My Services" : "My Products", icon: Package },
     { id: "live", label: "Live Stream", icon: Radio },
     { id: "videos", label: "Videos", icon: Video },
     { id: "orders", label: `Orders (${orderItems.length})`, icon: ShoppingBag },
@@ -328,10 +345,10 @@ function VendorDashboardPage() {
 
             <TabsContent value="products" className="mt-0 border-0 p-0">
               <div className="mb-6 flex flex-col gap-1">
-                <h1 className="text-2xl font-bold tracking-tight">Product Catalog</h1>
-                <p className="text-muted-foreground">Add and manage the products you sell.</p>
+                <h1 className="text-2xl font-bold tracking-tight">{profile.vendor_type === "services" ? "Service Offerings" : "Product Catalog"}</h1>
+                <p className="text-muted-foreground">Add and manage the {profile.vendor_type === "services" ? "services" : "products"} you sell.</p>
               </div>
-              <ProductsTab products={products} setProducts={setProducts} userId={user!.id} storeCategories={profile?.store_categories || []} />
+              <ProductsTab products={products} setProducts={setProducts} userId={user!.id} storeCategories={profile?.store_categories || []} vendorType={profile.vendor_type} />
             </TabsContent>
 
             <TabsContent value="live" className="mt-0 border-0 p-0">

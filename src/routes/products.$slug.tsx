@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { ProductCard } from "@/components/ProductCard";
+import { BookingCalendar } from "@/components/BookingCalendar";
 
 export const Route = createFileRoute("/products/$slug")({
   loader: async ({ context: { queryClient }, params: { slug } }) => {
@@ -59,6 +60,7 @@ function ProductPage() {
   const [selectedVariant, setSelectedVariant] = useState<any>(
     product.variants && product.variants.length > 0 ? product.variants[0] : null
   );
+  const [booking, setBooking] = useState<{ start_time: string; end_time: string } | null>(null);
 
   const currentPrice = selectedVariant ? selectedVariant.price : product.price;
   const currentStock = selectedVariant ? (selectedVariant.available ? product.stock : 0) : product.stock;
@@ -78,6 +80,8 @@ function ProductPage() {
       quantity,
       image: product.image_url || undefined,
       slug: product.slug,
+      vendor_id: product.vendor_id,
+      booking: booking || undefined,
     });
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
@@ -246,10 +250,26 @@ function ProductPage() {
                   +
                 </button>
               </div>
-              <Button onClick={handleAddToCart} className="flex-1" size="lg" disabled={currentStock <= 0}>
-                {added ? "Added to Cart!" : currentStock <= 0 ? "Unavailable" : "Add to Cart"}
+              <Button 
+                onClick={handleAddToCart} 
+                className="flex-1" 
+                size="lg" 
+                disabled={currentStock <= 0 || (product.product_type === 'service' && !booking)}
+              >
+                {added ? "Added to Cart!" : currentStock <= 0 ? "Unavailable" : product.product_type === 'service' ? (booking ? "Book Now" : "Select a slot") : "Add to Cart"}
               </Button>
             </div>
+
+            {/* Booking Calendar for Services */}
+            {product.product_type === 'service' && (
+              <div className="mt-8">
+                <BookingCalendar 
+                  productId={product.id} 
+                  vendorId={product.vendor_id} 
+                  onSelect={setBooking} 
+                />
+              </div>
+            )}
           </div>
         </div>
 

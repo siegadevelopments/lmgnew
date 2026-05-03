@@ -4,6 +4,7 @@ import { useCart } from "@/hooks/use-cart";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { motion, AnimatePresence } from "framer-motion";
+import { format, parseISO } from "date-fns";
 
 export function CartButton() {
   const { items, totalItems, totalPrice, removeItem, updateQuantity } = useCart();
@@ -79,6 +80,14 @@ export function CartButton() {
                       </Link>
                       {item.variant_name && item.variant_name !== "Default Title" && (
                         <p className="text-xs text-muted-foreground">{item.variant_name}</p>
+                      )}
+                      {item.booking && (
+                        <div className="mt-1 rounded bg-primary/5 px-2 py-1">
+                          <p className="text-[10px] font-bold text-primary uppercase">Booking</p>
+                          <p className="text-[11px] font-medium text-foreground">
+                            {format(parseISO(item.booking.start_time), "MMM d, h:mm a")}
+                          </p>
+                        </div>
                       )}
                       <p className="text-sm text-muted-foreground">${item.price.toFixed(2)}</p>
                       <div className="mt-2 flex items-center gap-2">

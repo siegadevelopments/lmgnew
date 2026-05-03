@@ -11,6 +11,10 @@ export interface CartItem {
   image?: string;
   slug: string;
   vendor_id?: string;
+  booking?: {
+    start_time: string;
+    end_time: string;
+  };
 }
 
 interface CartContextType {

@@ -8,8 +8,9 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadMedia } from "@/lib/upload";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Image as ImageIcon, Video as VideoIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, Image as ImageIcon, Video as VideoIcon, Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AvailabilityManager } from "./AvailabilityManager";
 
 interface Product {
   id: number; 
@@ -23,6 +24,7 @@ interface Product {
   brand?: string;
   category?: string;
   store_category?: string;
+  product_type?: 'physical' | 'service' | 'digital';
 }
 
 interface Props {
@@ -30,21 +32,24 @@ interface Props {
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   userId: string;
   storeCategories?: string[];
+  vendorType?: 'products' | 'services' | 'both';
 }
 
-export function ProductsTab({ products, setProducts, userId, storeCategories = [] }: Props) {
+export function ProductsTab({ products, setProducts, userId, storeCategories = [], vendorType = 'products' }: Props) {
   const [editing, setEditing] = useState(false);
+  const [managingAvailability, setManagingAvailability] = useState<number | null>(null);
   const [form, setForm] = useState({ 
     id: 0, title: "", price: "", stock: "50", image_url: "", video_url: "", description: "", status: "draft",
     variants: [] as any[],
     brand: "",
-    category: "Supplements",
-    store_category: ""
+    category: vendorType === 'services' ? "Services" : "Supplements",
+    store_category: "",
+    product_type: (vendorType === 'services' ? 'service' : 'physical') as 'physical' | 'service' | 'digital'
   });
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
 
-  const globalCategories = ["Supplements", "Equipment", "Food", "Books", "Digital"];
+  const globalCategories = ["Supplements", "Equipment", "Food", "Books", "Digital", "Services"];
 
   const handleUpload = async (file: File, field: "image_url" | "video_url") => {
     setUploading(field);
@@ -77,6 +82,7 @@ export function ProductsTab({ products, setProducts, userId, storeCategories = [
         brand: form.brand || null,
         category: form.category,
         store_category: form.store_category || null,
+        product_type: form.product_type,
         updated_at: new Date().toISOString()
       };
       
@@ -115,7 +121,7 @@ export function ProductsTab({ products, setProducts, userId, storeCategories = [
       }
       
       setEditing(false);
-      setForm({ id: 0, title: "", price: "", stock: "50", image_url: "", video_url: "", description: "", status: "draft", variants: [], brand: "", category: "Supplements", store_category: "" });
+      setForm({ id: 0, title: "", price: "", stock: "50", image_url: "", video_url: "", description: "", status: "draft", variants: [], brand: "", category: vendorType === 'services' ? "Services" : "Supplements", store_category: "", product_type: vendorType === 'services' ? 'service' : 'physical' });
     } catch (err: any) {
       toast.error(err.message || "Failed to save product");
     } finally {
@@ -136,7 +142,8 @@ export function ProductsTab({ products, setProducts, userId, storeCategories = [
       variants: p.variants || [],
       brand: (p as any).brand || "",
       category: p.category || "Supplements",
-      store_category: p.store_category || ""
+      store_category: p.store_category || "",
+      product_type: p.product_type || 'physical'
     });
     setEditing(true);
   };
@@ -168,21 +175,31 @@ export function ProductsTab({ products, setProducts, userId, storeCategories = [
   return (
     <Card className="border-border/50">
       <CardHeader className="flex flex-row items-center justify-between">
-        <div><CardTitle>Catalog</CardTitle><CardDescription>Manage your products</CardDescription></div>
-        {!editing && (
-          <Button onClick={() => { setForm({ id: 0, title: "", price: "", stock: "50", image_url: "", video_url: "", description: "", status: "draft", variants: [], brand: "", category: "Supplements", store_category: "" }); setEditing(true); }}>
-            <Plus className="mr-2 h-4 w-4" /> Add Product
+        <div><CardTitle>{vendorType === "services" ? "Services" : "Catalog"}</CardTitle><CardDescription>Manage your {vendorType === "services" ? "services" : "products"}</CardDescription></div>
+        {!editing && !managingAvailability && (
+          <Button onClick={() => { setForm({ id: 0, title: "", price: "", stock: "50", image_url: "", video_url: "", description: "", status: "draft", variants: [], brand: "", category: vendorType === 'services' ? "Services" : "Supplements", store_category: "", product_type: vendorType === 'services' ? 'service' : 'physical' }); setEditing(true); }}>
+            <Plus className="mr-2 h-4 w-4" /> {vendorType === "services" ? "Add Service" : "Add Product"}
           </Button>
         )}
       </CardHeader>
       <CardContent>
+        {managingAvailability && (
+          <div className="mb-8">
+            <AvailabilityManager 
+              productId={managingAvailability} 
+              vendorId={userId} 
+              onClose={() => setManagingAvailability(null)} 
+            />
+          </div>
+        )}
+
         {editing && (
           <div className="mb-8 rounded-xl border border-primary/20 p-6 bg-primary/5 animate-in fade-in slide-in-from-top-2 duration-300">
-            <h3 className="text-lg font-bold mb-4">{form.id ? "Edit Product" : "New Product"}</h3>
+            <h3 className="text-lg font-bold mb-4">{form.id ? (vendorType === "services" ? "Edit Service" : "Edit Product") : (vendorType === "services" ? "New Service" : "New Product")}</h3>
             <form onSubmit={handleSave} className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
-                <Label>Product Title</Label>
-                <Input required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g. Organic Herbal Tea" />
+                <Label>{vendorType === "services" ? "Service Name" : "Product Title"}</Label>
+                <Input required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder={vendorType === "services" ? "e.g. 1-on-1 Consultation" : "e.g. Organic Herbal Tea"} />
               </div>
               
               <div className="space-y-2">
@@ -210,10 +227,25 @@ export function ProductsTab({ products, setProducts, userId, storeCategories = [
 
               <div className="space-y-2"><Label>Price ($)</Label><Input type="number" step="0.01" required value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} /></div>
               <div className="space-y-2"><Label>Brand</Label><Input value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value })} placeholder="e.g. Wellness Co." /></div>
-              <div className="space-y-2"><Label>Inventory Stock</Label><Input type="number" required value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} /></div>
+              {form.product_type !== 'service' && (
+                <div className="space-y-2"><Label>Inventory Stock</Label><Input type="number" required value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} /></div>
+              )}
               
               <div className="space-y-2">
-                <Label>Product Image</Label>
+                <Label>{vendorType === "services" ? "Listing Type" : "Product Type"}</Label>
+                <select 
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={form.product_type}
+                  onChange={e => setForm({ ...form, product_type: e.target.value as any })}
+                >
+                  <option value="physical">Physical Product</option>
+                  <option value="service">Service / Booking</option>
+                  <option value="digital">Digital Download</option>
+                </select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>{vendorType === "services" ? "Cover Image" : "Product Image"}</Label>
                 <div className="flex items-center gap-2">
                   <Input value={form.image_url} onChange={e => setForm({ ...form, image_url: e.target.value })} placeholder="URL or upload" className="flex-1" />
                   <label className="shrink-0">
@@ -305,7 +337,7 @@ export function ProductsTab({ products, setProducts, userId, storeCategories = [
                 )}
               </div>
               <div className="flex gap-2 sm:col-span-2 pt-2">
-                <Button type="submit" disabled={submitting} className="min-w-[120px]">{submitting ? "Saving..." : "Save Product"}</Button>
+                <Button type="submit" disabled={submitting} className="min-w-[120px]">{submitting ? "Saving..." : "Save Details"}</Button>
                 <Button type="button" variant="outline" onClick={() => setEditing(false)}>Cancel</Button>
               </div>
             </form>
@@ -314,16 +346,16 @@ export function ProductsTab({ products, setProducts, userId, storeCategories = [
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead><tr className="border-b text-left text-muted-foreground">
-              <th className="pb-3 font-bold uppercase text-[10px] tracking-wider">Product</th>
+              <th className="pb-3 font-bold uppercase text-[10px] tracking-wider">{vendorType === "services" ? "Service" : "Product"}</th>
               <th className="pb-3 font-bold uppercase text-[10px] tracking-wider">Category</th>
               <th className="pb-3 font-bold uppercase text-[10px] tracking-wider">Price</th>
-              <th className="pb-3 font-bold uppercase text-[10px] tracking-wider">Stock</th>
-              <th className="pb-3 font-bold uppercase text-[10px] tracking-wider">Status</th>
+              <th className="pb-3 font-bold uppercase text-[10px] tracking-wider">Stock/Status</th>
+              <th className="pb-3 font-bold uppercase text-[10px] tracking-wider">Visibility</th>
               <th className="pb-3 font-bold uppercase text-[10px] tracking-wider text-right">Actions</th>
             </tr></thead>
             <tbody>
               {products.length === 0 && !editing && (
-                <tr><td colSpan={6} className="py-12 text-center text-muted-foreground italic">No products yet. Click "Add Product" to get started.</td></tr>
+                <tr><td colSpan={6} className="py-12 text-center text-muted-foreground italic">No {vendorType === "services" ? "services" : "products"} yet. Click "Add {vendorType === "services" ? "Service" : "Product"}" to get started.</td></tr>
               )}
               {products.map(p => (
                 <tr key={p.id} className="border-b last:border-0 hover:bg-muted/30 transition-all group">
@@ -350,12 +382,18 @@ export function ProductsTab({ products, setProducts, userId, storeCategories = [
                   </td>
                   <td className="py-4 font-bold text-foreground">${(p.price || 0).toFixed(2)}</td>
                   <td className="py-4">
-                    <span className={cn(
-                      "px-2 py-1 rounded-full text-[10px] font-bold",
-                      (p.stock || 0) <= 5 ? "bg-red-100 text-red-700" : "bg-muted text-muted-foreground"
-                    )}>
-                      {p.stock || 0} in stock
-                    </span>
+                    {p.product_type === 'service' ? (
+                      <span className="px-2 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700">
+                        Service
+                      </span>
+                    ) : (
+                      <span className={cn(
+                        "px-2 py-1 rounded-full text-[10px] font-bold",
+                        (p.stock || 0) <= 5 ? "bg-red-100 text-red-700" : "bg-muted text-muted-foreground"
+                      )}>
+                        {p.stock || 0} in stock
+                      </span>
+                    )}
                   </td>
                   <td className="py-4">
                     <div className="flex items-center gap-2">
@@ -373,6 +411,17 @@ export function ProductsTab({ products, setProducts, userId, storeCategories = [
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => handleEdit(p)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
+                      {p.product_type === 'service' && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-primary hover:text-primary/80" 
+                          title="Manage Availability"
+                          onClick={() => setManagingAvailability(p.id)}
+                        >
+                          <CalendarIcon className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(p.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>

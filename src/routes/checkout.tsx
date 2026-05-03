@@ -8,7 +8,7 @@ import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
-import { sendEmail, emailTemplates } from "@/lib/email";
+import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -61,74 +61,24 @@ function CheckoutPage() {
     setError("");
 
     try {
-      // Create order
-      const { data, error: orderError } = await supabase
-        .from("orders")
-        .insert({
-          user_id: user?.id || null,
-          subtotal: Math.round(totalPrice * 100) / 100,
-          shipping: Math.round(shipping * 100) / 100,
-          tax: Math.round(tax * 100) / 100,
-          total: Math.round(grandTotal * 100) / 100,
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          email: formData.email,
-          phone: formData.phone || null,
-          address: formData.address,
-          city: formData.city,
-          state: formData.state,
-          zip: formData.zip,
-        } as any)
-        .select("id")
-        .single();
-
-      if (orderError) throw new Error(orderError.message);
-      const order = data as any;
-
-
-
-      // Create order items
-      const orderItems = items.map((item) => ({
-        order_id: order.id,
-        product_id: item.product_id, // Use original product ID
-        variant_id: item.variant_id || null,
-        product_name: item.variant_name && item.variant_name !== "Default Title" ? `${item.name} (${item.variant_name})` : item.name,
-        product_image: item.image || null,
-        product_slug: item.slug,
-        price: item.price,
-        quantity: item.quantity,
-        vendor_id: item.vendor_id || null,
-      }));
-
-      const { error: itemsError } = await supabase.from("order_items").insert(orderItems as any);
-      if (itemsError) throw new Error(itemsError.message);
-
-      // --- NEW: Notify Vendors ---
-      const vendors = [...new Set(items.map(i => i.vendor_id).filter(Boolean))];
-      for (const vId of vendors) {
-        const vendorItems = items.filter(i => i.vendor_id === vId);
-        const { data: vProfile } = await (supabase.from('profiles') as any).select('email').eq('id', vId as string).single();
-        if (vProfile?.email) {
-          const { subject, html } = emailTemplates.vendorOrderNotification({ ...formData, id: order.id }, vendorItems);
-          await sendEmail({ to: vProfile.email, subject, html });
-        }
-      }
-      
-      // --- NEW: Notify Customer ---
-      const { subject: custSubject, html: custHtml } = emailTemplates.orderConfirmation({
-        ...formData,
-        id: order.id,
-        total: grandTotal.toFixed(2)
+      const { data, error: sessionError } = await supabase.functions.invoke("create-checkout-session", {
+        body: {
+          items,
+          customer_email: formData.email,
+          success_url: `${window.location.origin}/profile`, // Redirect to orders after success
+          cancel_url: window.location.href,
+          shipping_details: formData,
+        },
       });
-      await sendEmail({ to: formData.email, subject: custSubject, html: custHtml });
-      // ---------------------------
 
-      setOrderId(order.id.slice(0, 8).toUpperCase());
-      clearCart();
-      setOrderPlaced(true);
+      if (sessionError) throw sessionError;
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error("Failed to create checkout session");
+      }
     } catch (err: any) {
-      setError(err.message || "Failed to place order. Please try again.");
-    } finally {
+      setError(err.message || "Failed to initiate checkout. Please try again.");
       setIsSubmitting(false);
     }
   };
@@ -254,12 +204,14 @@ function CheckoutPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="rounded-lg border-2 border-dashed border-border p-6 text-center">
-                  <svg className="mx-auto h-8 w-8 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" />
-                  </svg>
-                  <p className="mt-2 text-sm text-foreground font-medium">Cash on Delivery</p>
-                  <p className="mt-1 text-xs text-muted-foreground">You will pay for your order when it arrives. Click "Place Order" to finalize.</p>
+                <div className="rounded-lg border border-primary/20 bg-primary/5 p-6 text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+                    <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" />
+                    </svg>
+                  </div>
+                  <p className="mt-3 text-sm font-bold text-foreground uppercase tracking-wider">Pay with Stripe</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Secure & encrypted payment processing. You will be redirected to Stripe Checkout.</p>
                 </div>
               </CardContent>
             </Card>
@@ -300,11 +252,11 @@ function CheckoutPage() {
                 <Button type="submit" className="mt-6 w-full" size="lg" disabled={isSubmitting}>
                   {isSubmitting ? (
                     <span className="flex items-center gap-2">
-                      <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
-                      Processing...
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Redirecting to Stripe...
                     </span>
                   ) : (
-                    `Place Order — $${grandTotal.toFixed(2)}`
+                    `Pay & Place Order — $${grandTotal.toFixed(2)}`
                   )}
                 </Button>
                 <p className="mt-3 text-center text-xs text-muted-foreground">🔒 Secure & encrypted</p>
