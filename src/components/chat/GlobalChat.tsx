@@ -8,9 +8,8 @@ const FACEBOOK_MESSENGER_URL = "https://m.me/lifestylemedicinegateway";
 
 export function MessengerBubble() {
   const [hovered, setHovered] = useState(false);
-
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+    <div className="fixed bottom-[74px] left-6 z-50 flex flex-col items-start gap-2">
       <AnimatePresence>
         {hovered && (
           <motion.div
