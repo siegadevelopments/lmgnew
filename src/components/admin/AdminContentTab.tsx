@@ -214,6 +214,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                           }
 
                           setUploadingVideo(true);
+                          const loadingToast = toast.loading(files.length > 1 ? `Uploading ${files.length} videos...` : "Uploading video...");
                           let successCount = 0;
 
                           for (const file of files) {
@@ -232,15 +233,19 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                                   successCount++;
                                 } else {
                                   setEmbedUrl(url);
+                                  toast.success("Video uploaded successfully!", { id: loadingToast });
                                 }
+                              } else {
+                                toast.error(`Failed to upload ${file.name}`, { id: loadingToast });
                               }
                             } catch (err) {
                               console.error("Bulk upload error:", err);
+                              toast.error(`Error uploading ${file.name}`, { id: loadingToast });
                             }
                           }
 
                           if (files.length > 1) {
-                            toast.success(`Bulk upload complete! ${successCount} videos added.`);
+                            toast.success(`Bulk upload complete! ${successCount} videos added.`, { id: loadingToast });
                             loadItems();
                           }
                           setUploadingVideo(false);

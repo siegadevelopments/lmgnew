@@ -44,15 +44,10 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
       let finalEmbedUrl = form.embed_url;
       let initialStatus = "ready";
 
-      if (uploadMode === "file" && selectedFile && !form.id) {
+      if (uploadMode === "file" && selectedFile && !form.id && !finalEmbedUrl) {
         initialStatus = "ready";
-        
-        // 1. Upload to Supabase Storage using uploadMedia
-        console.log("Uploading video...");
         const url = await uploadMedia(selectedFile, `videos/${userId}`);
         if (!url) throw new Error("Failed to upload video file.");
-
-        // Use the public URL directly
         finalEmbedUrl = url;
       }
 
@@ -194,7 +189,23 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
                       ref={fileInputRef} 
                       className="hidden" 
                       accept="video/*" 
-                      onChange={e => setSelectedFile(e.target.files?.[0] || null)}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setSelectedFile(file);
+                        
+                        // Start upload immediately for better UX
+                        setSubmitting(true);
+                        const loadingToast = toast.loading("Uploading video...");
+                        const url = await uploadMedia(file, `videos/${userId}`);
+                        if (url) {
+                          setForm(prev => ({ ...prev, embed_url: url }));
+                          toast.success("Video uploaded!", { id: loadingToast });
+                        } else {
+                          toast.error("Failed to upload video", { id: loadingToast });
+                        }
+                        setSubmitting(false);
+                      }}
                     />
                     {selectedFile ? (
                       <div className="flex flex-col items-center">
