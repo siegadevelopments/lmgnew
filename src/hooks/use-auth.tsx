@@ -8,7 +8,7 @@ interface AuthContextType {
   role: string | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, metadata?: Record<string, unknown>) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, metadata?: Record<string, unknown>, redirectTo?: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   updatePassword: (password: string) => Promise<{ error: Error | null }>;
 }
@@ -74,11 +74,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = useCallback(
-    async (email: string, password: string, metadata?: Record<string, unknown>) => {
+    async (email: string, password: string, metadata?: Record<string, unknown>, redirectTo?: string) => {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: metadata },
+        options: { 
+          data: metadata,
+          emailRedirectTo: redirectTo
+        },
       });
       return { error: error ? new Error(error.message) : null };
     },

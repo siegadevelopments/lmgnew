@@ -53,9 +53,13 @@ function SignupPage() {
 
     setIsLoading(true);
 
+    const redirectUrl = redirectTo 
+      ? window.location.origin + redirectTo 
+      : window.location.origin + "/";
+
     const { error: authError } = await signUp(email, password, {
       full_name: name,
-    });
+    }, redirectUrl);
 
     if (authError) {
       setError(authError.message);
