@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, Loader2, User, FileText, Video, Utensils } from "lucide-react";
+import { Plus, Trash2, Loader2, User, FileText, Video, Utensils, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { uploadMedia } from "@/lib/upload";
 
@@ -17,6 +17,8 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [videoUploadProgress, setVideoUploadProgress] = useState<string>("");
+  const [newIds, setNewIds] = useState<Set<string>>(new Set());
+  const listRef = useRef<HTMLDivElement>(null);
 
   // Form states
   const [title, setTitle] = useState("");
@@ -45,6 +47,21 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       setItems(data || []);
     }
     setLoading(false);
+  }
+
+  /** Reload list, highlight new IDs, scroll to list */
+  async function refreshAndHighlight(ids: string[]) {
+    await loadItems();
+    if (ids.length > 0) {
+      const idSet = new Set(ids);
+      setNewIds(idSet);
+      // Clear highlights after 4s
+      setTimeout(() => setNewIds(new Set()), 4000);
+      // Scroll to list
+      setTimeout(() => {
+        listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 150);
+    }
   }
 
   const resetForm = () => {
@@ -111,9 +128,11 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     if (result?.error) {
       toast.error("Failed to save item: " + result.error.message);
     } else {
+      const inserted = result as any;
+      const newId = inserted?.data?.[0]?.id || inserted?.data?.id;
       toast.success("Item saved!");
       resetForm();
-      loadItems();
+      await refreshAndHighlight(newId ? [newId] : []);
     }
   }
 
@@ -276,8 +295,8 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                         return;
                       }
                       setUploadingVideo(true);
-                      const toastId = toast.loading(`Uploading ${files.length} videos...`);
-                      let successCount = 0;
+                      const toastId = toast.loading(`Uploading ${files.length} video${files.length > 1 ? "s" : ""}...`);
+                      const insertedIds: string[] = [];
 
                       for (let i = 0; i < files.length; i++) {
                         const file = files[i];
@@ -286,13 +305,13 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                           const url = await uploadMedia(file, "admin_uploads");
                           if (url) {
                             const fileName = file.name.split(".").slice(0, -1).join(".");
-                            await (supabase.from("videos") as any).insert({
+                            const { data: inserted } = await (supabase.from("videos") as any).insert({
                               title: fileName,
                               embed_url: url,
                               author_id: selectedVendorId,
                               description: `Uploaded via admin on ${new Date().toLocaleDateString()}`,
-                            });
-                            successCount++;
+                            }).select("id").single();
+                            if (inserted?.id) insertedIds.push(inserted.id);
                           } else {
                             toast.error(`Failed: ${file.name}`);
                           }
@@ -301,10 +320,10 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                         }
                       }
 
-                      toast.success(`${successCount} of ${files.length} videos saved!`, { id: toastId });
+                      toast.success(`${insertedIds.length} of ${files.length} video${files.length > 1 ? "s" : ""} saved!`, { id: toastId });
                       setVideoUploadProgress("");
                       setUploadingVideo(false);
-                      loadItems();
+                      await refreshAndHighlight(insertedIds);
                       e.target.value = "";
                     }}
                   />
@@ -403,11 +422,12 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4">
+      <div ref={listRef} className="grid gap-4 scroll-mt-6">
         <h3 className="text-lg font-bold flex items-center gap-2 capitalize">
           Recent {activeType}
+          {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
         </h3>
-        {loading ? (
+        {loading && items.length === 0 ? (
           <div className="flex py-10 justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>
         ) : items.length === 0 ? (
           <Card><CardContent className="py-10 text-center text-muted-foreground">No {activeType} found.</CardContent></Card>
@@ -416,21 +436,47 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
             {items.map(item => {
               const vendorId = item.vendor_id || item.author_id;
               const vendorName = vendors.find(v => v.id === vendorId)?.store_name || "Unknown Vendor";
+              const isNew = newIds.has(item.id);
+              const thumbnailSrc = item.image_url || item.thumbnail_url ||
+                (item.embed_url?.includes("youtube.com") || item.embed_url?.includes("youtu.be")
+                  ? `https://img.youtube.com/vi/${item.embed_url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1]}/default.jpg`
+                  : null);
               return (
-                <Card key={item.id}>
+                <Card
+                  key={item.id}
+                  className={`transition-all duration-500 ${
+                    isNew ? "ring-2 ring-green-500 shadow-md shadow-green-500/10" : ""
+                  }`}
+                >
                   <CardContent className="py-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded bg-muted overflow-hidden">
-                        <img src={item.image_url || item.thumbnail_url} className="h-full w-full object-cover" />
+                      <div className="h-12 w-16 rounded bg-muted overflow-hidden shrink-0">
+                        {thumbnailSrc ? (
+                          <img src={thumbnailSrc} className="h-full w-full object-cover" />
+                        ) : item.embed_url ? (
+                          <div className="h-full w-full flex items-center justify-center bg-muted">
+                            <Video className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                        ) : null}
                       </div>
-                      <div>
-                        <p className="font-medium text-sm">{item.title}</p>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-sm truncate max-w-xs">{item.title}</p>
+                          {isNew && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400 shrink-0">
+                              <CheckCircle2 className="h-3 w-3" /> New
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                           <User className="h-3 w-3" /> {vendorName}
                         </p>
+                        {item.embed_url && (
+                          <p className="text-xs text-muted-foreground truncate max-w-xs mt-0.5 opacity-60">{item.embed_url}</p>
+                        )}
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => deleteItem(item.id)}>
+                    <Button variant="ghost" size="sm" onClick={() => deleteItem(item.id)} className="shrink-0">
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </CardContent>
