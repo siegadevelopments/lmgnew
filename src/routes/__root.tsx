@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Outlet, Link, createRootRouteWithContext, useLocation } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Header } from "@/components/Header";
@@ -35,7 +36,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   notFoundComponent: NotFoundComponent,
 });
 
-import { useEffect } from "react";
+import { MarketingScripts } from "@/components/MarketingScripts";
+import { SchemaOrg } from "@/components/SchemaOrg";
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
@@ -50,6 +52,8 @@ function RootComponent() {
       <AuthProvider>
         <CartProvider>
           <div className="flex flex-col min-h-screen bg-background text-foreground">
+            <MarketingScripts />
+            <SchemaOrg />
             <Header />
             <main className="flex-grow relative">
               <AnimatePresence mode="wait" initial={false}>

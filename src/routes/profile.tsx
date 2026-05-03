@@ -15,6 +15,11 @@ import { uploadMedia } from "@/lib/upload";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/profile")({
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      orderId: (search.orderId as string) || undefined,
+    };
+  },
   head: () => ({
     meta: [
       { title: "My Account — Lifestyle Medicine Gateway" },

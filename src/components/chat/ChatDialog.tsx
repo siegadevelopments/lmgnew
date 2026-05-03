@@ -56,7 +56,7 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
           .single();
         
         if (firstVendor) {
-          targetVendorId = firstVendor.id;
+          targetVendorId = (firstVendor as any).id;
         } else {
           // Fallback if no vendors exist at all
           return null;
@@ -188,7 +188,7 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
           .limit(1)
           .single();
         if (!firstVendor) throw new Error("No vendors available to host chat");
-        targetVendorId = firstVendor.id;
+        targetVendorId = (firstVendor as any).id;
       }
 
       // Create conversation if it doesn't exist
@@ -279,7 +279,7 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
           if (matches.length > 0) {
             setBotProducts(prev => {
               const newProducts = [...prev];
-              matches.forEach(m => {
+              matches.forEach((m: any) => {
                 if (!newProducts.some(p => p.id === m.id)) newProducts.push(m);
               });
               return newProducts;

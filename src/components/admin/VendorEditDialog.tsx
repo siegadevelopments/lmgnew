@@ -109,8 +109,8 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
         updated_at: new Date().toISOString(),
       };
 
-      const { error: profileError } = await supabase
-        .from("vendor_profiles")
+      const { error: profileError } = await (supabase
+        .from("vendor_profiles") as any)
         .update(updateData as any)
         .eq("id", vendor.id)
         .select("id")

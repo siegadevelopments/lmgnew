@@ -111,8 +111,8 @@ function VendorPage() {
           .eq("user_id", user.id)
           .eq("vendor_id", slug);
       } else {
-        await supabase
-          .from("vendor_follows" as any)
+        await (supabase
+          .from("vendor_follows" as any) as any)
           .insert({ user_id: user.id, vendor_id: slug });
       }
     },

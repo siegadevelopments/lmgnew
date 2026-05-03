@@ -91,7 +91,7 @@ export function OrdersTab({ orderItems, onUpdate }: Props) {
                 </div>
                 <h3 className="text-lg font-bold mb-1">{item.product_name}</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Quantity: {item.quantity} • Price: ${(item.price * item.quantity).toFixed(2)}
+                  Quantity: {item.quantity || 0} • Price: ${((item.price || 0) * (item.quantity || 1)).toFixed(2)}
                 </p>
                 
                 <div className="grid gap-4 sm:grid-cols-2 p-4 rounded-lg bg-muted/30 border border-border/50">

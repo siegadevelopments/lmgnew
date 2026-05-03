@@ -37,6 +37,12 @@ import {
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/vendor")({
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      tab: (search.tab as string) || undefined,
+      orderId: (search.orderId as string) || undefined,
+    };
+  },
   head: () => ({
     meta: [
       { title: "Vendor Dashboard — Lifestyle Medicine Gateway" },

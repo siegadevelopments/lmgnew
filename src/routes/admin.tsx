@@ -34,6 +34,11 @@ import {
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin")({
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      tab: (search.tab as string) || undefined,
+    };
+  },
   head: () => ({
     meta: [
       { title: "Admin — Lifestyle Medicine Gateway" },

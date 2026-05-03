@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { uploadMedia } from "@/lib/upload";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Image as ImageIcon, Video as VideoIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface Product {
   id: number; 
@@ -347,13 +348,13 @@ export function ProductsTab({ products, setProducts, userId, storeCategories = [
                       {p.store_category && <p className="text-[10px] text-primary bg-primary/5 px-1.5 py-0.5 rounded inline-block">{p.store_category}</p>}
                     </div>
                   </td>
-                  <td className="py-4 font-bold text-foreground">${p.price.toFixed(2)}</td>
+                  <td className="py-4 font-bold text-foreground">${(p.price || 0).toFixed(2)}</td>
                   <td className="py-4">
                     <span className={cn(
                       "px-2 py-1 rounded-full text-[10px] font-bold",
-                      p.stock <= 5 ? "bg-red-100 text-red-700" : "bg-muted text-muted-foreground"
+                      (p.stock || 0) <= 5 ? "bg-red-100 text-red-700" : "bg-muted text-muted-foreground"
                     )}>
-                      {p.stock} in stock
+                      {p.stock || 0} in stock
                     </span>
                   </td>
                   <td className="py-4">
@@ -363,7 +364,7 @@ export function ProductsTab({ products, setProducts, userId, storeCategories = [
                         "text-[10px] font-bold uppercase",
                         p.status === "published" ? "text-green-600" : "text-amber-600"
                       )}>
-                        {p.status}
+                        {p.status || "draft"}
                       </span>
                     </div>
                   </td>

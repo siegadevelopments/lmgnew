@@ -12,8 +12,10 @@ export const Route = createFileRoute("/articles/")({
   },
   head: () => ({
     meta: [
-      { title: "Articles — Lifestyle Medicine Gateway" },
-      { name: "description", content: "Expert insights, research, and news." },
+      { title: "Wellness & Lifestyle Medicine Articles | Expert Insights" },
+      { name: "description", content: "Explore the latest research, expert tips, and news on preventative health and lifestyle medicine." },
+      { property: "og:title", content: "Wellness & Lifestyle Medicine Articles" },
+      { property: "og:description", content: "Read expert insights and tips for a healthier life." },
     ],
   }),
   component: ArticlesPage,

@@ -16,8 +16,10 @@ export const Route = createFileRoute("/products/")({
   },
   head: () => ({
     meta: [
-      { title: "Products — Lifestyle Medicine Gateway" },
-      { name: "description", content: "Shop wellness products from trusted vendors on Lifestyle Medicine Gateway." },
+      { title: "Wellness Marketplace — Shop Healthy Products | Lifestyle Medicine Gateway" },
+      { name: "description", content: "Shop a curated selection of wellness products, organic supplements, and healthy living equipment from trusted vendors." },
+      { property: "og:title", content: "Wellness Marketplace | Lifestyle Medicine Gateway" },
+      { property: "og:description", content: "Discover and shop the best wellness products for your lifestyle medicine journey." },
     ],
   }),
   component: ProductsPage,
