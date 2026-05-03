@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadMedia } from "@/lib/upload";
-import { Instagram, Facebook, Twitter, Globe, Info, Settings2 } from "lucide-react";
+import { Instagram, Facebook, Twitter, Globe, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -36,8 +36,6 @@ export function SettingsTab({ profile, setProfile, userId }: Props) {
         facebook: profile.facebook,
         twitter: profile.twitter,
         store_categories: profile.store_categories || [],
-        ai_enabled: profile.ai_enabled || false,
-        ai_instructions: profile.ai_instructions || "",
         updated_at: new Date().toISOString()
       }).eq("id", userId);
 
@@ -134,45 +132,6 @@ export function SettingsTab({ profile, setProfile, userId }: Props) {
               </div>
             </div>
             
-            <div className="space-y-3 pt-4 border-t border-border">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-base font-bold flex items-center gap-2">
-                    AI Chatbot Assistant
-                    <Badge variant="outline" className="text-[10px] uppercase font-black bg-primary/5">New</Badge>
-                  </Label>
-                  <CardDescription>Automatically answer customer questions when you are offline.</CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input 
-                    type="checkbox" 
-                    id="ai-toggle"
-                    checked={profile.ai_enabled || false}
-                    onChange={e => setProfile({ ...profile, ai_enabled: e.target.checked })}
-                    className="w-4 h-4 text-primary rounded border-border focus:ring-primary"
-                  />
-                  <Label htmlFor="ai-toggle" className="text-sm font-medium cursor-pointer">Enable AI</Label>
-                </div>
-              </div>
-              
-              {profile.ai_enabled && (
-                <div className="space-y-2 mt-2 animate-in fade-in slide-in-from-top-1 duration-300">
-                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Bot Instructions / Knowledge Base</Label>
-                  <Textarea 
-                    rows={4} 
-                    value={profile.ai_instructions || ""} 
-                    onChange={e => setProfile({ ...profile, ai_instructions: e.target.value })} 
-                    placeholder="Example: You are an expert in organic skin care. We offer free shipping on orders over $50. Our store hours are 9am-5pm." 
-                    className="text-sm border-primary/20 focus:border-primary"
-                  />
-                  <p className="text-[10px] text-muted-foreground italic flex items-start gap-1">
-                    <Info className="h-3 w-3 mt-0.5" />
-                    Tip: Provide specific details about your products, shipping, and FAQs to help the AI answer accurately.
-                  </p>
-                </div>
-              )}
-            </div>
-
             <div className="space-y-3 pt-4 border-t border-border">
               <Label className="text-base font-bold">Store Navigation Categories</Label>
               <CardDescription>Add custom categories that will appear as tabs on your store profile page.</CardDescription>

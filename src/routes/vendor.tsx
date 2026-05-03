@@ -63,8 +63,6 @@ export interface VendorProfile {
   facebook?: string | null;
   twitter?: string | null;
   is_approved: boolean;
-  ai_enabled?: boolean;
-  ai_instructions?: string;
   store_categories?: string[];
 }
 interface Product { id: number; title: string; price: number; stock: number; status: string; image_url: string | null; }

@@ -11,7 +11,6 @@ import { NewsletterSection } from "@/components/NewsletterSection";
 import { CTASection } from "@/components/CTASection";
 import { FeaturesSection } from "@/components/FeaturesSection";
 import { TestimonialsSection } from "@/components/TestimonialsSection";
-import { GlobalChat } from "@/components/chat/GlobalChat";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -40,7 +39,6 @@ function Index() {
       <TestimonialsSection />
       <NewsletterSection />
       <CTASection />
-      <GlobalChat />
     </>
   );
 }
