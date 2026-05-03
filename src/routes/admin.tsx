@@ -269,7 +269,7 @@ function AdminPage() {
     { id: "galleries", label: "Galleries", icon: ImageIcon },
     { id: "affiliates", label: "Affiliates", icon: LinkIcon },
     { id: "marketing", label: "Marketing", icon: Megaphone },
-    { id: "subscribers", label: "Subscribers", icon: Mail },
+    { id: "subscribers", label: `Subscribers (${stats.subscribers})`, icon: Mail },
     { id: "messages", label: "Messages", icon: MessageSquare, badge: stats.contactMessages },
     { id: "users", label: `Users (${users.length})`, icon: Users },
   ];
