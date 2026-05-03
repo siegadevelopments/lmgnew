@@ -185,7 +185,8 @@ function VideosPage() {
             const thumbnail = getThumbnail(video);
             const title = decodeEntities(video.title);
             const ytId = extractYouTubeId(video.embed_url);
-            const hasValidEmbed = !!ytId || video.embed_url?.includes("vimeo.com");
+            const isDirectVideo = !!video.embed_url?.match(/\.(mp4|webm|ogg|mov)$/i) || video.embed_url?.includes('supabase.co');
+            const hasValidEmbed = !!ytId || video.embed_url?.includes("vimeo.com") || isDirectVideo;
 
             return (
               <div
@@ -195,26 +196,37 @@ function VideosPage() {
                 {/* Video area */}
                 <div className="relative aspect-video overflow-hidden bg-black">
                   {isPlaying && hasValidEmbed ? (
-                    /* Active player — YouTube/Vimeo iframe with full controls */
+                    /* Active player — YouTube/Vimeo iframe or raw video */
                     <>
-                      <iframe
-                        src={`${embedUrl}&autoplay=1`}
-                        className="absolute inset-0 w-full h-full outline-none border-none"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
+                      {isDirectVideo ? (
+                        <video
+                          src={video.embed_url}
+                          controls
+                          autoPlay
+                          className="absolute inset-0 w-full h-full object-contain bg-black"
+                        />
+                      ) : (
+                        <iframe
+                          src={`${embedUrl}&autoplay=1`}
+                          className="absolute inset-0 w-full h-full outline-none border-none"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      )}
                       {/* Fullscreen + Close buttons */}
                       <div className="absolute top-3 right-3 flex gap-2 z-10">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setFullscreenVideo(embedUrl);
-                          }}
-                          className="rounded-full bg-black/60 p-2 text-white/90 backdrop-blur-sm transition-colors hover:bg-black/80"
-                          title="Fullscreen"
-                        >
-                          <Maximize2 className="h-4 w-4" />
-                        </button>
+                        {!isDirectVideo && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFullscreenVideo(embedUrl);
+                            }}
+                            className="rounded-full bg-black/60 p-2 text-white/90 backdrop-blur-sm transition-colors hover:bg-black/80"
+                            title="Fullscreen"
+                          >
+                            <Maximize2 className="h-4 w-4" />
+                          </button>
+                        )}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();

@@ -7,12 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2, Loader2, User, FileText, Video, Utensils } from "lucide-react";
 import { toast } from "sonner";
+import { uploadMedia } from "@/lib/upload";
 
 export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [activeType, setActiveType] = useState<"articles" | "videos" | "recipes" | "products">("articles");
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedVendorId, setSelectedVendorId] = useState<string>("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
 
   // Form states
   const [title, setTitle] = useState("");
@@ -190,24 +193,86 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
 
             {activeType === "videos" ? (
               <div className="space-y-2">
-                <label className="text-sm font-medium">Embed URL (YouTube/Vimeo)</label>
-                <Input value={embedUrl} onChange={(e) => setEmbedUrl(e.target.value)} placeholder="https://www.youtube.com/embed/..." />
+                <label className="text-sm font-medium">Embed URL or Upload Video</label>
+                <div className="flex gap-2">
+                  <Input value={embedUrl} onChange={(e) => setEmbedUrl(e.target.value)} placeholder="https://www.youtube.com/embed/... or .mp4 URL" />
+                  <div className="shrink-0">
+                    <Button type="button" variant="outline" size="icon" className="relative h-10 w-10 overflow-hidden" disabled={uploadingVideo}>
+                      {uploadingVideo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4" />}
+                      <input 
+                        type="file" 
+                        accept="video/*" 
+                        className="absolute inset-0 cursor-pointer opacity-0"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setUploadingVideo(true);
+                          const url = await uploadMedia(file, "admin_uploads");
+                          if (url) setEmbedUrl(url);
+                          setUploadingVideo(false);
+                        }}
+                      />
+                    </Button>
+                  </div>
+                </div>
               </div>
             ) : null}
 
             <div className="space-y-2">
               <label className="text-sm font-medium">{activeType === "products" ? "Price ($)" : "Image URL"}</label>
-              <Input 
-                value={imageUrl} 
-                onChange={(e) => setImageUrl(e.target.value)} 
-                placeholder={activeType === "products" ? "e.g. 29.99" : "https://..."} 
-              />
+              <div className="flex gap-2">
+                <Input 
+                  value={imageUrl} 
+                  onChange={(e) => setImageUrl(e.target.value)} 
+                  placeholder={activeType === "products" ? "e.g. 29.99" : "https://..."} 
+                />
+                {activeType !== "products" && (
+                  <div className="shrink-0">
+                    <Button type="button" variant="outline" size="icon" className="relative h-10 w-10 overflow-hidden" disabled={uploadingImage}>
+                      {uploadingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="absolute inset-0 cursor-pointer opacity-0"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setUploadingImage(true);
+                          const url = await uploadMedia(file, "admin_uploads");
+                          if (url) setImageUrl(url);
+                          setUploadingImage(false);
+                        }}
+                      />
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
 
             {activeType === "products" && (
               <div className="space-y-2">
                 <label className="text-sm font-medium">Image URL</label>
-                <Input value={embedUrl} onChange={(e) => setEmbedUrl(e.target.value)} placeholder="https://..." />
+                <div className="flex gap-2">
+                  <Input value={embedUrl} onChange={(e) => setEmbedUrl(e.target.value)} placeholder="https://..." />
+                  <div className="shrink-0">
+                    <Button type="button" variant="outline" size="icon" className="relative h-10 w-10 overflow-hidden" disabled={uploadingImage}>
+                      {uploadingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="absolute inset-0 cursor-pointer opacity-0"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setUploadingImage(true);
+                          const url = await uploadMedia(file, "admin_uploads");
+                          if (url) setEmbedUrl(url);
+                          setUploadingImage(false);
+                        }}
+                      />
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
 

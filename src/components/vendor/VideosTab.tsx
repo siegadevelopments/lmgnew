@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Pencil, Trash2, Plus, Video as VideoIcon, Upload, Link as LinkIcon, Loader2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { uploadMedia } from "@/lib/upload";
 
 interface Video { 
   id: string; 
@@ -44,26 +45,15 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
       let initialStatus = "ready";
 
       if (uploadMode === "file" && selectedFile && !form.id) {
-        initialStatus = "uploading";
+        initialStatus = "ready";
         
-        // 1. Upload to Supabase Storage
-        const fileExt = selectedFile.name.split('.').pop();
-        const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-        const filePath = `${userId}/${fileName}`;
+        // 1. Upload to Supabase Storage using uploadMedia
+        console.log("Uploading video...");
+        const url = await uploadMedia(selectedFile, `videos/${userId}`);
+        if (!url) throw new Error("Failed to upload video file.");
 
-        console.log("Uploading to storage:", filePath);
-        
-        const { error: uploadError, data } = await supabase.storage
-          .from('video-uploads')
-          .upload(filePath, selectedFile, {
-            cacheControl: '3600',
-            upsert: false
-          });
-
-        if (uploadError) throw uploadError;
-
-        // Use the actual storage path so the Edge Function knows where to look
-        finalEmbedUrl = `storage://${filePath}`;
+        // Use the public URL directly
+        finalEmbedUrl = url;
       }
 
       const payload: any = {
@@ -102,9 +92,7 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
           setVideos([data as Video, ...videos]);
           
           if (uploadMode === "file") {
-            toast.info("Video uploaded! It is now being processed for YouTube.");
-            // Here we would call the Edge Function:
-            // supabase.functions.invoke('upload-to-youtube', { body: { videoId: data.id, filePath: filePath } });
+            toast.success("Video uploaded and added successfully!");
           } else {
             toast.success("Video added successfully!");
           }
