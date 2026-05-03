@@ -16,6 +16,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [selectedVendorId, setSelectedVendorId] = useState<string>("");
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [videoUploadProgress, setVideoUploadProgress] = useState<string>("");
 
   // Form states
   const [title, setTitle] = useState("");
@@ -192,68 +193,125 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
             </div>
 
             {activeType === "videos" ? (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Embed URL or Upload Video</label>
-                <div className="flex gap-2">
-                  <Input value={embedUrl} onChange={(e) => setEmbedUrl(e.target.value)} placeholder="https://www.youtube.com/embed/... or .mp4 URL" />
-                  <div className="shrink-0">
-                    <Button type="button" variant="outline" size="icon" className="relative h-10 w-10 overflow-hidden" disabled={uploadingVideo}>
-                      {uploadingVideo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4" />}
-                      <input 
-                        type="file" 
-                        accept="video/*" 
-                        multiple
-                        className="absolute inset-0 cursor-pointer opacity-0"
-                        onChange={async (e) => {
-                          const files = Array.from(e.target.files || []);
-                          if (files.length === 0) return;
-                          
-                          if (!selectedVendorId) {
-                            toast.error("Please select a vendor first for bulk upload");
-                            return;
-                          }
-
-                          setUploadingVideo(true);
-                          const loadingToast = toast.loading(files.length > 1 ? `Uploading ${files.length} videos...` : "Uploading video...");
-                          let successCount = 0;
-
-                          for (const file of files) {
-                            try {
-                              const url = await uploadMedia(file, "admin_uploads");
-                              if (url) {
-                                // For bulk, we insert immediately
-                                if (files.length > 1) {
-                                  const fileName = file.name.split('.').slice(0, -1).join('.');
-                                  await (supabase.from('videos') as any).insert({
-                                    title: fileName,
-                                    embed_url: url,
-                                    author_id: selectedVendorId,
-                                    description: `Uploaded via bulk admin tool on ${new Date().toLocaleDateString()}`
-                                  });
-                                  successCount++;
-                                } else {
-                                  setEmbedUrl(url);
-                                  toast.success("Video uploaded successfully!", { id: loadingToast });
-                                }
-                              } else {
-                                toast.error(`Failed to upload ${file.name}`, { id: loadingToast });
-                              }
-                            } catch (err) {
-                              console.error("Bulk upload error:", err);
-                              toast.error(`Error uploading ${file.name}`, { id: loadingToast });
-                            }
-                          }
-
-                          if (files.length > 1) {
-                            toast.success(`Bulk upload complete! ${successCount} videos added.`, { id: loadingToast });
-                            loadItems();
-                          }
-                          setUploadingVideo(false);
-                        }}
-                      />
-                    </Button>
-                  </div>
+              <div className="space-y-3">
+                <label className="text-sm font-medium">Video URL or Upload</label>
+                {/* URL input */}
+                <Input
+                  value={embedUrl}
+                  onChange={(e) => setEmbedUrl(e.target.value)}
+                  placeholder="https://www.youtube.com/watch?v=... or paste a .mp4 URL"
+                />
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-xs text-muted-foreground">or upload a file</span>
+                  <div className="flex-1 h-px bg-border" />
                 </div>
+                {/* Single-file upload — uses label trick to avoid nested interactive elements */}
+                <div className="flex gap-2">
+                  <label
+                    htmlFor="admin-video-single"
+                    className={`flex items-center gap-2 cursor-pointer rounded-md border border-input bg-background px-3 py-2 text-sm font-medium transition-colors hover:bg-accent ${
+                      uploadingVideo ? "pointer-events-none opacity-50" : ""
+                    }`}
+                  >
+                    {uploadingVideo ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Video className="h-4 w-4" />
+                    )}
+                    {videoUploadProgress || "Upload single video"}
+                  </label>
+                  <input
+                    id="admin-video-single"
+                    type="file"
+                    accept="video/*"
+                    className="sr-only"
+                    disabled={uploadingVideo}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setUploadingVideo(true);
+                      setVideoUploadProgress("Uploading...");
+                      const url = await uploadMedia(file, "admin_uploads");
+                      if (url) {
+                        setEmbedUrl(url);
+                        setVideoUploadProgress("Uploaded ✓");
+                        toast.success("Video uploaded — click 'Create video' to save");
+                      } else {
+                        toast.error("Upload failed");
+                        setVideoUploadProgress("");
+                      }
+                      setUploadingVideo(false);
+                      e.target.value = "";
+                    }}
+                  />
+
+                  {/* Bulk upload — multiple files, saves immediately */}
+                  <label
+                    htmlFor="admin-video-bulk"
+                    className={`flex items-center gap-2 cursor-pointer rounded-md border border-input bg-background px-3 py-2 text-sm font-medium transition-colors hover:bg-accent ${
+                      uploadingVideo || !selectedVendorId ? "pointer-events-none opacity-50" : ""
+                    }`}
+                    title={!selectedVendorId ? "Select a vendor first" : "Upload multiple videos at once"}
+                  >
+                    {uploadingVideo ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Plus className="h-4 w-4" />
+                    )}
+                    Bulk upload
+                  </label>
+                  <input
+                    id="admin-video-bulk"
+                    type="file"
+                    accept="video/*"
+                    multiple
+                    className="sr-only"
+                    disabled={uploadingVideo || !selectedVendorId}
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (files.length === 0) return;
+                      if (!selectedVendorId) {
+                        toast.error("Select a vendor first");
+                        return;
+                      }
+                      setUploadingVideo(true);
+                      const toastId = toast.loading(`Uploading ${files.length} videos...`);
+                      let successCount = 0;
+
+                      for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+                        setVideoUploadProgress(`${i + 1}/${files.length} uploading...`);
+                        try {
+                          const url = await uploadMedia(file, "admin_uploads");
+                          if (url) {
+                            const fileName = file.name.split(".").slice(0, -1).join(".");
+                            await (supabase.from("videos") as any).insert({
+                              title: fileName,
+                              embed_url: url,
+                              author_id: selectedVendorId,
+                              description: `Uploaded via admin on ${new Date().toLocaleDateString()}`,
+                            });
+                            successCount++;
+                          } else {
+                            toast.error(`Failed: ${file.name}`);
+                          }
+                        } catch (err) {
+                          toast.error(`Error: ${file.name}`);
+                        }
+                      }
+
+                      toast.success(`${successCount} of ${files.length} videos saved!`, { id: toastId });
+                      setVideoUploadProgress("");
+                      setUploadingVideo(false);
+                      loadItems();
+                      e.target.value = "";
+                    }}
+                  />
+                </div>
+                {embedUrl && (
+                  <p className="text-xs text-muted-foreground truncate">URL: {embedUrl}</p>
+                )}
               </div>
             ) : null}
 
