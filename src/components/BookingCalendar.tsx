@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, addMinutes, parseISO, startOfToday } from "date-fns";
 import { Loader2, Calendar as CalendarIcon, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { motion } from "framer-motion";
 
 interface Props {
   productId: number;
@@ -113,85 +115,116 @@ export function BookingCalendar({ productId, vendorId, onSelect }: Props) {
   }
 
   return (
-    <Card className="border-border/50 overflow-hidden shadow-md bg-card/50 backdrop-blur-sm">
-      <CardHeader className="bg-wellness-muted/30 pb-4 border-b border-border/50">
-        <CardTitle className="text-xl flex items-center gap-3 text-foreground">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <CalendarIcon className="h-5 w-5 text-primary" />
-          </div>
-          Select Date & Time
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-6">
-        <div className="flex flex-col lg:flex-row gap-10">
-          <div className="flex-shrink-0 flex justify-center lg:justify-start">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => {
-                setSelectedDate(date);
-                setSelectedSlot(null);
-                onSelect(null);
-              }}
-              disabled={(date) => date < startOfToday() || !availability?.some(a => a.day_of_week === date.getDay())}
-              className="rounded-xl border border-border/50 shadow-inner bg-background p-4"
-            />
-          </div>
+    <div className="space-y-6">
+      <div className="flex items-center gap-3 mb-2">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-sm ring-1 ring-primary/20">
+          <CalendarIcon className="h-5 w-5" />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold text-foreground">Select Appointment</h3>
+          <p className="text-sm text-muted-foreground">Pick a date and time that works for you</p>
+        </div>
+      </div>
 
-          <div className="flex-1 space-y-6">
-            <div className="flex items-center justify-between">
-              <h4 className="font-bold flex items-center gap-2 text-foreground text-lg">
-                <Clock className="h-5 w-5 text-primary" />
-                Available Slots
-              </h4>
-              {selectedDate && (
-                <div className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-semibold">
-                  {format(selectedDate, "EEEE, MMMM do")}
-                </div>
-              )}
+      <div className="grid lg:grid-cols-12 gap-8 items-start">
+        {/* Calendar Column */}
+        <div className="lg:col-span-5 bg-card rounded-3xl border border-border/50 p-6 shadow-xl shadow-primary/5 ring-1 ring-border/50">
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={(date) => {
+              setSelectedDate(date);
+              setSelectedSlot(null);
+              onSelect(null);
+            }}
+            disabled={(date) => date < startOfToday() || !availability?.some(a => a.day_of_week === date.getDay())}
+            className="w-full p-0"
+            classNames={{
+              day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-xl shadow-lg shadow-primary/30 scale-110 transition-all",
+              day_today: "bg-accent text-accent-foreground font-bold rounded-xl",
+              day: "h-11 w-11 p-0 font-medium aria-selected:opacity-100 hover:bg-primary/10 hover:text-primary rounded-xl transition-all duration-200",
+              head_cell: "text-muted-foreground font-bold text-[10px] uppercase tracking-widest pb-4",
+              nav_button: "hover:bg-primary/10 hover:text-primary rounded-lg transition-colors border-none",
+            }}
+          />
+        </div>
+
+        {/* Slots Column */}
+        <div className="lg:col-span-7 space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-primary" />
+              <span className="font-bold text-lg">Available Times</span>
             </div>
-            
-            {(loadingBookings) ? (
-               <div className="flex h-64 items-center justify-center">
-                 <Loader2 className="h-8 w-8 animate-spin text-primary/30" />
-               </div>
-            ) : slots.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 max-h-[400px] overflow-y-auto pr-3 custom-scrollbar">
-                {slots.map((slot) => {
-                  const id = slot.start.toISOString();
-                  return (
-                    <Button
-                      key={id}
-                      variant={selectedSlot === id ? "default" : "outline"}
-                      onClick={() => handleSlotSelect(slot)}
-                      className={cn(
-                        "h-14 flex flex-col items-center justify-center gap-0.5 rounded-xl transition-all duration-300",
-                        selectedSlot === id 
-                          ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105" 
-                          : "hover:border-primary/50 hover:bg-primary/5 border-border/50"
-                      )}
-                    >
-                      <span className="text-sm font-bold">{format(slot.start, "h:mm a")}</span>
-                      <span className="text-[10px] opacity-70">Available</span>
-                    </Button>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-64 rounded-2xl bg-muted/30 border-2 border-dashed border-border/50 text-center p-8">
-                <div className="p-4 bg-background rounded-full mb-4 shadow-sm">
-                  <Clock className="h-8 w-8 text-muted-foreground/30" />
-                </div>
-                <p className="text-sm font-medium text-muted-foreground max-w-[200px]">
-                  {selectedDate 
-                    ? "No available slots for this date. Please try another day." 
-                    : "Please select a date on the calendar to see available times."}
-                </p>
-              </div>
+            {selectedDate && (
+              <Badge variant="secondary" className="px-3 py-1 rounded-full bg-primary/5 text-primary border-primary/10 font-semibold">
+                {format(selectedDate, "EEEE, MMMM do")}
+              </Badge>
             )}
           </div>
+          
+          {(loadingBookings) ? (
+             <div className="flex h-64 items-center justify-center bg-card rounded-3xl border border-border/50 shadow-inner">
+               <div className="flex flex-col items-center gap-3">
+                 <Loader2 className="h-10 w-10 animate-spin text-primary/40" />
+                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Finding slots...</p>
+               </div>
+             </div>
+          ) : slots.length > 0 ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pr-2 max-h-[420px] overflow-y-auto custom-scrollbar pb-4">
+              {slots.map((slot) => {
+                const id = slot.start.toISOString();
+                const isSelected = selectedSlot === id;
+                return (
+                  <motion.button
+                    key={id}
+                    whileHover={{ y: -2, scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleSlotSelect(slot)}
+                    className={cn(
+                      "group relative h-20 flex flex-col items-center justify-center gap-1 rounded-2xl border-2 transition-all duration-300 overflow-hidden shadow-sm",
+                      isSelected 
+                        ? "bg-primary border-primary text-primary-foreground shadow-xl shadow-primary/20 ring-4 ring-primary/10" 
+                        : "bg-card border-border/50 hover:border-primary/50 hover:bg-primary/5 text-foreground"
+                    )}
+                  >
+                    <span className={cn(
+                      "text-base font-black tracking-tight",
+                      isSelected ? "text-white" : "group-hover:text-primary"
+                    )}>
+                      {format(slot.start, "h:mm")}
+                    </span>
+                    <span className={cn(
+                      "text-[10px] font-bold uppercase tracking-wider opacity-60",
+                      isSelected ? "text-white/80" : "text-muted-foreground"
+                    )}>
+                      {format(slot.start, "a")}
+                    </span>
+                    {isSelected && (
+                      <motion.div 
+                        layoutId="active-slot"
+                        className="absolute bottom-0 left-0 right-0 h-1 bg-white/30"
+                      />
+                    )}
+                  </motion.button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-[340px] rounded-3xl bg-muted/20 border-2 border-dashed border-border/50 text-center p-12 transition-all hover:bg-muted/30">
+              <div className="p-5 bg-background rounded-2xl mb-5 shadow-sm ring-1 ring-border/50">
+                <Clock className="h-10 w-10 text-muted-foreground/20" />
+              </div>
+              <h4 className="text-lg font-bold text-foreground mb-2">No Open Slots</h4>
+              <p className="text-sm font-medium text-muted-foreground max-w-[240px] leading-relaxed">
+                {selectedDate 
+                  ? "The vendor hasn't set any availability for this date yet. Try checking another day!" 
+                  : "Pick a date on the left to see the professional's available time slots."}
+              </p>
+            </div>
+          )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
