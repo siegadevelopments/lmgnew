@@ -163,13 +163,16 @@ function SignupPage() {
               Already have an account?{" "}
               <Link 
                 to="/login" 
-                    Sign in
-                  </Link>
-                </p>
-              </CardFooter>
-            </form>
-          </div>
-        ) : (
+                search={{ redirect: redirectTo }} 
+                className="text-primary hover:underline"
+              >
+                Sign in
+              </Link>
+            </p>
+          </CardFooter>
+        </form>
+      </div>
+    ) : (
           <div key="success-state">
             <CardContent className="pt-6 text-center">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
