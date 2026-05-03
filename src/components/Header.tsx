@@ -41,7 +41,12 @@ export function Header() {
   }, [router.state.location.pathname]);
 
   const handleBecomeVendor = () => {
-    window.location.href = "/signup?role=vendor";
+    if (user) {
+      router.navigate({ to: "/vendor" });
+    } else {
+      router.navigate({ to: "/signup", search: { redirect: "/vendor" } as any });
+    }
+    setMobileOpen(false);
   };
 
   const handleSignOut = async () => {
