@@ -31,7 +31,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     setLoading(true);
     const { data, error } = await (supabase
       .from(activeType) as any)
-      .select("*, author:profiles(full_name)") // Profiles relationship is usually named after the column or table
+      .select("*")
       .order("created_at", { ascending: false })
       .limit(50);
 
@@ -251,26 +251,30 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
           <Card><CardContent className="py-10 text-center text-muted-foreground">No {activeType} found.</CardContent></Card>
         ) : (
           <div className="grid gap-3">
-            {items.map(item => (
-              <Card key={item.id}>
-                <CardContent className="py-4 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded bg-muted overflow-hidden">
-                      <img src={item.image_url || item.thumbnail_url} className="h-full w-full object-cover" />
+            {items.map(item => {
+              const vendorId = item.vendor_id || item.author_id;
+              const vendorName = vendors.find(v => v.id === vendorId)?.store_name || "Unknown Vendor";
+              return (
+                <Card key={item.id}>
+                  <CardContent className="py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 rounded bg-muted overflow-hidden">
+                        <img src={item.image_url || item.thumbnail_url} className="h-full w-full object-cover" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">{item.title}</p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <User className="h-3 w-3" /> {vendorName}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-sm">{item.title}</p>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <User className="h-3 w-3" /> {item.vendor?.full_name || "Unknown Vendor"}
-                      </p>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => deleteItem(item.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+                    <Button variant="ghost" size="sm" onClick={() => deleteItem(item.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
