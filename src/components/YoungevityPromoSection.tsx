@@ -101,14 +101,14 @@ export function YoungevityPromoSection() {
         </div>
 
         {/* Product Cards */}
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="mt-10 flex gap-4 overflow-x-auto pb-6 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:gap-5 sm:overflow-x-visible sm:pb-0 sm:grid-cols-2 lg:grid-cols-5">
           {promos.map((promo, idx) => (
             <a
               key={promo.id}
               href={promo.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-card hover:border-primary/20"
+              className="flex-none w-[42%] sm:w-auto group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-card hover:border-primary/20"
             >
               {/* Image */}
               <div className="relative overflow-hidden bg-muted aspect-square">
