@@ -16,6 +16,8 @@ import { AdminPopupsTab } from "@/components/admin/AdminPopupsTab";
 import { AffiliatesTab } from "@/components/admin/AffiliatesTab";
 import { VendorEditDialog } from "@/components/admin/VendorEditDialog";
 import { UserEditDialog } from "@/components/admin/UserEditDialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ProductsTab } from "@/components/vendor/ProductsTab";
 import { toast } from "sonner";
 import { 
   Edit, 
@@ -125,6 +127,7 @@ function AdminPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
   const [isUserEditOpen, setIsUserEditOpen] = useState(false);
+  const [editingVendorProducts, setEditingVendorProducts] = useState<any>(null);
 
   // Check admin role
   useEffect(() => {
@@ -542,6 +545,15 @@ function AdminPage() {
                                              size="sm" 
                                              variant="ghost" 
                                              onClick={() => {
+                                                setEditingVendorProducts(v);
+                                             }}
+                                          >
+                                             <Package className="h-4 w-4 mr-1 text-muted-foreground" /> Products
+                                          </Button>
+                                          <Button 
+                                             size="sm" 
+                                             variant="ghost" 
+                                             onClick={() => {
                                                 setEditingVendor(v);
                                                 setIsEditOpen(true);
                                              }}
@@ -868,6 +880,30 @@ function AdminPage() {
             });
           }}
         />
+      )}
+
+      {editingVendorProducts && (
+        <Dialog open={!!editingVendorProducts} onOpenChange={(open) => !open && setEditingVendorProducts(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Manage Products for {editingVendorProducts.store_name}</DialogTitle>
+            </DialogHeader>
+            <ProductsTab 
+              products={products.filter(p => p.vendor_id === editingVendorProducts.id)}
+              setProducts={(action) => {
+                setProducts((prev) => {
+                  const vendorProducts = prev.filter(p => p.vendor_id === editingVendorProducts.id);
+                  const updatedVendorProducts = typeof action === 'function' ? action(vendorProducts) : action;
+                  const otherProducts = prev.filter(p => p.vendor_id !== editingVendorProducts.id);
+                  return [...otherProducts, ...updatedVendorProducts];
+                });
+              }}
+              userId={editingVendorProducts.id}
+              storeCategories={editingVendorProducts.store_categories || []}
+              vendorType={editingVendorProducts.vendor_type}
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
