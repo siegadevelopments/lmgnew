@@ -30,7 +30,7 @@ export function BookingCalendar({ productId, vendorId, onSelect }: Props) {
         .eq("product_id", productId);
       
       if (error) throw error;
-      return data || [];
+      return (data || []) as any[];
     }
   });
 
@@ -38,7 +38,7 @@ export function BookingCalendar({ productId, vendorId, onSelect }: Props) {
   const { data: existingBookings, isLoading: loadingBookings } = useQuery({
     queryKey: ["bookings", productId, selectedDate?.toISOString()],
     queryFn: async () => {
-      if (!selectedDate) return [];
+      if (!selectedDate) return [] as any[];
       const start = new Date(selectedDate);
       start.setHours(0, 0, 0, 0);
       const end = new Date(selectedDate);
@@ -53,7 +53,7 @@ export function BookingCalendar({ productId, vendorId, onSelect }: Props) {
         .neq("status", "cancelled");
       
       if (error) throw error;
-      return data || [];
+      return (data || []) as any[];
     },
     enabled: !!selectedDate
   });
