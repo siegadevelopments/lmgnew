@@ -126,9 +126,9 @@ export function BookingCalendar({ productId, vendorId, onSelect }: Props) {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-12 gap-8 items-start">
+      <div className="flex flex-col gap-8 w-full">
         {/* Calendar Column */}
-        <div className="lg:col-span-5 bg-card rounded-3xl border border-border/50 p-6 shadow-xl shadow-primary/5 ring-1 ring-border/50">
+        <div className="w-full bg-card rounded-3xl border border-border/50 p-4 sm:p-6 shadow-xl shadow-primary/5 ring-1 ring-border/50 flex items-center justify-center">
           <Calendar
             mode="single"
             selected={selectedDate}
@@ -138,11 +138,11 @@ export function BookingCalendar({ productId, vendorId, onSelect }: Props) {
               onSelect(null);
             }}
             disabled={(date) => date < startOfToday() || !availability?.some(a => a.day_of_week === date.getDay())}
-            className="w-full p-0"
+            className="w-full max-w-[350px] p-0"
             classNames={{
               day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-xl shadow-lg shadow-primary/30 scale-110 transition-all",
               day_today: "bg-accent text-accent-foreground font-bold rounded-xl",
-              day: "h-11 w-11 p-0 font-medium aria-selected:opacity-100 hover:bg-primary/10 hover:text-primary rounded-xl transition-all duration-200",
+              day: "h-10 w-10 sm:h-12 sm:w-12 p-0 font-medium aria-selected:opacity-100 hover:bg-primary/10 hover:text-primary rounded-xl transition-all duration-200",
               head_cell: "text-muted-foreground font-bold text-[10px] uppercase tracking-widest pb-4",
               nav_button: "hover:bg-primary/10 hover:text-primary rounded-lg transition-colors border-none",
             }}
@@ -150,7 +150,7 @@ export function BookingCalendar({ productId, vendorId, onSelect }: Props) {
         </div>
 
         {/* Slots Column */}
-        <div className="lg:col-span-7 space-y-6">
+        <div className="w-full space-y-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-primary" />
