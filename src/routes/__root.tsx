@@ -39,6 +39,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 import { MarketingScripts } from "@/components/MarketingScripts";
 import { SchemaOrg } from "@/components/SchemaOrg";
 import { MessengerBubble } from "@/components/chat/GlobalChat";
+import { GlobalPopup } from "@/components/GlobalPopup";
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
@@ -74,6 +75,7 @@ function RootComponent() {
             <BackToTop />
             <MessengerBubble />
             <Toaster position="bottom-right" richColors closeButton />
+            <GlobalPopup />
           </div>
         </CartProvider>
       </AuthProvider>

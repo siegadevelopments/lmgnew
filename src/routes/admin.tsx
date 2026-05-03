@@ -12,6 +12,7 @@ import { AdminContentTab } from "@/components/admin/AdminContentTab";
 import { AdminMarketingTab } from "@/components/admin/AdminMarketingTab";
 import { AdminEmailMarketingTab } from "@/components/admin/AdminEmailMarketingTab";
 import { AdminSubscribersTab } from "@/components/admin/AdminSubscribersTab";
+import { AdminPopupsTab } from "@/components/admin/AdminPopupsTab";
 import { AffiliatesTab } from "@/components/admin/AffiliatesTab";
 import { VendorEditDialog } from "@/components/admin/VendorEditDialog";
 import { UserEditDialog } from "@/components/admin/UserEditDialog";
@@ -34,7 +35,8 @@ import {
   Radio,
   Megaphone,
   Link as LinkIcon,
-  MessageSquare
+  MessageSquare,
+  Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -269,6 +271,7 @@ function AdminPage() {
     { id: "galleries", label: "Galleries", icon: ImageIcon },
     { id: "affiliates", label: "Affiliates", icon: LinkIcon },
     { id: "marketing", label: "Marketing", icon: Megaphone },
+    { id: "popups", label: "Popups", icon: Sparkles },
     { id: "subscribers", label: `Subscribers (${stats.subscribers})`, icon: Mail },
     { id: "messages", label: "Messages", icon: MessageSquare, badge: stats.contactMessages },
     { id: "users", label: `Users (${users.length})`, icon: Users },
@@ -824,6 +827,11 @@ function AdminPage() {
             {/* SUBSCRIBERS */}
             <TabsContent value="subscribers" className="space-y-6 mt-0 border-0 p-0">
               <AdminSubscribersTab />
+            </TabsContent>
+
+            {/* POPUPS */}
+            <TabsContent value="popups" className="space-y-6 mt-0 border-0 p-0">
+              <AdminPopupsTab />
             </TabsContent>
           </Tabs>
         </div>
