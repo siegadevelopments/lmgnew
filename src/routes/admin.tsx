@@ -10,6 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminGalleriesTab } from "@/components/admin/AdminGalleriesTab";
 import { AdminContentTab } from "@/components/admin/AdminContentTab";
 import { AdminMarketingTab } from "@/components/admin/AdminMarketingTab";
+import { AdminEmailMarketingTab } from "@/components/admin/AdminEmailMarketingTab";
+import { AdminSubscribersTab } from "@/components/admin/AdminSubscribersTab";
 import { AffiliatesTab } from "@/components/admin/AffiliatesTab";
 import { VendorEditDialog } from "@/components/admin/VendorEditDialog";
 import { UserEditDialog } from "@/components/admin/UserEditDialog";
@@ -31,7 +33,8 @@ import {
   Key,
   Radio,
   Megaphone,
-  Link as LinkIcon
+  Link as LinkIcon,
+  MessageSquare
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -266,7 +269,8 @@ function AdminPage() {
     { id: "galleries", label: "Galleries", icon: ImageIcon },
     { id: "affiliates", label: "Affiliates", icon: LinkIcon },
     { id: "marketing", label: "Marketing", icon: Megaphone },
-    { id: "messages", label: "Messages", icon: Mail, badge: stats.contactMessages },
+    { id: "subscribers", label: "Subscribers", icon: Mail },
+    { id: "messages", label: "Messages", icon: MessageSquare, badge: stats.contactMessages },
     { id: "users", label: `Users (${users.length})`, icon: Users },
   ];
 
@@ -789,12 +793,37 @@ function AdminPage() {
               <AffiliatesTab />
             </TabsContent>
 
-            <TabsContent value="marketing" className="mt-0 border-0 p-0">
-              <div className="mb-6 flex flex-col gap-1">
-                <h1 className="text-2xl font-bold tracking-tight">Marketing Automation</h1>
-                <p className="text-muted-foreground">Generate and schedule AI-powered social media posts.</p>
-              </div>
-              <AdminMarketingTab />
+            {/* MARKETING */}
+            <TabsContent value="marketing" className="space-y-6 mt-0 border-0 p-0">
+              <Tabs defaultValue="social" className="w-full">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex flex-col gap-1">
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground">Marketing Center</h1>
+                    <p className="text-muted-foreground">Manage your brand presence and campaigns.</p>
+                  </div>
+                  <TabsList className="bg-muted/50 border border-border/50">
+                    <TabsTrigger value="social" className="gap-2">
+                      <Store className="h-4 w-4" /> Social Media
+                    </TabsTrigger>
+                    <TabsTrigger value="email" className="gap-2">
+                      <Mail className="h-4 w-4" /> Email Campaigns
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+
+                <TabsContent value="social" className="mt-0 focus-visible:ring-0">
+                  <AdminMarketingTab />
+                </TabsContent>
+                
+                <TabsContent value="email" className="mt-0 focus-visible:ring-0">
+                  <AdminEmailMarketingTab />
+                </TabsContent>
+              </Tabs>
+            </TabsContent>
+
+            {/* SUBSCRIBERS */}
+            <TabsContent value="subscribers" className="space-y-6 mt-0 border-0 p-0">
+              <AdminSubscribersTab />
             </TabsContent>
           </Tabs>
         </div>
