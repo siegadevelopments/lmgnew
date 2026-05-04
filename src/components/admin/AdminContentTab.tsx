@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2, Loader2, User, FileText, Video, Utensils, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { uploadMedia } from "@/lib/upload";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [activeType, setActiveType] = useState<"articles" | "videos" | "recipes" | "products">("articles");
@@ -19,6 +20,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [videoUploadProgress, setVideoUploadProgress] = useState<string>("");
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
   const listRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
 
   // Form states
   const [title, setTitle] = useState("");
@@ -211,7 +213,10 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     if (!confirm("Are you sure?")) return;
     const { error } = await (supabase.from(activeType) as any).delete().eq("id", id);
     if (error) toast.error("Failed to delete");
-    else loadItems();
+    else {
+      queryClient.invalidateQueries({ queryKey: ["videos", "list"] });
+      loadItems();
+    }
   }
   
   async function toggleFeatured(id: string, current: boolean) {
@@ -223,6 +228,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       toast.error("Failed to update featured status");
     } else {
       toast.success(!current ? "Video featured on global feed" : "Video removed from global feed");
+      queryClient.invalidateQueries({ queryKey: ["videos", "list"] });
       setItems(items.map(item => item.id === id ? { ...item, is_featured: !current } : item));
     }
   }

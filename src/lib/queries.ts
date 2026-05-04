@@ -129,30 +129,24 @@ export const videosQueryOptions = () =>
           .from("videos")
           .select(`
             *,
-            author:profiles!inner(role)
+            author:profiles(role)
           `)
-          .or('is_featured.eq.true, role.eq.admin', { referencedTable: 'profiles' })
+          .eq("status", "ready")
           .order("created_at", { ascending: false });
 
         if (error) {
-          console.warn("Failed to fetch featured videos, falling back to admin-only:", error.message);
-          // Fallback if is_featured column doesn't exist yet
-          const { data: fallbackData, error: fallbackError } = await supabase
-            .from("videos")
-            .select(`
-              *,
-              author:profiles!inner(role)
-            `)
-            .eq("profiles.role", "admin")
-            .order("created_at", { ascending: false });
-          
-          if (fallbackError) throw new Error(fallbackError.message);
-          return (fallbackData || []) as any[];
+          console.error("Video fetch error:", error);
+          throw error;
         }
         
-        return (data || []) as any[];
+        // Filter in JS to avoid complex cross-table OR logic issues in PostgREST
+        const filtered = (data || []).filter(v => 
+          v.is_featured === true || v.author?.role === 'admin'
+        );
+
+        return filtered as any[];
       } catch (err) {
-        console.error("Video fetch error:", err);
+        console.error("Video query error:", err);
         return [];
       }
     },
