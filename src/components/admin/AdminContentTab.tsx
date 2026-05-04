@@ -59,13 +59,49 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   };
 
   useEffect(() => {
+    let isCancelled = false;
+
+    async function loadItems() {
+      setLoading(true);
+      setItems([]); // Clear previous items to avoid "ghost content"
+      
+      try {
+        const { data, error } = await (supabase
+          .from(activeType) as any)
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(50);
+
+        if (isCancelled) return;
+
+        if (error) {
+          console.error(`Error loading ${activeType}:`, error);
+          toast.error(`Failed to load ${activeType}`);
+        } else {
+          setItems(data || []);
+        }
+      } catch (err) {
+        if (isCancelled) return;
+        console.error(`Unexpected error loading ${activeType}:`, err);
+        toast.error(`Failed to load ${activeType}`);
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
     loadItems();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [activeType]);
 
-  async function loadItems() {
+  const loadItems = async () => {
+    // This is now a manual trigger function if needed, 
+    // but the effect handles the main loading logic.
     setLoading(true);
-    setItems([]); // Clear previous items to avoid "ghost content"
-    
     try {
       const { data, error } = await (supabase
         .from(activeType) as any)
@@ -73,19 +109,14 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         .order("created_at", { ascending: false })
         .limit(50);
 
-      if (error) {
-        console.error(`Error loading ${activeType}:`, error);
-        toast.error(`Failed to load ${activeType}`);
-      } else {
-        setItems(data || []);
-      }
+      if (error) throw error;
+      setItems(data || []);
     } catch (err) {
-      console.error(`Unexpected error loading ${activeType}:`, err);
-      toast.error(`Failed to load ${activeType}`);
+      console.error(`Error reloading ${activeType}:`, err);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   /** Reload list, highlight new IDs, scroll to list */
   async function refreshAndHighlight(ids: string[]) {
