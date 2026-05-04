@@ -36,8 +36,9 @@ serve(async (req: Request) => {
       useSSL: true,
     })
 
+    const R2_CUSTOM_DOMAIN = Deno.env.get('R2_CUSTOM_DOMAIN')
+
     // Generate a pre-signed URL for PUT (upload)
-    // Valid for 60 minutes
     const uploadUrl = await s3Client.getPresignedUrl("PUT", fileName, {
       expirySeconds: 3600,
       headers: {
@@ -45,10 +46,11 @@ serve(async (req: Request) => {
       }
     })
 
-    // The public URL where the file will be accessible after upload
-    // You might want to use a custom domain or the R2 public worker URL here
-    // For now, we'll return the standard R2 public path if enabled
-    const publicUrl = `${R2_ENDPOINT}/${R2_BUCKET_NAME}/${fileName}`
+    // Construct the public URL
+    // If a custom domain is set, use it. Otherwise, fallback to the R2 endpoint + bucket name.
+    const publicUrl = R2_CUSTOM_DOMAIN 
+      ? `https://${R2_CUSTOM_DOMAIN}/${fileName}`
+      : `${R2_ENDPOINT}/${R2_BUCKET_NAME}/${fileName}`
 
     return new Response(JSON.stringify({ uploadUrl, publicUrl }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
