@@ -292,7 +292,8 @@ function ProfilePage() {
                                      toast.success("Booking cancelled and notification sent");
                                    } catch (err: any) {
                                      console.error("Cancel error:", err);
-                                     toast.error("Failed to cancel: " + err.message);
+                                     const errorMessage = err.context?.message || err.message || "Unknown error";
+                                     toast.error("Failed to cancel: " + errorMessage);
                                    }
                                  }
                                }}>

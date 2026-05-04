@@ -34,14 +34,25 @@ serve(async (req: Request) => {
 
     const { booking_id, customer_email, customer_phone, product_title, start_time } = await req.json()
 
-    console.log(`Cancelling booking ${booking_id} for user ${user.id}`)
+    console.log(`Cancelling booking ID: ${booking_id} for user: ${user.id}`)
 
     // 1. Update Booking Status
+    const { data: existingBooking, error: fetchError } = await supabaseAdmin
+      .from('bookings')
+      .select('id')
+      .eq('id', booking_id)
+      .eq('customer_id', user.id)
+      .single()
+
+    if (fetchError || !existingBooking) {
+      console.error('Booking not found or not owned by user:', fetchError)
+      throw new Error('Booking not found or unauthorized')
+    }
+
     const { error: bookingError } = await supabaseAdmin
       .from('bookings')
       .update({ status: 'cancelled' } as any)
       .eq('id', booking_id)
-      .eq('customer_id', user.id)
 
     if (bookingError) {
       console.error('Booking Cancel Error:', bookingError)
