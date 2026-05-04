@@ -148,13 +148,62 @@ serve(async (req: Request) => {
     if (!youtubeResult.id) throw new Error('YouTube upload failed at final stage');
 
     // 6. Update Video Record
+    const updates: any = {
+      status: 'ready',
+      embed_url: `https://www.youtube.com/embed/${youtubeResult.id}`,
+      youtube_id: youtubeResult.id
+    };
+
+    // 7. Generate AI Thumbnail if missing
+    if (!record.thumbnail_url) {
+      console.log('Thumbnail missing, generating with AI...');
+      try {
+        const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
+        if (OPENAI_API_KEY) {
+          const aiResponse = await fetch('https://api.openai.com/v1/images/generations', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${OPENAI_API_KEY}`
+            },
+            body: JSON.stringify({
+              model: "dall-e-3",
+              prompt: `A professional, high-quality cinematic thumbnail for a wellness/health video. Title: ${record.title}. Theme: ${record.description || record.title}. Minimalist, clean, modern aesthetic. No text on image.`,
+              n: 1,
+              size: "1024x1024",
+            })
+          })
+
+          const aiData = await aiResponse.json()
+          if (aiData.data?.[0]?.url) {
+            const imageUrl = aiData.data[0].url
+            const imageRes = await fetch(imageUrl)
+            const blob = await imageRes.blob()
+
+            const fileName = `${record.id}_thumb.png`
+            const filePath = `ai-thumbnails/${fileName}`
+
+            await supabaseAdmin.storage
+              .from('media')
+              .upload(filePath, blob, { contentType: 'image/png', upsert: true })
+
+            const { data: publicUrlData } = supabaseAdmin.storage
+              .from('media')
+              .getPublicUrl(filePath)
+            
+            updates.thumbnail_url = publicUrlData.publicUrl
+            console.log('AI Thumbnail generated and saved:', updates.thumbnail_url)
+          }
+        }
+      } catch (aiErr) {
+        console.error('AI Thumbnail generation failed:', aiErr.message)
+        // Non-fatal, we still mark video as ready
+      }
+    }
+
     await supabaseAdmin
       .from('videos')
-      .update({
-        status: 'ready',
-        embed_url: `https://www.youtube.com/embed/${youtubeResult.id}`,
-        youtube_id: youtubeResult.id
-      })
+      .update(updates)
       .eq('id', record.id)
 
     // 7. Cleanup (optional)

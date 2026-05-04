@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Pencil, Trash2, Plus, Video as VideoIcon, Upload, Link as LinkIcon, Loader2 } from "lucide-react";
+import { Pencil, Trash2, Plus, Video as VideoIcon, Upload, Link as LinkIcon, Loader2, Sparkles, Image as ImageIcon } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { uploadMedia } from "@/lib/upload";
@@ -16,6 +16,7 @@ interface Video {
   id: string; 
   title: string; 
   embed_url: string; 
+  thumbnail_url: string | null;
   description: string | null; 
   created_at: string | null;
   status?: string;
@@ -30,9 +31,10 @@ interface Props {
 export function VideosTab({ videos, setVideos, userId }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [uploadMode, setUploadMode] = useState<"url" | "file">("url");
-  const [form, setForm] = useState({ id: "", title: "", embed_url: "", description: "" });
+  const [form, setForm] = useState({ id: "", title: "", embed_url: "", thumbnail_url: "", description: "" });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [generatingImage, setGeneratingImage] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
@@ -56,6 +58,7 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
       const payload: any = {
         title: form.title, 
         embed_url: finalEmbedUrl, 
+        thumbnail_url: form.thumbnail_url || null,
         description: form.description || null,
         author_id: userId,
         status: initialStatus,
@@ -107,9 +110,33 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
     }
   };
 
+  const generateAIThumbnail = async () => {
+    if (!form.title) {
+      toast.error("Please enter a title first to guide the AI");
+      return;
+    }
+    setGeneratingImage(true);
+    const toastId = toast.loading("AI is painting a thumbnail...");
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-ai-image", {
+        body: { prompt: `${form.title} ${form.description || ""}`.trim() }
+      });
+      if (error) throw error;
+      if (data?.url) {
+        setForm(prev => ({ ...prev, thumbnail_url: data.url }));
+        toast.success("AI Thumbnail generated!", { id: toastId });
+      }
+    } catch (err: any) {
+      console.error("AI Generation Error:", err);
+      toast.error(err.message || "AI Generation failed", { id: toastId });
+    } finally {
+      setGeneratingImage(false);
+    }
+  };
+
   const resetForm = () => {
     setIsEditing(false);
-    setForm({ id: "", title: "", embed_url: "", description: "" });
+    setForm({ id: "", title: "", embed_url: "", thumbnail_url: "", description: "" });
     setSelectedFile(null);
     setUploadProgress(0);
     setUploadMode("url");
@@ -120,6 +147,7 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
       id: v.id,
       title: v.title,
       embed_url: v.embed_url,
+      thumbnail_url: v.thumbnail_url || "",
       description: v.description || ""
     });
     setUploadMode("url"); // Edit only supports URL for now
@@ -229,6 +257,53 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
                   </div>
                 </div>
               )}
+
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Thumbnail URL (Optional)</Label>
+                <div className="flex gap-2">
+                  <Input 
+                    value={form.thumbnail_url} 
+                    onChange={e => setForm({ ...form, thumbnail_url: e.target.value })} 
+                    placeholder="https://... (or use AI)" 
+                    className="flex-1"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={generateAIThumbnail}
+                    disabled={generatingImage}
+                    className="h-10 w-10 text-primary border-primary/30 hover:bg-primary/5"
+                    title="Generate Thumbnail with AI"
+                  >
+                    {generatingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="icon" 
+                    className="relative h-10 w-10 overflow-hidden" 
+                    disabled={submitting}
+                  >
+                    {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      className="absolute inset-0 cursor-pointer opacity-0"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setSubmitting(true);
+                        const url = await uploadMedia(file, `videos/${userId}`);
+                        if (url) setForm(prev => ({ ...prev, thumbnail_url: url }));
+                        setSubmitting(false);
+                        e.target.value = "";
+                      }}
+                    />
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">If left empty, AI will automatically generate a thumbnail after processing.</p>
+              </div>
 
               <div className="space-y-2 sm:col-span-2">
                 <Label>Description (optional)</Label>

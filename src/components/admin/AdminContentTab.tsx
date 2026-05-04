@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, Loader2, User, FileText, Video, Utensils, CheckCircle2 } from "lucide-react";
+import { Plus, Trash2, Loader2, User, FileText, Video, Utensils, CheckCircle2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { uploadMedia } from "@/lib/upload";
 import { useQueryClient } from "@tanstack/react-query";
@@ -17,6 +17,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [selectedVendorId, setSelectedVendorId] = useState<string>("");
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [generatingImage, setGeneratingImage] = useState(false);
   const [videoUploadProgress, setVideoUploadProgress] = useState<string>("");
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
   const listRef = useRef<HTMLDivElement>(null);
@@ -208,6 +209,30 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       await refreshAndHighlight(newId ? [newId] : []);
     }
   }
+
+  const generateAIThumbnail = async () => {
+    if (!title) {
+      toast.error("Please enter a title first to guide the AI");
+      return;
+    }
+    setGeneratingImage(true);
+    const toastId = toast.loading("AI is painting a thumbnail...");
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-ai-image", {
+        body: { prompt: `${title} ${content || ""}`.trim() }
+      });
+      if (error) throw error;
+      if (data?.url) {
+        setImageUrl(data.url);
+        toast.success("AI Thumbnail generated!", { id: toastId });
+      }
+    } catch (err: any) {
+      console.error("AI Generation Error:", err);
+      toast.error(err.message || "AI Generation failed", { id: toastId });
+    } finally {
+      setGeneratingImage(false);
+    }
+  };
 
   async function deleteItem(id: string) {
     if (!confirm("Are you sure?")) return;
@@ -434,7 +459,18 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                   placeholder={activeType === "products" ? "e.g. 29.99" : "https://..."} 
                 />
                 {activeType !== "products" && (
-                  <div className="shrink-0">
+                  <div className="flex gap-1 shrink-0">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="icon" 
+                      onClick={generateAIThumbnail}
+                      disabled={generatingImage}
+                      className="h-10 w-10 text-primary border-primary/30 hover:bg-primary/5"
+                      title="Generate Thumbnail with AI"
+                    >
+                      {generatingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    </Button>
                     <Button type="button" variant="outline" size="icon" className="relative h-10 w-10 overflow-hidden" disabled={uploadingImage}>
                       {uploadingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                       <input 
@@ -448,6 +484,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                           const url = await uploadMedia(file, "admin_uploads");
                           if (url) setImageUrl(url);
                           setUploadingImage(false);
+                          e.target.value = "";
                         }}
                       />
                     </Button>
