@@ -196,22 +196,41 @@ function CheckoutPage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
+            <Card className="border-primary/20 shadow-sm overflow-hidden">
+              <CardHeader className="bg-primary/5 pb-4">
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">3</span>
-                  Payment
+                  Payment Method
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="rounded-lg border border-primary/20 bg-primary/5 p-6 text-center">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                    <svg className="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                      <rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" />
-                    </svg>
+              <CardContent className="pt-6">
+                <div className="rounded-xl border-2 border-primary/10 bg-white p-6">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 mb-4">
+                      <svg className="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-bold text-foreground">Secure Stripe Checkout</h3>
+                    <p className="mt-2 text-sm text-muted-foreground max-w-sm">
+                      Your payment is encrypted and processed securely by Stripe. We never store your card details.
+                    </p>
+                    
+                    {/* Payment Icons */}
+                    <div className="mt-6 flex flex-wrap justify-center gap-3 opacity-70 grayscale hover:grayscale-0 transition-all duration-500">
+                      <img src="https://js.stripe.com/v3/fingerprinted/img/visa-7ad05784a295c92f03f6f0255c651b53.svg" alt="Visa" className="h-6" />
+                      <img src="https://js.stripe.com/v3/fingerprinted/img/mastercard-4d50350419133f0003f145979969ca9a.svg" alt="Mastercard" className="h-6" />
+                      <img src="https://js.stripe.com/v3/fingerprinted/img/amex-a4977383f5c66005527376c6943a531b.svg" alt="Amex" className="h-6" />
+                      <img src="https://js.stripe.com/v3/fingerprinted/img/discover-ac5018696660cc124508e67831f509cc.svg" alt="Discover" className="h-6" />
+                    </div>
+
+                    <div className="mt-6 flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest bg-muted px-3 py-1 rounded-full">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="h-3 w-3 text-emerald-500">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                      </svg>
+                      SSL Encrypted Payment
+                    </div>
                   </div>
-                  <p className="mt-3 text-sm font-bold text-foreground uppercase tracking-wider">Pay with Stripe</p>
-                  <p className="mt-1 text-xs text-muted-foreground">Secure & encrypted payment processing. You will be redirected to Stripe Checkout.</p>
                 </div>
               </CardContent>
             </Card>
