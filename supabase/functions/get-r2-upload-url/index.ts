@@ -1,16 +1,20 @@
 // @ts-ignore
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 // @ts-ignore
-import { S3CustomClient } from "https://deno.land/x/s3_lite_client@0.7.0/mod.ts"
+import { S3Client, PutObjectCommand } from "https://esm.sh/@aws-sdk/client-s3@3.568.0"
+// @ts-ignore
+import { getSignedUrl } from "https://esm.sh/@aws-sdk/s3-request-presigner@3.568.0"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 serve(async (req: Request) => {
+  // Handle CORS Preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders, status: 200 })
   }
 
   try {
@@ -18,6 +22,7 @@ serve(async (req: Request) => {
     const R2_SECRET_ACCESS_KEY = Deno.env.get('R2_SECRET_ACCESS_KEY')
     const R2_ENDPOINT = Deno.env.get('R2_ENDPOINT')
     const R2_BUCKET_NAME = Deno.env.get('R2_BUCKET_NAME')
+    const R2_CUSTOM_DOMAIN = Deno.env.get('R2_CUSTOM_DOMAIN')
 
     if (!R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_ENDPOINT || !R2_BUCKET_NAME) {
       throw new Error('Missing R2 configuration secrets')
@@ -25,29 +30,27 @@ serve(async (req: Request) => {
 
     const { fileName, contentType } = await req.json()
 
-    // Initialize S3 Client for R2
-    // R2 endpoint usually looks like https://<accountid>.r2.cloudflarestorage.com
-    const s3Client = new S3CustomClient({
-      endPoint: R2_ENDPOINT.replace('https://', ''),
-      accessKey: R2_ACCESS_KEY_ID,
-      secretKey: R2_SECRET_ACCESS_KEY,
-      bucket: R2_BUCKET_NAME,
+    // Initialize S3 Client for R2 using the official AWS SDK
+    const s3Client = new S3Client({
       region: "auto",
-      useSSL: true,
+      endpoint: R2_ENDPOINT,
+      credentials: {
+        accessKeyId: R2_ACCESS_KEY_ID,
+        secretAccessKey: R2_SECRET_ACCESS_KEY,
+      },
     })
 
-    const R2_CUSTOM_DOMAIN = Deno.env.get('R2_CUSTOM_DOMAIN')
-
-    // Generate a pre-signed URL for PUT (upload)
-    const uploadUrl = await s3Client.getPresignedUrl("PUT", fileName, {
-      expirySeconds: 3600,
-      headers: {
-        "Content-Type": contentType,
-      }
+    // Create the command for a PUT request
+    const command = new PutObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: fileName,
+      ContentType: contentType,
     })
+
+    // Generate a pre-signed URL (Valid for 1 hour)
+    const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 })
 
     // Construct the public URL
-    // If a custom domain is set, use it. Otherwise, fallback to the R2 endpoint + bucket name.
     const publicUrl = R2_CUSTOM_DOMAIN 
       ? `https://${R2_CUSTOM_DOMAIN}/${fileName}`
       : `${R2_ENDPOINT}/${R2_BUCKET_NAME}/${fileName}`
@@ -58,6 +61,7 @@ serve(async (req: Request) => {
     })
 
   } catch (error: any) {
+    console.error('R2 Signing Error:', error.message)
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
