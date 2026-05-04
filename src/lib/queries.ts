@@ -123,9 +123,14 @@ export const videosQueryOptions = () =>
   queryOptions({
     queryKey: ["videos", "list"],
     queryFn: async () => {
+      // We join with profiles to only show videos where the author has 'admin' role
       const { data, error } = await supabase
         .from("videos")
-        .select("*")
+        .select(`
+          *,
+          author:profiles!inner(role)
+        `)
+        .eq("profiles.role", "admin")
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
       return (data || []) as any[];

@@ -13,6 +13,58 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChatDialog } from "@/components/chat/ChatDialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+
+/** Extract YouTube video ID from any known URL format */
+function extractYouTubeId(url: string): string | null {
+  if (!url) return null;
+  const patterns = [
+    /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/watch\?(?:.*&)?v=([a-zA-Z0-9_-]{11})/,
+    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+  ];
+  for (const re of patterns) {
+    const m = url.match(re);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+/** Returns true if URL points to a raw video file or Supabase storage */
+function isDirectVideoUrl(url: string): boolean {
+  if (!url) return false;
+  return /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url) || url.includes("supabase.co/storage");
+}
+
+/** Build a clean YouTube embed URL */
+function buildYouTubeEmbed(ytId: string): string {
+  return `https://www.youtube.com/embed/${ytId}?rel=0&modestbranding=1&playsinline=1`;
+}
+
+/** Build a Vimeo embed URL */
+function buildVimeoEmbed(url: string): string {
+  const m = url.match(/vimeo\.com\/(\d+)/);
+  if (m) return `https://player.vimeo.com/video/${m[1]}?dnt=1`;
+  return url;
+}
+
+/** Build any embed URL */
+function getEmbedUrl(url: string, autoplay = false): string {
+  if (!url) return "";
+  const ytId = extractYouTubeId(url);
+  if (ytId) {
+    const base = buildYouTubeEmbed(ytId);
+    return autoplay ? `${base}&autoplay=1` : base;
+  }
+  if (url.includes("vimeo.com")) {
+    const base = buildVimeoEmbed(url);
+    const sep = base.includes("?") ? "&" : "?";
+    return autoplay ? `${base}${sep}autoplay=1` : base;
+  }
+  return url;
+}
 
 export const Route = createFileRoute("/vendors/$slug")({
   loader: async ({ context: { queryClient }, params: { slug } }) => {
@@ -367,39 +419,30 @@ function VendorPage() {
                 {vendorVideos && vendorVideos.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {vendorVideos.map((video) => {
-                      const isPlaying = playingId === video.id;
                       const isDirectVideo = !!video.embed_url?.match(/\.(mp4|webm|ogg|mov)$/i) || video.embed_url?.includes('supabase.co');
+                      const ytId = video.embed_url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1];
+                      const thumbnail = video.thumbnail_url || (ytId ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg` : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=800');
                       
                       return (
-                        <div key={video.id} className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm border border-border group transition-all hover:shadow-md">
+                        <div 
+                          key={video.id} 
+                          className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm border border-border group transition-all hover:shadow-md cursor-pointer"
+                          onClick={() => setPlayingId(video.embed_url)}
+                        >
                           <div className="relative aspect-video bg-black overflow-hidden">
-                            {isPlaying ? (
-                              isDirectVideo ? (
-                                <video src={video.embed_url} controls autoPlay className="w-full h-full object-contain" />
-                              ) : (
-                                <iframe 
-                                  src={video.embed_url.includes('youtube.com') ? video.embed_url.replace('watch?v=', 'embed/') + '?autoplay=1' : video.embed_url} 
-                                  className="w-full h-full border-none" 
-                                  allow="autoplay; encrypted-media; fullscreen"
-                                />
-                              )
-                            ) : (
-                              <div className="w-full h-full cursor-pointer relative" onClick={() => setPlayingId(video.id)}>
-                                <img 
-                                  src={video.thumbnail_url || `https://img.youtube.com/vi/${video.embed_url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1] || ''}/maxresdefault.jpg`} 
-                                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                                  alt={video.title} 
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=800';
-                                  }}
-                                />
-                                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-                                  <div className="h-12 w-12 rounded-full bg-white/90 text-primary flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
-                                    <Play className="h-6 w-6 fill-current" />
-                                  </div>
-                                </div>
+                            <img 
+                              src={thumbnail} 
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                              alt={video.title} 
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=800';
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                              <div className="h-12 w-12 rounded-full bg-white/90 text-primary flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
+                                <Play className="h-6 w-6 fill-current" />
                               </div>
-                            )}
+                            </div>
                           </div>
                           <div className="p-4">
                             <h3 className="font-bold text-foreground line-clamp-1 group-hover:text-primary transition-colors">{video.title}</h3>
@@ -452,6 +495,32 @@ function VendorPage() {
         isOpen={isChatOpen} 
         onOpenChange={setIsChatOpen} 
       />
+
+      <Dialog open={!!playingId} onOpenChange={(open) => !open && setPlayingId(null)}>
+        <DialogContent className="max-w-5xl p-0 bg-black border-none shadow-2xl overflow-hidden rounded-xl">
+          {playingId && (
+            <div className="relative w-full aspect-video flex items-center justify-center">
+              {isDirectVideoUrl(playingId) ? (
+                <video
+                  src={playingId}
+                  controls
+                  autoPlay
+                  playsInline
+                  className="w-full h-full object-contain bg-black"
+                />
+              ) : (
+                <iframe
+                  src={getEmbedUrl(playingId, true)}
+                  className="absolute inset-0 w-full h-full outline-none border-none"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  referrerPolicy="strict-origin-when-cross-origin"
+                />
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
