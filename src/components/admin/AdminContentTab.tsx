@@ -64,18 +64,27 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
 
   async function loadItems() {
     setLoading(true);
-    const { data, error } = await (supabase
-      .from(activeType) as any)
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(50);
+    setItems([]); // Clear previous items to avoid "ghost content"
+    
+    try {
+      const { data, error } = await (supabase
+        .from(activeType) as any)
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(50);
 
-    if (error) {
+      if (error) {
+        console.error(`Error loading ${activeType}:`, error);
+        toast.error(`Failed to load ${activeType}`);
+      } else {
+        setItems(data || []);
+      }
+    } catch (err) {
+      console.error(`Unexpected error loading ${activeType}:`, err);
       toast.error(`Failed to load ${activeType}`);
-    } else {
-      setItems(data || []);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   /** Reload list, highlight new IDs, scroll to list */
