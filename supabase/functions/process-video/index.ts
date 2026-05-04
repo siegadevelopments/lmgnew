@@ -78,24 +78,24 @@ serve(async (req: Request) => {
     const tokenData = await tokenResponse.json()
     if (!tokenData.access_token) throw new Error('Failed to refresh YouTube access token')
 
-    // 4. Download Video (Support Supabase and R2)
-    let fileBlob: Blob;
-
+    // 4. Prepare Stream Source
+    let sourceUrl = record.embed_url;
     if (bucket === 'media' || bucket === 'video-uploads') {
-      const { data, error: downloadError } = await supabaseAdmin.storage
+      const { data: signedData, error: signedError } = await supabaseAdmin.storage
         .from(bucket)
-        .download(filePath)
-      if (downloadError) throw downloadError
-      fileBlob = data
-    } else {
-      // It's an external URL (likely R2)
-      console.log(`Downloading external file: ${record.embed_url}`)
-      const response = await fetch(record.embed_url)
-      if (!response.ok) throw new Error(`Failed to download R2 file: ${response.statusText}`)
-      fileBlob = await response.blob()
+        .createSignedUrl(filePath, 3600);
+      if (signedError) throw signedError;
+      sourceUrl = signedData.signedUrl;
     }
 
-    // 5. Upload to YouTube
+    console.log(`Streaming video from: ${sourceUrl}`);
+    const sourceResponse = await fetch(sourceUrl);
+    if (!sourceResponse.ok) throw new Error(`Failed to access source video: ${sourceResponse.statusText}`);
+    
+    const contentLength = sourceResponse.headers.get('content-length');
+    if (!contentLength) throw new Error('Source video missing content-length header');
+
+    // 5. Upload to YouTube (Streaming)
     const metadata = {
       snippet: {
         title: record.title,
@@ -105,6 +105,7 @@ serve(async (req: Request) => {
       status: { privacyStatus: 'unlisted', selfDeclaredMadeForKids: false },
     }
 
+    // A. Initiate Resumable Session
     const initResponse = await fetch(
       'https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status',
       {
@@ -113,23 +114,38 @@ serve(async (req: Request) => {
           Authorization: `Bearer ${tokenData.access_token}`,
           'Content-Type': 'application/json; charset=UTF-8',
           'X-Upload-Content-Type': 'video/*',
-          'X-Upload-Content-Length': fileBlob.size.toString(),
+          'X-Upload-Content-Length': contentLength,
         },
         body: JSON.stringify(metadata),
       }
     )
 
     const uploadUrl = initResponse.headers.get('Location')
-    if (!uploadUrl) throw new Error('Failed to initiate YouTube upload session')
+    if (!uploadUrl) {
+      const errBody = await initResponse.text();
+      console.error('YouTube Init Error:', errBody);
+      throw new Error('Failed to initiate YouTube upload session');
+    }
 
+    // B. Stream the file directly to YouTube
+    console.log(`Starting stream to YouTube: ${contentLength} bytes`);
     const finalUpload = await fetch(uploadUrl, {
       method: 'PUT',
       headers: { 'Content-Type': 'video/*' },
-      body: fileBlob,
+      // @ts-ignore - Deno supports streaming body
+      body: sourceResponse.body,
+      // @ts-ignore - Required for streaming in some fetch environments
+      duplex: 'half',
     })
 
+    if (!finalUpload.ok) {
+      const errBody = await finalUpload.text();
+      console.error('YouTube Final Upload Error:', errBody);
+      throw new Error(`YouTube upload failed with status ${finalUpload.status}`);
+    }
+
     const youtubeResult = await finalUpload.json()
-    if (!youtubeResult.id) throw new Error('YouTube upload failed at final stage')
+    if (!youtubeResult.id) throw new Error('YouTube upload failed at final stage');
 
     // 6. Update Video Record
     await supabaseAdmin
