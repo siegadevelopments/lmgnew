@@ -218,112 +218,50 @@ function VideosPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredVideos.map((video) => {
-              const isPlaying = playingId === video.id;
               const thumbnail = getThumbnail(video);
               const title = decodeEntities(video.title || "");
-              const isDirect = isDirectVideoUrl(video.embed_url);
               const embeddable = canEmbed(video.embed_url);
-              // Build URLs
-              const embedSrc = getEmbedUrl(video.embed_url, false); // for fullscreen button
-              const autoplaySrc = getEmbedUrl(video.embed_url, true); // for inline play
-
+              
               return (
                 <div
                   key={video.id}
-                  className="flex flex-col overflow-hidden rounded-2xl bg-card shadow-sm border border-border transition-all hover:shadow-md"
+                  className="flex flex-col overflow-hidden rounded-2xl bg-card shadow-sm border border-border transition-all hover:shadow-md cursor-pointer group"
+                  onClick={() => embeddable && setFullscreenVideo(video.embed_url)}
                 >
                   {/* Video area */}
                   <div className="relative aspect-video overflow-hidden bg-black">
-                    {isPlaying ? (
-                      /* ── Active player ── */
-                      <>
-                        {isDirect ? (
-                          /* Raw file (mp4, mov, Supabase storage) */
-                          <video
-                            src={video.embed_url}
-                            controls
-                            autoPlay
-                            playsInline
-                            className="absolute inset-0 w-full h-full object-contain bg-black"
-                          />
-                        ) : (
-                          /* YouTube / Vimeo / other embed */
-                          <iframe
-                            key={video.id} /* remount on change */
-                            src={autoplaySrc}
-                            className="absolute inset-0 w-full h-full border-none outline-none"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                            allowFullScreen
-                            referrerPolicy="strict-origin-when-cross-origin"
-                          />
-                        )}
-
-                        {/* Controls overlay */}
-                        <div className="absolute top-3 right-3 flex gap-2 z-10">
-                          {!isDirect && embedSrc && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setFullscreenVideo(embedSrc);
-                              }}
-                              className="rounded-full bg-black/60 p-2 text-white/90 backdrop-blur-sm transition-colors hover:bg-black/80"
-                              title="Expand"
-                            >
-                              <Maximize2 className="h-4 w-4" />
-                            </button>
-                          )}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPlayingId(null);
-                            }}
-                            className="rounded-full bg-black/60 p-2 text-white/90 backdrop-blur-sm transition-colors hover:bg-black/80"
-                            title="Close"
-                          >
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </>
+                    {thumbnail ? (
+                      <img
+                        src={thumbnail}
+                        alt={title}
+                        loading="lazy"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display = "none";
+                        }}
+                      />
                     ) : (
-                      /* ── Thumbnail / Play button ── */
-                      <div
-                        className="w-full h-full cursor-pointer group relative"
-                        onClick={() => setPlayingId(video.id)}
-                      >
-                        {thumbnail ? (
-                          <img
-                            src={thumbnail}
-                            alt={title}
-                            loading="lazy"
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).style.display = "none";
-                            }}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 via-muted to-wellness/10" />
-                        )}
-                        {/* Dark overlay */}
-                        <div className="absolute inset-0 bg-black/20 transition-colors group-hover:bg-black/35" />
-                        {/* Play circle */}
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="rounded-full bg-primary/90 p-4 text-white shadow-xl ring-4 ring-white/20 transition-all group-hover:scale-110 group-hover:bg-primary group-hover:ring-white/40">
-                            <Play className="h-8 w-8 ml-0.5" fill="currentColor" />
-                          </div>
-                        </div>
-                        {/* "External" badge for non-embeddable URLs */}
-                        {!embeddable && video.embed_url && (
-                          <div className="absolute bottom-3 right-3 rounded-md bg-black/70 px-2 py-0.5 text-xs text-white/80 backdrop-blur-sm">
-                            Opens externally
-                          </div>
-                        )}
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 via-muted to-wellness/10" />
+                    )}
+                    {/* Dark overlay */}
+                    <div className="absolute inset-0 bg-black/20 transition-colors group-hover:bg-black/35" />
+                    {/* Play circle */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="rounded-full bg-primary/90 p-4 text-white shadow-xl ring-4 ring-white/20 transition-all group-hover:scale-110 group-hover:bg-primary group-hover:ring-white/40">
+                        <Play className="h-8 w-8 ml-0.5" fill="currentColor" />
+                      </div>
+                    </div>
+                    {/* "External" badge for non-embeddable URLs */}
+                    {!embeddable && video.embed_url && (
+                      <div className="absolute bottom-3 right-3 rounded-md bg-black/70 px-2 py-0.5 text-xs text-white/80 backdrop-blur-sm">
+                        Opens externally
                       </div>
                     )}
                   </div>
 
                   {/* Info */}
                   <div className="flex flex-1 flex-col p-6">
-                    <h3 className="text-lg font-bold text-foreground mb-2 line-clamp-2 leading-snug">
+                    <h3 className="text-lg font-bold text-foreground mb-2 line-clamp-2 leading-snug group-hover:text-primary transition-colors">
                       {title}
                     </h3>
                     {video.description && (
@@ -331,19 +269,17 @@ function VideosPage() {
                         {decodeEntities(video.description.replace(/<\/?[^>]+(>|$)/g, ""))}
                       </p>
                     )}
-                    {!isPlaying && embeddable && (
-                      <button
-                        onClick={() => setPlayingId(video.id)}
-                        className="mt-auto pt-4 text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center gap-1.5 self-start"
-                      >
+                    {embeddable && (
+                      <div className="mt-auto pt-4 text-sm font-medium text-primary flex items-center gap-1.5 self-start">
                         <Play className="h-4 w-4" /> Watch Now
-                      </button>
+                      </div>
                     )}
                     {!embeddable && video.embed_url && (
                       <a
                         href={video.embed_url}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
                         className="mt-auto pt-4 text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center gap-1.5 self-start"
                       >
                         <Play className="h-4 w-4" /> Watch on external site →
@@ -362,14 +298,24 @@ function VideosPage() {
       <Dialog open={!!fullscreenVideo} onOpenChange={(open) => !open && setFullscreenVideo(null)}>
         <DialogContent className="max-w-5xl p-0 bg-black border-none shadow-2xl overflow-hidden rounded-xl">
           {fullscreenVideo && (
-            <div className="relative w-full aspect-video">
-              <iframe
-                src={getEmbedUrl(fullscreenVideo, true)}
-                className="absolute inset-0 w-full h-full outline-none border-none"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                referrerPolicy="strict-origin-when-cross-origin"
-              />
+            <div className="relative w-full aspect-video flex items-center justify-center">
+              {isDirectVideoUrl(fullscreenVideo) ? (
+                <video
+                  src={fullscreenVideo}
+                  controls
+                  autoPlay
+                  playsInline
+                  className="w-full h-full object-contain bg-black"
+                />
+              ) : (
+                <iframe
+                  src={getEmbedUrl(fullscreenVideo, true)}
+                  className="absolute inset-0 w-full h-full outline-none border-none"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  referrerPolicy="strict-origin-when-cross-origin"
+                />
+              )}
             </div>
           )}
         </DialogContent>
