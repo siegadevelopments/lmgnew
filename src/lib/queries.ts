@@ -123,17 +123,38 @@ export const videosQueryOptions = () =>
   queryOptions({
     queryKey: ["videos", "list"],
     queryFn: async () => {
-      // We show videos where the author is an admin OR the video is explicitly featured
-      const { data, error } = await supabase
-        .from("videos")
-        .select(`
-          *,
-          author:profiles!inner(role)
-        `)
-        .or('is_featured.eq.true, role.eq.admin', { referencedTable: 'profiles' })
-        .order("created_at", { ascending: false });
-      if (error) throw new Error(error.message);
-      return (data || []) as any[];
+      try {
+        // We show videos where the author is an admin OR the video is explicitly featured
+        const { data, error } = await supabase
+          .from("videos")
+          .select(`
+            *,
+            author:profiles!inner(role)
+          `)
+          .or('is_featured.eq.true, role.eq.admin', { referencedTable: 'profiles' })
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          console.warn("Failed to fetch featured videos, falling back to admin-only:", error.message);
+          // Fallback if is_featured column doesn't exist yet
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from("videos")
+            .select(`
+              *,
+              author:profiles!inner(role)
+            `)
+            .eq("profiles.role", "admin")
+            .order("created_at", { ascending: false });
+          
+          if (fallbackError) throw new Error(fallbackError.message);
+          return (fallbackData || []) as any[];
+        }
+        
+        return (data || []) as any[];
+      } catch (err) {
+        console.error("Video fetch error:", err);
+        return [];
+      }
     },
   });
 
