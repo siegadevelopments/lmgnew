@@ -251,13 +251,15 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                       if (!file) return;
                       setUploadingVideo(true);
                       setVideoUploadProgress("Uploading...");
-                      const url = await uploadMedia(file, "admin_uploads");
-                      if (url) {
-                        setEmbedUrl(url);
-                        setVideoUploadProgress("Uploaded ✓");
-                        toast.success("Video uploaded — click 'Create video' to save");
-                      } else {
-                        toast.error("Upload failed");
+                      try {
+                        const url = await uploadMedia(file, "admin_uploads");
+                        if (url) {
+                          setEmbedUrl(url);
+                          setVideoUploadProgress("Uploaded ✓");
+                          toast.success("Video uploaded — click 'Create video' to save");
+                        }
+                      } catch (err: any) {
+                        toast.error(err.message || "Upload failed");
                         setVideoUploadProgress("");
                       }
                       setUploadingVideo(false);
@@ -312,11 +314,9 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                               description: `Uploaded via admin on ${new Date().toLocaleDateString()}`,
                             }).select("id").single();
                             if (inserted?.id) insertedIds.push(inserted.id);
-                          } else {
-                            toast.error(`Failed: ${file.name}`);
                           }
-                        } catch (err) {
-                          toast.error(`Error: ${file.name}`);
+                        } catch (err: any) {
+                          toast.error(`${file.name}: ${err.message || "Upload failed"}`);
                         }
                       }
 

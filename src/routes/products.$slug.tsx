@@ -14,6 +14,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { ProductCard } from "@/components/ProductCard";
 import { BookingCalendar } from "@/components/BookingCalendar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { Loader2, CreditCard, Store } from "lucide-react";
 
 export const Route = createFileRoute("/products/$slug")({
   loader: async ({ context: { queryClient }, params: { slug } }) => {
@@ -61,15 +71,29 @@ function ProductPage() {
     product.variants && product.variants.length > 0 ? product.variants[0] : null
   );
   const [booking, setBooking] = useState<{ start_time: string; end_time: string } | null>(null);
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [isBookingLoading, setIsBookingLoading] = useState(false);
+  const [customerPhone, setCustomerPhone] = useState("");
 
   const currentPrice = selectedVariant ? selectedVariant.price : product.price;
   const currentStock = selectedVariant ? (selectedVariant.available ? product.stock : 0) : product.stock;
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!user) {
       navigate({ to: "/signup", search: { redirect: window.location.pathname } });
       return;
     }
+
+    if (product.product_type === 'service' && booking) {
+      // Fetch user profile phone if not set
+      if (!customerPhone) {
+        const { data: profile } = await (supabase.from("profiles") as any).select("phone").eq("id", user.id).single();
+        if (profile?.phone) setCustomerPhone(profile.phone);
+      }
+      setIsPaymentDialogOpen(true);
+      return;
+    }
+
     addItem({
       id: selectedVariant ? `${product.id}-${selectedVariant.id}` : product.id,
       product_id: product.id,
@@ -85,6 +109,54 @@ function ProductPage() {
     });
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
+  };
+
+  const handlePayNow = () => {
+    setIsPaymentDialogOpen(false);
+    addItem({
+      id: selectedVariant ? `${product.id}-${selectedVariant.id}` : product.id,
+      product_id: product.id,
+      variant_id: selectedVariant?.id,
+      name: product.title,
+      variant_name: selectedVariant?.title,
+      price: currentPrice,
+      quantity,
+      image: product.image_url || undefined,
+      slug: product.slug,
+      vendor_id: product.vendor_id,
+      booking: booking || undefined,
+    });
+    navigate({ to: "/checkout" });
+  };
+
+  const handleConfirmBooking = async () => {
+    if (!booking) return;
+    setIsBookingLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("confirm-booking", {
+        body: {
+          booking,
+          customer_email: user?.email,
+          customer_phone: customerPhone,
+          product_id: product.id,
+          vendor_id: product.vendor_id,
+          product_title: product.title,
+          vendor_name: product.vendor?.store_name,
+          payment_method: 'store'
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success("Booking confirmed! Check your email and SMS for details.");
+      setIsPaymentDialogOpen(false);
+      navigate({ to: "/profile", search: { tab: 'bookings' } });
+    } catch (err: any) {
+      console.error("Booking error:", err);
+      toast.error("Failed to confirm booking: " + err.message);
+    } finally {
+      setIsBookingLoading(false);
+    }
   };
 
   const { data: reviews, refetch: refetchReviews } = useQuery({
@@ -396,6 +468,76 @@ function ProductPage() {
             </div>
           </div>
         )}
+
+        <Dialog open={isPaymentDialogOpen} onOpenChange={setIsPaymentDialogOpen}>
+          <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl">
+            <div className="h-2 bg-gradient-to-r from-primary via-wellness-green to-primary" />
+            <div className="p-8">
+              <DialogHeader className="mb-8">
+                <DialogTitle className="text-2xl font-black tracking-tight text-center">Confirm Your Booking</DialogTitle>
+                <DialogDescription className="text-center text-base">
+                  How would you like to pay for your session?
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                <div className="bg-muted/30 rounded-2xl p-4 border border-border/50 mb-6">
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 text-center">Booking Summary</p>
+                  <p className="font-bold text-center text-lg">{product.title}</p>
+                  <p className="text-center text-sm text-primary font-semibold">
+                    {booking && `${new Date(booking.start_time).toLocaleDateString()} at ${new Date(booking.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                  </p>
+                </div>
+
+                <div className="grid gap-4">
+                  <button
+                    onClick={handlePayNow}
+                    className="flex items-center gap-4 w-full p-4 rounded-2xl border-2 border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/40 transition-all text-left group"
+                  >
+                    <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
+                      <CreditCard className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-lg">Pay Now Online</p>
+                      <p className="text-xs text-muted-foreground">Secure payment via Stripe</p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={handleConfirmBooking}
+                    disabled={isBookingLoading}
+                    className="flex items-center gap-4 w-full p-4 rounded-2xl border-2 border-border/50 hover:border-wellness-green/50 hover:bg-wellness-green/5 transition-all text-left group"
+                  >
+                    <div className="h-12 w-12 rounded-xl bg-wellness-green flex items-center justify-center text-white shadow-lg shadow-wellness-green/20 group-hover:scale-110 transition-transform">
+                      <Store className="h-6 w-6" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-bold text-lg">Pay on Store / Clinic</p>
+                      <p className="text-xs text-muted-foreground">Confirm booking and pay in person</p>
+                    </div>
+                    {isBookingLoading && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
+                  </button>
+                </div>
+
+                <div className="mt-8 pt-6 border-t border-border/50">
+                  <Label htmlFor="customer-phone" className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block">
+                    Confirm your phone number for SMS
+                  </Label>
+                  <Input 
+                    id="customer-phone"
+                    placeholder="+1234567890" 
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    className="rounded-xl h-12 shadow-inner"
+                  />
+                  <p className="text-[10px] text-muted-foreground mt-2 text-center">
+                    You will receive a confirmation email and SMS once booked.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </article>
   );
