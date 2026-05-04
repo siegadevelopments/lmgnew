@@ -35,9 +35,10 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
     mux_playback_id: vendor?.stream?.mux_playback_id || "",
     ai_enabled: vendor?.ai_enabled || false,
     ai_instructions: vendor?.ai_instructions || "",
+    vendor_type: vendor?.vendor_type || "products",
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -106,6 +107,7 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
         twitter: formData.twitter,
         ai_enabled: (formData as any).ai_enabled,
         ai_instructions: (formData as any).ai_instructions,
+        vendor_type: formData.vendor_type,
         updated_at: new Date().toISOString(),
       };
 
@@ -178,6 +180,21 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
                 onChange={handleChange}
                 rows={4}
               />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="vendor_type">Vendor Type</Label>
+              <select
+                id="vendor_type"
+                name="vendor_type"
+                value={formData.vendor_type}
+                onChange={handleChange}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="products">Physical Products Marketplace</option>
+                <option value="service">Services & Consultations</option>
+              </select>
+              <p className="text-[10px] text-muted-foreground italic">Classification affects whether the store shows "Products" or "Services" tabs.</p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

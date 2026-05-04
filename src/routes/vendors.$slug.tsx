@@ -71,7 +71,7 @@ export const Route = createFileRoute("/vendors/$slug")({
     // For vendors, we are currently passing ID in place of slug
     const { data: vendor } = await supabase
       .from("vendor_profiles")
-      .select("id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, created_at, updated_at")
+      .select("id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, vendor_type, created_at, updated_at")
       .eq("id", slug)
       .single();
     if (!vendor) throw notFound();
@@ -307,7 +307,9 @@ function VendorPage() {
               <Tabs value={activeCategory} onValueChange={setActiveCategory} className="w-full md:w-auto">
                  <TabsList className="bg-transparent border-b-0 h-12 gap-4 sm:gap-8 p-0 overflow-x-auto overflow-y-hidden no-scrollbar">
                     <TabsTrigger value="home" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">Home</TabsTrigger>
-                    <TabsTrigger value="all" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">All Products</TabsTrigger>
+                    <TabsTrigger value="all" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">
+                      {vendor.vendor_type === "service" ? "All Services" : "All Products"}
+                    </TabsTrigger>
                     <TabsTrigger value="videos" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">Videos</TabsTrigger>
                     {(vendor.store_categories || []).map((cat: string) => (
                       <TabsTrigger key={cat} value={cat} className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">{cat}</TabsTrigger>
@@ -395,7 +397,7 @@ function VendorPage() {
              <section>
                 <div className="flex items-center justify-between">
                   <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                    {activeCategory === "all" ? "All Products" : activeCategory}
+                    {activeCategory === "all" ? (vendor.vendor_type === "service" ? "All Services" : "All Products") : activeCategory}
                   </h2>
                 </div>
                 <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
