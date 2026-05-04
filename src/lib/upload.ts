@@ -18,12 +18,18 @@ export async function uploadMedia(file: File, folderId?: string, bucket: string 
       const fileName = folderId ? `${folderId}/${Date.now()}_${safeName}` : `${Date.now()}_${safeName}`;
 
       // 1. Get signed URL from our Edge Function
+      console.log("Invoking get-r2-upload-url...");
       const { data, error: funcError } = await supabase.functions.invoke("get-r2-upload-url", {
         body: { fileName, contentType: file.type }
       });
 
-      if (funcError || !data.uploadUrl) {
-        throw new Error(funcError?.message || "Failed to get R2 upload URL. Ensure secrets are set.");
+      if (funcError) {
+        console.error("Supabase Edge Function Error:", funcError);
+        throw new Error(`Edge Function failed: ${funcError.message || "Unknown error"}`);
+      }
+
+      if (!data?.uploadUrl) {
+        throw new Error("Failed to get R2 upload URL from function response.");
       }
 
       // 2. Upload directly to R2
