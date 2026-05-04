@@ -123,8 +123,10 @@ function VideosPage() {
 
   const filteredVideos = useMemo(() => {
     return videos.filter(video => 
-      (video.title?.toLowerCase() || "").includes(search.toLowerCase()) || 
-      (video.description?.toLowerCase() || "").includes(search.toLowerCase())
+      (video.status !== 'uploading') && (
+        (video.title?.toLowerCase() || "").includes(search.toLowerCase()) || 
+        (video.description?.toLowerCase() || "").includes(search.toLowerCase())
+      )
     );
   }, [videos, search]);
 

@@ -110,8 +110,8 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         description: content,
         embed_url: embedUrl,
         thumbnail_url: imageUrl,
-        // @ts-ignore - assuming author_id added as per previous step
-        author_id: selectedVendorId 
+        author_id: selectedVendorId,
+        status: embedUrl.includes('video-uploads') ? 'uploading' : 'ready'
       });
     } else if (activeType === "products") {
       result = await (supabase.from("products") as any).insert({
@@ -252,7 +252,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                       setUploadingVideo(true);
                       setVideoUploadProgress("Uploading...");
                       try {
-                        const url = await uploadMedia(file, "admin_uploads");
+                        const url = await uploadMedia(file, "admin_uploads", "video-uploads");
                         if (url) {
                           setEmbedUrl(url);
                           setVideoUploadProgress("Uploaded ✓");
@@ -304,13 +304,14 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                         const file = files[i];
                         setVideoUploadProgress(`${i + 1}/${files.length} uploading...`);
                         try {
-                          const url = await uploadMedia(file, "admin_uploads");
+                          const url = await uploadMedia(file, "admin_uploads", "video-uploads");
                           if (url) {
                             const fileName = file.name.split(".").slice(0, -1).join(".");
                             const { data: inserted } = await (supabase.from("videos") as any).insert({
                               title: fileName,
                               embed_url: url,
                               author_id: selectedVendorId,
+                              status: 'uploading', // Ensure status is set to trigger function
                               description: `Uploaded via admin on ${new Date().toLocaleDateString()}`,
                             }).select("id").single();
                             if (inserted?.id) insertedIds.push(inserted.id);

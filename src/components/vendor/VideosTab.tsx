@@ -47,8 +47,8 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
       let initialStatus = "ready";
 
       if (uploadMode === "file" && selectedFile && !form.id && !finalEmbedUrl) {
-        initialStatus = "ready";
-        const url = await uploadMedia(selectedFile, `videos/${userId}`);
+        initialStatus = "uploading";
+        const url = await uploadMedia(selectedFile, `videos/${userId}`, "video-uploads"); 
         if (!url) throw new Error("Failed to upload video file.");
         finalEmbedUrl = url;
       }
@@ -203,7 +203,7 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
                         // Start upload immediately for better UX
                         setSubmitting(true);
                         const loadingToast = toast.loading("Uploading video...");
-                        const url = await uploadMedia(file, `videos/${userId}`);
+                        const url = await uploadMedia(file, `videos/${userId}`, "video-uploads");
                         if (url) {
                           setForm(prev => ({ ...prev, embed_url: url }));
                           toast.success("Video uploaded!", { id: loadingToast });

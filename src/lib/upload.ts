@@ -7,7 +7,7 @@ const MAX_FILE_MB = 50;
  * Returns the public URL on success, or null on failure.
  * Throws a descriptive Error so callers can show a useful toast message.
  */
-export async function uploadMedia(file: File, folderId?: string): Promise<string | null> {
+export async function uploadMedia(file: File, folderId?: string, bucket: string = "media"): Promise<string | null> {
   // Guard: warn on large files (Supabase free tier: 50 MB per file)
   const fileMB = file.size / 1024 / 1024;
   if (fileMB > MAX_FILE_MB) {
@@ -21,7 +21,7 @@ export async function uploadMedia(file: File, folderId?: string): Promise<string
   const fileName = `${Date.now()}_${safeName}`;
   const filePath = folderId ? `${folderId}/${fileName}` : fileName;
 
-  const { error } = await supabase.storage.from("media").upload(filePath, file, {
+  const { error } = await supabase.storage.from(bucket).upload(filePath, file, {
     cacheControl: "3600",
     upsert: true,
   });
