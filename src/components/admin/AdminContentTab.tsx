@@ -29,6 +29,35 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [prepTime, setPrepTime] = useState("");
   const [cookTime, setCookTime] = useState("");
 
+  // --- Auto-Save Draft Logic ---
+  useEffect(() => {
+    // 1. Load drafts on mount
+    const draft = localStorage.getItem("admin_content_draft");
+    if (draft) {
+      try {
+        const parsed = JSON.parse(draft);
+        if (parsed.title) setTitle(parsed.title);
+        if (parsed.content) setContent(parsed.content);
+        if (parsed.imageUrl) setImageUrl(parsed.imageUrl);
+        if (parsed.embedUrl) setEmbedUrl(parsed.embedUrl);
+        if (parsed.activeType) setActiveType(parsed.activeType);
+        if (parsed.selectedVendorId) setSelectedVendorId(parsed.selectedVendorId);
+      } catch (e) {
+        console.error("Failed to parse draft", e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    // 2. Save drafts on every change
+    const draft = { title, content, imageUrl, embedUrl, activeType, selectedVendorId };
+    localStorage.setItem("admin_content_draft", JSON.stringify(draft));
+  }, [title, content, imageUrl, embedUrl, activeType, selectedVendorId]);
+
+  const clearDraft = () => {
+    localStorage.removeItem("admin_content_draft");
+  };
+
   useEffect(() => {
     loadItems();
   }, [activeType]);
@@ -72,6 +101,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     setPrepTime("");
     setCookTime("");
     setCategory("General");
+    clearDraft(); // Clear draft when manually resetting
   };
 
   async function handleSubmit(e: React.FormEvent) {
@@ -132,6 +162,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       const newId = inserted?.data?.[0]?.id || inserted?.data?.id;
       toast.success("Item saved!");
       resetForm();
+      clearDraft(); // Ensure draft is cleared after successful save
       await refreshAndHighlight(newId ? [newId] : []);
     }
   }
