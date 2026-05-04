@@ -43,11 +43,6 @@ import {
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin")({
-  validateSearch: (search: Record<string, unknown>) => {
-    return {
-      tab: (search.tab as string) || undefined,
-    };
-  },
   head: () => ({
     meta: [
       { title: "Admin — Lifestyle Medicine Gateway" },
@@ -112,21 +107,8 @@ function AdminPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [vendors, setVendors] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
-  const { tab } = Route.useSearch();
-  const [activeTab, setActiveTab] = useState(tab || "overview");
+  const [activeTab, setActiveTab] = useState("overview");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // Sync tab with search param
-  useEffect(() => {
-    if (tab && tab !== activeTab) {
-      setActiveTab(tab);
-    }
-  }, [tab]);
-
-  const handleTabChange = (newTab: string) => {
-    setActiveTab(newTab);
-    navigate({ search: { tab: newTab } });
-  };
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
     totalOrders: 0,
@@ -306,7 +288,7 @@ function AdminPage() {
             {sidebarItems.map((item) => (
               <button
                 key={item.id}
-                onClick={() => handleTabChange(item.id)}
+                onClick={() => setActiveTab(item.id)}
                 className={cn(
                   "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent",
                   activeTab === item.id ? "bg-primary/10 text-primary" : "text-muted-foreground"
@@ -362,7 +344,7 @@ function AdminPage() {
                   <button
                     key={item.id}
                     onClick={() => {
-                      handleTabChange(item.id);
+                      setActiveTab(item.id);
                       setMobileMenuOpen(false);
                     }}
                     className={cn(
@@ -380,7 +362,7 @@ function AdminPage() {
         )}
 
         <div className="p-4 sm:p-6 lg:p-8">
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             {/* OVERVIEW */}
             <TabsContent value="overview" className="space-y-6 mt-0 border-0 p-0">
               <div className="flex flex-col gap-1">
@@ -430,7 +412,7 @@ function AdminPage() {
                           </div>
                         </div>
                       ))}
-                      <Button variant="link" className="p-0 h-auto text-sm" onClick={() => handleTabChange("orders")}>View all orders</Button>
+                      <Button variant="link" className="p-0 h-auto text-sm" onClick={() => setActiveTab("orders")}>View all orders</Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -453,7 +435,7 @@ function AdminPage() {
                           {!msg.read && <Badge variant="destructive" className="h-2 w-2 rounded-full p-0" />}
                         </div>
                       ))}
-                      <Button variant="link" className="p-0 h-auto text-sm" onClick={() => handleTabChange("messages")}>View all messages</Button>
+                      <Button variant="link" className="p-0 h-auto text-sm" onClick={() => setActiveTab("messages")}>View all messages</Button>
                     </div>
                   </CardContent>
                 </Card>
