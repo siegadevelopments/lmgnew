@@ -1,6 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const MAX_FILE_MB = 50;
 
 /**
  * Uploads a file to either Supabase Storage or Cloudflare R2.
