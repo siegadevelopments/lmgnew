@@ -40,6 +40,7 @@ import { MarketingScripts } from "@/components/MarketingScripts";
 import { SchemaOrg } from "@/components/SchemaOrg";
 import { MessengerBubble } from "@/components/chat/GlobalChat";
 import { GlobalPopup } from "@/components/GlobalPopup";
+import { AppInstallPopup } from "@/components/AppInstallPopup";
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
@@ -76,6 +77,7 @@ function RootComponent() {
             <MessengerBubble />
             <Toaster position="bottom-right" richColors closeButton />
             <GlobalPopup />
+            <AppInstallPopup />
           </div>
         </CartProvider>
       </AuthProvider>
