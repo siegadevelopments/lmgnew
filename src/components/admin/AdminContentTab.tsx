@@ -142,6 +142,19 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     if (error) toast.error("Failed to delete");
     else loadItems();
   }
+  
+  async function toggleFeatured(id: string, current: boolean) {
+    const { error } = await (supabase.from("videos") as any)
+      .update({ is_featured: !current })
+      .eq("id", id);
+    
+    if (error) {
+      toast.error("Failed to update featured status");
+    } else {
+      toast.success(!current ? "Video featured on global feed" : "Video removed from global feed");
+      setItems(items.map(item => item.id === id ? { ...item, is_featured: !current } : item));
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -477,9 +490,22 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                         )}
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => deleteItem(item.id)} className="shrink-0">
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {activeType === "videos" && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => toggleFeatured(item.id, item.is_featured)}
+                          title={item.is_featured ? "Remove from global feed" : "Show on global feed"}
+                          className={item.is_featured ? "text-primary hover:text-primary/80" : "text-muted-foreground"}
+                        >
+                          <CheckCircle2 className={`h-4 w-4 ${item.is_featured ? "fill-current" : ""}`} />
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="sm" onClick={() => deleteItem(item.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               );

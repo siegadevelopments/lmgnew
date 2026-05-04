@@ -123,14 +123,14 @@ export const videosQueryOptions = () =>
   queryOptions({
     queryKey: ["videos", "list"],
     queryFn: async () => {
-      // We join with profiles to only show videos where the author has 'admin' role
+      // We show videos where the author is an admin OR the video is explicitly featured
       const { data, error } = await supabase
         .from("videos")
         .select(`
           *,
           author:profiles!inner(role)
         `)
-        .eq("profiles.role", "admin")
+        .or('is_featured.eq.true, role.eq.admin', { referencedTable: 'profiles' })
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
       return (data || []) as any[];
