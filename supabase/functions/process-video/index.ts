@@ -78,12 +78,22 @@ serve(async (req: Request) => {
     const tokenData = await tokenResponse.json()
     if (!tokenData.access_token) throw new Error('Failed to refresh YouTube access token')
 
-    // 4. Download from Storage
-    const { data: fileData, error: downloadError } = await supabaseAdmin.storage
-      .from(bucket)
-      .download(filePath)
+    // 4. Download Video (Support Supabase and R2)
+    let fileBlob: Blob;
 
-    if (downloadError) throw downloadError
+    if (bucket === 'media' || bucket === 'video-uploads') {
+      const { data, error: downloadError } = await supabaseAdmin.storage
+        .from(bucket)
+        .download(filePath)
+      if (downloadError) throw downloadError
+      fileBlob = data
+    } else {
+      // It's an external URL (likely R2)
+      console.log(`Downloading external file: ${record.embed_url}`)
+      const response = await fetch(record.embed_url)
+      if (!response.ok) throw new Error(`Failed to download R2 file: ${response.statusText}`)
+      fileBlob = await response.blob()
+    }
 
     // 5. Upload to YouTube
     const metadata = {
@@ -103,7 +113,7 @@ serve(async (req: Request) => {
           Authorization: `Bearer ${tokenData.access_token}`,
           'Content-Type': 'application/json; charset=UTF-8',
           'X-Upload-Content-Type': 'video/*',
-          'X-Upload-Content-Length': fileData.size.toString(),
+          'X-Upload-Content-Length': fileBlob.size.toString(),
         },
         body: JSON.stringify(metadata),
       }
@@ -115,7 +125,7 @@ serve(async (req: Request) => {
     const finalUpload = await fetch(uploadUrl, {
       method: 'PUT',
       headers: { 'Content-Type': 'video/*' },
-      body: fileData,
+      body: fileBlob,
     })
 
     const youtubeResult = await finalUpload.json()
