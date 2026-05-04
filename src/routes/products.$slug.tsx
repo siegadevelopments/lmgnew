@@ -506,9 +506,9 @@ function ProductPage() {
                   <button
                     onClick={handleConfirmBooking}
                     disabled={isBookingLoading}
-                    className="flex items-center gap-4 w-full p-4 rounded-2xl border-2 border-border/50 hover:border-wellness-green/50 hover:bg-wellness-green/5 transition-all text-left group"
+                    className="flex items-center gap-4 w-full p-4 rounded-2xl border-2 border-border/50 hover:border-wellness/50 hover:bg-wellness/5 transition-all text-left group"
                   >
-                    <div className="h-12 w-12 rounded-xl bg-wellness-green flex items-center justify-center text-white shadow-lg shadow-wellness-green/20 group-hover:scale-110 transition-transform">
+                    <div className="h-12 w-12 rounded-xl bg-wellness flex items-center justify-center text-white shadow-lg shadow-wellness/20 group-hover:scale-110 transition-transform">
                       <Store className="h-6 w-6" />
                     </div>
                     <div className="flex-1">

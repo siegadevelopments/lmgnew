@@ -18,13 +18,18 @@ serve(async (req: Request) => {
   }
 
   try {
-    const supabaseClient = createClient(
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    const supabaseUser = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     )
 
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser()
+    const { data: { user }, error: authError } = await supabaseUser.auth.getUser()
     if (authError || !user) throw new Error('Unauthorized')
 
     const { booking, customer_email, customer_phone, product_id, vendor_id, product_title, vendor_name, payment_method } = await req.json()
@@ -32,11 +37,11 @@ serve(async (req: Request) => {
     console.log(`Creating booking for user ${user.id}, product ${product_id}, payment ${payment_method}`)
 
     // 1. Create Booking
-    const { data: bookingData, error: bookingError } = await supabaseClient
+    const { data: bookingData, error: bookingError } = await supabaseAdmin
       .from('bookings')
       .insert({
         customer_id: user.id,
-        product_id,
+        product_id: typeof product_id === 'string' ? parseInt(product_id) : product_id,
         vendor_id,
         start_time: booking.start_time,
         end_time: booking.end_time,
