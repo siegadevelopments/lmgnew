@@ -82,16 +82,16 @@ export function HeroSection() {
           <motion.form
             variants={itemVariants}
             onSubmit={handleSearch}
-            className="mt-8 flex max-w-lg overflow-hidden rounded-xl bg-background shadow-elevated border border-border"
+            className="mt-8 flex items-center max-w-lg rounded-2xl bg-background shadow-elevated border border-border p-1.5"
           >
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="What are you looking for?"
-              className="flex-1 bg-transparent px-5 py-3.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+              className="flex-1 bg-transparent px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-w-0"
             />
-            <Button type="submit" variant="wellness" className="m-1.5 rounded-lg px-6">
+            <Button type="submit" variant="wellness" className="rounded-xl px-6 h-11 font-bold">
               Search
             </Button>
           </motion.form>
