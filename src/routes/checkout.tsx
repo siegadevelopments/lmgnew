@@ -349,9 +349,9 @@ function CheckoutPage() {
                     <div className="mt-6 flex flex-row items-center justify-center gap-2 opacity-80 grayscale hover:grayscale-0 transition-all duration-500">
                       <div className="flex h-8 w-12 items-center justify-center rounded border border-border bg-white shadow-sm px-1">
                         <img
-                          src="https://upload.wikimedia.org/wikipedia/commons/4/41/Visa_Logo.png"
+                          src="https://upload.wikimedia.org/wikipedia/commons/d/d6/Visa_2021.svg"
                           alt="Visa"
-                          className="h-3.5 object-contain"
+                          className="h-2.5 object-contain"
                         />
                       </div>
                       <div className="flex h-8 w-12 items-center justify-center rounded border border-border bg-white shadow-sm px-1">
@@ -363,14 +363,14 @@ function CheckoutPage() {
                       </div>
                       <div className="flex h-8 w-12 items-center justify-center rounded border border-border bg-white shadow-sm px-1">
                         <img
-                          src="https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg"
+                          src="https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg"
                           alt="Amex"
-                          className="h-5 object-contain"
+                          className="h-4 object-contain"
                         />
                       </div>
                       <div className="flex h-8 w-16 items-center justify-center rounded border border-border bg-white shadow-sm px-1">
                         <img
-                          src="https://upload.wikimedia.org/wikipedia/commons/5/57/Discover_Card_logo.svg"
+                          src="https://upload.wikimedia.org/wikipedia/commons/a/a2/Discover_Card_logo.svg"
                           alt="Discover"
                           className="h-3 object-contain"
                         />
