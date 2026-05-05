@@ -246,10 +246,10 @@ function CheckoutPage() {
                     
                     {/* Payment Icons */}
                     <div className="mt-6 flex flex-wrap justify-center gap-3 opacity-70 grayscale hover:grayscale-0 transition-all duration-500">
-                      <img src="https://js.stripe.com/v3/fingerprinted/img/visa-7ad05784a295c92f03f6f0255c651b53.svg" alt="Visa" className="h-6" />
-                      <img src="https://js.stripe.com/v3/fingerprinted/img/mastercard-4d50350419133f0003f145979969ca9a.svg" alt="Mastercard" className="h-6" />
-                      <img src="https://js.stripe.com/v3/fingerprinted/img/amex-a4977383f5c66005527376c6943a531b.svg" alt="Amex" className="h-6" />
-                      <img src="https://js.stripe.com/v3/fingerprinted/img/discover-ac5018696660cc124508e67831f509cc.svg" alt="Discover" className="h-6" />
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-6 object-contain" />
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-6 object-contain" />
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg" alt="Amex" className="h-6 object-contain" />
+                      <img src="https://upload.wikimedia.org/wikipedia/commons/5/57/Discover_Card_logo.svg" alt="Discover" className="h-6 object-contain" />
                     </div>
 
                     <div className="mt-6 flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest bg-muted px-3 py-1 rounded-full">
