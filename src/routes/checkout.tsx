@@ -89,6 +89,12 @@ function CheckoutPage() {
       });
 
       if (sessionError) throw sessionError;
+      
+      // If the function returns a 200 but contains an error payload
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
       if (data?.url) {
         window.location.href = data.url;
       } else {
