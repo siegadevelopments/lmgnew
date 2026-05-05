@@ -78,7 +78,18 @@ function CheckoutPage() {
         throw new Error("Failed to create checkout session");
       }
     } catch (err: any) {
-      setError(err.message || "Failed to initiate checkout. Please try again.");
+      console.error("Checkout error:", err, err.context);
+      
+      let errorMessage = "Failed to initiate checkout. Please try again.";
+      if (err.context && err.context.error) {
+        errorMessage = `Server Error: ${err.context.error}`;
+      } else if (err.context && err.context.message) {
+        errorMessage = `Server Error: ${err.context.message}`;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
       setIsSubmitting(false);
     }
   };
