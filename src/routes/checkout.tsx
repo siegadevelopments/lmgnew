@@ -47,6 +47,23 @@ function CheckoutPage() {
     zip: "",
   });
 
+  // --- NEW: Auto-populate profile data ---
+  useEffect(() => {
+    if (user) {
+      supabase.from("profiles").select("full_name, phone").eq("id", user.id).single().then(({ data }) => {
+        if (data) {
+          const names = data.full_name ? data.full_name.split(" ") : [];
+          setFormData(prev => ({
+            ...prev,
+            firstName: prev.firstName || names[0] || "",
+            lastName: prev.lastName || (names.length > 1 ? names.slice(1).join(" ") : ""),
+            phone: prev.phone || data.phone || "",
+          }));
+        }
+      });
+    }
+  }, [user]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
