@@ -39,7 +39,19 @@ import {
   Link as LinkIcon,
   MessageSquare,
   Sparkles,
+  Trash2,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin")({
@@ -249,6 +261,42 @@ function AdminPage() {
     if (error) return alert("Failed: " + error.message);
     setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)));
     toast.success("Order status updated");
+  };
+
+  const deleteOrder = async (orderId: string) => {
+    try {
+      // 1. Delete order items first (to ensure clean removal even if cascade isn't set up)
+      const { error: itemsError } = await (supabase.from("order_items") as any)
+        .delete()
+        .eq("order_id", orderId);
+
+      if (itemsError) throw itemsError;
+
+      // 2. Delete the order
+      const { error: orderError } = await (supabase.from("orders") as any)
+        .delete()
+        .eq("id", orderId);
+
+      if (orderError) throw orderError;
+
+      // 3. Update state
+      const deletedOrder = orders.find((o) => o.id === orderId);
+      setOrders((prev) => prev.filter((o) => o.id !== orderId));
+
+      // Update stats
+      setStats((prev) => ({
+        ...prev,
+        totalOrders: prev.totalOrders - 1,
+        totalRevenue: prev.totalRevenue - Number(deletedOrder?.total || 0),
+        pendingOrders:
+          deletedOrder?.status === "pending" ? prev.pendingOrders - 1 : prev.pendingOrders,
+      }));
+
+      toast.success("Order deleted successfully");
+    } catch (error: any) {
+      console.error("Delete order error:", error);
+      toast.error("Failed to delete order: " + error.message);
+    }
   };
 
   const markMessageRead = async (msgId: string) => {
@@ -593,7 +641,7 @@ function AdminPage() {
                               <td className="py-4 hidden lg:table-cell text-muted-foreground text-xs">
                                 {new Date(order.created_at).toLocaleDateString()}
                               </td>
-                              <td className="py-4 text-right">
+                              <td className="py-4 text-right flex items-center justify-end gap-2">
                                 <select
                                   value={order.status}
                                   onChange={(e) => updateOrderStatus(order.id, e.target.value)}
@@ -606,6 +654,37 @@ function AdminPage() {
                                   <option value="completed">Completed</option>
                                   <option value="cancelled">Cancelled</option>
                                 </select>
+
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        This action cannot be undone. This will permanently delete
+                                        the order for {order.first_name} {order.last_name} and all
+                                        associated items.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => deleteOrder(order.id)}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                               </td>
                             </tr>
                           ))}
