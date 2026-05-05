@@ -251,11 +251,19 @@ function CheckoutPage() {
                     </p>
                     
                     {/* Payment Icons */}
-                    <div className="mt-6 flex flex-wrap justify-center gap-3 opacity-70 grayscale hover:grayscale-0 transition-all duration-500">
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-6 object-contain" />
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-6 object-contain" />
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg" alt="Amex" className="h-6 object-contain" />
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/5/57/Discover_Card_logo.svg" alt="Discover" className="h-6 object-contain" />
+                    <div className="mt-6 flex flex-row items-center justify-center gap-2 opacity-80 grayscale hover:grayscale-0 transition-all duration-500">
+                      <div className="flex h-8 w-12 items-center justify-center rounded border border-border bg-white shadow-sm px-1">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/Visa_Logo.png" alt="Visa" className="h-3.5 object-contain" />
+                      </div>
+                      <div className="flex h-8 w-12 items-center justify-center rounded border border-border bg-white shadow-sm px-1">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-5 object-contain" />
+                      </div>
+                      <div className="flex h-8 w-12 items-center justify-center rounded border border-border bg-white shadow-sm px-1">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg" alt="Amex" className="h-5 object-contain" />
+                      </div>
+                      <div className="flex h-8 w-16 items-center justify-center rounded border border-border bg-white shadow-sm px-1">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/5/57/Discover_Card_logo.svg" alt="Discover" className="h-3 object-contain" />
+                      </div>
                     </div>
 
                     <div className="mt-6 flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest bg-muted px-3 py-1 rounded-full">
