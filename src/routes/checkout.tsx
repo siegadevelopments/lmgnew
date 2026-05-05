@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 
+// Note: Ensure STRIPE_SECRET_KEY in Supabase (Project Settings > Edge Functions) matches your Stripe Dashboard.
 export const Route = createFileRoute("/checkout")({
   head: () => ({
     meta: [
