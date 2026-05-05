@@ -5,7 +5,6 @@ import { articlesQueryOptions } from "@/lib/queries";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 
-
 export const Route = createFileRoute("/articles/")({
   loader: ({ context: { queryClient } }) => {
     return queryClient.ensureQueryData(articlesQueryOptions());
@@ -13,9 +12,16 @@ export const Route = createFileRoute("/articles/")({
   head: () => ({
     meta: [
       { title: "Wellness & Lifestyle Medicine Articles | Expert Insights" },
-      { name: "description", content: "Explore the latest research, expert tips, and news on preventative health and lifestyle medicine." },
+      {
+        name: "description",
+        content:
+          "Explore the latest research, expert tips, and news on preventative health and lifestyle medicine.",
+      },
       { property: "og:title", content: "Wellness & Lifestyle Medicine Articles" },
-      { property: "og:description", content: "Read expert insights and tips for a healthier life." },
+      {
+        property: "og:description",
+        content: "Read expert insights and tips for a healthier life.",
+      },
     ],
   }),
   component: ArticlesPage,
@@ -25,9 +31,10 @@ function ArticlesPage() {
   const { data: articles } = useSuspenseQuery(articlesQueryOptions());
   const [search, setSearch] = useState("");
 
-  const filteredArticles = articles.filter(article => 
-    (article.title?.toLowerCase() || "").includes(search.toLowerCase()) || 
-    (article.excerpt?.toLowerCase() || "").includes(search.toLowerCase())
+  const filteredArticles = articles.filter(
+    (article) =>
+      (article.title?.toLowerCase() || "").includes(search.toLowerCase()) ||
+      (article.excerpt?.toLowerCase() || "").includes(search.toLowerCase()),
   );
 
   return (
@@ -56,11 +63,10 @@ function ArticlesPage() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-
         {filteredArticles.length === 0 ? (
-           <div className="text-center py-20 bg-muted/20 rounded-2xl border border-border">
-              <p className="text-muted-foreground text-lg">No articles matched your search.</p>
-           </div>
+          <div className="text-center py-20 bg-muted/20 rounded-2xl border border-border">
+            <p className="text-muted-foreground text-lg">No articles matched your search.</p>
+          </div>
         ) : (
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
             {filteredArticles.map((article) => (
@@ -78,7 +84,9 @@ function ArticlesPage() {
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   ) : (
-                    <div className="flex h-full items-center justify-center bg-muted/50 text-muted-foreground/40">News</div>
+                    <div className="flex h-full items-center justify-center bg-muted/50 text-muted-foreground/40">
+                      News
+                    </div>
                   )}
                 </div>
                 <div className="p-6 flex flex-col flex-1">
@@ -89,7 +97,10 @@ function ArticlesPage() {
                     {article.title}
                   </h3>
                   {article.excerpt && (
-                    <p className="mt-3 text-sm leading-relaxed text-muted-foreground line-clamp-3" dangerouslySetInnerHTML={{ __html: article.excerpt }} />
+                    <p
+                      className="mt-3 text-sm leading-relaxed text-muted-foreground line-clamp-3"
+                      dangerouslySetInnerHTML={{ __html: article.excerpt }}
+                    />
                   )}
                 </div>
               </Link>

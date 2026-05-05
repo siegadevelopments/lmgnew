@@ -70,13 +70,15 @@ export function HeroSection() {
             variants={itemVariants}
             className="text-5xl font-black leading-tight tracking-tighter text-primary-foreground sm:text-6xl lg:text-8xl text-balance"
           >
-            Elevate Your <span className="text-wellness-light drop-shadow-sm">Wellness</span> Journey
+            Elevate Your <span className="text-wellness-light drop-shadow-sm">Wellness</span>{" "}
+            Journey
           </motion.h1>
           <motion.p
             variants={itemVariants}
             className="mt-8 max-w-xl text-lg leading-relaxed text-primary-foreground/90 sm:text-xl font-medium"
           >
-            The gateway to trusted products, professional services, and expert knowledge in Lifestyle Medicine.
+            The gateway to trusted products, professional services, and expert knowledge in
+            Lifestyle Medicine.
           </motion.p>
 
           <motion.form

@@ -28,13 +28,19 @@ function RecipePage() {
   return (
     <article className="py-12 sm:py-16">
       <div className="mx-auto max-w-4xl px-4 sm:px-6">
-        <Link to="/recipes" className="text-sm font-medium text-primary hover:underline">← Back to recipes</Link>
-        <h1 className="mt-6 text-3xl font-bold text-foreground sm:text-4xl lg:text-5xl">{recipe.title}</h1>
-        
+        <Link to="/recipes" className="text-sm font-medium text-primary hover:underline">
+          ← Back to recipes
+        </Link>
+        <h1 className="mt-6 text-3xl font-bold text-foreground sm:text-4xl lg:text-5xl">
+          {recipe.title}
+        </h1>
+
         <div className="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground font-medium">
           {recipe.prep_time && <span>Prep: {recipe.prep_time}m</span>}
           {recipe.cook_time && <span>Cook: {recipe.cook_time}m</span>}
-          {recipe.created_at && <span>Posted: {new Date(recipe.created_at).toLocaleDateString()}</span>}
+          {recipe.created_at && (
+            <span>Posted: {new Date(recipe.created_at).toLocaleDateString()}</span>
+          )}
         </div>
 
         {recipe.image_url && (

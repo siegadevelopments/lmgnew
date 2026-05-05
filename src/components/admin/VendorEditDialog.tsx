@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,7 +44,9 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
     vendor_type: vendor?.vendor_type || "products",
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -50,7 +58,7 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
     try {
       const { error } = await (supabase as any).rpc("admin_update_user_email", {
         target_user_id: vendor.id,
-        new_email: email
+        new_email: email,
       });
 
       if (error) throw error;
@@ -71,7 +79,7 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
       return;
     }
     setResetLoading(true);
-    const resetUrl = window.location.origin.includes("localhost") 
+    const resetUrl = window.location.origin.includes("localhost")
       ? "https://lmgnew.vercel.app/login?type=recovery"
       : `${window.location.origin}/login?type=recovery`;
 
@@ -111,8 +119,7 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
         updated_at: new Date().toISOString(),
       };
 
-      const { error: profileError } = await (supabase
-        .from("vendor_profiles") as any)
+      const { error: profileError } = await (supabase.from("vendor_profiles") as any)
         .update(updateData as any)
         .eq("id", vendor.id)
         .select("id")
@@ -125,15 +132,13 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
 
       // Update or insert stream info
       if (formData.mux_stream_key || formData.mux_playback_id) {
-        const { error: streamError } = await (supabase
-          .from("vendor_streams") as any)
-          .upsert({
-            vendor_id: vendor.id,
-            mux_stream_key: formData.mux_stream_key,
-            mux_playback_id: formData.mux_playback_id,
-            updated_at: new Date().toISOString()
-          });
-        
+        const { error: streamError } = await (supabase.from("vendor_streams") as any).upsert({
+          vendor_id: vendor.id,
+          mux_stream_key: formData.mux_stream_key,
+          mux_playback_id: formData.mux_playback_id,
+          updated_at: new Date().toISOString(),
+        });
+
         if (streamError) {
           console.error("Stream update error:", streamError);
         }
@@ -159,7 +164,9 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
 
         <form onSubmit={handleSubmit} className="space-y-6 py-4">
           <div className="space-y-4">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Store Details</h3>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+              Store Details
+            </h3>
             <div className="grid gap-2">
               <Label htmlFor="store_name">Store Name</Label>
               <Input
@@ -194,7 +201,9 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
                 <option value="products">Physical Products Marketplace</option>
                 <option value="services">Services & Consultations</option>
               </select>
-              <p className="text-[10px] text-muted-foreground italic">Classification affects whether the store shows "Products" or "Services" tabs.</p>
+              <p className="text-[10px] text-muted-foreground italic">
+                Classification affects whether the store shows "Products" or "Services" tabs.
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -209,21 +218,37 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
                     className="flex-1"
                   />
                   <label className="shrink-0">
-                    <Button type="button" variant="secondary" size="icon" className="h-10 w-10" asChild disabled={!!uploading}>
-                      <span>{uploading === "logo" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}</span>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="icon"
+                      className="h-10 w-10"
+                      asChild
+                      disabled={!!uploading}
+                    >
+                      <span>
+                        {uploading === "logo" ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Upload className="h-4 w-4" />
+                        )}
+                      </span>
                     </Button>
-                    <input 
-                      type="file" 
-                      className="hidden" 
-                      accept="image/*" 
-                      onChange={async e => {
-                        if (e.target.files?.[0]) { 
-                          setUploading("logo"); 
-                          const url = await uploadMedia(e.target.files[0], `stores/${vendor.id}/logo`); 
-                          if (url) setFormData(prev => ({ ...prev, store_logo_url: url })); 
-                          setUploading(null); 
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        if (e.target.files?.[0]) {
+                          setUploading("logo");
+                          const url = await uploadMedia(
+                            e.target.files[0],
+                            `stores/${vendor.id}/logo`,
+                          );
+                          if (url) setFormData((prev) => ({ ...prev, store_logo_url: url }));
+                          setUploading(null);
                         }
-                      }} 
+                      }}
                     />
                   </label>
                 </div>
@@ -239,21 +264,37 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
                     className="flex-1"
                   />
                   <label className="shrink-0">
-                    <Button type="button" variant="secondary" size="icon" className="h-10 w-10" asChild disabled={!!uploading}>
-                      <span>{uploading === "banner" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}</span>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="icon"
+                      className="h-10 w-10"
+                      asChild
+                      disabled={!!uploading}
+                    >
+                      <span>
+                        {uploading === "banner" ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Upload className="h-4 w-4" />
+                        )}
+                      </span>
                     </Button>
-                    <input 
-                      type="file" 
-                      className="hidden" 
-                      accept="image/*" 
-                      onChange={async e => {
-                        if (e.target.files?.[0]) { 
-                          setUploading("banner"); 
-                          const url = await uploadMedia(e.target.files[0], `stores/${vendor.id}/banner`); 
-                          if (url) setFormData(prev => ({ ...prev, store_banner_url: url })); 
-                          setUploading(null); 
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        if (e.target.files?.[0]) {
+                          setUploading("banner");
+                          const url = await uploadMedia(
+                            e.target.files[0],
+                            `stores/${vendor.id}/banner`,
+                          );
+                          if (url) setFormData((prev) => ({ ...prev, store_banner_url: url }));
+                          setUploading(null);
                         }
-                      }} 
+                      }}
                     />
                   </label>
                 </div>
@@ -264,7 +305,9 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
           <Separator />
 
           <div className="space-y-4">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Social & Web</h3>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+              Social & Web
+            </h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="website">Website</Label>
@@ -311,7 +354,9 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
           <Separator />
 
           <div className="space-y-4">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-primary">Account & Security</h3>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-primary">
+              Account & Security
+            </h3>
             <div className="grid gap-2">
               <Label htmlFor="email">Login Email</Label>
               <div className="flex gap-2">
@@ -322,10 +367,10 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="vendor@example.com"
                 />
-                <Button 
-                  type="button" 
+                <Button
+                  type="button"
                   variant="secondary"
-                  onClick={handleUpdateEmail} 
+                  onClick={handleUpdateEmail}
                   disabled={emailLoading || email === (vendor.email || "")}
                 >
                   {emailLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -334,9 +379,9 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
               </div>
             </div>
 
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               className="w-full justify-start"
               onClick={handleSendReset}
               disabled={resetLoading || !email}
@@ -353,7 +398,9 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
           <Separator />
 
           <div className="space-y-4">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-primary">Live Stream Keys (Mux)</h3>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-primary">
+              Live Stream Keys (Mux)
+            </h3>
             <div className="grid gap-2">
               <Label htmlFor="mux_stream_key">Mux Stream Key</Label>
               <Input
@@ -381,19 +428,23 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
           <Separator />
 
           <div className="space-y-4">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-primary">AI Assistant Settings</h3>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-primary">
+              AI Assistant Settings
+            </h3>
             <div className="flex items-center gap-2 mb-2">
               <input
                 type="checkbox"
                 id="ai_enabled"
                 name="ai_enabled"
                 checked={(formData as any).ai_enabled}
-                onChange={(e) => setFormData(prev => ({ ...prev, ai_enabled: e.target.checked }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, ai_enabled: e.target.checked }))}
                 className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
               />
-              <Label htmlFor="ai_enabled" className="font-bold cursor-pointer">Enable AI Chatbot Assistant</Label>
+              <Label htmlFor="ai_enabled" className="font-bold cursor-pointer">
+                Enable AI Chatbot Assistant
+              </Label>
             </div>
-            
+
             <div className="grid gap-2">
               <Label htmlFor="ai_instructions">AI Instructions / Personality</Label>
               <Textarea
@@ -404,7 +455,9 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
                 placeholder="e.g. You are a helpful wellness expert. Answer questions about organic supplements..."
                 rows={4}
               />
-              <p className="text-[10px] text-muted-foreground italic">These instructions guide how the bot responds to customers.</p>
+              <p className="text-[10px] text-muted-foreground italic">
+                These instructions guide how the bot responds to customers.
+              </p>
             </div>
           </div>
 
@@ -412,16 +465,20 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
 
           <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 space-y-3">
             <Label className="text-destructive font-bold">Danger Zone</Label>
-            <Button 
+            <Button
               type="button"
-              variant="destructive" 
-              className="w-full" 
+              variant="destructive"
+              className="w-full"
               onClick={async () => {
-                if (window.confirm(`Are you absolutely sure you want to PERMANENTLY delete the vendor account for ${vendor.store_name}? This cannot be undone.`)) {
+                if (
+                  window.confirm(
+                    `Are you absolutely sure you want to PERMANENTLY delete the vendor account for ${vendor.store_name}? This cannot be undone.`,
+                  )
+                ) {
                   setLoading(true);
                   try {
                     const { error } = await (supabase as any).rpc("admin_delete_user", {
-                      target_user_id: vendor.id
+                      target_user_id: vendor.id,
                     });
                     if (error) throw error;
                     toast.success("Vendor account deleted successfully");

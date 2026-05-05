@@ -13,7 +13,14 @@ export const Route = createFileRoute("/articles/$slug")({
     return {
       meta: [
         { title: `${loaderData.title} — Lifestyle Medicine Gateway` },
-        { name: "description", content: loaderData.excerpt ? String(loaderData.excerpt).replace(/<[^>]*>?/gm, "").trim() : "Wellness article" },
+        {
+          name: "description",
+          content: loaderData.excerpt
+            ? String(loaderData.excerpt)
+                .replace(/<[^>]*>?/gm, "")
+                .trim()
+            : "Wellness article",
+        },
         ...(loaderData.image_url ? [{ property: "og:image", content: loaderData.image_url }] : []),
       ],
     };
@@ -29,14 +36,16 @@ function ArticlePage() {
   return (
     <article className="py-12 sm:py-16">
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
-        <Link to="/articles" className="text-sm font-medium text-primary hover:underline">← Back to articles</Link>
-        <h1 className="mt-6 text-3xl font-bold text-foreground sm:text-4xl lg:text-5xl leading-tight">{article.title}</h1>
-        
+        <Link to="/articles" className="text-sm font-medium text-primary hover:underline">
+          ← Back to articles
+        </Link>
+        <h1 className="mt-6 text-3xl font-bold text-foreground sm:text-4xl lg:text-5xl leading-tight">
+          {article.title}
+        </h1>
+
         <div className="mt-6 flex items-center gap-4 text-sm text-muted-foreground font-medium">
           <span>{new Date(article.created_at).toLocaleDateString()}</span>
         </div>
-
-
 
         {article.content && (
           <div

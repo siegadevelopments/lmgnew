@@ -19,14 +19,14 @@ import { VendorLiveStream } from "@/components/vendor/VendorLiveStream";
 import { ChatTab } from "@/components/vendor/ChatTab";
 import { BulkImportTab } from "@/components/vendor/BulkImportTab";
 import { OrdersTab } from "@/components/vendor/OrdersTab";
-import { 
-  LayoutDashboard, 
-  Package, 
-  Video, 
-  FileText, 
-  ShoppingBag, 
-  Wallet, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Package,
+  Video,
+  FileText,
+  ShoppingBag,
+  Wallet,
+  Settings,
   Radio,
   ChevronRight,
   Menu,
@@ -34,7 +34,7 @@ import {
   Store,
   Upload,
   MessageCircle,
-  X
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -55,33 +55,55 @@ export const Route = createFileRoute("/vendor")({
 });
 
 export interface VendorProfile {
-  id: string; 
-  store_name: string; 
+  id: string;
+  store_name: string;
   store_description: string | null;
-  store_logo_url: string | null; 
-  store_banner_url: string | null; 
-  website: string | null; 
+  store_logo_url: string | null;
+  store_banner_url: string | null;
+  website: string | null;
   instagram?: string | null;
   facebook?: string | null;
   twitter?: string | null;
   is_approved: boolean;
   store_categories?: string[];
-  vendor_type?: 'products' | 'services' | 'both';
+  vendor_type?: "products" | "services" | "both";
 }
-interface Product { id: number; title: string; price: number; stock: number; status: string; image_url: string | null; }
-interface OrderItem { 
-  id: string; 
-  order_id: string; 
-  product_id: number; 
-  product_name: string; 
-  price: number; 
-  quantity: number; 
+interface Product {
+  id: number;
+  title: string;
+  price: number;
+  stock: number;
+  status: string;
+  image_url: string | null;
+}
+interface OrderItem {
+  id: string;
+  order_id: string;
+  product_id: number;
+  product_name: string;
+  price: number;
+  quantity: number;
   created_at: string;
   status: string;
   tracking_number: string | null;
 }
-interface VideoData { id: string; title: string; embed_url: string; thumbnail_url: string | null; description: string | null; created_at: string | null; }
-interface Article { id: number; title: string; slug: string; excerpt: string | null; image_url: string | null; created_at: string; content?: string; }
+interface VideoData {
+  id: string;
+  title: string;
+  embed_url: string;
+  thumbnail_url: string | null;
+  description: string | null;
+  created_at: string | null;
+}
+interface Article {
+  id: number;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  image_url: string | null;
+  created_at: string;
+  content?: string;
+}
 
 function VendorDashboardPage() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -101,14 +123,17 @@ function VendorDashboardPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const totalSales = useMemo(() => {
-    return orderItems.reduce((sum, item) => sum + (Number(item.price || 0) * Number(item.quantity || 1)), 0);
+    return orderItems.reduce(
+      (sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 1),
+      0,
+    );
   }, [orderItems]);
 
   useEffect(() => {
-    if (!authLoading && !user) { 
+    if (!authLoading && !user) {
       const search = window.location.search;
-      navigate({ to: "/login", search: { redirect: `/vendor${search}` } }); 
-      return; 
+      navigate({ to: "/login", search: { redirect: `/vendor${search}` } });
+      return;
     }
     if (user) loadVendorData();
   }, [user, authLoading]);
@@ -123,7 +148,7 @@ function VendorDashboardPage() {
       setTimeout(() => {
         const element = document.getElementById(`order-${orderIdParam}`);
         if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
         }
       }, 500);
     }
@@ -134,9 +159,14 @@ function VendorDashboardPage() {
     setLoading(true);
     try {
       console.log("Loading vendor data for user:", user.id);
-      const { data: vendorData, error: vError } = await (supabase.from("vendor_profiles") as any).select("id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, created_at, updated_at, ai_enabled, ai_instructions, store_categories, vendor_type").eq("id", user.id).single();
-      
-      if (vError && vError.code !== 'PGRST116') {
+      const { data: vendorData, error: vError } = await (supabase.from("vendor_profiles") as any)
+        .select(
+          "id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, created_at, updated_at, ai_enabled, ai_instructions, store_categories, vendor_type",
+        )
+        .eq("id", user.id)
+        .single();
+
+      if (vError && vError.code !== "PGRST116") {
         console.error("Vendor profile fetch error:", vError);
       }
 
@@ -144,12 +174,24 @@ function VendorDashboardPage() {
         console.log("Vendor profile found:", vendorData.store_name);
         setProfile(vendorData as VendorProfile);
         const [prodRes, vidRes, artRes, orderRes] = await Promise.all([
-          (supabase.from("products") as any).select("*").eq("vendor_id", user.id).order("created_at", { ascending: false }),
-          (supabase.from("videos") as any).select("*").eq("author_id", user.id).order("created_at", { ascending: false }),
-          (supabase.from("articles") as any).select("*").eq("author_id", user.id).order("created_at", { ascending: false }),
-          (supabase.from("order_items") as any).select("*, orders(*)").eq("vendor_id", user.id).order("created_at", { ascending: false }),
+          (supabase.from("products") as any)
+            .select("*")
+            .eq("vendor_id", user.id)
+            .order("created_at", { ascending: false }),
+          (supabase.from("videos") as any)
+            .select("*")
+            .eq("author_id", user.id)
+            .order("created_at", { ascending: false }),
+          (supabase.from("articles") as any)
+            .select("*")
+            .eq("author_id", user.id)
+            .order("created_at", { ascending: false }),
+          (supabase.from("order_items") as any)
+            .select("*, orders(*)")
+            .eq("vendor_id", user.id)
+            .order("created_at", { ascending: false }),
         ]);
-        
+
         if (prodRes.error) console.error("Products error:", prodRes.error);
         if (vidRes.error) console.error("Videos error:", vidRes.error);
         if (artRes.error) console.error("Articles error:", artRes.error);
@@ -177,25 +219,31 @@ function VendorDashboardPage() {
       const storeName = (e.target as HTMLFormElement).store_name.value;
       const vendorType = (e.target as HTMLFormElement).vendor_type.value;
       // Ensure profile exists and has vendor role
-      const { error: profileError } = await (supabase.from("profiles") as any).upsert({ 
-        id: user.id, 
-        role: "vendor"
-      }, { onConflict: 'id' });
-      
+      const { error: profileError } = await (supabase.from("profiles") as any).upsert(
+        {
+          id: user.id,
+          role: "vendor",
+        },
+        { onConflict: "id" },
+      );
+
       if (profileError) throw profileError;
 
-      const { data, error } = await (supabase.from("vendor_profiles") as any).insert({ 
-        id: user.id, 
-        store_name: storeName, 
-        vendor_type: vendorType, 
-        is_approved: false 
-      } as any).select().single();
+      const { data, error } = await (supabase.from("vendor_profiles") as any)
+        .insert({
+          id: user.id,
+          store_name: storeName,
+          vendor_type: vendorType,
+          is_approved: false,
+        } as any)
+        .select()
+        .single();
       if (error) throw error;
-      if (data) { 
-        setProfile(data as VendorProfile); 
+      if (data) {
+        setProfile(data as VendorProfile);
         setActiveTab("products"); // Take them straight to adding products/services
         loadVendorData();
-        
+
         if (user.email) {
           const { subject, html } = emailTemplates.vendorRegistration(storeName);
           await sendEmail({ to: user.email, subject, html });
@@ -209,13 +257,17 @@ function VendorDashboardPage() {
   };
 
   if (authLoading || loading) {
-    return <div className="flex h-[60vh] items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>;
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
   }
 
   if (!profile) {
     return (
       <div className="flex min-h-[80vh] items-center justify-center py-12 px-4 bg-primary/5">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-lg"
@@ -226,41 +278,74 @@ function VendorDashboardPage() {
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                 <Store className="h-8 w-8" />
               </div>
-              <CardTitle className="text-3xl font-black tracking-tight">Launch Your Store</CardTitle>
-              <CardDescription className="text-base">Join the Lifestyle Medicine Gateway community as a vendor.</CardDescription>
+              <CardTitle className="text-3xl font-black tracking-tight">
+                Launch Your Store
+              </CardTitle>
+              <CardDescription className="text-base">
+                Join the Lifestyle Medicine Gateway community as a vendor.
+              </CardDescription>
             </CardHeader>
             <CardContent className="px-8 pb-10">
               <form onSubmit={handleCreateStore} className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="store_name" className="text-sm font-bold uppercase tracking-wider opacity-70">Business / Store Name</Label>
-                  <Input 
-                    id="store_name" 
-                    name="store_name" 
-                    placeholder="e.g. Pure Wellness Co." 
+                  <Label
+                    htmlFor="store_name"
+                    className="text-sm font-bold uppercase tracking-wider opacity-70"
+                  >
+                    Business / Store Name
+                  </Label>
+                  <Input
+                    id="store_name"
+                    name="store_name"
+                    placeholder="e.g. Pure Wellness Co."
                     className="h-12 text-lg shadow-inner bg-background/50"
-                    required 
+                    required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="vendor_type" className="text-sm font-bold uppercase tracking-wider opacity-70">What will you provide?</Label>
+                  <Label
+                    htmlFor="vendor_type"
+                    className="text-sm font-bold uppercase tracking-wider opacity-70"
+                  >
+                    What will you provide?
+                  </Label>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <label className="relative flex cursor-pointer rounded-xl border-2 border-border p-4 transition-all hover:bg-accent has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                      <input type="radio" name="vendor_type" value="products" className="peer sr-only" defaultChecked />
+                      <input
+                        type="radio"
+                        name="vendor_type"
+                        value="products"
+                        className="peer sr-only"
+                        defaultChecked
+                      />
                       <div className="flex flex-col gap-1">
                         <span className="font-bold text-foreground">Physical Goods</span>
-                        <span className="text-xs text-muted-foreground leading-tight">Supplements, equipment, or healthy products.</span>
+                        <span className="text-xs text-muted-foreground leading-tight">
+                          Supplements, equipment, or healthy products.
+                        </span>
                       </div>
                     </label>
                     <label className="relative flex cursor-pointer rounded-xl border-2 border-border p-4 transition-all hover:bg-accent has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-                      <input type="radio" name="vendor_type" value="services" className="peer sr-only" />
+                      <input
+                        type="radio"
+                        name="vendor_type"
+                        value="services"
+                        className="peer sr-only"
+                      />
                       <div className="flex flex-col gap-1">
                         <span className="font-bold text-foreground">Services</span>
-                        <span className="text-xs text-muted-foreground leading-tight">Consultations, coaching, or booking slots.</span>
+                        <span className="text-xs text-muted-foreground leading-tight">
+                          Consultations, coaching, or booking slots.
+                        </span>
                       </div>
                     </label>
                   </div>
                 </div>
-                <Button type="submit" className="w-full h-14 text-lg font-black shadow-xl shadow-primary/20 group" disabled={isSubmitting}>
+                <Button
+                  type="submit"
+                  className="w-full h-14 text-lg font-black shadow-xl shadow-primary/20 group"
+                  disabled={isSubmitting}
+                >
                   {isSubmitting ? "Building your dashboard..." : "Complete Setup"}
                   <ChevronRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </Button>
@@ -277,14 +362,20 @@ function VendorDashboardPage() {
 
   const sidebarItems = [
     { id: "analytics", label: "Dashboard", icon: LayoutDashboard },
-    { id: "products", label: profile.vendor_type === "services" ? "My Services" : "My Products", icon: Package },
+    {
+      id: "products",
+      label: profile.vendor_type === "services" ? "My Services" : "My Products",
+      icon: Package,
+    },
     { id: "live", label: "Live Stream", icon: Radio },
     { id: "videos", label: "Video Content", icon: Video },
     { id: "orders", label: `Orders (${orderItems.length})`, icon: ShoppingBag },
     { id: "messages", label: "Messages", icon: MessageCircle },
     { id: "articles", label: "Articles", icon: FileText },
     { id: "withdraw", label: "Earnings", icon: Wallet },
-    ...(profile.vendor_type !== "services" ? [{ id: "import", label: "Bulk Import", icon: Upload }] : []),
+    ...(profile.vendor_type !== "services"
+      ? [{ id: "import", label: "Bulk Import", icon: Upload }]
+      : []),
     { id: "settings", label: "Store Settings", icon: Settings },
   ];
 
@@ -298,11 +389,15 @@ function VendorDashboardPage() {
               <Store className="h-4 w-4" />
             </div>
             <div>
-              <h2 className="text-sm font-bold tracking-tight truncate max-w-[140px]">{profile.store_name}</h2>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Vendor Hub</p>
+              <h2 className="text-sm font-bold tracking-tight truncate max-w-[140px]">
+                {profile.store_name}
+              </h2>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
+                Vendor Hub
+              </p>
             </div>
           </div>
-          
+
           <nav className="flex-1 space-y-1">
             {sidebarItems.map((item) => (
               <button
@@ -310,7 +405,7 @@ function VendorDashboardPage() {
                 onClick={() => setActiveTab(item.id)}
                 className={cn(
                   "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent",
-                  activeTab === item.id ? "bg-primary/10 text-primary" : "text-muted-foreground"
+                  activeTab === item.id ? "bg-primary/10 text-primary" : "text-muted-foreground",
                 )}
               >
                 <item.icon className="h-4 w-4" />
@@ -322,14 +417,23 @@ function VendorDashboardPage() {
 
           <div className="mt-auto pt-6 border-t border-border">
             <div className="mb-4 px-3 py-2 rounded-lg bg-muted/50">
-              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Status</p>
+              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
+                Status
+              </p>
               <div className="flex items-center gap-2 mt-1">
-                <div className={cn("h-2 w-2 rounded-full", profile.is_approved ? "bg-green-500" : "bg-amber-500")} />
-                <p className="text-xs font-medium">{profile.is_approved ? "Approved" : "Pending"}</p>
+                <div
+                  className={cn(
+                    "h-2 w-2 rounded-full",
+                    profile.is_approved ? "bg-green-500" : "bg-amber-500",
+                  )}
+                />
+                <p className="text-xs font-medium">
+                  {profile.is_approved ? "Approved" : "Pending"}
+                </p>
               </div>
             </div>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="w-full justify-start text-muted-foreground hover:text-destructive"
               onClick={() => signOut()}
             >
@@ -373,7 +477,9 @@ function VendorDashboardPage() {
                     }}
                     className={cn(
                       "flex w-full items-center gap-3 rounded-lg px-4 py-3 text-base font-medium transition-all",
-                      activeTab === item.id ? "bg-primary/10 text-primary" : "text-muted-foreground"
+                      activeTab === item.id
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground",
                     )}
                   >
                     <item.icon className="h-5 w-5" />
@@ -392,15 +498,33 @@ function VendorDashboardPage() {
                 <h1 className="text-2xl font-bold tracking-tight">Sales Analytics</h1>
                 <p className="text-muted-foreground">Track your store's performance and growth.</p>
               </div>
-              <AnalyticsTab totalSales={totalSales} productCount={products.length} orderCount={orderItems.length} articleCount={articles.length} videoCount={videos.length} orderItems={orderItems} />
+              <AnalyticsTab
+                totalSales={totalSales}
+                productCount={products.length}
+                orderCount={orderItems.length}
+                articleCount={articles.length}
+                videoCount={videos.length}
+                orderItems={orderItems}
+              />
             </TabsContent>
 
             <TabsContent value="products" className="mt-0 border-0 p-0">
               <div className="mb-6 flex flex-col gap-1">
-                <h1 className="text-2xl font-bold tracking-tight">{profile.vendor_type === "services" ? "Service Offerings" : "Product Catalog"}</h1>
-                <p className="text-muted-foreground">Add and manage the {profile.vendor_type === "services" ? "services" : "products"} you sell.</p>
+                <h1 className="text-2xl font-bold tracking-tight">
+                  {profile.vendor_type === "services" ? "Service Offerings" : "Product Catalog"}
+                </h1>
+                <p className="text-muted-foreground">
+                  Add and manage the {profile.vendor_type === "services" ? "services" : "products"}{" "}
+                  you sell.
+                </p>
               </div>
-              <ProductsTab products={products} setProducts={setProducts} userId={user!.id} storeCategories={profile?.store_categories || []} vendorType={profile.vendor_type} />
+              <ProductsTab
+                products={products}
+                setProducts={setProducts}
+                userId={user!.id}
+                storeCategories={profile?.store_categories || []}
+                vendorType={profile.vendor_type}
+              />
             </TabsContent>
 
             <TabsContent value="live" className="mt-0 border-0 p-0">
@@ -414,7 +538,9 @@ function VendorDashboardPage() {
             <TabsContent value="videos" className="mt-0 border-0 p-0">
               <div className="mb-6 flex flex-col gap-1">
                 <h1 className="text-2xl font-bold tracking-tight">Video Content</h1>
-                <p className="text-muted-foreground">Manage your educational or promotional videos.</p>
+                <p className="text-muted-foreground">
+                  Manage your educational or promotional videos.
+                </p>
               </div>
               <VideosTab videos={videos} setVideos={setVideos} userId={user!.id} />
             </TabsContent>
@@ -430,7 +556,9 @@ function VendorDashboardPage() {
             <TabsContent value="messages" className="mt-0 border-0 p-0">
               <div className="mb-6 flex flex-col gap-1">
                 <h1 className="text-2xl font-bold tracking-tight">Customer Messages</h1>
-                <p className="text-muted-foreground">Chat with your customers and answer their questions.</p>
+                <p className="text-muted-foreground">
+                  Chat with your customers and answer their questions.
+                </p>
               </div>
               <ChatTab vendorId={profile.id} />
             </TabsContent>
@@ -455,7 +583,9 @@ function VendorDashboardPage() {
               <TabsContent value="import" className="mt-0 border-0 p-0">
                 <div className="mb-6 flex flex-col gap-1">
                   <h1 className="text-2xl font-bold tracking-tight">Bulk Import</h1>
-                  <p className="text-muted-foreground">Import products from Shopify or WooCommerce.</p>
+                  <p className="text-muted-foreground">
+                    Import products from Shopify or WooCommerce.
+                  </p>
                 </div>
                 <BulkImportTab userId={user!.id} onSuccess={loadVendorData} />
               </TabsContent>
@@ -464,7 +594,9 @@ function VendorDashboardPage() {
             <TabsContent value="settings" className="mt-0 border-0 p-0">
               <div className="mb-6 flex flex-col gap-1">
                 <h1 className="text-2xl font-bold tracking-tight">Store Settings</h1>
-                <p className="text-muted-foreground">Configure your profile and store appearance.</p>
+                <p className="text-muted-foreground">
+                  Configure your profile and store appearance.
+                </p>
               </div>
               <SettingsTab profile={profile} setProfile={setProfile} userId={user!.id} />
             </TabsContent>

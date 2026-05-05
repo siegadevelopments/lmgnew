@@ -20,7 +20,7 @@ export function BrowserBroadcast({ isLive, onToggleLive, isUpdating }: Props) {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { width: 1280, height: 720, facingMode: "user" },
-        audio: isMicOn
+        audio: isMicOn,
       });
       setStream(mediaStream);
       setIsCameraOn(true);
@@ -35,7 +35,7 @@ export function BrowserBroadcast({ isLive, onToggleLive, isUpdating }: Props) {
 
   const stopCamera = () => {
     if (stream) {
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
       setStream(null);
       setIsCameraOn(false);
     }
@@ -43,7 +43,7 @@ export function BrowserBroadcast({ isLive, onToggleLive, isUpdating }: Props) {
 
   const toggleMic = () => {
     if (stream) {
-      stream.getAudioTracks().forEach(track => {
+      stream.getAudioTracks().forEach((track) => {
         track.enabled = !isMicOn;
       });
       setIsMicOn(!isMicOn);
@@ -53,7 +53,7 @@ export function BrowserBroadcast({ isLive, onToggleLive, isUpdating }: Props) {
   useEffect(() => {
     return () => {
       if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
       }
     };
   }, [stream]);
@@ -62,11 +62,11 @@ export function BrowserBroadcast({ isLive, onToggleLive, isUpdating }: Props) {
     <div className="space-y-4">
       <div className="relative aspect-video bg-black rounded-2xl overflow-hidden border border-border shadow-elevated">
         {isCameraOn ? (
-          <video 
-            ref={videoRef} 
-            autoPlay 
-            playsInline 
-            muted 
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
             className="w-full h-full object-cover mirror"
             style={{ transform: "scaleX(-1)" }}
           />
@@ -95,18 +95,18 @@ export function BrowserBroadcast({ isLive, onToggleLive, isUpdating }: Props) {
 
         {isCameraOn && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/60 backdrop-blur-md p-2 rounded-full border border-white/20">
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className={`rounded-full h-10 w-10 ${!isMicOn ? "text-destructive" : "text-white"}`}
               onClick={toggleMic}
             >
               {isMicOn ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
             </Button>
             <div className="w-px h-6 bg-white/20" />
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="rounded-full h-10 w-10 text-white"
               onClick={stopCamera}
             >
@@ -122,14 +122,16 @@ export function BrowserBroadcast({ isLive, onToggleLive, isUpdating }: Props) {
           <div className="text-sm">
             <p className="font-bold text-primary">Browser Broadcasting Mode</p>
             <p className="text-muted-foreground">
-              You are streaming directly from your browser. For professional quality, overlays, and multi-cam setups, we still recommend using <strong>OBS Studio</strong> with your RTMP keys.
+              You are streaming directly from your browser. For professional quality, overlays, and
+              multi-cam setups, we still recommend using <strong>OBS Studio</strong> with your RTMP
+              keys.
             </p>
           </div>
         </div>
 
-        <Button 
-          size="lg" 
-          className="w-full font-bold h-14 text-lg shadow-lg" 
+        <Button
+          size="lg"
+          className="w-full font-bold h-14 text-lg shadow-lg"
           variant={isLive ? "destructive" : "wellness"}
           disabled={!isCameraOn || isUpdating}
           onClick={onToggleLive}

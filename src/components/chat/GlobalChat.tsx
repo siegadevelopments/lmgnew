@@ -54,4 +54,6 @@ export function MessengerBubble() {
 }
 
 // Keep backward compatibility with old import
-export function GlobalChat() { return <MessengerBubble />; }
+export function GlobalChat() {
+  return <MessengerBubble />;
+}

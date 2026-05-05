@@ -1,5 +1,5 @@
-const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config();
+const { createClient } = require("@supabase/supabase-js");
+require("dotenv").config();
 
 const SUPABASE_URL = "https://usrtaxvjwidfxajbjlpj.supabase.co";
 const SUPABASE_KEY = process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
@@ -16,7 +16,7 @@ const SHOP_URL = "https://www.lhamour.com/products.json?limit=250";
 
 async function migrate() {
   console.log(`--- STARTING LHAMOUR MIGRATION ---`);
-  
+
   try {
     console.log(`Fetching products from ${SHOP_URL}...`);
     const response = await fetch(SHOP_URL);
@@ -28,27 +28,24 @@ async function migrate() {
 
     // First, delete existing products for this vendor to avoid duplicates
     console.log("Cleaning up existing Lhamour products...");
-    const { error: delError } = await supabase
-      .from('products')
-      .delete()
-      .eq('vendor_id', VENDOR_ID);
-    
+    const { error: delError } = await supabase.from("products").delete().eq("vendor_id", VENDOR_ID);
+
     if (delError) {
       console.error("Error deleting old products:", delError.message);
       return;
     }
 
-    const toInsert = products.map(p => {
+    const toInsert = products.map((p) => {
       const baseVariant = p.variants[0];
-      
+
       // Extract first paragraph for excerpt
       let excerpt = p.body_html
         .split(/<\/p>|<\/h2>|<\/h3>/)[0]
-        .replace(/<[^>]*>/g, '')
+        .replace(/<[^>]*>/g, "")
         .trim();
-      
+
       if (excerpt.length > 200) {
-        excerpt = excerpt.substring(0, 197) + '...';
+        excerpt = excerpt.substring(0, 197) + "...";
       } else if (excerpt.length === 0) {
         excerpt = p.title;
       }
@@ -62,11 +59,11 @@ async function migrate() {
         price: parseFloat(baseVariant.price),
         image_url: p.images[0]?.src || null,
         stock: baseVariant.available ? 50 : 0,
-        status: 'published',
-        brand: 'Lhamour',
-        category: p.product_type || 'Skincare',
+        status: "published",
+        brand: "Lhamour",
+        category: p.product_type || "Skincare",
         tags: p.tags,
-        variants: p.variants.map(v => ({
+        variants: p.variants.map((v) => ({
           id: v.id,
           title: v.title,
           price: parseFloat(v.price),
@@ -74,17 +71,14 @@ async function migrate() {
           available: v.available,
           option1: v.option1,
           option2: v.option2,
-          option3: v.option3
+          option3: v.option3,
         })),
-        images: p.images.map(img => img.src)
+        images: p.images.map((img) => img.src),
       };
     });
 
     console.log(`Inserting ${toInsert.length} products into Supabase...`);
-    const { data: insertedData, error } = await supabase
-      .from('products')
-      .insert(toInsert)
-      .select();
+    const { data: insertedData, error } = await supabase.from("products").insert(toInsert).select();
 
     if (error) {
       console.error("Migration error:", error.message);

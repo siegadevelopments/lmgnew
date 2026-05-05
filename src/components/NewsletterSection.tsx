@@ -25,13 +25,10 @@ export function NewsletterSection() {
     e.preventDefault();
     if (!email) return;
     setIsLoading(true);
-    
+
     const { error } = await supabase
       .from("newsletter_subscribers")
-      .upsert(
-        { email, full_name: name } as any, 
-        { onConflict: "email" }
-      );
+      .upsert({ email, full_name: name } as any, { onConflict: "email" });
 
     if (error) {
       toast.error(error.message || "Failed to subscribe");
@@ -40,7 +37,7 @@ export function NewsletterSection() {
       setOpen(false);
       toast.success("Welcome to the community!");
     }
-    
+
     setIsLoading(false);
   };
 
@@ -48,8 +45,14 @@ export function NewsletterSection() {
     <section className="relative overflow-hidden bg-gradient-to-br from-primary via-primary to-calm py-16 sm:py-20">
       {/* Animated decorative elements */}
       <div className="absolute -left-40 -top-40 h-80 w-80 rounded-full bg-wellness/20 blur-3xl animate-pulse" />
-      <div className="absolute -bottom-40 -right-40 h-80 w-80 rounded-full bg-warm/15 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-      <div className="absolute left-1/2 top-1/4 h-40 w-40 -translate-x-1/2 rounded-full bg-calm/10 blur-2xl animate-pulse" style={{ animationDelay: "2s" }} />
+      <div
+        className="absolute -bottom-40 -right-40 h-80 w-80 rounded-full bg-warm/15 blur-3xl animate-pulse"
+        style={{ animationDelay: "1s" }}
+      />
+      <div
+        className="absolute left-1/2 top-1/4 h-40 w-40 -translate-x-1/2 rounded-full bg-calm/10 blur-2xl animate-pulse"
+        style={{ animationDelay: "2s" }}
+      />
 
       <div className="relative z-10 mx-auto max-w-2xl px-4 text-center sm:px-6">
         <div className="inline-flex items-center gap-2 rounded-full bg-primary-foreground/10 px-4 py-1.5 text-xs font-semibold text-primary-foreground backdrop-blur-sm">
@@ -61,8 +64,8 @@ export function NewsletterSection() {
           Get Wellness Tips & Deals
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-primary-foreground/80 sm:text-lg">
-          Join 10,000+ wellness enthusiasts. Get exclusive product launches,
-          expert articles, and special discounts delivered to your inbox.
+          Join 10,000+ wellness enthusiasts. Get exclusive product launches, expert articles, and
+          special discounts delivered to your inbox.
         </p>
 
         <div className="mt-8 flex justify-center">
@@ -76,7 +79,7 @@ export function NewsletterSection() {
           ) : (
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <Button 
+                <Button
                   size="lg"
                   className="bg-background text-foreground hover:bg-background/90 h-12 px-10 text-base font-bold shadow-xl shadow-black/10 group"
                 >
@@ -96,7 +99,12 @@ export function NewsletterSection() {
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Your Name</Label>
+                    <Label
+                      htmlFor="name"
+                      className="text-xs font-bold uppercase tracking-widest text-muted-foreground"
+                    >
+                      Your Name
+                    </Label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -110,7 +118,12 @@ export function NewsletterSection() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Email Address</Label>
+                    <Label
+                      htmlFor="email"
+                      className="text-xs font-bold uppercase tracking-widest text-muted-foreground"
+                    >
+                      Email Address
+                    </Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -124,17 +137,17 @@ export function NewsletterSection() {
                       />
                     </div>
                   </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full h-11 text-base font-bold" 
+                  <Button
+                    type="submit"
+                    className="w-full h-11 text-base font-bold"
                     disabled={isLoading}
                   >
                     {isLoading ? "Subscribing..." : "Subscribe Now"}
                   </Button>
                 </form>
                 <p className="text-[10px] text-center text-muted-foreground">
-                  By subscribing, you agree to our terms and privacy policy. 
-                  You can unsubscribe at any time.
+                  By subscribing, you agree to our terms and privacy policy. You can unsubscribe at
+                  any time.
                 </p>
               </DialogContent>
             </Dialog>

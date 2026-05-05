@@ -19,8 +19,7 @@ export function AdminGalleriesTab() {
 
   async function loadGalleries() {
     setLoading(true);
-    const { data, error } = await (supabase
-      .from("galleries") as any)
+    const { data, error } = await (supabase.from("galleries") as any)
       .select("*, gallery_items(*)")
       .order("created_at", { ascending: false });
 
@@ -34,9 +33,8 @@ export function AdminGalleriesTab() {
 
   async function createGallery() {
     if (!newGalleryTitle.trim()) return;
-    
-    const { data, error } = await (supabase
-      .from("galleries") as any)
+
+    const { data, error } = await (supabase.from("galleries") as any)
       .insert({ title: newGalleryTitle, category: newGalleryCategory })
       .select()
       .single();
@@ -52,7 +50,7 @@ export function AdminGalleriesTab() {
 
   async function deleteGallery(id: string) {
     if (!confirm("Are you sure? This will delete all items in this gallery.")) return;
-    
+
     const { error } = await (supabase.from("galleries") as any).delete().eq("id", id);
     if (error) {
       toast.error("Failed to delete gallery");
@@ -67,7 +65,7 @@ export function AdminGalleriesTab() {
 
     const { error } = await (supabase.from("gallery_items") as any).insert({
       gallery_id: galleryId,
-      image_url: imageUrl
+      image_url: imageUrl,
     });
 
     if (error) {
@@ -95,13 +93,13 @@ export function AdminGalleriesTab() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4">
-            <Input 
-              placeholder="Gallery Title (e.g. Daily Motivation)" 
+            <Input
+              placeholder="Gallery Title (e.g. Daily Motivation)"
               value={newGalleryTitle}
               onChange={(e) => setNewGalleryTitle(e.target.value)}
               className="flex-1"
             />
-            <select 
+            <select
               className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               value={newGalleryCategory}
               onChange={(e) => setNewGalleryCategory(e.target.value as any)}
@@ -122,7 +120,7 @@ export function AdminGalleriesTab() {
         </div>
       ) : (
         <div className="grid gap-6">
-          {galleries.map(gallery => (
+          {galleries.map((gallery) => (
             <Card key={gallery.id}>
               <CardHeader className="flex flex-row items-center justify-between py-4">
                 <div>
@@ -135,8 +133,8 @@ export function AdminGalleriesTab() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex gap-2">
-                  <Input 
-                    placeholder="Image URL" 
+                  <Input
+                    placeholder="Image URL"
                     className="flex-1 text-xs"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
@@ -145,18 +143,27 @@ export function AdminGalleriesTab() {
                       }
                     }}
                   />
-                  <Button size="sm" variant="secondary" onClick={(e) => {
-                    const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-                    addImageToGallery(gallery.id, input.value);
-                    input.value = "";
-                  }}>Add Image</Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={(e) => {
+                      const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                      addImageToGallery(gallery.id, input.value);
+                      input.value = "";
+                    }}
+                  >
+                    Add Image
+                  </Button>
                 </div>
 
                 <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
                   {(gallery.gallery_items || []).map((item: any) => (
-                    <div key={item.id} className="group relative aspect-square rounded-md overflow-hidden border border-border">
+                    <div
+                      key={item.id}
+                      className="group relative aspect-square rounded-md overflow-hidden border border-border"
+                    >
                       <img src={item.image_url} alt="" className="h-full w-full object-cover" />
-                      <button 
+                      <button
                         onClick={() => deleteImage(item.id)}
                         className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity"
                       >

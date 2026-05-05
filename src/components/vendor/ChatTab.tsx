@@ -39,8 +39,7 @@ export function ChatTab({ vendorId }: { vendorId: string }) {
   const { data: conversations = [], isLoading: isLoadingConvs } = useQuery({
     queryKey: ["vendor_conversations", vendorId],
     queryFn: async () => {
-      const { data, error } = await (supabase
-        .from("chat_conversations" as any) as any)
+      const { data, error } = await (supabase.from("chat_conversations" as any) as any)
         .select("*, profiles!chat_conversations_customer_id_fkey(full_name, avatar_url)")
         .eq("vendor_id", vendorId)
         .order("last_message_at", { ascending: false });
@@ -53,8 +52,7 @@ export function ChatTab({ vendorId }: { vendorId: string }) {
     queryKey: ["chat_messages", selectedConv?.id],
     queryFn: async () => {
       if (!selectedConv?.id) return [];
-      const { data, error } = await (supabase
-        .from("chat_messages" as any) as any)
+      const { data, error } = await (supabase.from("chat_messages" as any) as any)
         .select("*")
         .eq("conversation_id", selectedConv.id)
         .order("created_at", { ascending: true });
@@ -80,8 +78,7 @@ export function ChatTab({ vendorId }: { vendorId: string }) {
         async (payload) => {
           const newMsg = payload.new as Message;
           // Check if this message belongs to one of our conversations
-          const { data: conv } = await (supabase
-            .from("chat_conversations" as any) as any)
+          const { data: conv } = await (supabase.from("chat_conversations" as any) as any)
             .select("id")
             .eq("id", newMsg.conversation_id)
             .eq("vendor_id", vendorId)
@@ -93,7 +90,7 @@ export function ChatTab({ vendorId }: { vendorId: string }) {
               queryClient.invalidateQueries({ queryKey: ["chat_messages", selectedConv.id] });
             }
           }
-        }
+        },
       )
       .subscribe();
 
@@ -111,19 +108,16 @@ export function ChatTab({ vendorId }: { vendorId: string }) {
   const sendMessage = useMutation({
     mutationFn: async (content: string) => {
       if (!user || !selectedConv) return;
-      
-      const { error: msgError } = await (supabase
-        .from("chat_messages" as any) as any)
-        .insert({
-          conversation_id: selectedConv.id,
-          sender_id: user.id,
-          content: content,
-        });
-      
+
+      const { error: msgError } = await (supabase.from("chat_messages" as any) as any).insert({
+        conversation_id: selectedConv.id,
+        sender_id: user.id,
+        content: content,
+      });
+
       if (msgError) throw msgError;
 
-      await (supabase
-        .from("chat_conversations" as any) as any)
+      await (supabase.from("chat_conversations" as any) as any)
         .update({ last_message_at: new Date().toISOString() })
         .eq("id", selectedConv.id);
     },
@@ -133,7 +127,7 @@ export function ChatTab({ vendorId }: { vendorId: string }) {
     },
     onError: (err: any) => {
       toast.error("Failed to send message: " + err.message);
-    }
+    },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -160,21 +154,29 @@ export function ChatTab({ vendorId }: { vendorId: string }) {
                 onClick={() => setSelectedConv(conv)}
                 className={cn(
                   "w-full p-4 text-left hover:bg-muted/50 transition-colors flex items-center gap-3",
-                  selectedConv?.id === conv.id && "bg-muted"
+                  selectedConv?.id === conv.id && "bg-muted",
                 )}
               >
                 <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                   {conv.profiles?.avatar_url ? (
-                    <img src={conv.profiles.avatar_url} className="h-full w-full rounded-full object-cover" />
+                    <img
+                      src={conv.profiles.avatar_url}
+                      className="h-full w-full rounded-full object-cover"
+                    />
                   ) : (
                     <User className="h-5 w-5 text-primary" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-baseline mb-1">
-                    <h4 className="text-sm font-bold truncate">{conv.profiles?.full_name || "Customer"}</h4>
+                    <h4 className="text-sm font-bold truncate">
+                      {conv.profiles?.full_name || "Customer"}
+                    </h4>
                     <span className="text-[10px] text-muted-foreground">
-                      {new Date(conv.last_message_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}
+                      {new Date(conv.last_message_at).toLocaleDateString([], {
+                        month: "short",
+                        day: "numeric",
+                      })}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground truncate">Click to view messages</p>
@@ -200,25 +202,37 @@ export function ChatTab({ vendorId }: { vendorId: string }) {
                 <User className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-sm font-bold">{selectedConv.profiles?.full_name || "Customer"}</CardTitle>
+                <CardTitle className="text-sm font-bold">
+                  {selectedConv.profiles?.full_name || "Customer"}
+                </CardTitle>
                 <CardDescription className="text-[10px]">Customer</CardDescription>
               </div>
             </CardHeader>
-            
+
             <div className="flex-1 p-4 bg-muted/20 overflow-y-auto" ref={scrollRef}>
               <div className="space-y-4">
                 {messages.map((msg) => {
                   const isMe = msg.sender_id === user?.id;
                   return (
-                    <div key={msg.id} className={cn("flex flex-col", isMe ? "items-end" : "items-start")}>
-                      <div className={cn(
-                        "max-w-[70%] rounded-xl px-4 py-2 text-sm shadow-sm",
-                        isMe ? "bg-primary text-primary-foreground rounded-tr-none" : "bg-white text-foreground rounded-tl-none border border-border"
-                      )}>
+                    <div
+                      key={msg.id}
+                      className={cn("flex flex-col", isMe ? "items-end" : "items-start")}
+                    >
+                      <div
+                        className={cn(
+                          "max-w-[70%] rounded-xl px-4 py-2 text-sm shadow-sm",
+                          isMe
+                            ? "bg-primary text-primary-foreground rounded-tr-none"
+                            : "bg-white text-foreground rounded-tl-none border border-border",
+                        )}
+                      >
                         {msg.content}
                       </div>
                       <span className="text-[10px] text-muted-foreground mt-1 px-1">
-                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(msg.created_at).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </span>
                     </div>
                   );
@@ -227,14 +241,18 @@ export function ChatTab({ vendorId }: { vendorId: string }) {
             </div>
 
             <form onSubmit={handleSubmit} className="p-4 border-t bg-white flex gap-2">
-              <Input 
+              <Input
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="Type your reply..."
                 className="flex-1 h-10 text-sm"
                 disabled={sendMessage.isPending}
               />
-              <Button type="submit" className="h-10 px-6" disabled={!newMessage.trim() || sendMessage.isPending}>
+              <Button
+                type="submit"
+                className="h-10 px-6"
+                disabled={!newMessage.trim() || sendMessage.isPending}
+              >
                 <Send className="h-4 w-4 mr-2" />
                 Send
               </Button>
@@ -246,7 +264,9 @@ export function ChatTab({ vendorId }: { vendorId: string }) {
               <MessageCircle className="h-8 w-8 text-primary opacity-20" />
             </div>
             <h3 className="text-lg font-bold mb-2">Customer Messages</h3>
-            <p className="text-sm text-muted-foreground max-w-xs">Select a conversation from the list to view and reply to messages.</p>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              Select a conversation from the list to view and reply to messages.
+            </p>
           </div>
         )}
       </Card>

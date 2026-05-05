@@ -8,7 +8,10 @@ export const Route = createFileRoute("/affiliates")({
   head: () => ({
     meta: [
       { title: "Affiliate Partners — Lifestyle Medicine Gateway" },
-      { name: "description", content: "Discover our trusted affiliate partners and exclusive wellness deals." },
+      {
+        name: "description",
+        content: "Discover our trusted affiliate partners and exclusive wellness deals.",
+      },
       { property: "og:title", content: "Affiliate Partners — Lifestyle Medicine Gateway" },
     ],
   }),
@@ -19,8 +22,7 @@ function AffiliatesPage() {
   const { data: affiliates = [], isLoading } = useQuery({
     queryKey: ["affiliate_stores"],
     queryFn: async () => {
-      const { data, error } = await (supabase
-        .from("affiliate_stores" as any) as any)
+      const { data, error } = await (supabase.from("affiliate_stores" as any) as any)
         .select("*")
         .eq("is_active", true)
         .order("sort_order", { ascending: true });
@@ -47,7 +49,7 @@ function AffiliatesPage() {
       {/* Grid */}
       {isLoading ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map(i => (
+          {[1, 2, 3].map((i) => (
             <div key={i} className="h-64 rounded-2xl bg-muted animate-pulse" />
           ))}
         </div>
@@ -119,7 +121,8 @@ function AffiliatesPage() {
 
       {/* Disclaimer */}
       <p className="mt-16 text-center text-xs text-muted-foreground/60 max-w-xl mx-auto">
-        Affiliate disclosure: Some links on this page are affiliate links. We may earn a commission when you make a purchase through these links, at no extra cost to you.
+        Affiliate disclosure: Some links on this page are affiliate links. We may earn a commission
+        when you make a purchase through these links, at no extra cost to you.
       </p>
     </div>
   );

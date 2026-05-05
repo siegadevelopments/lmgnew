@@ -13,11 +13,16 @@ export function CTASection() {
           Check our shop for more products
         </h2>
         <p className="mx-auto mt-6 max-w-xl text-lg leading-8 text-primary-foreground/80">
-          Getting equipped for a healthy lifestyle needs good products. Discover our full range of curated wellness items.
+          Getting equipped for a healthy lifestyle needs good products. Discover our full range of
+          curated wellness items.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
           <Link to="/signup">
-            <Button variant="hero" size="lg" className="bg-background text-foreground hover:bg-background/90">
+            <Button
+              variant="hero"
+              size="lg"
+              className="bg-background text-foreground hover:bg-background/90"
+            >
               Become a Vendor
             </Button>
           </Link>

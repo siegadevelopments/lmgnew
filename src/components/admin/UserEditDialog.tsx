@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +32,7 @@ export function UserEditDialog({ user, isOpen, onClose, onSuccess }: UserEditDia
     try {
       const { error } = await (supabase as any).rpc("admin_update_user_email", {
         target_user_id: user.id,
-        new_email: email
+        new_email: email,
       });
 
       if (error) throw error;
@@ -36,7 +42,9 @@ export function UserEditDialog({ user, isOpen, onClose, onSuccess }: UserEditDia
       onClose();
     } catch (error: any) {
       console.error("Error updating user:", error);
-      toast.error(error.message || "Failed to update user. Make sure the 'admin-api' function is deployed.");
+      toast.error(
+        error.message || "Failed to update user. Make sure the 'admin-api' function is deployed.",
+      );
     } finally {
       setLoading(false);
     }
@@ -48,7 +56,7 @@ export function UserEditDialog({ user, isOpen, onClose, onSuccess }: UserEditDia
       return;
     }
     setResetLoading(true);
-    const resetUrl = window.location.origin.includes("localhost") 
+    const resetUrl = window.location.origin.includes("localhost")
       ? "https://lmgnew.vercel.app/login?type=recovery"
       : `${window.location.origin}/login?type=recovery`;
 
@@ -91,16 +99,18 @@ export function UserEditDialog({ user, isOpen, onClose, onSuccess }: UserEditDia
                 Update
               </Button>
             </div>
-            <p className="text-[10px] text-muted-foreground italic">Note: Changing email requires the 'admin-api' edge function.</p>
+            <p className="text-[10px] text-muted-foreground italic">
+              Note: Changing email requires the 'admin-api' edge function.
+            </p>
           </div>
 
           <Separator />
 
           <div className="space-y-3">
             <Label>Security Actions</Label>
-            <Button 
-              variant="outline" 
-              className="w-full justify-start" 
+            <Button
+              variant="outline"
+              className="w-full justify-start"
               onClick={handleSendReset}
               disabled={resetLoading || !email}
             >
@@ -111,22 +121,28 @@ export function UserEditDialog({ user, isOpen, onClose, onSuccess }: UserEditDia
               )}
               Send Password Reset Email
             </Button>
-            <p className="text-[10px] text-muted-foreground">This will send an official Supabase recovery email to the user.</p>
+            <p className="text-[10px] text-muted-foreground">
+              This will send an official Supabase recovery email to the user.
+            </p>
           </div>
 
           <Separator />
 
           <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 space-y-3">
             <Label className="text-destructive font-bold">Danger Zone</Label>
-            <Button 
-              variant="destructive" 
-              className="w-full" 
+            <Button
+              variant="destructive"
+              className="w-full"
               onClick={async () => {
-                if (window.confirm(`Are you absolutely sure you want to PERMANENTLY delete the account for ${user.full_name}? This cannot be undone.`)) {
+                if (
+                  window.confirm(
+                    `Are you absolutely sure you want to PERMANENTLY delete the account for ${user.full_name}? This cannot be undone.`,
+                  )
+                ) {
                   setLoading(true);
                   try {
                     const { error } = await (supabase as any).rpc("admin_delete_user", {
-                      target_user_id: user.id
+                      target_user_id: user.id,
                     });
                     if (error) throw error;
                     toast.success("Account deleted successfully");
@@ -144,7 +160,10 @@ export function UserEditDialog({ user, isOpen, onClose, onSuccess }: UserEditDia
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete Account Permanently
             </Button>
-            <p className="text-[10px] text-destructive/70">Warning: This will remove the user from the authentication system and all their profile data.</p>
+            <p className="text-[10px] text-destructive/70">
+              Warning: This will remove the user from the authentication system and all their
+              profile data.
+            </p>
           </div>
         </div>
 

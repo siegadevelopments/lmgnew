@@ -21,7 +21,10 @@ export function JustForYouSection() {
               Hand-picked recommendations for your wellness journey
             </p>
           </div>
-          <Link to="/products" className="hidden text-sm font-medium text-primary hover:underline sm:block">
+          <Link
+            to="/products"
+            className="hidden text-sm font-medium text-primary hover:underline sm:block"
+          >
             View all products →
           </Link>
         </div>
@@ -29,7 +32,10 @@ export function JustForYouSection() {
         <div className="mt-10 flex gap-4 overflow-x-auto pb-6 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:gap-6 sm:overflow-x-visible sm:pb-0 sm:grid-cols-2 lg:grid-cols-4">
           {isLoading
             ? Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex-none w-[42%] sm:w-auto group overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+                <div
+                  key={i}
+                  className="flex-none w-[42%] sm:w-auto group overflow-hidden rounded-2xl border border-border bg-card shadow-soft"
+                >
                   <Skeleton className="aspect-square w-full" />
                   <div className="p-4">
                     <Skeleton className="h-4 w-3/4" />

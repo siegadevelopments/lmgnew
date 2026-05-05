@@ -8,7 +8,8 @@ const promos = [
   {
     id: 1,
     title: "Anti-Aging Healthy Body Pak™ 2.0",
-    description: "Beyond Tangy Tangerine® 2.0 + Ultimate EFA Plus™ + Beyond Osteo-fx™ + Cell Shield RTQ™",
+    description:
+      "Beyond Tangy Tangerine® 2.0 + Ultimate EFA Plus™ + Beyond Osteo-fx™ + Cell Shield RTQ™",
     price: 227.59,
     originalPrice: 284.89,
     url: `${AFFILIATE_BASE}/anti-aging-healthy-body-pak-2-0.html`,
@@ -18,7 +19,8 @@ const promos = [
   {
     id: 2,
     title: "Healthy Body Bone and Joint Pak™ 2.0",
-    description: "Targeted support for bones, cartilage, and joint mobility with 90 essential nutrients.",
+    description:
+      "Targeted support for bones, cartilage, and joint mobility with 90 essential nutrients.",
     price: 257.84,
     originalPrice: 322.29,
     url: `${AFFILIATE_BASE}/healthy-body-bone-and-joint-pak-2-0.html`,
@@ -79,7 +81,8 @@ export function YoungevityPromoSection() {
             Get 20% off your Youngevity orders when registered
           </h2>
           <p className="mt-3 text-muted-foreground max-w-xl mx-auto text-sm">
-            Dr. Wallach's 90 essential nutrients — clinically formulated Healthy Body Paks delivered to your door.
+            Dr. Wallach's 90 essential nutrients — clinically formulated Healthy Body Paks delivered
+            to your door.
           </p>
           <div className="mt-5 flex items-center justify-center gap-3 flex-wrap">
             <Button

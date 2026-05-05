@@ -14,10 +14,17 @@ export function LatestArticlesSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex items-end justify-between">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Latest Blogs</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Stay informed with our latest health and wellness insights</p>
+            <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              Latest Blogs
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Stay informed with our latest health and wellness insights
+            </p>
           </div>
-          <Link to="/articles" className="hidden text-sm font-medium text-primary hover:underline sm:block">
+          <Link
+            to="/articles"
+            className="hidden text-sm font-medium text-primary hover:underline sm:block"
+          >
             View all articles →
           </Link>
         </div>
@@ -25,7 +32,10 @@ export function LatestArticlesSection() {
         <div className="mt-10 flex gap-4 overflow-x-auto pb-6 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:gap-6 sm:overflow-x-visible sm:pb-0 sm:grid-cols-2 lg:grid-cols-4">
           {isLoading
             ? Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex-none w-[42%] sm:w-auto rounded-xl border border-border bg-card shadow-soft">
+                <div
+                  key={i}
+                  className="flex-none w-[42%] sm:w-auto rounded-xl border border-border bg-card shadow-soft"
+                >
                   <Skeleton className="aspect-video w-full rounded-t-xl" />
                   <div className="p-5 space-y-2">
                     <Skeleton className="h-4 w-3/4" />
@@ -43,7 +53,12 @@ export function LatestArticlesSection() {
                 >
                   <div className="aspect-video overflow-hidden bg-muted">
                     {post.image_url ? (
-                      <img src={post.image_url} alt={post.title} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
+                      <img
+                        src={post.image_url}
+                        alt={post.title}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        loading="lazy"
+                      />
                     ) : null}
                   </div>
                   <div className="p-4">
@@ -59,7 +74,9 @@ export function LatestArticlesSection() {
         </div>
 
         <div className="mt-6 text-center sm:hidden">
-          <Link to="/articles" className="text-sm font-medium text-primary hover:underline">View all articles →</Link>
+          <Link to="/articles" className="text-sm font-medium text-primary hover:underline">
+            View all articles →
+          </Link>
         </div>
       </div>
     </section>

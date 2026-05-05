@@ -16,7 +16,7 @@ export function useSearch() {
         search: { q, page: 1, category: "" },
       });
     },
-    [navigate, searchQuery]
+    [navigate, searchQuery],
   );
 
   const handleCategoryClick = useCallback(
@@ -26,7 +26,7 @@ export function useSearch() {
         search: { q: "", page: 1, category },
       });
     },
-    [navigate]
+    [navigate],
   );
 
   return {

@@ -50,10 +50,26 @@ interface ScheduledPost {
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
-  draft: { label: "Draft", color: "bg-slate-500/10 text-slate-600 border-slate-200", icon: FileEdit },
-  approved: { label: "Approved", color: "bg-blue-500/10 text-blue-600 border-blue-200", icon: CheckCircle2 },
-  published: { label: "Published", color: "bg-emerald-500/10 text-emerald-600 border-emerald-200", icon: Send },
-  failed: { label: "Failed", color: "bg-red-500/10 text-red-600 border-red-200", icon: AlertCircle },
+  draft: {
+    label: "Draft",
+    color: "bg-slate-500/10 text-slate-600 border-slate-200",
+    icon: FileEdit,
+  },
+  approved: {
+    label: "Approved",
+    color: "bg-blue-500/10 text-blue-600 border-blue-200",
+    icon: CheckCircle2,
+  },
+  published: {
+    label: "Published",
+    color: "bg-emerald-500/10 text-emerald-600 border-emerald-200",
+    icon: Send,
+  },
+  failed: {
+    label: "Failed",
+    color: "bg-red-500/10 text-red-600 border-red-200",
+    icon: AlertCircle,
+  },
 };
 
 export function AdminMarketingTab() {
@@ -102,10 +118,10 @@ export function AdminMarketingTab() {
   // Stats
   const stats = useMemo(() => {
     const total = posts.length;
-    const drafts = posts.filter(p => p.status === "draft").length;
-    const approved = posts.filter(p => p.status === "approved").length;
-    const published = posts.filter(p => p.status === "published").length;
-    const failed = posts.filter(p => p.status === "failed").length;
+    const drafts = posts.filter((p) => p.status === "draft").length;
+    const approved = posts.filter((p) => p.status === "approved").length;
+    const published = posts.filter((p) => p.status === "published").length;
+    const failed = posts.filter((p) => p.status === "failed").length;
     return { total, drafts, approved, published, failed };
   }, [posts]);
 
@@ -126,11 +142,13 @@ export function AdminMarketingTab() {
   }, [calendarMonth]);
 
   const getPostsForDate = (date: Date) => {
-    return posts.filter(p => {
+    return posts.filter((p) => {
       const postDate = new Date(p.scheduled_at);
-      return postDate.getFullYear() === date.getFullYear() &&
-             postDate.getMonth() === date.getMonth() &&
-             postDate.getDate() === date.getDate();
+      return (
+        postDate.getFullYear() === date.getFullYear() &&
+        postDate.getMonth() === date.getMonth() &&
+        postDate.getDate() === date.getDate()
+      );
     });
   };
 
@@ -139,7 +157,7 @@ export function AdminMarketingTab() {
 
     const dates: string[] = [];
     const totalPosts = numWeeks * selectedDays.length;
-    
+
     if (selectedDays.length === 0) return [];
 
     let current = new Date();
@@ -162,7 +180,9 @@ export function AdminMarketingTab() {
   async function handleGenerate() {
     setGenerating(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
       const response = await fetch("/api/generate-posts", {
@@ -171,11 +191,11 @@ export function AdminMarketingTab() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           startDate: new Date().toISOString(),
           numWeeks,
           selectedDays: selectionMode === "weekly" ? selectedDays : null,
-          specificDates: selectionMode === "manual" ? selectedSpecificDates : null
+          specificDates: selectionMode === "manual" ? selectedSpecificDates : null,
         }),
       });
 
@@ -199,7 +219,9 @@ export function AdminMarketingTab() {
   async function handlePublish(postId: string) {
     setPublishing(postId);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
       const response = await fetch("/api/publish-social", {
@@ -230,7 +252,10 @@ export function AdminMarketingTab() {
       const { error } = await (supabase.from("scheduled_posts") as any)
         .update({
           caption: editCaption,
-          hashtags: editHashtags.split(",").map((h: string) => h.trim()).filter(Boolean),
+          hashtags: editHashtags
+            .split(",")
+            .map((h: string) => h.trim())
+            .filter(Boolean),
           image_url: editImageUrl || null,
           updated_at: new Date().toISOString(),
         })
@@ -259,7 +284,7 @@ export function AdminMarketingTab() {
 
   // Bulk approve all drafts
   async function handleBulkApprove() {
-    const draftIds = posts.filter(p => p.status === "draft").map(p => p.id);
+    const draftIds = posts.filter((p) => p.status === "draft").map((p) => p.id);
     if (draftIds.length === 0) return toast.info("No drafts to approve");
 
     const { error } = await (supabase.from("scheduled_posts") as any)
@@ -309,7 +334,10 @@ export function AdminMarketingTab() {
       const { error } = await (supabase.from("scheduled_posts") as any).insert({
         title: manualForm.title,
         caption: manualForm.caption,
-        hashtags: manualForm.hashtags.split(",").map((h: string) => h.trim()).filter(Boolean),
+        hashtags: manualForm.hashtags
+          .split(",")
+          .map((h: string) => h.trim())
+          .filter(Boolean),
         image_url: manualForm.image_url || null,
         source_type: "custom",
         source_url: manualForm.source_url || null,
@@ -319,7 +347,14 @@ export function AdminMarketingTab() {
       });
       if (error) throw error;
       toast.success("Post created!");
-      setManualForm({ title: "", caption: "", hashtags: "", image_url: "", scheduled_at: "", source_url: "" });
+      setManualForm({
+        title: "",
+        caption: "",
+        hashtags: "",
+        image_url: "",
+        scheduled_at: "",
+        source_url: "",
+      });
       setShowManualForm(false);
       await loadPosts();
     } catch (err: any) {
@@ -331,7 +366,9 @@ export function AdminMarketingTab() {
   async function aiEnhance(field: "title" | "caption" | "hashtags") {
     setEnhancingField(field);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
       const response = await fetch("/api/ai-enhance", {
@@ -343,14 +380,19 @@ export function AdminMarketingTab() {
         body: JSON.stringify({
           field,
           value: manualForm[field],
-          context: field === "title" ? manualForm.caption : field === "hashtags" ? manualForm.caption || manualForm.title : manualForm.title,
+          context:
+            field === "title"
+              ? manualForm.caption
+              : field === "hashtags"
+                ? manualForm.caption || manualForm.title
+                : manualForm.title,
         }),
       });
 
       const data = await response.json();
       if (!response.ok) throw new Error(data.suggestion || data.error || "AI enhancement failed");
 
-      setManualForm(prev => ({ ...prev, [field]: data.result }));
+      setManualForm((prev) => ({ ...prev, [field]: data.result }));
       toast.success(`${field.charAt(0).toUpperCase() + field.slice(1)} enhanced by AI!`);
     } catch (err: any) {
       toast.error(err.message || "AI enhancement failed");
@@ -372,9 +414,9 @@ export function AdminMarketingTab() {
     if (selectionMode === "manual") {
       const dateStr = day.toDateString();
       if (selectedSpecificDates.includes(dateStr)) {
-        setSelectedSpecificDates(prev => prev.filter(d => d !== dateStr));
+        setSelectedSpecificDates((prev) => prev.filter((d) => d !== dateStr));
       } else {
-        setSelectedSpecificDates(prev => [...prev, dateStr].sort());
+        setSelectedSpecificDates((prev) => [...prev, dateStr].sort());
       }
       return;
     }
@@ -393,7 +435,13 @@ export function AdminMarketingTab() {
     });
     setShowManualForm(true);
     // Scroll to form
-    setTimeout(() => document.getElementById("manual-post-form")?.scrollIntoView({ behavior: "smooth", block: "center" }), 100);
+    setTimeout(
+      () =>
+        document
+          .getElementById("manual-post-form")
+          ?.scrollIntoView({ behavior: "smooth", block: "center" }),
+      100,
+    );
   }
 
   if (loading) {
@@ -410,13 +458,35 @@ export function AdminMarketingTab() {
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {[
           { label: "Total", value: stats.total, color: "text-foreground", bg: "bg-muted/50" },
-          { label: "Drafts", value: stats.drafts, color: "text-slate-600", bg: "bg-slate-50 dark:bg-slate-900/30" },
-          { label: "Approved", value: stats.approved, color: "text-blue-600", bg: "bg-blue-50 dark:bg-blue-900/20" },
-          { label: "Published", value: stats.published, color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
-          { label: "Failed", value: stats.failed, color: "text-red-600", bg: "bg-red-50 dark:bg-red-900/20" },
+          {
+            label: "Drafts",
+            value: stats.drafts,
+            color: "text-slate-600",
+            bg: "bg-slate-50 dark:bg-slate-900/30",
+          },
+          {
+            label: "Approved",
+            value: stats.approved,
+            color: "text-blue-600",
+            bg: "bg-blue-50 dark:bg-blue-900/20",
+          },
+          {
+            label: "Published",
+            value: stats.published,
+            color: "text-emerald-600",
+            bg: "bg-emerald-50 dark:bg-emerald-900/20",
+          },
+          {
+            label: "Failed",
+            value: stats.failed,
+            color: "text-red-600",
+            bg: "bg-red-50 dark:bg-red-900/20",
+          },
         ].map((s) => (
           <div key={s.label} className={cn("rounded-xl p-4 border border-border/50", s.bg)}>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{s.label}</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              {s.label}
+            </p>
             <p className={cn("text-2xl font-black mt-1", s.color)}>{s.value}</p>
           </div>
         ))}
@@ -432,17 +502,17 @@ export function AdminMarketingTab() {
                 Marketing Automation
               </h3>
               <div className="flex items-center gap-1 bg-muted/50 p-0.5 rounded-lg border border-border/50 w-fit">
-                <Button 
-                  variant={selectionMode === "weekly" ? "secondary" : "ghost"} 
-                  size="sm" 
+                <Button
+                  variant={selectionMode === "weekly" ? "secondary" : "ghost"}
+                  size="sm"
                   className="h-7 text-[10px] px-3 font-bold"
                   onClick={() => setSelectionMode("weekly")}
                 >
                   Weekly Pattern
                 </Button>
-                <Button 
-                  variant={selectionMode === "manual" ? "secondary" : "ghost"} 
-                  size="sm" 
+                <Button
+                  variant={selectionMode === "manual" ? "secondary" : "ghost"}
+                  size="sm"
                   className="h-7 text-[10px] px-3 font-bold"
                   onClick={() => setSelectionMode("manual")}
                 >
@@ -454,7 +524,9 @@ export function AdminMarketingTab() {
               {selectionMode === "weekly" ? (
                 <>
                   <div className="flex flex-col gap-1.5">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Days of Week</span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">
+                      Days of Week
+                    </span>
                     <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg border border-border/50">
                       {[
                         { l: "S", v: 0 },
@@ -469,16 +541,16 @@ export function AdminMarketingTab() {
                           key={d.v}
                           onClick={() => {
                             if (selectedDays.includes(d.v)) {
-                              setSelectedDays(selectedDays.filter(day => day !== d.v));
+                              setSelectedDays(selectedDays.filter((day) => day !== d.v));
                             } else {
                               setSelectedDays([...selectedDays, d.v].sort());
                             }
                           }}
                           className={cn(
                             "w-7 h-7 rounded-md text-[10px] font-bold transition-all",
-                            selectedDays.includes(d.v) 
-                              ? "bg-primary text-primary-foreground shadow-sm" 
-                              : "bg-background text-muted-foreground hover:bg-muted"
+                            selectedDays.includes(d.v)
+                              ? "bg-primary text-primary-foreground shadow-sm"
+                              : "bg-background text-muted-foreground hover:bg-muted",
                           )}
                         >
                           {d.l}
@@ -488,9 +560,11 @@ export function AdminMarketingTab() {
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Duration</span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">
+                      Duration
+                    </span>
                     <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border border-border/50 h-9">
-                      <select 
+                      <select
                         className="h-full rounded-md border-0 bg-transparent px-2 py-0 text-sm font-semibold focus:ring-0 cursor-pointer"
                         value={numWeeks}
                         onChange={(e) => setNumWeeks(Number(e.target.value))}
@@ -506,12 +580,16 @@ export function AdminMarketingTab() {
                 </>
               ) : (
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">Selection</span>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">
+                    Selection
+                  </span>
                   <div className="flex items-center gap-3 bg-muted/50 px-4 py-1.5 rounded-lg border border-border/50 h-9">
-                    <span className="text-sm font-bold text-primary">{selectedSpecificDates.length} Dates Selected</span>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <span className="text-sm font-bold text-primary">
+                      {selectedSpecificDates.length} Dates Selected
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       className="h-6 text-[10px] text-destructive hover:text-destructive hover:bg-destructive/10"
                       onClick={() => setSelectedSpecificDates([])}
                     >
@@ -524,7 +602,11 @@ export function AdminMarketingTab() {
               <div className="pt-5 flex items-center gap-3">
                 <Button
                   onClick={handleGenerate}
-                  disabled={generating || (selectionMode === "weekly" && selectedDays.length === 0) || (selectionMode === "manual" && selectedSpecificDates.length === 0)}
+                  disabled={
+                    generating ||
+                    (selectionMode === "weekly" && selectedDays.length === 0) ||
+                    (selectionMode === "manual" && selectedSpecificDates.length === 0)
+                  }
                   className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 shadow-lg min-w-[140px] h-10"
                 >
                   {generating ? (
@@ -541,18 +623,35 @@ export function AdminMarketingTab() {
                 </Button>
 
                 <div className="flex items-center gap-2 h-10 px-1 border-l border-border/50 ml-1">
-                  <Button variant="outline" size="sm" onClick={handleBulkApprove} disabled={stats.drafts === 0} className="h-9">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBulkApprove}
+                    disabled={stats.drafts === 0}
+                    className="h-9"
+                  >
                     <CheckCircle2 className="mr-2 h-4 w-4" />
                     Approve ({stats.drafts})
                   </Button>
-                  <Button variant="outline" size="sm" onClick={handleClearDrafts} disabled={stats.drafts === 0} className="h-9 text-destructive hover:text-destructive hover:bg-destructive/10">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleClearDrafts}
+                    disabled={stats.drafts === 0}
+                    className="h-9 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
                     <Trash2 className="mr-2 h-4 w-4" />
                     Clear
                   </Button>
                   <Button variant="ghost" size="icon" onClick={loadPosts} className="h-9 w-9">
                     <RefreshCw className="h-4 w-4" />
                   </Button>
-                  <Button variant="secondary" size="sm" onClick={() => setShowManualForm(!showManualForm)} className="h-9">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setShowManualForm(!showManualForm)}
+                    className="h-9"
+                  >
                     <Plus className="mr-2 h-4 w-4" />
                     Add Post
                   </Button>
@@ -567,13 +666,22 @@ export function AdminMarketingTab() {
       {showManualForm && (
         <Card className="border-primary/20 bg-primary/5 animate-in fade-in slide-in-from-top-2 duration-300">
           <CardHeader className="pb-3">
-         <CardTitle className="text-lg flex items-center gap-2">
-              <Plus className="h-5 w-5" /> Create Post {manualForm.scheduled_at ? `for ${new Date(manualForm.scheduled_at).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}` : "Manually"}
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Plus className="h-5 w-5" /> Create Post{" "}
+              {manualForm.scheduled_at
+                ? `for ${new Date(manualForm.scheduled_at).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}`
+                : "Manually"}
             </CardTitle>
-            <CardDescription>Schedule a custom social media post without AI generation.</CardDescription>
+            <CardDescription>
+              Schedule a custom social media post without AI generation.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <form id="manual-post-form" onSubmit={handleManualCreate} className="grid gap-4 sm:grid-cols-2">
+            <form
+              id="manual-post-form"
+              onSubmit={handleManualCreate}
+              className="grid gap-4 sm:grid-cols-2"
+            >
               <div className="space-y-2 sm:col-span-2">
                 <div className="flex items-center justify-between">
                   <Label>Title</Label>
@@ -585,14 +693,22 @@ export function AdminMarketingTab() {
                     disabled={enhancingField === "title"}
                     onClick={() => aiEnhance("title")}
                   >
-                    {enhancingField === "title" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                    {enhancingField === "title" ? "Enhancing..." : manualForm.title ? "Improve with AI" : "Generate with AI"}
+                    {enhancingField === "title" ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3 w-3" />
+                    )}
+                    {enhancingField === "title"
+                      ? "Enhancing..."
+                      : manualForm.title
+                        ? "Improve with AI"
+                        : "Generate with AI"}
                   </Button>
                 </div>
                 <Input
                   required
                   value={manualForm.title}
-                  onChange={e => setManualForm({ ...manualForm, title: e.target.value })}
+                  onChange={(e) => setManualForm({ ...manualForm, title: e.target.value })}
                   placeholder="e.g. Monday Motivation — Gut Health Tips"
                 />
               </div>
@@ -607,15 +723,23 @@ export function AdminMarketingTab() {
                     disabled={enhancingField === "caption"}
                     onClick={() => aiEnhance("caption")}
                   >
-                    {enhancingField === "caption" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
-                    {enhancingField === "caption" ? "Writing..." : manualForm.caption ? "Rewrite with AI" : "Write with AI"}
+                    {enhancingField === "caption" ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3 w-3" />
+                    )}
+                    {enhancingField === "caption"
+                      ? "Writing..."
+                      : manualForm.caption
+                        ? "Rewrite with AI"
+                        : "Write with AI"}
                   </Button>
                 </div>
                 <Textarea
                   required
                   rows={5}
                   value={manualForm.caption}
-                  onChange={e => setManualForm({ ...manualForm, caption: e.target.value })}
+                  onChange={(e) => setManualForm({ ...manualForm, caption: e.target.value })}
                   placeholder="Write your post caption here... or click 'Write with AI' to generate one"
                 />
               </div>
@@ -630,13 +754,17 @@ export function AdminMarketingTab() {
                     disabled={enhancingField === "hashtags"}
                     onClick={() => aiEnhance("hashtags")}
                   >
-                    {enhancingField === "hashtags" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                    {enhancingField === "hashtags" ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3 w-3" />
+                    )}
                     {enhancingField === "hashtags" ? "Generating..." : "Auto-generate"}
                   </Button>
                 </div>
                 <Input
                   value={manualForm.hashtags}
-                  onChange={e => setManualForm({ ...manualForm, hashtags: e.target.value })}
+                  onChange={(e) => setManualForm({ ...manualForm, hashtags: e.target.value })}
                   placeholder="#NaturalWellness, #MenopauseSupport"
                 />
               </div>
@@ -646,14 +774,14 @@ export function AdminMarketingTab() {
                   type="datetime-local"
                   required
                   value={manualForm.scheduled_at}
-                  onChange={e => setManualForm({ ...manualForm, scheduled_at: e.target.value })}
+                  onChange={(e) => setManualForm({ ...manualForm, scheduled_at: e.target.value })}
                 />
               </div>
               <div className="space-y-2">
                 <Label>Image URL (optional)</Label>
                 <Input
                   value={manualForm.image_url}
-                  onChange={e => setManualForm({ ...manualForm, image_url: e.target.value })}
+                  onChange={(e) => setManualForm({ ...manualForm, image_url: e.target.value })}
                   placeholder="https://..."
                 />
               </div>
@@ -661,7 +789,7 @@ export function AdminMarketingTab() {
                 <Label>Link URL (optional)</Label>
                 <Input
                   value={manualForm.source_url}
-                  onChange={e => setManualForm({ ...manualForm, source_url: e.target.value })}
+                  onChange={(e) => setManualForm({ ...manualForm, source_url: e.target.value })}
                   placeholder="/articles/my-article-slug"
                 />
               </div>
@@ -669,7 +797,9 @@ export function AdminMarketingTab() {
                 <Button type="submit">
                   <Plus className="mr-2 h-4 w-4" /> Create Post
                 </Button>
-                <Button type="button" variant="outline" onClick={() => setShowManualForm(false)}>Cancel</Button>
+                <Button type="button" variant="outline" onClick={() => setShowManualForm(false)}>
+                  Cancel
+                </Button>
               </div>
             </form>
           </CardContent>
@@ -709,13 +839,29 @@ export function AdminMarketingTab() {
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <Button variant="ghost" size="icon" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() =>
+                  setCalendarMonth(
+                    new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1),
+                  )
+                }
+              >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <h3 className="text-lg font-bold">
                 {calendarMonth.toLocaleDateString("en-AU", { month: "long", year: "numeric" })}
               </h3>
-              <Button variant="ghost" size="icon" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() =>
+                  setCalendarMonth(
+                    new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1),
+                  )
+                }
+              >
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -724,7 +870,10 @@ export function AdminMarketingTab() {
             {/* Day headers */}
             <div className="grid grid-cols-7 gap-1 mb-1">
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
-                <div key={d} className="text-center text-[10px] font-bold text-muted-foreground uppercase tracking-widest py-2">
+                <div
+                  key={d}
+                  className="text-center text-[10px] font-bold text-muted-foreground uppercase tracking-widest py-2"
+                >
                   {d}
                 </div>
               ))}
@@ -743,8 +892,11 @@ export function AdminMarketingTab() {
                     key={day.toISOString()}
                     className={cn(
                       "min-h-[100px] rounded-lg border p-1.5 transition-all hover:shadow-md cursor-pointer group/day relative",
-                      isToday ? "bg-primary/10 border-primary ring-2 ring-primary/20 shadow-sm" : 
-                      isProposed ? "bg-primary/[0.15] border-primary/60 border-dashed shadow-sm" : "border-border/30"
+                      isToday
+                        ? "bg-primary/10 border-primary ring-2 ring-primary/20 shadow-sm"
+                        : isProposed
+                          ? "bg-primary/[0.15] border-primary/60 border-dashed shadow-sm"
+                          : "border-border/30",
                     )}
                     onClick={(e) => {
                       // Only trigger if clicking the day cell itself, not a post button
@@ -753,10 +905,16 @@ export function AdminMarketingTab() {
                     }}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <p className={cn(
-                        "text-xs font-bold",
-                        isToday ? "text-primary" : isProposed ? "text-primary/70" : "text-muted-foreground"
-                      )}>
+                      <p
+                        className={cn(
+                          "text-xs font-bold",
+                          isToday
+                            ? "text-primary"
+                            : isProposed
+                              ? "text-primary/70"
+                              : "text-muted-foreground",
+                        )}
+                      >
                         {day.getDate()}
                       </p>
                       <div className="flex items-center gap-1">
@@ -775,10 +933,13 @@ export function AdminMarketingTab() {
                           <button
                             key={p.id}
                             data-post="true"
-                            onClick={(e) => { e.stopPropagation(); openEditor(p); }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditor(p);
+                            }}
                             className={cn(
                               "w-full text-left text-[9px] leading-tight font-medium px-1 py-0.5 rounded truncate transition-all hover:opacity-80",
-                              cfg.color
+                              cfg.color,
                             )}
                             title={p.title}
                           >
@@ -809,7 +970,8 @@ export function AdminMarketingTab() {
                 <Sparkles className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
                 <h3 className="text-lg font-bold mb-2">No posts scheduled yet</h3>
                 <p className="text-sm text-muted-foreground mb-6">
-                  Click "Generate 30 Days" to create AI-powered marketing content from your articles and products.
+                  Click "Generate 30 Days" to create AI-powered marketing content from your articles
+                  and products.
                 </p>
               </CardContent>
             </Card>
@@ -831,16 +993,32 @@ export function AdminMarketingTab() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <StatusIcon className="h-3.5 w-3.5 shrink-0" />
-                          <Badge variant="outline" className={cn("text-[9px] font-bold uppercase tracking-wider", cfg.color)}>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-[9px] font-bold uppercase tracking-wider",
+                              cfg.color,
+                            )}
+                          >
                             {cfg.label}
                           </Badge>
-                          <Badge variant="secondary" className="text-[9px] uppercase tracking-wider">
+                          <Badge
+                            variant="secondary"
+                            className="text-[9px] uppercase tracking-wider"
+                          >
                             {post.source_type}
                           </Badge>
                           <span className="text-[10px] text-muted-foreground ml-auto shrink-0">
                             <Clock className="inline h-3 w-3 mr-0.5" />
-                            {new Date(post.scheduled_at).toLocaleDateString("en-AU", { day: "numeric", month: "short" })} at{" "}
-                            {new Date(post.scheduled_at).toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" })}
+                            {new Date(post.scheduled_at).toLocaleDateString("en-AU", {
+                              day: "numeric",
+                              month: "short",
+                            })}{" "}
+                            at{" "}
+                            {new Date(post.scheduled_at).toLocaleTimeString("en-AU", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </span>
                         </div>
                         <h4 className="text-sm font-bold truncate">{post.title}</h4>
@@ -849,23 +1027,40 @@ export function AdminMarketingTab() {
                         </p>
                         <div className="flex items-center gap-1 mt-2 flex-wrap">
                           {(post.hashtags || []).slice(0, 4).map((h, i) => (
-                            <span key={i} className="text-[9px] bg-primary/5 text-primary px-1.5 py-0.5 rounded-full font-medium">
+                            <span
+                              key={i}
+                              className="text-[9px] bg-primary/5 text-primary px-1.5 py-0.5 rounded-full font-medium"
+                            >
                               {h.startsWith("#") ? h : `#${h}`}
                             </span>
                           ))}
                           <div className="ml-auto flex items-center gap-1">
-                            {post.platforms?.includes("facebook") && <Facebook className="h-3.5 w-3.5 text-blue-600" />}
-                            {post.platforms?.includes("instagram") && <Instagram className="h-3.5 w-3.5 text-pink-600" />}
+                            {post.platforms?.includes("facebook") && (
+                              <Facebook className="h-3.5 w-3.5 text-blue-600" />
+                            )}
+                            {post.platforms?.includes("instagram") && (
+                              <Instagram className="h-3.5 w-3.5 text-pink-600" />
+                            )}
                           </div>
                         </div>
                       </div>
                       {/* Actions */}
                       <div className="flex flex-col gap-1 shrink-0">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditor(post)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => openEditor(post)}
+                        >
                           <Eye className="h-3.5 w-3.5" />
                         </Button>
                         {post.status === "draft" && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-blue-600" onClick={() => handleApprove(post.id)}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-blue-600"
+                            onClick={() => handleApprove(post.id)}
+                          >
                             <CheckCircle2 className="h-3.5 w-3.5" />
                           </Button>
                         )}
@@ -877,10 +1072,19 @@ export function AdminMarketingTab() {
                             onClick={() => handlePublish(post.id)}
                             disabled={publishing === post.id}
                           >
-                            {publishing === post.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                            {publishing === post.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Send className="h-3.5 w-3.5" />
+                            )}
                           </Button>
                         )}
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleDelete(post.id)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive"
+                          onClick={() => handleDelete(post.id)}
+                        >
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
@@ -901,7 +1105,10 @@ export function AdminMarketingTab() {
 
       {/* Post Editor Modal */}
       {selectedPost && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setSelectedPost(null)}>
+        <div
+          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+          onClick={() => setSelectedPost(null)}
+        >
           <div
             className="bg-background rounded-2xl border border-border shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
@@ -910,7 +1117,12 @@ export function AdminMarketingTab() {
               <div>
                 <h3 className="text-lg font-bold">{selectedPost.title}</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Scheduled for {new Date(selectedPost.scheduled_at).toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })}
+                  Scheduled for{" "}
+                  {new Date(selectedPost.scheduled_at).toLocaleDateString("en-AU", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                  })}
                 </p>
               </div>
               <Button variant="ghost" size="icon" onClick={() => setSelectedPost(null)}>
@@ -922,7 +1134,11 @@ export function AdminMarketingTab() {
               {/* Preview Image */}
               <div className="space-y-2">
                 <Label>Image URL</Label>
-                <Input value={editImageUrl} onChange={(e) => setEditImageUrl(e.target.value)} placeholder="https://..." />
+                <Input
+                  value={editImageUrl}
+                  onChange={(e) => setEditImageUrl(e.target.value)}
+                  placeholder="https://..."
+                />
                 {editImageUrl && (
                   <div className="rounded-xl overflow-hidden border border-border aspect-video bg-muted">
                     <img src={editImageUrl} alt="Preview" className="h-full w-full object-cover" />
@@ -960,18 +1176,30 @@ export function AdminMarketingTab() {
                   <Label className="text-muted-foreground">Platforms</Label>
                   <div className="flex gap-2 mt-1">
                     {selectedPost.platforms?.includes("facebook") && (
-                      <Badge variant="secondary" className="gap-1"><Facebook className="h-3 w-3" /> Facebook</Badge>
+                      <Badge variant="secondary" className="gap-1">
+                        <Facebook className="h-3 w-3" /> Facebook
+                      </Badge>
                     )}
                     {selectedPost.platforms?.includes("instagram") && (
-                      <Badge variant="secondary" className="gap-1"><Instagram className="h-3 w-3" /> Instagram</Badge>
+                      <Badge variant="secondary" className="gap-1">
+                        <Instagram className="h-3 w-3" /> Instagram
+                      </Badge>
                     )}
                   </div>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Source</Label>
                   <p className="text-sm font-medium mt-1">
-                    {selectedPost.source_type} {selectedPost.source_url && (
-                      <a href={selectedPost.source_url} className="text-primary underline text-xs ml-1" target="_blank" rel="noopener">View →</a>
+                    {selectedPost.source_type}{" "}
+                    {selectedPost.source_url && (
+                      <a
+                        href={selectedPost.source_url}
+                        className="text-primary underline text-xs ml-1"
+                        target="_blank"
+                        rel="noopener"
+                      >
+                        View →
+                      </a>
                     )}
                   </p>
                 </div>
@@ -982,20 +1210,31 @@ export function AdminMarketingTab() {
             <div className="flex items-center justify-between p-6 border-t border-border bg-muted/30">
               <div className="flex gap-2">
                 {selectedPost.status !== "published" && (
-                  <Button variant="destructive" size="sm" onClick={() => { handleDelete(selectedPost.id); }}>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      handleDelete(selectedPost.id);
+                    }}
+                  >
                     <Trash2 className="mr-2 h-4 w-4" /> Delete
                   </Button>
                 )}
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setSelectedPost(null)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setSelectedPost(null)}>
+                  Cancel
+                </Button>
                 <Button onClick={handleUpdatePost}>
                   <FileEdit className="mr-2 h-4 w-4" /> Save Changes
                 </Button>
                 {selectedPost.status !== "published" && (
                   <Button
                     className="bg-gradient-to-r from-emerald-500 to-emerald-600"
-                    onClick={() => { handlePublish(selectedPost.id); setSelectedPost(null); }}
+                    onClick={() => {
+                      handlePublish(selectedPost.id);
+                      setSelectedPost(null);
+                    }}
                   >
                     <Send className="mr-2 h-4 w-4" /> Publish Now
                   </Button>

@@ -16,10 +16,17 @@ export function FeaturedRecipesSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex items-end justify-between">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Nutritious Recipes</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Delicious meals approved by wellness experts</p>
+            <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              Nutritious Recipes
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Delicious meals approved by wellness experts
+            </p>
           </div>
-          <Link to="/recipes" className="hidden text-sm font-medium text-primary hover:underline sm:block">
+          <Link
+            to="/recipes"
+            className="hidden text-sm font-medium text-primary hover:underline sm:block"
+          >
             View all recipes →
           </Link>
         </div>
@@ -27,7 +34,10 @@ export function FeaturedRecipesSection() {
         <div className="mt-10 flex gap-4 overflow-x-auto pb-6 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:gap-6 sm:overflow-x-visible sm:pb-0 sm:grid-cols-2 lg:grid-cols-4">
           {isLoading
             ? Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex-none w-[42%] sm:w-auto rounded-2xl border border-border bg-card p-4 shadow-soft">
+                <div
+                  key={i}
+                  className="flex-none w-[42%] sm:w-auto rounded-2xl border border-border bg-card p-4 shadow-soft"
+                >
                   <Skeleton className="aspect-square w-full rounded-xl" />
                   <div className="mt-4 space-y-2">
                     <Skeleton className="h-4 w-3/4" />
@@ -62,7 +72,7 @@ export function FeaturedRecipesSection() {
                       {recipe.title}
                     </h3>
                     <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
-                      {recipe.excerpt ? recipe.excerpt.replace(/<[^>]+>/g, '') : 'Healthy recipe'}
+                      {recipe.excerpt ? recipe.excerpt.replace(/<[^>]+>/g, "") : "Healthy recipe"}
                     </p>
                   </div>
                 </Link>
@@ -70,7 +80,9 @@ export function FeaturedRecipesSection() {
         </div>
 
         <div className="mt-6 text-center sm:hidden">
-          <Link to="/recipes" className="text-sm font-medium text-primary hover:underline">View all recipes →</Link>
+          <Link to="/recipes" className="text-sm font-medium text-primary hover:underline">
+            View all recipes →
+          </Link>
         </div>
       </div>
     </section>

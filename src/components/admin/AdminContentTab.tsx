@@ -5,13 +5,25 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, Loader2, User, FileText, Video, Utensils, CheckCircle2, Sparkles } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Loader2,
+  User,
+  FileText,
+  Video,
+  Utensils,
+  CheckCircle2,
+  Sparkles,
+} from "lucide-react";
 import { toast } from "sonner";
 import { uploadMedia } from "@/lib/upload";
 import { useQueryClient } from "@tanstack/react-query";
 
 export function AdminContentTab({ vendors }: { vendors: any[] }) {
-  const [activeType, setActiveType] = useState<"articles" | "videos" | "recipes" | "products">("articles");
+  const [activeType, setActiveType] = useState<"articles" | "videos" | "recipes" | "products">(
+    "articles",
+  );
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedVendorId, setSelectedVendorId] = useState<string>("");
@@ -67,10 +79,9 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     async function loadItems() {
       setLoading(true);
       setItems([]); // Clear previous items to avoid "ghost content"
-      
+
       try {
-        const { data, error } = await (supabase
-          .from(activeType) as any)
+        const { data, error } = await (supabase.from(activeType) as any)
           .select("*")
           .order("created_at", { ascending: false })
           .limit(50);
@@ -102,12 +113,11 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   }, [activeType]);
 
   const loadItems = async () => {
-    // This is now a manual trigger function if needed, 
+    // This is now a manual trigger function if needed,
     // but the effect handles the main loading logic.
     setLoading(true);
     try {
-      const { data, error } = await (supabase
-        .from(activeType) as any)
+      const { data, error } = await (supabase.from(activeType) as any)
         .select("*")
         .order("created_at", { ascending: false })
         .limit(50);
@@ -166,7 +176,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         content,
         image_url: imageUrl,
         slug: title.toLowerCase().replace(/ /g, "-"),
-        category_name: category
+        category_name: category,
       });
     } else if (activeType === "recipes") {
       result = await (supabase.from("recipes") as any).insert({
@@ -175,7 +185,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         image_url: imageUrl,
         slug: title.toLowerCase().replace(/ /g, "-"),
         prep_time: prepTime,
-        cook_time: cookTime
+        cook_time: cookTime,
       });
     } else if (activeType === "videos") {
       result = await (supabase.from("videos") as any).insert({
@@ -184,7 +194,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         embed_url: embedUrl,
         thumbnail_url: imageUrl,
         author_id: selectedVendorId,
-        status: embedUrl.includes('video-uploads') ? 'uploading' : 'ready'
+        status: embedUrl.includes("video-uploads") ? "uploading" : "ready",
       });
     } else if (activeType === "products") {
       result = await (supabase.from("products") as any).insert({
@@ -194,7 +204,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         image_url: embedUrl, // Reusing embedUrl for product image in the UI form
         vendor_id: selectedVendorId,
         status: "published",
-        slug: title.toLowerCase().replace(/ /g, "-")
+        slug: title.toLowerCase().replace(/ /g, "-"),
       });
     }
 
@@ -219,7 +229,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     const toastId = toast.loading("AI is painting a thumbnail...");
     try {
       const { data, error } = await supabase.functions.invoke("generate-ai-image", {
-        body: { prompt: `${title} ${content || ""}`.trim() }
+        body: { prompt: `${title} ${content || ""}`.trim() },
       });
       if (error) throw error;
       if (data?.url) {
@@ -243,18 +253,18 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       loadItems();
     }
   }
-  
+
   async function toggleFeatured(id: string, current: boolean) {
     const { error } = await (supabase.from("videos") as any)
       .update({ is_featured: !current })
       .eq("id", id);
-    
+
     if (error) {
       toast.error("Failed to update featured status");
     } else {
       toast.success(!current ? "Video featured on global feed" : "Video removed from global feed");
       queryClient.invalidateQueries({ queryKey: ["videos", "list"] });
-      setItems(items.map(item => item.id === id ? { ...item, is_featured: !current } : item));
+      setItems(items.map((item) => (item.id === id ? { ...item, is_featured: !current } : item)));
     }
   }
 
@@ -270,32 +280,32 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Content Type</label>
                 <div className="flex gap-2">
-                  <Button 
-                    type="button" 
+                  <Button
+                    type="button"
                     variant={activeType === "articles" ? "default" : "outline"}
                     onClick={() => setActiveType("articles")}
                     size="sm"
                   >
                     <FileText className="mr-2 h-4 w-4" /> Article
                   </Button>
-                  <Button 
-                    type="button" 
+                  <Button
+                    type="button"
                     variant={activeType === "videos" ? "default" : "outline"}
                     onClick={() => setActiveType("videos")}
                     size="sm"
                   >
                     <Video className="mr-2 h-4 w-4" /> Video
                   </Button>
-                  <Button 
-                    type="button" 
+                  <Button
+                    type="button"
                     variant={activeType === "recipes" ? "default" : "outline"}
                     onClick={() => setActiveType("recipes")}
                     size="sm"
                   >
                     <Utensils className="mr-2 h-4 w-4" /> Recipe
                   </Button>
-                  <Button 
-                    type="button" 
+                  <Button
+                    type="button"
                     variant={activeType === "products" ? "default" : "outline"}
                     onClick={() => setActiveType("products")}
                     size="sm"
@@ -307,15 +317,17 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Assign to Vendor</label>
-                <select 
+                <select
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   value={selectedVendorId}
                   onChange={(e) => setSelectedVendorId(e.target.value)}
                   required
                 >
                   <option value="">Select Vendor</option>
-                  {vendors.map(v => (
-                    <option key={v.id} value={v.id}>{v.store_name}</option>
+                  {vendors.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.store_name}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -323,7 +335,12 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Title</label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Enter title" required />
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Enter title"
+                required
+              />
             </div>
 
             {activeType === "videos" ? (
@@ -388,7 +405,9 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                     className={`flex items-center gap-2 cursor-pointer rounded-md border border-input bg-background px-3 py-2 text-sm font-medium transition-colors hover:bg-accent ${
                       uploadingVideo || !selectedVendorId ? "pointer-events-none opacity-50" : ""
                     }`}
-                    title={!selectedVendorId ? "Select a vendor first" : "Upload multiple videos at once"}
+                    title={
+                      !selectedVendorId ? "Select a vendor first" : "Upload multiple videos at once"
+                    }
                   >
                     {uploadingVideo ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -412,7 +431,9 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                         return;
                       }
                       setUploadingVideo(true);
-                      const toastId = toast.loading(`Uploading ${files.length} video${files.length > 1 ? "s" : ""}...`);
+                      const toastId = toast.loading(
+                        `Uploading ${files.length} video${files.length > 1 ? "s" : ""}...`,
+                      );
                       const insertedIds: string[] = [];
 
                       for (let i = 0; i < files.length; i++) {
@@ -422,13 +443,16 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                           const url = await uploadMedia(file, "admin_uploads", "video-uploads");
                           if (url) {
                             const fileName = file.name.split(".").slice(0, -1).join(".");
-                            const { data: inserted } = await (supabase.from("videos") as any).insert({
-                              title: fileName,
-                              embed_url: url,
-                              author_id: selectedVendorId,
-                              status: 'uploading', // Ensure status is set to trigger function
-                              description: `Uploaded via admin on ${new Date().toLocaleDateString()}`,
-                            }).select("id").single();
+                            const { data: inserted } = await (supabase.from("videos") as any)
+                              .insert({
+                                title: fileName,
+                                embed_url: url,
+                                author_id: selectedVendorId,
+                                status: "uploading", // Ensure status is set to trigger function
+                                description: `Uploaded via admin on ${new Date().toLocaleDateString()}`,
+                              })
+                              .select("id")
+                              .single();
                             if (inserted?.id) insertedIds.push(inserted.id);
                           }
                         } catch (err: any) {
@@ -436,7 +460,10 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                         }
                       }
 
-                      toast.success(`${insertedIds.length} of ${files.length} video${files.length > 1 ? "s" : ""} saved!`, { id: toastId });
+                      toast.success(
+                        `${insertedIds.length} of ${files.length} video${files.length > 1 ? "s" : ""} saved!`,
+                        { id: toastId },
+                      );
                       setVideoUploadProgress("");
                       setUploadingVideo(false);
                       await refreshAndHighlight(insertedIds);
@@ -451,31 +478,47 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
             ) : null}
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">{activeType === "products" ? "Price ($)" : "Image URL"}</label>
+              <label className="text-sm font-medium">
+                {activeType === "products" ? "Price ($)" : "Image URL"}
+              </label>
               <div className="flex gap-2">
-                <Input 
-                  value={imageUrl} 
-                  onChange={(e) => setImageUrl(e.target.value)} 
-                  placeholder={activeType === "products" ? "e.g. 29.99" : "https://..."} 
+                <Input
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  placeholder={activeType === "products" ? "e.g. 29.99" : "https://..."}
                 />
                 {activeType !== "products" && (
                   <div className="flex gap-1 shrink-0">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="icon" 
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
                       onClick={generateAIThumbnail}
                       disabled={generatingImage}
                       className="h-10 w-10 text-primary border-primary/30 hover:bg-primary/5"
                       title="Generate Thumbnail with AI"
                     >
-                      {generatingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                      {generatingImage ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4" />
+                      )}
                     </Button>
-                    <Button type="button" variant="outline" size="icon" className="relative h-10 w-10 overflow-hidden" disabled={uploadingImage}>
-                      {uploadingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                      <input 
-                        type="file" 
-                        accept="image/*" 
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="relative h-10 w-10 overflow-hidden"
+                      disabled={uploadingImage}
+                    >
+                      {uploadingImage ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Plus className="h-4 w-4" />
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
                         className="absolute inset-0 cursor-pointer opacity-0"
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
@@ -497,13 +540,27 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Image URL</label>
                 <div className="flex gap-2">
-                  <Input value={embedUrl} onChange={(e) => setEmbedUrl(e.target.value)} placeholder="https://..." />
+                  <Input
+                    value={embedUrl}
+                    onChange={(e) => setEmbedUrl(e.target.value)}
+                    placeholder="https://..."
+                  />
                   <div className="shrink-0">
-                    <Button type="button" variant="outline" size="icon" className="relative h-10 w-10 overflow-hidden" disabled={uploadingImage}>
-                      {uploadingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                      <input 
-                        type="file" 
-                        accept="image/*" 
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="relative h-10 w-10 overflow-hidden"
+                      disabled={uploadingImage}
+                    >
+                      {uploadingImage ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Plus className="h-4 w-4" />
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
                         className="absolute inset-0 cursor-pointer opacity-0"
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
@@ -524,21 +581,31 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Prep Time</label>
-                  <Input value={prepTime} onChange={(e) => setPrepTime(e.target.value)} placeholder="e.g. 15 mins" />
+                  <Input
+                    value={prepTime}
+                    onChange={(e) => setPrepTime(e.target.value)}
+                    placeholder="e.g. 15 mins"
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Cook Time</label>
-                  <Input value={cookTime} onChange={(e) => setCookTime(e.target.value)} placeholder="e.g. 30 mins" />
+                  <Input
+                    value={cookTime}
+                    onChange={(e) => setCookTime(e.target.value)}
+                    placeholder="e.g. 30 mins"
+                  />
                 </div>
               </div>
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">{activeType === "videos" ? "Description" : "Content"}</label>
-              <Textarea 
-                value={content} 
-                onChange={(e) => setContent(e.target.value)} 
-                placeholder="Enter content/description" 
+              <label className="text-sm font-medium">
+                {activeType === "videos" ? "Description" : "Content"}
+              </label>
+              <Textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Enter content/description"
                 rows={5}
               />
             </div>
@@ -556,16 +623,25 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
           {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
         </h3>
         {loading && items.length === 0 ? (
-          <div className="flex py-10 justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>
+          <div className="flex py-10 justify-center">
+            <Loader2 className="h-6 w-6 animate-spin" />
+          </div>
         ) : items.length === 0 ? (
-          <Card><CardContent className="py-10 text-center text-muted-foreground">No {activeType} found.</CardContent></Card>
+          <Card>
+            <CardContent className="py-10 text-center text-muted-foreground">
+              No {activeType} found.
+            </CardContent>
+          </Card>
         ) : (
           <div className="grid gap-3">
-            {items.map(item => {
+            {items.map((item) => {
               const vendorId = item.vendor_id || item.author_id;
-              const vendorName = vendors.find(v => v.id === vendorId)?.store_name || "Unknown Vendor";
+              const vendorName =
+                vendors.find((v) => v.id === vendorId)?.store_name || "Unknown Vendor";
               const isNew = newIds.has(item.id);
-              const thumbnailSrc = item.image_url || item.thumbnail_url ||
+              const thumbnailSrc =
+                item.image_url ||
+                item.thumbnail_url ||
                 (item.embed_url?.includes("youtube.com") || item.embed_url?.includes("youtu.be")
                   ? `https://img.youtube.com/vi/${item.embed_url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/)?.[1]}/default.jpg`
                   : null);
@@ -600,20 +676,30 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                           <User className="h-3 w-3" /> {vendorName}
                         </p>
                         {item.embed_url && (
-                          <p className="text-xs text-muted-foreground truncate max-w-xs mt-0.5 opacity-60">{item.embed_url}</p>
+                          <p className="text-xs text-muted-foreground truncate max-w-xs mt-0.5 opacity-60">
+                            {item.embed_url}
+                          </p>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       {activeType === "videos" && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => toggleFeatured(item.id, item.is_featured)}
-                          title={item.is_featured ? "Remove from global feed" : "Show on global feed"}
-                          className={item.is_featured ? "text-primary hover:text-primary/80" : "text-muted-foreground"}
+                          title={
+                            item.is_featured ? "Remove from global feed" : "Show on global feed"
+                          }
+                          className={
+                            item.is_featured
+                              ? "text-primary hover:text-primary/80"
+                              : "text-muted-foreground"
+                          }
                         >
-                          <CheckCircle2 className={`h-4 w-4 ${item.is_featured ? "fill-current" : ""}`} />
+                          <CheckCircle2
+                            className={`h-4 w-4 ${item.is_featured ? "fill-current" : ""}`}
+                          />
                         </Button>
                       )}
                       <Button variant="ghost" size="sm" onClick={() => deleteItem(item.id)}>

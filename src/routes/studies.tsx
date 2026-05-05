@@ -23,9 +23,10 @@ function StudiesPage() {
   const [search, setSearch] = useState("");
 
   const filteredArticles = useMemo(() => {
-    return articles.filter(article => 
-      (article.title?.toLowerCase() || "").includes(search.toLowerCase()) || 
-      (article.excerpt?.toLowerCase() || "").includes(search.toLowerCase())
+    return articles.filter(
+      (article) =>
+        (article.title?.toLowerCase() || "").includes(search.toLowerCase()) ||
+        (article.excerpt?.toLowerCase() || "").includes(search.toLowerCase()),
     );
   }, [articles, search]);
 
@@ -55,10 +56,9 @@ function StudiesPage() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-
         {filteredArticles.length === 0 ? (
           <div className="text-center py-20 bg-muted/20 rounded-2xl border border-border">
-             <p className="text-muted-foreground text-lg">No studies matched your search.</p>
+            <p className="text-muted-foreground text-lg">No studies matched your search.</p>
           </div>
         ) : (
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
@@ -87,7 +87,9 @@ function StudiesPage() {
                     {article.title}
                   </h3>
                   <p className="mt-3 text-muted-foreground line-clamp-3 text-sm">
-                    {article.excerpt ? article.excerpt.replace(/<\/?[^>]+(>|$)/g, "") : "Click to read the full study and findings."}
+                    {article.excerpt
+                      ? article.excerpt.replace(/<\/?[^>]+(>|$)/g, "")
+                      : "Click to read the full study and findings."}
                   </p>
                   <p className="mt-auto pt-4 text-sm font-medium text-primary">Read Study &rarr;</p>
                 </div>

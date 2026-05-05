@@ -22,16 +22,16 @@ interface EmailPayload {
 
 export const sendEmail = async ({ to, subject, html, fromName, fromEmail }: EmailPayload) => {
   console.log(`[Email Service] Invoking Edge Function for: ${to} | Subject: ${subject}`);
-  
+
   try {
-    const { data, error } = await supabase.functions.invoke('send-email', {
-      body: { 
-        to, 
-        subject, 
-        html, 
+    const { data, error } = await supabase.functions.invoke("send-email", {
+      body: {
+        to,
+        subject,
+        html,
         fromName: fromName || "Lifestyle Medicine Gateway",
-        fromEmail: fromEmail || EMAIL_ADDRESSES.NOREPLY
-      }
+        fromEmail: fromEmail || EMAIL_ADDRESSES.NOREPLY,
+      },
     });
 
     if (error) {
@@ -67,9 +67,9 @@ export const emailTemplates = {
         <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
         <p style="font-size: 12px; color: #64748b;">If you have any questions, please contact our support team at ${EMAIL_ADDRESSES.SUPPORT}.</p>
       </div>
-    `
+    `,
   }),
-  
+
   passwordReset: (token: string) => ({
     fromName: "LMG Security",
     fromEmail: EMAIL_ADDRESSES.NOREPLY,
@@ -84,9 +84,9 @@ export const emailTemplates = {
         </a>
         <p style="font-size: 12px; color: #64748b;">If you didn't request this, you can safely ignore this email.</p>
       </div>
-    `
+    `,
   }),
-  
+
   vendorApproval: (storeName: string) => ({
     fromName: "LMG Partner Relations",
     fromEmail: EMAIL_ADDRESSES.SALES,
@@ -101,7 +101,7 @@ export const emailTemplates = {
           Go to Dashboard
         </a>
       </div>
-    `
+    `,
   }),
 
   vendorRegistration: (storeName: string) => ({
@@ -116,7 +116,7 @@ export const emailTemplates = {
         <p>Our team is currently reviewing your details. You will receive another email once your store has been approved.</p>
         <p>If you have any questions in the meantime, feel free to reply to this email.</p>
       </div>
-    `
+    `,
   }),
 
   vendorOrderNotification: (order: any, vendorItems: any[]) => ({
@@ -132,7 +132,7 @@ export const emailTemplates = {
         <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;">
           <h3 style="margin-top: 0; color: #1e293b;">Customer Details</h3>
           <p style="margin: 5px 0;"><strong>Name:</strong> ${order.first_name} ${order.last_name}</p>
-          <p style="margin: 5px 0;"><strong>Phone:</strong> ${order.phone || 'Not provided'}</p>
+          <p style="margin: 5px 0;"><strong>Phone:</strong> ${order.phone || "Not provided"}</p>
           <p style="margin: 5px 0;"><strong>Address:</strong><br />${order.address}<br />${order.city}, ${order.state} ${order.zip}</p>
         </div>
 
@@ -147,13 +147,17 @@ export const emailTemplates = {
               </tr>
             </thead>
             <tbody>
-              ${vendorItems.map(item => `
+              ${vendorItems
+                .map(
+                  (item) => `
                 <tr style="border-bottom: 1px solid #e2e8f0;">
                   <td style="padding: 10px 0;">${item.name}</td>
                   <td style="padding: 10px 0;">${item.quantity}</td>
                   <td style="padding: 10px 0; text-align: right;">$${(item.price * item.quantity).toFixed(2)}</td>
                 </tr>
-              `).join('')}
+              `,
+                )
+                .join("")}
             </tbody>
           </table>
         </div>
@@ -168,6 +172,6 @@ export const emailTemplates = {
         <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
         <p style="font-size: 12px; color: #64748b;">This is an automated notification from the Lifestyle Medicine Gateway Platform.</p>
       </div>
-    `
-  })
+    `,
+  }),
 };

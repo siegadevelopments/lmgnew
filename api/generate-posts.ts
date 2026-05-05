@@ -1,6 +1,6 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { VercelRequest, VercelResponse } from "@vercel/node";
+import { createClient } from "@supabase/supabase-js";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const AUDIENCE_PROMPT = `
 You are a world-class social media marketing strategist for "Lifestyle Medicine Gateway" — 
@@ -35,40 +35,55 @@ BRAND VOICE:
 `;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
     // 1. Authenticate as admin
     const authHeader = req.headers.authorization;
-    if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
+    if (!authHeader) return res.status(401).json({ error: "Unauthorized" });
 
     const supabase = createClient(
-      process.env.VITE_SUPABASE_URL || '',
-      process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+      process.env.VITE_SUPABASE_URL || "",
+      process.env.SUPABASE_SERVICE_ROLE_KEY || "",
     );
 
     const userClient = createClient(
-      process.env.VITE_SUPABASE_URL || '',
-      process.env.VITE_SUPABASE_PUBLISHABLE_KEY || '',
-      { global: { headers: { Authorization: authHeader } } }
+      process.env.VITE_SUPABASE_URL || "",
+      process.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
+      { global: { headers: { Authorization: authHeader } } },
     );
 
-    const { data: { user }, error: authError } = await userClient.auth.getUser();
-    if (authError || !user) return res.status(401).json({ error: 'Invalid token' });
+    const {
+      data: { user },
+      error: authError,
+    } = await userClient.auth.getUser();
+    if (authError || !user) return res.status(401).json({ error: "Invalid token" });
 
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-    if (profile?.role !== 'admin') return res.status(403).json({ error: 'Admin access required' });
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    if (profile?.role !== "admin") return res.status(403).json({ error: "Admin access required" });
 
     // 2. Fetch all content
     const [articlesRes, productsRes, recipesRes] = await Promise.all([
-      supabase.from('articles').select('id, title, slug, excerpt, image_url, category_name').eq('status', 'published').limit(50),
-      supabase.from('products').select('id, title, slug, price, excerpt, image_url, category, brand').eq('status', 'published').limit(50),
-      supabase.from('recipes').select('id, title, slug, excerpt, image_url').limit(50),
+      supabase
+        .from("articles")
+        .select("id, title, slug, excerpt, image_url, category_name")
+        .eq("status", "published")
+        .limit(50),
+      supabase
+        .from("products")
+        .select("id, title, slug, price, excerpt, image_url, category, brand")
+        .eq("status", "published")
+        .limit(50),
+      supabase.from("recipes").select("id, title, slug, excerpt, image_url").limit(50),
     ]);
 
     const articles = articlesRes.data || [];
@@ -77,32 +92,66 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const totalContent = articles.length + products.length + recipes.length;
     if (totalContent === 0) {
-      return res.status(400).json({ error: 'No content found to generate posts from.' });
+      return res.status(400).json({ error: "No content found to generate posts from." });
     }
 
     // 3. Generate with Gemini AI
-    const geminiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || '';
-    if (!geminiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
+    const geminiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || "";
+    if (!geminiKey) return res.status(500).json({ error: "GEMINI_API_KEY not configured" });
 
-    const { numWeeks = 4, startDate, selectedDays = [1, 3, 5], specificDates = null } = req.body || {};
+    const {
+      numWeeks = 4,
+      startDate,
+      selectedDays = [1, 3, 5],
+      specificDates = null,
+    } = req.body || {};
     const postsPerWeek = selectedDays ? selectedDays.length : 0;
-    const totalPostsCount = specificDates ? specificDates.length : (numWeeks * postsPerWeek);
+    const totalPostsCount = specificDates ? specificDates.length : numWeeks * postsPerWeek;
 
-    if (totalPostsCount === 0) return res.status(400).json({ error: 'No dates selected for generation' });
+    if (totalPostsCount === 0)
+      return res.status(400).json({ error: "No dates selected for generation" });
 
     const genAI = new GoogleGenerativeAI(geminiKey);
 
     // Day names or dates for prompt
     const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const scheduleText = specificDates 
-      ? `Specific dates: ${specificDates.join(", ")}` 
+    const scheduleText = specificDates
+      ? `Specific dates: ${specificDates.join(", ")}`
       : `${postsPerWeek} posts per week, on: ${selectedDays.map((d: number) => dayNames[d]).join(", ")}`;
 
     // Keep content summaries small to reduce token usage
     const contentSummary = JSON.stringify({
-      articles: articles.slice(0, 20).map(a => ({ id: a.id, title: a.title, slug: a.slug, excerpt: (a.excerpt || '').substring(0, 100), category: a.category_name, image: a.image_url })),
-      products: products.slice(0, 20).map(p => ({ id: p.id, title: p.title, slug: p.slug, price: p.price, excerpt: (p.excerpt || '').substring(0, 100), category: p.category, brand: p.brand, image: p.image_url })),
-      recipes: recipes.slice(0, 10).map(r => ({ id: r.id, title: r.title, slug: r.slug, excerpt: (r.excerpt || '').substring(0, 100), image: r.image_url })),
+      articles: articles
+        .slice(0, 20)
+        .map((a) => ({
+          id: a.id,
+          title: a.title,
+          slug: a.slug,
+          excerpt: (a.excerpt || "").substring(0, 100),
+          category: a.category_name,
+          image: a.image_url,
+        })),
+      products: products
+        .slice(0, 20)
+        .map((p) => ({
+          id: p.id,
+          title: p.title,
+          slug: p.slug,
+          price: p.price,
+          excerpt: (p.excerpt || "").substring(0, 100),
+          category: p.category,
+          brand: p.brand,
+          image: p.image_url,
+        })),
+      recipes: recipes
+        .slice(0, 10)
+        .map((r) => ({
+          id: r.id,
+          title: r.title,
+          slug: r.slug,
+          excerpt: (r.excerpt || "").substring(0, 100),
+          image: r.image_url,
+        })),
     });
 
     const generationPrompt = `${AUDIENCE_PROMPT}
@@ -140,9 +189,9 @@ REQUIREMENTS FOR EACH POST:
 OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdown, no explanation, just the JSON array.`;
 
     // Try with retry and model fallback for rate limiting
-    const MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+    const MODELS = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
     let posts: any[] | null = null;
-    let lastError = '';
+    let lastError = "";
 
     for (const modelName of MODELS) {
       for (let attempt = 0; attempt < 2; attempt++) {
@@ -153,17 +202,21 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
           const responseText = result.response.text();
 
           const jsonMatch = responseText.match(/\[[\s\S]*\]/);
-          if (!jsonMatch) throw new Error('AI response did not contain a valid JSON array');
+          if (!jsonMatch) throw new Error("AI response did not contain a valid JSON array");
           posts = JSON.parse(jsonMatch[0]);
           break;
         } catch (err: any) {
-          lastError = err.message || 'Unknown error';
+          lastError = err.message || "Unknown error";
           console.error(`Model ${modelName} attempt ${attempt + 1} failed:`, lastError);
 
-          if (lastError.includes('429') || lastError.includes('quota') || lastError.includes('Too Many Requests')) {
+          if (
+            lastError.includes("429") ||
+            lastError.includes("quota") ||
+            lastError.includes("Too Many Requests")
+          ) {
             const waitMs = (attempt + 1) * 3000;
             console.log(`Rate limited. Waiting ${waitMs}ms before retry...`);
-            await new Promise(resolve => setTimeout(resolve, waitMs));
+            await new Promise((resolve) => setTimeout(resolve, waitMs));
           } else {
             break;
           }
@@ -173,11 +226,13 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
     }
 
     if (!posts || posts.length === 0) {
-      const isQuotaError = lastError.includes('quota') || lastError.includes('429');
+      const isQuotaError = lastError.includes("quota") || lastError.includes("429");
       return res.status(429).json({
-        error: isQuotaError ? 'AI Rate Limit Reached' : 'AI Generation Failed',
+        error: isQuotaError ? "AI Rate Limit Reached" : "AI Generation Failed",
         details: lastError,
-        suggestion: isQuotaError ? 'The AI is currently busy or out of quota. Please wait 1-2 minutes and try again.' : 'Check your Gemini API key and try again.'
+        suggestion: isQuotaError
+          ? "The AI is currently busy or out of quota. Please wait 1-2 minutes and try again."
+          : "Check your Gemini API key and try again.",
       });
     }
 
@@ -189,7 +244,7 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
     };
 
     const scheduledPosts = [];
-    
+
     if (specificDates && specificDates.length > 0) {
       // Use exact specific dates
       posts.forEach((post, index) => {
@@ -201,15 +256,15 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
 
         scheduledPosts.push({
           title: post.title || `Post ${index + 1}`,
-          caption: post.caption || '',
+          caption: post.caption || "",
           hashtags: Array.isArray(post.hashtags) ? post.hashtags : [],
           image_url: post.image_url || null,
-          source_type: post.source_type || 'custom',
+          source_type: post.source_type || "custom",
           source_id: post.source_id ? String(post.source_id) : null,
           source_url: post.source_url || null,
-          platforms: ['facebook', 'instagram'],
+          platforms: ["facebook", "instagram"],
           scheduled_at: postDate.toISOString(),
-          status: 'draft',
+          status: "draft",
         });
       });
     } else {
@@ -229,15 +284,15 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
 
           scheduledPosts.push({
             title: post.title || `Post ${postIndex + 1}`,
-            caption: post.caption || '',
+            caption: post.caption || "",
             hashtags: Array.isArray(post.hashtags) ? post.hashtags : [],
             image_url: post.image_url || null,
-            source_type: post.source_type || 'custom',
+            source_type: post.source_type || "custom",
             source_id: post.source_id ? String(post.source_id) : null,
             source_url: post.source_url || null,
-            platforms: ['facebook', 'instagram'],
+            platforms: ["facebook", "instagram"],
             scheduled_at: postDate.toISOString(),
-            status: 'draft',
+            status: "draft",
           });
           postIndex++;
         }
@@ -248,13 +303,13 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
 
     // 5. Insert into database
     const { data: inserted, error: insertError } = await supabase
-      .from('scheduled_posts')
+      .from("scheduled_posts")
       .insert(scheduledPosts)
       .select();
 
     if (insertError) {
-      console.error('Insert error:', insertError);
-      return res.status(500).json({ error: 'Failed to save posts', details: insertError.message });
+      console.error("Insert error:", insertError);
+      return res.status(500).json({ error: "Failed to save posts", details: insertError.message });
     }
 
     return res.status(200).json({
@@ -262,9 +317,8 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
       count: inserted?.length || 0,
       message: `Generated ${inserted?.length || 0} posts across ${numWeeks} weeks!`,
     });
-
   } catch (error: any) {
-    console.error('Generate posts error:', error);
+    console.error("Generate posts error:", error);
     return res.status(500).json({ error: error.message });
   }
 }

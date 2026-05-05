@@ -31,23 +31,25 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (!user) {
       toast("Please register first", {
         description: "You need an account to add items to your cart.",
         action: {
           label: "Register",
-          onClick: () => navigate({ to: "/signup", search: { redirect: window.location.pathname } })
-        }
+          onClick: () =>
+            navigate({ to: "/signup", search: { redirect: window.location.pathname } }),
+        },
       });
       return;
     }
-    
+
     setIsAdding(true);
     setTimeout(() => setIsAdding(false), 1000);
 
-    const baseVariant = product.variants && product.variants.length > 0 ? product.variants[0] : null;
-    
+    const baseVariant =
+      product.variants && product.variants.length > 0 ? product.variants[0] : null;
+
     addItem({
       id: baseVariant ? `${product.id}-${baseVariant.id}` : product.id,
       product_id: product.id,
@@ -57,9 +59,9 @@ export function ProductCard({ product, className }: ProductCardProps) {
       price: baseVariant ? baseVariant.price : product.price,
       image: product.image_url || undefined,
       slug: product.slug,
-      vendor_id: (product as any).vendor_id
+      vendor_id: (product as any).vendor_id,
     });
-    
+
     toast.success(`${product.title} added to cart`, {
       description: "You can view your items in the cart.",
     });
@@ -78,26 +80,29 @@ export function ProductCard({ product, className }: ProductCardProps) {
         params={{ slug: product.slug }}
         className={cn(
           "group flex flex-col h-full overflow-hidden bg-card transition-all hover:shadow-xl border border-border/50 hover:border-primary/30 relative",
-          className
+          className,
         )}
       >
         <AnimatePresence>
           {isAdding && (
             <motion.div
               initial={{ scale: 1, opacity: 1, x: 0, y: 0 }}
-              animate={{ 
-                scale: 0.1, 
-                opacity: 0, 
+              animate={{
+                scale: 0.1,
+                opacity: 0,
                 x: 800, // Move towards top right
                 y: -1000,
-                rotate: 720
+                rotate: 720,
               }}
               transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
               className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none"
             >
               <div className="w-40 h-40">
                 {product.image_url ? (
-                  <img src={product.image_url} className="h-full w-full object-cover rounded-xl shadow-2xl ring-4 ring-primary" />
+                  <img
+                    src={product.image_url}
+                    className="h-full w-full object-cover rounded-xl shadow-2xl ring-4 ring-primary"
+                  />
                 ) : (
                   <div className="bg-primary p-8 rounded-full shadow-2xl">
                     <ShoppingCart className="h-20 w-20 text-white" />
@@ -109,7 +114,6 @@ export function ProductCard({ product, className }: ProductCardProps) {
         </AnimatePresence>
 
         <div className="relative aspect-square overflow-hidden bg-muted">
-
           {product.image_url ? (
             <motion.img
               src={product.image_url}
@@ -120,62 +124,75 @@ export function ProductCard({ product, className }: ProductCardProps) {
             />
           ) : (
             <div className="flex h-full items-center justify-center text-muted-foreground bg-muted/50">
-               <ShoppingCart className="h-10 w-10 opacity-10" />
+              <ShoppingCart className="h-10 w-10 opacity-10" />
             </div>
           )}
-          
+
           <div className="absolute top-2 left-0 z-10">
             <div className="bg-primary px-1.5 py-0.5 text-[9px] font-bold text-white rounded-r-sm shadow-sm uppercase tracking-tighter">
               Wellness
             </div>
           </div>
         </div>
-        
+
         <div className="flex flex-1 flex-col p-2.5">
           <h3 className="text-sm font-medium text-foreground line-clamp-2 h-10 group-hover:text-primary transition-colors leading-snug">
             {product.title}
           </h3>
-          
+
           <div className="mt-2 flex flex-col gap-1">
             <div className="flex items-baseline gap-1">
               <span className="text-xs text-primary font-bold">$</span>
-              <span className="text-lg font-bold text-primary">{Number(product.price).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              <span className="text-lg font-bold text-primary">
+                {Number(product.price).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </span>
             </div>
-            
+
             <div className="flex items-center justify-between mt-1">
-               <div className="flex items-center gap-1">
-                  <div className="flex text-[10px] text-amber-500">
-                     {"★★★★★".split("").map((s, i) => <span key={i}>{s}</span>)}
-                  </div>
-                  <span className="text-[10px] text-muted-foreground">(12)</span>
-               </div>
-               <span className="text-[10px] text-muted-foreground">8.2k sold</span>
+              <div className="flex items-center gap-1">
+                <div className="flex text-[10px] text-amber-500">
+                  {"★★★★★".split("").map((s, i) => (
+                    <span key={i}>{s}</span>
+                  ))}
+                </div>
+                <span className="text-[10px] text-muted-foreground">(12)</span>
+              </div>
+              <span className="text-[10px] text-muted-foreground">8.2k sold</span>
             </div>
 
             <div className="mt-2 pt-2 border-t border-border/50 flex items-center justify-between text-[10px] text-muted-foreground">
-               <span className="truncate max-w-[80px]">{(product as any).vendor_profiles?.store_name || "LMG Store"}</span>
-               <span className="shrink-0">Australia</span>
+              <span className="truncate max-w-[80px]">
+                {(product as any).vendor_profiles?.store_name || "LMG Store"}
+              </span>
+              <span className="shrink-0">Australia</span>
             </div>
           </div>
         </div>
 
         <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none flex items-end justify-center pb-20">
-           <motion.div 
-             initial={{ y: 20, opacity: 0 }}
-             whileHover={{ scale: 1.05 }}
-             whileTap={{ scale: 0.95 }}
-             animate={{ y: 0, opacity: 1 }}
-             className="bg-primary text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-xl pointer-events-auto cursor-pointer" 
-             onClick={(e) => {
-               if ((product as any).product_type === 'service' || (product.variants && product.variants.length > 1)) {
-                 // For services or variants, let the Link navigate to the product page
-               } else {
-                 handleAddToCart(e);
-               }
-             }}
-           >
-              {(product as any).product_type === 'service' ? "Book Now" : (product.variants && product.variants.length > 1 ? "Select Options" : "Quick Add")}
-           </motion.div>
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="bg-primary text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-xl pointer-events-auto cursor-pointer"
+            onClick={(e) => {
+              if (
+                (product as any).product_type === "service" ||
+                (product.variants && product.variants.length > 1)
+              ) {
+                // For services or variants, let the Link navigate to the product page
+              } else {
+                handleAddToCart(e);
+              }
+            }}
+          >
+            {(product as any).product_type === "service"
+              ? "Book Now"
+              : product.variants && product.variants.length > 1
+                ? "Select Options"
+                : "Quick Add"}
+          </motion.div>
         </div>
       </Link>
     </motion.div>

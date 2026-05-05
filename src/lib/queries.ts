@@ -38,10 +38,7 @@ export const categoriesQueryOptions = () =>
   queryOptions({
     queryKey: ["categories"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("categories")
-        .select("*")
-        .eq("type", "product");
+      const { data, error } = await supabase.from("categories").select("*").eq("type", "product");
       if (error) throw new Error(error.message);
       return (data || []) as any[];
     },
@@ -81,11 +78,7 @@ export const recipeBySlugQueryOptions = (slug: string) =>
   queryOptions({
     queryKey: ["recipes", "bySlug", slug],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("recipes")
-        .select("*")
-        .eq("slug", slug)
-        .limit(1);
+      const { data, error } = await supabase.from("recipes").select("*").eq("slug", slug).limit(1);
       if (error) throw new Error(error.message);
       return (data || []) as any[];
     },
@@ -109,11 +102,7 @@ export const articleBySlugQueryOptions = (slug: string) =>
   queryOptions({
     queryKey: ["articles", "bySlug", slug],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("articles")
-        .select("*")
-        .eq("slug", slug)
-        .limit(1);
+      const { data, error } = await supabase.from("articles").select("*").eq("slug", slug).limit(1);
       if (error) throw new Error(error.message);
       return (data || []) as any[];
     },
@@ -127,10 +116,12 @@ export const videosQueryOptions = () =>
         // We show videos where the author is an admin OR the video is explicitly featured
         const { data, error } = await supabase
           .from("videos")
-          .select(`
+          .select(
+            `
             *,
             author:profiles(role)
-          `)
+          `,
+          )
           .eq("status", "ready")
           .order("created_at", { ascending: false });
 
@@ -138,10 +129,10 @@ export const videosQueryOptions = () =>
           console.error("Video fetch error:", error);
           throw error;
         }
-        
+
         // Filter in JS to avoid complex cross-table OR logic issues in PostgREST
-        const filtered = (data || []).filter((v: any) => 
-          v.is_featured === true || v.author?.role === 'admin'
+        const filtered = (data || []).filter(
+          (v: any) => v.is_featured === true || v.author?.role === "admin",
         );
 
         return filtered as any[];
@@ -188,7 +179,7 @@ export const randomMemeQueryOptions = () =>
         .eq("gallery_id", gallery.id);
 
       if (!items || items.length === 0) return null;
-      
-      return (items[Math.floor(Math.random() * items.length)]) as any;
+
+      return items[Math.floor(Math.random() * items.length)] as any;
     },
   });

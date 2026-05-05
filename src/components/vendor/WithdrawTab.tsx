@@ -7,8 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
-interface Props { 
-  totalSales: number; 
+interface Props {
+  totalSales: number;
   vendorId?: string;
 }
 
@@ -27,18 +27,21 @@ export function WithdrawTab({ totalSales, vendorId }: Props) {
     setLoading(true);
     const formData = new FormData(e.currentTarget as HTMLFormElement);
     const paypalEmail = formData.get("paypal_email") as string;
-    
+
     try {
       const { error } = await (supabase.from("vendor_withdrawals") as any).insert({
         vendor_id: vendorId,
         amount: parseFloat(amount),
         paypal_email: paypalEmail,
-        status: 'pending'
+        status: "pending",
       });
 
       if (error) {
         // If the table doesn't exist yet, we'll fall back to showing a message
-        if (error.code === 'PGRST116' || error.message.includes('relation "public.vendor_withdrawals" does not exist')) {
+        if (
+          error.code === "PGRST116" ||
+          error.message.includes('relation "public.vendor_withdrawals" does not exist')
+        ) {
           console.error("Table vendor_withdrawals missing:", error);
           toast.error("Database table missing. Please contact admin to run migrations.");
         } else {
@@ -65,7 +68,9 @@ export function WithdrawTab({ totalSales, vendorId }: Props) {
         <div className="rounded-xl bg-wellness-muted p-6 mb-6">
           <p className="text-sm text-muted-foreground">Available Balance</p>
           <p className="text-4xl font-bold text-primary mt-1">${totalSales.toFixed(2)}</p>
-          <p className="text-xs text-muted-foreground mt-2">Platform commission (10%) is deducted at payout.</p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Platform commission (10%) is deducted at payout.
+          </p>
         </div>
 
         {submitted ? (
@@ -73,9 +78,19 @@ export function WithdrawTab({ totalSales, vendorId }: Props) {
             <div className="text-3xl mb-2">✅</div>
             <h3 className="font-semibold text-foreground">Withdrawal Request Submitted</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              Your request for <strong>${parseFloat(amount || "0").toFixed(2)}</strong> has been submitted. Payouts are processed within 3-5 business days.
+              Your request for <strong>${parseFloat(amount || "0").toFixed(2)}</strong> has been
+              submitted. Payouts are processed within 3-5 business days.
             </p>
-            <Button variant="outline" className="mt-4" onClick={() => { setSubmitted(false); setAmount(""); }}>New Request</Button>
+            <Button
+              variant="outline"
+              className="mt-4"
+              onClick={() => {
+                setSubmitted(false);
+                setAmount("");
+              }}
+            >
+              New Request
+            </Button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="max-w-sm space-y-4">
@@ -84,23 +99,32 @@ export function WithdrawTab({ totalSales, vendorId }: Props) {
               <Input
                 id="amount"
                 name="amount"
-                type="number" step="0.01" min="10" max={totalSales}
-                required value={amount} onChange={e => setAmount(e.target.value)}
+                type="number"
+                step="0.01"
+                min="10"
+                max={totalSales}
+                required
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
                 placeholder="Enter amount..."
               />
               <p className="text-xs text-muted-foreground">Minimum withdrawal: $10.00</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="paypal_email">PayPal Email</Label>
-              <Input 
+              <Input
                 id="paypal_email"
                 name="paypal_email"
-                type="email" 
-                required 
-                placeholder="your@paypal.com" 
+                type="email"
+                required
+                placeholder="your@paypal.com"
               />
             </div>
-            <Button type="submit" disabled={loading || !amount || parseFloat(amount) < 10} className="w-full">
+            <Button
+              type="submit"
+              disabled={loading || !amount || parseFloat(amount) < 10}
+              className="w-full"
+            >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {loading ? "Submitting..." : "Request Withdrawal"}
             </Button>

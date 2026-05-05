@@ -19,16 +19,16 @@ import { UserEditDialog } from "@/components/admin/UserEditDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ProductsTab } from "@/components/vendor/ProductsTab";
 import { toast } from "sonner";
-import { 
-  Edit, 
-  LayoutDashboard, 
-  ShoppingBag, 
-  Users, 
-  Store, 
-  Package, 
-  Image as ImageIcon, 
-  FileText, 
-  Mail, 
+import {
+  Edit,
+  LayoutDashboard,
+  ShoppingBag,
+  Users,
+  Store,
+  Package,
+  Image as ImageIcon,
+  FileText,
+  Mail,
   Settings,
   ChevronRight,
   Menu,
@@ -38,7 +38,7 @@ import {
   Megaphone,
   Link as LinkIcon,
   MessageSquare,
-  Sparkles
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -97,7 +97,8 @@ const statusColors: Record<string, string> = {
   cancelled: "bg-red-500/10 text-red-600 border-red-200",
 };
 
-const getStatusColor = (status: string) => statusColors[status?.toLowerCase()] || "bg-slate-500/10 text-slate-600 border-slate-200";
+const getStatusColor = (status: string) =>
+  statusColors[status?.toLowerCase()] || "bg-slate-500/10 text-slate-600 border-slate-200";
 
 function AdminPage() {
   const { user, role, loading: authLoading, signOut } = useAuth();
@@ -143,14 +144,32 @@ function AdminPage() {
       try {
         setLoading(true);
 
-        const [ordersRes, messagesRes, usersRes, subscribersRes, vendorsRes, productsRes] = await Promise.all([
-          supabase.from("orders").select("*").order("created_at", { ascending: false }).limit(50),
-          supabase.from("contact_messages").select("*").order("created_at", { ascending: false }).limit(50),
-          supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(100),
-          supabase.from("newsletter_subscribers").select("id", { count: "exact", head: true }),
-          supabase.from("vendor_profiles").select("id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, created_at, updated_at, ai_enabled, ai_instructions").order("created_at", { ascending: false }),
-          supabase.from("products").select("*, vendor_profiles(store_name)").order("created_at", { ascending: false }).limit(500),
-        ]);
+        const [ordersRes, messagesRes, usersRes, subscribersRes, vendorsRes, productsRes] =
+          await Promise.all([
+            supabase.from("orders").select("*").order("created_at", { ascending: false }).limit(50),
+            supabase
+              .from("contact_messages")
+              .select("*")
+              .order("created_at", { ascending: false })
+              .limit(50),
+            supabase
+              .from("profiles")
+              .select("*")
+              .order("created_at", { ascending: false })
+              .limit(100),
+            supabase.from("newsletter_subscribers").select("id", { count: "exact", head: true }),
+            supabase
+              .from("vendor_profiles")
+              .select(
+                "id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, created_at, updated_at, ai_enabled, ai_instructions",
+              )
+              .order("created_at", { ascending: false }),
+            supabase
+              .from("products")
+              .select("*, vendor_profiles(store_name)")
+              .order("created_at", { ascending: false })
+              .limit(500),
+          ]);
 
         if (ordersRes.error) console.error("Orders error:", ordersRes.error);
         if (productsRes.error) console.error("Products error:", productsRes.error);
@@ -164,8 +183,10 @@ function AdminPage() {
         // 2. Get users with emails from secure RPC
         let usersWithEmails: any[] = [];
         try {
-          const { data: rpcUsers, error: rpcError } = await (supabase as any).rpc("get_admin_users");
-          
+          const { data: rpcUsers, error: rpcError } = await (supabase as any).rpc(
+            "get_admin_users",
+          );
+
           if (!rpcError && rpcUsers) {
             usersWithEmails = rpcUsers;
           } else if (rpcError) {
@@ -176,28 +197,30 @@ function AdminPage() {
         }
 
         const vendorProfiles = (vendorsRes.data || []) as any[];
-        const vendorsWithEmails = vendorProfiles.filter(vp => vp && vp.id).map(vp => {
-          const userList = usersWithEmails.length > 0 ? usersWithEmails : allUsers;
-          const user = (userList as any[]).find(u => u && u.id === vp.id);
-          return {
-            ...vp,
-            email: user?.email || ""
-          };
-        });
+        const vendorsWithEmails = vendorProfiles
+          .filter((vp) => vp && vp.id)
+          .map((vp) => {
+            const userList = usersWithEmails.length > 0 ? usersWithEmails : allUsers;
+            const user = (userList as any[]).find((u) => u && u.id === vp.id);
+            return {
+              ...vp,
+              email: user?.email || "",
+            };
+          });
 
         setOrders(allOrders);
         setMessages(allMessages);
         setUsers(usersWithEmails.length > 0 ? usersWithEmails : allUsers);
-        
-        const vendorsWithStreams = vendorsWithEmails.map(v => ({
+
+        const vendorsWithStreams = vendorsWithEmails.map((v) => ({
           ...v,
-          stream: allStreams.find((s: any) => s.vendor_id === v.id)
+          stream: allStreams.find((s: any) => s.vendor_id === v.id),
         }));
         setVendors(vendorsWithStreams);
-        
+
         const productsData = (productsRes.data || []).map((p: any) => ({
           ...p,
-          vendor: p.vendor_profiles
+          vendor: p.vendor_profiles,
         }));
         setProducts(productsData);
 
@@ -220,14 +243,18 @@ function AdminPage() {
   }, [role]);
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
-    const { error } = await (supabase.from("orders") as any).update({ status: newStatus }).eq("id", orderId);
+    const { error } = await (supabase.from("orders") as any)
+      .update({ status: newStatus })
+      .eq("id", orderId);
     if (error) return alert("Failed: " + error.message);
     setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)));
     toast.success("Order status updated");
   };
 
   const markMessageRead = async (msgId: string) => {
-    const { error } = await (supabase.from("contact_messages") as any).update({ read: true }).eq("id", msgId);
+    const { error } = await (supabase.from("contact_messages") as any)
+      .update({ read: true })
+      .eq("id", msgId);
     if (error) return alert("Failed: " + error.message);
     setMessages((prev) => prev.map((m) => (m.id === msgId ? { ...m, read: true } : m)));
     setStats((prev) => ({ ...prev, contactMessages: prev.contactMessages - 1 }));
@@ -235,18 +262,24 @@ function AdminPage() {
   };
 
   const toggleVendorApproval = async (vendorId: string, currentStatus: boolean) => {
-    const { error } = await (supabase.from("vendor_profiles") as any).update({ is_approved: !currentStatus }).eq("id", vendorId);
+    const { error } = await (supabase.from("vendor_profiles") as any)
+      .update({ is_approved: !currentStatus })
+      .eq("id", vendorId);
     if (error) return alert("Failed: " + error.message);
-    setVendors((prev) => prev.map((v) => (v.id === vendorId ? { ...v, is_approved: !currentStatus } : v)));
+    setVendors((prev) =>
+      prev.map((v) => (v.id === vendorId ? { ...v, is_approved: !currentStatus } : v)),
+    );
     toast.success(currentStatus ? "Vendor revoked" : "Vendor approved");
   };
 
   const toggleProductStatus = async (productId: number, currentStatus: string) => {
-     const newStatus = currentStatus === "published" ? "archived" : "published";
-     const { error } = await (supabase.from("products") as any).update({ status: newStatus }).eq("id", productId);
-     if (error) return alert("Failed: " + error.message);
-     setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, status: newStatus } : p)));
-     toast.success(`Product ${newStatus}`);
+    const newStatus = currentStatus === "published" ? "archived" : "published";
+    const { error } = await (supabase.from("products") as any)
+      .update({ status: newStatus })
+      .eq("id", productId);
+    if (error) return alert("Failed: " + error.message);
+    setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, status: newStatus } : p)));
+    toast.success(`Product ${newStatus}`);
   };
 
   if (authLoading || loading || !role) {
@@ -284,7 +317,7 @@ function AdminPage() {
             <h2 className="text-xl font-bold tracking-tight">LMG Admin</h2>
             <p className="text-xs text-muted-foreground mt-1">Platform Control Center</p>
           </div>
-          
+
           <nav className="flex-1 space-y-1">
             {sidebarItems.map((item) => (
               <button
@@ -292,7 +325,7 @@ function AdminPage() {
                 onClick={() => setActiveTab(item.id)}
                 className={cn(
                   "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent",
-                  activeTab === item.id ? "bg-primary/10 text-primary" : "text-muted-foreground"
+                  activeTab === item.id ? "bg-primary/10 text-primary" : "text-muted-foreground",
                 )}
               >
                 <item.icon className="h-4 w-4" />
@@ -308,8 +341,8 @@ function AdminPage() {
           </nav>
 
           <div className="mt-auto pt-6 border-t border-border">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="w-full justify-start text-muted-foreground hover:text-destructive"
               onClick={() => signOut()}
             >
@@ -350,7 +383,9 @@ function AdminPage() {
                     }}
                     className={cn(
                       "flex w-full items-center gap-3 rounded-lg px-4 py-3 text-base font-medium transition-all",
-                      activeTab === item.id ? "bg-primary/10 text-primary" : "text-muted-foreground"
+                      activeTab === item.id
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground",
                     )}
                   >
                     <item.icon className="h-5 w-5" />
@@ -367,24 +402,53 @@ function AdminPage() {
             {/* OVERVIEW */}
             <TabsContent value="overview" className="space-y-6 mt-0 border-0 p-0">
               <div className="flex flex-col gap-1">
-                <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard Overview</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                  Dashboard Overview
+                </h1>
                 <p className="text-muted-foreground">Quick snapshot of platform activity.</p>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 {[
                   { label: "Users", value: stats.totalUsers, icon: Users, color: "text-blue-500" },
-                  { label: "Orders", value: stats.totalOrders, icon: ShoppingBag, color: "text-emerald-500" },
-                  { label: "Revenue", value: `$${stats.totalRevenue.toLocaleString()}`, icon: LayoutDashboard, color: "text-amber-500" },
-                  { label: "Pending", value: stats.pendingOrders, icon: ChevronRight, color: "text-red-500" },
-                  { label: "Messages", value: stats.contactMessages, icon: Mail, color: "text-indigo-500" },
-                  { label: "Subscribers", value: stats.subscribers, icon: Users, color: "text-pink-500" },
+                  {
+                    label: "Orders",
+                    value: stats.totalOrders,
+                    icon: ShoppingBag,
+                    color: "text-emerald-500",
+                  },
+                  {
+                    label: "Revenue",
+                    value: `$${stats.totalRevenue.toLocaleString()}`,
+                    icon: LayoutDashboard,
+                    color: "text-amber-500",
+                  },
+                  {
+                    label: "Pending",
+                    value: stats.pendingOrders,
+                    icon: ChevronRight,
+                    color: "text-red-500",
+                  },
+                  {
+                    label: "Messages",
+                    value: stats.contactMessages,
+                    icon: Mail,
+                    color: "text-indigo-500",
+                  },
+                  {
+                    label: "Subscribers",
+                    value: stats.subscribers,
+                    icon: Users,
+                    color: "text-pink-500",
+                  },
                 ].map((stat) => (
                   <Card key={stat.label} className="overflow-hidden border-border/50">
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            {stat.label}
+                          </p>
                           <p className="mt-2 text-3xl font-bold tracking-tight">{stat.value}</p>
                         </div>
                         <stat.icon className={cn("h-8 w-8 opacity-20", stat.color)} />
@@ -402,18 +466,36 @@ function AdminPage() {
                   <CardContent>
                     <div className="space-y-4">
                       {orders.slice(0, 5).map((order) => (
-                        <div key={order.id} className="flex items-center justify-between border-b border-border/50 pb-4 last:border-0 last:pb-0">
+                        <div
+                          key={order.id}
+                          className="flex items-center justify-between border-b border-border/50 pb-4 last:border-0 last:pb-0"
+                        >
                           <div>
-                            <p className="text-sm font-medium">{order.first_name} {order.last_name}</p>
-                            <p className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleDateString()}</p>
+                            <p className="text-sm font-medium">
+                              {order.first_name} {order.last_name}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(order.created_at).toLocaleDateString()}
+                            </p>
                           </div>
                           <div className="text-right">
                             <p className="text-sm font-bold">${Number(order.total).toFixed(2)}</p>
-                            <Badge variant="outline" className={cn("mt-1 text-[10px]", getStatusColor(order.status))}>{order.status}</Badge>
+                            <Badge
+                              variant="outline"
+                              className={cn("mt-1 text-[10px]", getStatusColor(order.status))}
+                            >
+                              {order.status}
+                            </Badge>
                           </div>
                         </div>
                       ))}
-                      <Button variant="link" className="p-0 h-auto text-sm" onClick={() => setActiveTab("orders")}>View all orders</Button>
+                      <Button
+                        variant="link"
+                        className="p-0 h-auto text-sm"
+                        onClick={() => setActiveTab("orders")}
+                      >
+                        View all orders
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -425,7 +507,10 @@ function AdminPage() {
                   <CardContent>
                     <div className="space-y-4">
                       {messages.slice(0, 5).map((msg) => (
-                        <div key={msg.id} className="flex items-start gap-4 border-b border-border/50 pb-4 last:border-0 last:pb-0">
+                        <div
+                          key={msg.id}
+                          className="flex items-start gap-4 border-b border-border/50 pb-4 last:border-0 last:pb-0"
+                        >
                           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary shrink-0">
                             <Mail className="h-4 w-4" />
                           </div>
@@ -433,10 +518,18 @@ function AdminPage() {
                             <p className="text-sm font-medium truncate">{msg.subject}</p>
                             <p className="text-xs text-muted-foreground truncate">{msg.name}</p>
                           </div>
-                          {!msg.read && <Badge variant="destructive" className="h-2 w-2 rounded-full p-0" />}
+                          {!msg.read && (
+                            <Badge variant="destructive" className="h-2 w-2 rounded-full p-0" />
+                          )}
                         </div>
                       ))}
-                      <Button variant="link" className="p-0 h-auto text-sm" onClick={() => setActiveTab("messages")}>View all messages</Button>
+                      <Button
+                        variant="link"
+                        className="p-0 h-auto text-sm"
+                        onClick={() => setActiveTab("messages")}
+                      >
+                        View all messages
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -452,7 +545,9 @@ function AdminPage() {
               <Card>
                 <CardContent className="pt-6">
                   {orders.length === 0 ? (
-                    <p className="py-12 text-center text-sm text-muted-foreground">No orders found.</p>
+                    <p className="py-12 text-center text-sm text-muted-foreground">
+                      No orders found.
+                    </p>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
@@ -469,17 +564,35 @@ function AdminPage() {
                         </thead>
                         <tbody>
                           {orders.map((order) => (
-                            <tr key={order.id} className="border-b border-border/50 last:border-0 hover:bg-muted/30">
-                              <td className="py-4 font-mono text-xs">{order.id.slice(0, 8).toUpperCase()}</td>
-                              <td className="py-4 font-medium">{order.first_name} {order.last_name}</td>
-                              <td className="py-4 hidden sm:table-cell text-muted-foreground">{order.email}</td>
-                              <td className="py-4 font-bold text-primary">${Number(order.total).toFixed(2)}</td>
+                            <tr
+                              key={order.id}
+                              className="border-b border-border/50 last:border-0 hover:bg-muted/30"
+                            >
+                              <td className="py-4 font-mono text-xs">
+                                {order.id.slice(0, 8).toUpperCase()}
+                              </td>
+                              <td className="py-4 font-medium">
+                                {order.first_name} {order.last_name}
+                              </td>
+                              <td className="py-4 hidden sm:table-cell text-muted-foreground">
+                                {order.email}
+                              </td>
+                              <td className="py-4 font-bold text-primary">
+                                ${Number(order.total).toFixed(2)}
+                              </td>
                               <td className="py-4">
-                                <span className={cn("inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase", getStatusColor(order.status))}>
+                                <span
+                                  className={cn(
+                                    "inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase",
+                                    getStatusColor(order.status),
+                                  )}
+                                >
                                   {order.status}
                                 </span>
                               </td>
-                              <td className="py-4 hidden lg:table-cell text-muted-foreground text-xs">{new Date(order.created_at).toLocaleDateString()}</td>
+                              <td className="py-4 hidden lg:table-cell text-muted-foreground text-xs">
+                                {new Date(order.created_at).toLocaleDateString()}
+                              </td>
                               <td className="py-4 text-right">
                                 <select
                                   value={order.status}
@@ -506,119 +619,144 @@ function AdminPage() {
 
             {/* VENDORS */}
             <TabsContent value="vendors" className="mt-0 border-0 p-0">
-               <div className="mb-6 flex flex-col gap-1">
+              <div className="mb-6 flex flex-col gap-1">
                 <h1 className="text-2xl font-bold tracking-tight">Vendor Management</h1>
                 <p className="text-muted-foreground">Approve and manage partner stores.</p>
               </div>
-               <Card>
-                  <CardContent className="pt-6">
-                     {vendors.length === 0 ? (
-                        <p className="py-12 text-center text-sm text-muted-foreground">No vendors registered.</p>
-                     ) : (
-                        <div className="overflow-x-auto">
-                           <table className="w-full text-sm">
-                              <thead>
-                                 <tr className="border-b border-border/50 text-left text-muted-foreground">
-                                    <th className="pb-3 font-medium">Store</th>
-                                    <th className="pb-3 font-medium hidden sm:table-cell">Joined</th>
-                                    <th className="pb-3 font-medium">Status</th>
-                                    <th className="pb-3 font-medium text-right">Action</th>
-                                 </tr>
-                              </thead>
-                              <tbody>
-                                 {vendors.map(v => (
-                                    <tr key={v.id} className="border-b border-border/50 last:border-0 hover:bg-muted/30">
-                                       <td className="py-4 font-medium">{v.store_name}</td>
-                                       <td className="py-4 hidden sm:table-cell text-muted-foreground text-xs">{new Date(v.created_at).toLocaleDateString()}</td>
-                                       <td className="py-4">
-                                          <Badge variant={v.is_approved ? "default" : "destructive"} className="text-[10px] font-bold uppercase tracking-tight">
-                                             {v.is_approved ? "Approved" : "Pending"}
-                                          </Badge>
-                                       </td>
-                                       <td className="py-4 text-right flex items-center justify-end gap-2">
-                                          <Button 
-                                             size="sm" 
-                                             variant="ghost" 
-                                             onClick={() => {
-                                                setEditingVendorProducts(v);
-                                             }}
-                                          >
-                                             <Package className="h-4 w-4 mr-1 text-muted-foreground" /> Products
-                                          </Button>
-                                          <Button 
-                                             size="sm" 
-                                             variant="ghost" 
-                                             onClick={() => {
-                                                setEditingVendor(v);
-                                                setIsEditOpen(true);
-                                             }}
-                                          >
-                                             <Edit className="h-4 w-4 mr-1 text-muted-foreground" /> Edit
-                                          </Button>
-                                          <Button 
-                                            size="sm" 
-                                            variant={v.is_approved ? "outline" : "default"} 
-                                            onClick={() => toggleVendorApproval(v.id, v.is_approved)}
-                                          >
-                                             {v.is_approved ? "Revoke" : "Approve"}
-                                          </Button>
-                                       </td>
-                                    </tr>
-                                 ))}
-                              </tbody>
-                           </table>
-                        </div>
-                     )}
-                  </CardContent>
-               </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  {vendors.length === 0 ? (
+                    <p className="py-12 text-center text-sm text-muted-foreground">
+                      No vendors registered.
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border/50 text-left text-muted-foreground">
+                            <th className="pb-3 font-medium">Store</th>
+                            <th className="pb-3 font-medium hidden sm:table-cell">Joined</th>
+                            <th className="pb-3 font-medium">Status</th>
+                            <th className="pb-3 font-medium text-right">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {vendors.map((v) => (
+                            <tr
+                              key={v.id}
+                              className="border-b border-border/50 last:border-0 hover:bg-muted/30"
+                            >
+                              <td className="py-4 font-medium">{v.store_name}</td>
+                              <td className="py-4 hidden sm:table-cell text-muted-foreground text-xs">
+                                {new Date(v.created_at).toLocaleDateString()}
+                              </td>
+                              <td className="py-4">
+                                <Badge
+                                  variant={v.is_approved ? "default" : "destructive"}
+                                  className="text-[10px] font-bold uppercase tracking-tight"
+                                >
+                                  {v.is_approved ? "Approved" : "Pending"}
+                                </Badge>
+                              </td>
+                              <td className="py-4 text-right flex items-center justify-end gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setEditingVendorProducts(v);
+                                  }}
+                                >
+                                  <Package className="h-4 w-4 mr-1 text-muted-foreground" />{" "}
+                                  Products
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    setEditingVendor(v);
+                                    setIsEditOpen(true);
+                                  }}
+                                >
+                                  <Edit className="h-4 w-4 mr-1 text-muted-foreground" /> Edit
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant={v.is_approved ? "outline" : "default"}
+                                  onClick={() => toggleVendorApproval(v.id, v.is_approved)}
+                                >
+                                  {v.is_approved ? "Revoke" : "Approve"}
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* PRODUCTS */}
             <TabsContent value="products" className="mt-0 border-0 p-0">
-               <div className="mb-6 flex flex-col gap-1">
+              <div className="mb-6 flex flex-col gap-1">
                 <h1 className="text-2xl font-bold tracking-tight">Product Catalog</h1>
                 <p className="text-muted-foreground">Monitor products across all vendors.</p>
               </div>
-               <Card>
-                  <CardContent className="pt-6">
-                     {products.length === 0 ? (
-                        <p className="py-12 text-center text-sm text-muted-foreground">No products found.</p>
-                     ) : (
-                        <div className="overflow-x-auto">
-                           <table className="w-full text-sm">
-                              <thead>
-                                 <tr className="border-b border-border/50 text-left text-muted-foreground">
-                                    <th className="pb-3 font-medium">Product</th>
-                                    <th className="pb-3 font-medium">Vendor</th>
-                                    <th className="pb-3 font-medium">Price</th>
-                                    <th className="pb-3 font-medium">Status</th>
-                                    <th className="pb-3 font-medium text-right">Action</th>
-                                 </tr>
-                              </thead>
-                              <tbody>
-                                 {products.map(p => (
-                                    <tr key={p.id} className="border-b border-border/50 last:border-0 hover:bg-muted/30">
-                                       <td className="py-4 font-medium">{p.title}</td>
-                                       <td className="py-4 text-muted-foreground text-xs">{p.vendor?.store_name || "Unknown"}</td>
-                                       <td className="py-4 font-bold text-primary">${p.price}</td>
-                                       <td className="py-4">
-                                          <Badge variant={p.status === "published" ? "outline" : "secondary"} className="text-[10px] font-bold uppercase tracking-tight">
-                                            {p.status}
-                                          </Badge>
-                                       </td>
-                                       <td className="py-4 text-right">
-                                          <Button size="sm" variant="outline" onClick={() => toggleProductStatus(p.id, p.status)}>
-                                             {p.status === "published" ? "Take Down" : "Restore"}
-                                          </Button>
-                                       </td>
-                                    </tr>
-                                 ))}
-                              </tbody>
-                           </table>
-                        </div>
-                     )}
-                  </CardContent>
-               </Card>
+              <Card>
+                <CardContent className="pt-6">
+                  {products.length === 0 ? (
+                    <p className="py-12 text-center text-sm text-muted-foreground">
+                      No products found.
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border/50 text-left text-muted-foreground">
+                            <th className="pb-3 font-medium">Product</th>
+                            <th className="pb-3 font-medium">Vendor</th>
+                            <th className="pb-3 font-medium">Price</th>
+                            <th className="pb-3 font-medium">Status</th>
+                            <th className="pb-3 font-medium text-right">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {products.map((p) => (
+                            <tr
+                              key={p.id}
+                              className="border-b border-border/50 last:border-0 hover:bg-muted/30"
+                            >
+                              <td className="py-4 font-medium">{p.title}</td>
+                              <td className="py-4 text-muted-foreground text-xs">
+                                {p.vendor?.store_name || "Unknown"}
+                              </td>
+                              <td className="py-4 font-bold text-primary">${p.price}</td>
+                              <td className="py-4">
+                                <Badge
+                                  variant={p.status === "published" ? "outline" : "secondary"}
+                                  className="text-[10px] font-bold uppercase tracking-tight"
+                                >
+                                  {p.status}
+                                </Badge>
+                              </td>
+                              <td className="py-4 text-right">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => toggleProductStatus(p.id, p.status)}
+                                >
+                                  {p.status === "published" ? "Take Down" : "Restore"}
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* GALLERIES */}
@@ -646,24 +784,55 @@ function AdminPage() {
                 <p className="text-muted-foreground">Respond to user inquiries and support.</p>
               </div>
               {messages.length === 0 ? (
-                <Card><CardContent className="py-12 text-center text-sm text-muted-foreground">No messages found.</CardContent></Card>
+                <Card>
+                  <CardContent className="py-12 text-center text-sm text-muted-foreground">
+                    No messages found.
+                  </CardContent>
+                </Card>
               ) : (
                 messages.map((msg) => (
-                  <Card key={msg.id} className={cn("border-border/50", msg.read ? "opacity-60 grayscale-[0.5]" : "border-primary/20 bg-primary/5 shadow-sm")}>
+                  <Card
+                    key={msg.id}
+                    className={cn(
+                      "border-border/50",
+                      msg.read
+                        ? "opacity-60 grayscale-[0.5]"
+                        : "border-primary/20 bg-primary/5 shadow-sm",
+                    )}
+                  >
                     <CardContent className="pt-6">
                       <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-3">
                             <h3 className="text-base font-bold text-foreground">{msg.subject}</h3>
-                            {!msg.read && <Badge variant="destructive" className="h-5 px-1.5 text-[10px] font-black uppercase tracking-wider">New</Badge>}
+                            {!msg.read && (
+                              <Badge
+                                variant="destructive"
+                                className="h-5 px-1.5 text-[10px] font-black uppercase tracking-wider"
+                              >
+                                New
+                              </Badge>
+                            )}
                           </div>
-                          <p className="mt-1 text-sm font-medium text-primary">{msg.name} <span className="text-muted-foreground font-normal">({msg.email})</span></p>
+                          <p className="mt-1 text-sm font-medium text-primary">
+                            {msg.name}{" "}
+                            <span className="text-muted-foreground font-normal">({msg.email})</span>
+                          </p>
                           <Separator className="my-3 opacity-20" />
-                          <p className="text-sm text-foreground/80 leading-relaxed bg-background/50 p-3 rounded-md border border-border/30">{msg.message}</p>
-                          <p className="mt-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{new Date(msg.created_at).toLocaleString()}</p>
+                          <p className="text-sm text-foreground/80 leading-relaxed bg-background/50 p-3 rounded-md border border-border/30">
+                            {msg.message}
+                          </p>
+                          <p className="mt-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                            {new Date(msg.created_at).toLocaleString()}
+                          </p>
                         </div>
                         {!msg.read && (
-                          <Button variant="default" size="sm" onClick={() => markMessageRead(msg.id)} className="shadow-lg">
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => markMessageRead(msg.id)}
+                            className="shadow-lg"
+                          >
                             Mark Read
                           </Button>
                         )}
@@ -683,7 +852,9 @@ function AdminPage() {
               <Card>
                 <CardContent className="pt-6">
                   {users.length === 0 ? (
-                    <p className="py-12 text-center text-sm text-muted-foreground">No users registered.</p>
+                    <p className="py-12 text-center text-sm text-muted-foreground">
+                      No users registered.
+                    </p>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
@@ -697,7 +868,10 @@ function AdminPage() {
                         </thead>
                         <tbody>
                           {users.map((u) => (
-                            <tr key={u.id} className="border-b border-border/50 last:border-0 hover:bg-muted/30">
+                            <tr
+                              key={u.id}
+                              className="border-b border-border/50 last:border-0 hover:bg-muted/30"
+                            >
                               <td className="py-4">
                                 <div className="flex items-center gap-3">
                                   <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-xs font-black text-primary shadow-inner">
@@ -705,20 +879,33 @@ function AdminPage() {
                                   </div>
                                   <div>
                                     <p className="font-bold">{u.full_name || "Guest User"}</p>
-                                    <p className="text-[10px] text-muted-foreground">{u.email || (u.id ? u.id.slice(0, 8) : "---")}</p>
+                                    <p className="text-[10px] text-muted-foreground">
+                                      {u.email || (u.id ? u.id.slice(0, 8) : "---")}
+                                    </p>
                                   </div>
                                 </div>
                               </td>
                               <td className="py-4">
-                                <Badge variant={u.role === "admin" ? "default" : u.role === "vendor" ? "secondary" : "outline"} className="text-[10px] font-bold uppercase tracking-tight">
+                                <Badge
+                                  variant={
+                                    u.role === "admin"
+                                      ? "default"
+                                      : u.role === "vendor"
+                                        ? "secondary"
+                                        : "outline"
+                                  }
+                                  className="text-[10px] font-bold uppercase tracking-tight"
+                                >
                                   {u.role}
                                 </Badge>
                               </td>
-                              <td className="py-4 text-muted-foreground text-xs">{u.created_at ? new Date(u.created_at).toLocaleDateString() : "---"}</td>
+                              <td className="py-4 text-muted-foreground text-xs">
+                                {u.created_at ? new Date(u.created_at).toLocaleDateString() : "---"}
+                              </td>
                               <td className="py-4 text-right">
-                                <Button 
-                                  size="sm" 
-                                  variant="ghost" 
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
                                   onClick={() => {
                                     setEditingUser(u);
                                     setIsUserEditOpen(true);
@@ -741,7 +928,9 @@ function AdminPage() {
               <Card className="border-border/50">
                 <CardHeader>
                   <CardTitle>Vendor Live Streams</CardTitle>
-                  <CardDescription>Manage Mux credentials and live status for all vendors.</CardDescription>
+                  <CardDescription>
+                    Manage Mux credentials and live status for all vendors.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
@@ -757,7 +946,10 @@ function AdminPage() {
                       </thead>
                       <tbody>
                         {vendors.map((v) => (
-                          <tr key={v.id} className="border-b border-border/50 last:border-0 hover:bg-muted/30">
+                          <tr
+                            key={v.id}
+                            className="border-b border-border/50 last:border-0 hover:bg-muted/30"
+                          >
                             <td className="py-4">
                               <p className="font-bold">{v.store_name}</p>
                               <p className="text-[10px] text-muted-foreground">{v.email}</p>
@@ -772,14 +964,16 @@ function AdminPage() {
                             </td>
                             <td className="py-4 text-right">
                               {v.stream?.is_live ? (
-                                <Badge variant="destructive" className="animate-pulse">LIVE</Badge>
+                                <Badge variant="destructive" className="animate-pulse">
+                                  LIVE
+                                </Badge>
                               ) : (
                                 <Badge variant="secondary">OFFLINE</Badge>
                               )}
                             </td>
                             <td className="py-4 text-right">
-                              <Button 
-                                size="sm" 
+                              <Button
+                                size="sm"
                                 variant="outline"
                                 onClick={() => {
                                   setEditingVendor(v);
@@ -808,8 +1002,12 @@ function AdminPage() {
               <Tabs defaultValue="social" className="w-full">
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex flex-col gap-1">
-                    <h1 className="text-2xl font-bold tracking-tight text-foreground">Marketing Center</h1>
-                    <p className="text-muted-foreground">Manage your brand presence and campaigns.</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                      Marketing Center
+                    </h1>
+                    <p className="text-muted-foreground">
+                      Manage your brand presence and campaigns.
+                    </p>
                   </div>
                   <TabsList className="bg-muted/50 border border-border/50">
                     <TabsTrigger value="social" className="gap-2">
@@ -824,7 +1022,7 @@ function AdminPage() {
                 <TabsContent value="social" className="mt-0 focus-visible:ring-0">
                   <AdminMarketingTab />
                 </TabsContent>
-                
+
                 <TabsContent value="email" className="mt-0 focus-visible:ring-0">
                   <AdminEmailMarketingTab />
                 </TabsContent>
@@ -853,9 +1051,15 @@ function AdminPage() {
             setEditingVendor(null);
           }}
           onSuccess={() => {
-            supabase.from("vendor_profiles").select("id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, created_at, updated_at, ai_enabled, ai_instructions").order("created_at", { ascending: false }).then(({ data }) => {
-               if (data) setVendors(data);
-            });
+            supabase
+              .from("vendor_profiles")
+              .select(
+                "id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, created_at, updated_at, ai_enabled, ai_instructions",
+              )
+              .order("created_at", { ascending: false })
+              .then(({ data }) => {
+                if (data) setVendors(data);
+              });
           }}
         />
       )}
@@ -870,26 +1074,38 @@ function AdminPage() {
           }}
           onSuccess={() => {
             // Re-fetch users
-            supabase.from("profiles").select("*").order("created_at", { ascending: false }).then(({ data }) => {
-               if (data) setUsers(data);
-            });
+            supabase
+              .from("profiles")
+              .select("*")
+              .order("created_at", { ascending: false })
+              .then(({ data }) => {
+                if (data) setUsers(data);
+              });
           }}
         />
       )}
 
       {editingVendorProducts && (
-        <Dialog open={!!editingVendorProducts} onOpenChange={(open) => !open && setEditingVendorProducts(null)}>
+        <Dialog
+          open={!!editingVendorProducts}
+          onOpenChange={(open) => !open && setEditingVendorProducts(null)}
+        >
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Manage Products for {editingVendorProducts.store_name}</DialogTitle>
             </DialogHeader>
-            <ProductsTab 
-              products={products.filter(p => p.vendor_id === editingVendorProducts.id)}
+            <ProductsTab
+              products={products.filter((p) => p.vendor_id === editingVendorProducts.id)}
               setProducts={(action) => {
                 setProducts((prev) => {
-                  const vendorProducts = prev.filter(p => p.vendor_id === editingVendorProducts.id);
-                  const updatedVendorProducts = typeof action === 'function' ? action(vendorProducts) : action;
-                  const otherProducts = prev.filter(p => p.vendor_id !== editingVendorProducts.id);
+                  const vendorProducts = prev.filter(
+                    (p) => p.vendor_id === editingVendorProducts.id,
+                  );
+                  const updatedVendorProducts =
+                    typeof action === "function" ? action(vendorProducts) : action;
+                  const otherProducts = prev.filter(
+                    (p) => p.vendor_id !== editingVendorProducts.id,
+                  );
                   return [...otherProducts, ...updatedVendorProducts];
                 });
               }}

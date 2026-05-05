@@ -79,7 +79,10 @@ export function Header() {
             <DropdownMenuContent align="start" className="w-56">
               {exploreItems.map((item) => (
                 <DropdownMenuItem key={item.label} asChild>
-                  <Link to={item.to} className="w-full cursor-pointer hover:bg-accent focus:bg-accent outline-none block px-3 py-2 rounded-sm outline-none w-full">
+                  <Link
+                    to={item.to}
+                    className="w-full cursor-pointer hover:bg-accent focus:bg-accent outline-none block px-3 py-2 rounded-sm outline-none w-full"
+                  >
                     {item.label}
                   </Link>
                 </DropdownMenuItem>
@@ -88,17 +91,17 @@ export function Header() {
           </DropdownMenu>
 
           {topNavItems.map((item) => {
-            const isProductsPath = router.state.location.pathname.startsWith('/products');
-            const match = router.state.matches.find(m => m.routeId === '/products/$slug');
+            const isProductsPath = router.state.location.pathname.startsWith("/products");
+            const match = router.state.matches.find((m) => m.routeId === "/products/$slug");
             const loaderData = match?.loaderData as any;
-            const isServiceDetail = isProductsPath && loaderData?.product_type === 'service';
+            const isServiceDetail = isProductsPath && loaderData?.product_type === "service";
 
             let isActive = false;
-            if ((item.to as string) === '/') {
-              isActive = router.state.location.pathname === '/';
-            } else if (item.to === '/services') {
-              isActive = router.state.location.pathname.startsWith('/services') || isServiceDetail;
-            } else if (item.to === '/products') {
+            if ((item.to as string) === "/") {
+              isActive = router.state.location.pathname === "/";
+            } else if (item.to === "/services") {
+              isActive = router.state.location.pathname.startsWith("/services") || isServiceDetail;
+            } else if (item.to === "/products") {
               isActive = isProductsPath && !isServiceDetail;
             } else {
               isActive = router.state.location.pathname.startsWith(item.to);
@@ -108,7 +111,7 @@ export function Header() {
               <Link
                 key={item.label}
                 to={item.to}
-                className={`relative rounded-md px-3 py-2 text-sm font-medium transition-colors hover:text-foreground ${isActive ? 'text-foreground bg-accent/50' : 'text-muted-foreground'}`}
+                className={`relative rounded-md px-3 py-2 text-sm font-medium transition-colors hover:text-foreground ${isActive ? "text-foreground bg-accent/50" : "text-muted-foreground"}`}
               >
                 {item.label}
               </Link>
@@ -120,11 +123,7 @@ export function Header() {
         <div className="flex items-center gap-2">
           {!loading && user && (role === "vendor" || role === "admin") ? (
             <Link to="/vendor">
-              <Button
-                variant="wellness"
-                size="sm"
-                className="hidden sm:inline-flex"
-              >
+              <Button variant="wellness" size="sm" className="hidden sm:inline-flex">
                 Dashboard
               </Button>
             </Link>
@@ -139,9 +138,24 @@ export function Header() {
             </Button>
           )}
           <Link to="/search">
-            <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label="Search">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground"
+              aria-label="Search"
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
             </Button>
           </Link>
@@ -153,11 +167,7 @@ export function Header() {
           ) : user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="relative text-muted-foreground"
-                >
+                <Button variant="ghost" size="icon" className="relative text-muted-foreground">
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                     {user.email?.charAt(0).toUpperCase() || "U"}
                   </div>
@@ -165,9 +175,7 @@ export function Header() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <div className="px-2 py-1.5">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {user.email}
-                  </p>
+                  <p className="text-sm font-medium text-foreground truncate">{user.email}</p>
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
@@ -179,9 +187,14 @@ export function Header() {
                 <DropdownMenuItem asChild>
                   <Link to="/vendor">Vendor Dashboard</Link>
                 </DropdownMenuItem>
-                {(role === 'admin' || user?.email === 'siegaej@gmail.com' || user?.email === 'siegadevelopments@gmail.com' || user?.email === 'siegapython@gmail.com') ? (
+                {role === "admin" ||
+                user?.email === "siegaej@gmail.com" ||
+                user?.email === "siegadevelopments@gmail.com" ||
+                user?.email === "siegapython@gmail.com" ? (
                   <DropdownMenuItem asChild>
-                    <Link to="/admin" className="text-primary font-bold">Platform Admin</Link>
+                    <Link to="/admin" className="text-primary font-bold">
+                      Platform Admin
+                    </Link>
                   </DropdownMenuItem>
                 ) : null}
                 <DropdownMenuSeparator />
@@ -195,11 +208,7 @@ export function Header() {
             </DropdownMenu>
           ) : (
             <Link to="/login">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-muted-foreground"
-              >
+              <Button variant="ghost" size="icon" className="text-muted-foreground">
                 <svg
                   width="18"
                   height="18"
@@ -254,7 +263,9 @@ export function Header() {
         }`}
       >
         <nav className="flex flex-col gap-1 px-4 py-4">
-          <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Explore</p>
+          <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Explore
+          </p>
           {exploreItems.map((item) => (
             <Link
               key={item.label}
@@ -269,17 +280,17 @@ export function Header() {
           ))}
           <div className="h-px bg-border/50 my-2"></div>
           {topNavItems.map((item) => {
-            const isProductsPath = router.state.location.pathname.startsWith('/products');
-            const match = router.state.matches.find(m => m.routeId === '/products/$slug');
+            const isProductsPath = router.state.location.pathname.startsWith("/products");
+            const match = router.state.matches.find((m) => m.routeId === "/products/$slug");
             const loaderData = match?.loaderData as any;
-            const isServiceDetail = isProductsPath && loaderData?.product_type === 'service';
+            const isServiceDetail = isProductsPath && loaderData?.product_type === "service";
 
             let isActive = false;
-            if ((item.to as string) === '/') {
-              isActive = router.state.location.pathname === '/';
-            } else if (item.to === '/services') {
-              isActive = router.state.location.pathname.startsWith('/services') || isServiceDetail;
-            } else if (item.to === '/products') {
+            if ((item.to as string) === "/") {
+              isActive = router.state.location.pathname === "/";
+            } else if (item.to === "/services") {
+              isActive = router.state.location.pathname.startsWith("/services") || isServiceDetail;
+            } else if (item.to === "/products") {
               isActive = isProductsPath && !isServiceDetail;
             } else {
               isActive = router.state.location.pathname.startsWith(item.to);
@@ -289,14 +300,17 @@ export function Header() {
               <Link
                 key={item.label}
                 to={item.to}
-                className={`relative rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${isActive ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-accent hover:text-foreground'}`}
+                className={`relative rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${isActive ? "text-primary bg-primary/10" : "text-foreground hover:bg-accent hover:text-foreground"}`}
                 onClick={() => setMobileOpen(false)}
               >
                 {item.label}
               </Link>
             );
           })}
-          {(role === 'admin' || user?.email === 'siegaej@gmail.com' || user?.email === 'siegadevelopments@gmail.com' || user?.email === 'siegapython@gmail.com') && (
+          {(role === "admin" ||
+            user?.email === "siegaej@gmail.com" ||
+            user?.email === "siegadevelopments@gmail.com" ||
+            user?.email === "siegapython@gmail.com") && (
             <Link
               to="/admin"
               className="rounded-md px-3 py-2.5 text-sm font-bold text-primary hover:bg-primary/10 transition-colors"

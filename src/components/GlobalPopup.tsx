@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,7 @@ interface Popup {
   title: string;
   content: string | null;
   image_url: string | null;
-  cta_type: 'url' | 'email';
+  cta_type: "url" | "email";
   cta_url: string | null;
   cta_button_text: string;
   display_delay: number;
@@ -35,12 +35,12 @@ export function GlobalPopup() {
   useEffect(() => {
     async function checkPopups() {
       const urlParams = new URLSearchParams(window.location.search);
-      const isPreview = urlParams.get('preview_popup') === 'true';
-      
+      const isPreview = urlParams.get("preview_popup") === "true";
+
       // Check if user has already dismissed a popup in this session
       const lastDismissed = localStorage.getItem("lmg_popup_dismissed");
       const sessionDismissed = sessionStorage.getItem("lmg_popup_session_dismissed");
-      
+
       // Only skip if not in preview mode
       if (!isPreview && sessionDismissed) return;
 
@@ -54,14 +54,17 @@ export function GlobalPopup() {
 
       if (data && !error) {
         const popupData = data as any;
-        
+
         // Skip if this specific popup was already dismissed (unless previewing)
         if (!isPreview && lastDismissed === popupData.id) return;
 
-        setTimeout(() => {
-          setPopup(popupData);
-          setIsOpen(true);
-        }, isPreview ? 0 : (popupData.display_delay || 3000));
+        setTimeout(
+          () => {
+            setPopup(popupData);
+            setIsOpen(true);
+          },
+          isPreview ? 0 : popupData.display_delay || 3000,
+        );
       }
     }
 
@@ -90,9 +93,11 @@ export function GlobalPopup() {
     } else if (popup.cta_type === "email") {
       if (!email) return;
       setIsSubmitting(true);
-      const { error } = await (supabase.from("newsletter_subscribers") as any)
-        .upsert({ email }, { onConflict: "email" });
-      
+      const { error } = await (supabase.from("newsletter_subscribers") as any).upsert(
+        { email },
+        { onConflict: "email" },
+      );
+
       setIsSubmitting(false);
       if (error) {
         toast.error("Failed to subscribe. Please try again.");
@@ -112,13 +117,9 @@ export function GlobalPopup() {
         <div className="flex flex-col">
           {popup.image_url && (
             <div className="relative h-64 w-full">
-              <img 
-                src={popup.image_url} 
-                alt={popup.title} 
-                className="h-full w-full object-cover"
-              />
+              <img src={popup.image_url} alt={popup.title} className="h-full w-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-              <button 
+              <button
                 onClick={handleDismiss}
                 className="absolute top-4 right-4 h-8 w-8 rounded-full bg-black/20 text-white backdrop-blur-md flex items-center justify-center hover:bg-black/40 transition-colors"
               >
@@ -126,16 +127,16 @@ export function GlobalPopup() {
               </button>
             </div>
           )}
-          
+
           <div className="p-8 text-center space-y-4">
             {!popup.image_url && (
-               <div className="flex justify-end -mt-4 -mr-4">
-                  <Button variant="ghost" size="icon" onClick={handleDismiss} className="h-8 w-8">
-                    <X className="h-4 w-4" />
-                  </Button>
-               </div>
+              <div className="flex justify-end -mt-4 -mr-4">
+                <Button variant="ghost" size="icon" onClick={handleDismiss} className="h-8 w-8">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             )}
-            
+
             <DialogHeader className="space-y-2">
               <DialogTitle className="text-3xl font-black tracking-tight flex items-center justify-center gap-2">
                 <Sparkles className="h-6 w-6 text-primary animate-pulse" />
@@ -157,7 +158,7 @@ export function GlobalPopup() {
                   <form onSubmit={handleCTA} className="space-y-3">
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input 
+                      <Input
                         type="email"
                         required
                         placeholder="Enter your email address"
@@ -166,8 +167,8 @@ export function GlobalPopup() {
                         onChange={(e) => setEmail(e.target.value)}
                       />
                     </div>
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       className="w-full h-12 text-base font-bold shadow-lg shadow-primary/20"
                       disabled={isSubmitting}
                     >
@@ -178,7 +179,7 @@ export function GlobalPopup() {
               </div>
             ) : (
               <div className="pt-6">
-                <Button 
+                <Button
                   onClick={() => handleCTA()}
                   className="w-full h-14 text-lg font-black tracking-wide shadow-xl shadow-primary/20 group"
                 >
@@ -187,7 +188,7 @@ export function GlobalPopup() {
                 </Button>
               </div>
             )}
-            
+
             <p className="text-[10px] text-muted-foreground pt-4 uppercase tracking-widest font-bold opacity-50">
               Lifestyle Medicine Gateway • Wellness Community
             </p>

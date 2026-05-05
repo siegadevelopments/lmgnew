@@ -39,13 +39,11 @@ function MemesPage() {
 
   const filteredGalleries = useMemo(() => {
     if (!galleries) return [];
-    return galleries.filter(g => 
-      g.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    return galleries.filter((g) => g.title.toLowerCase().includes(searchQuery.toLowerCase()));
   }, [galleries, searchQuery]);
 
   const selectedGallery = useMemo(() => {
-    return galleries?.find(g => g.id === selectedGalleryId);
+    return galleries?.find((g) => g.id === selectedGalleryId);
   }, [galleries, selectedGalleryId]);
 
   if (isLoading) {
@@ -88,14 +86,14 @@ function MemesPage() {
         {selectedGalleryId ? (
           /* Detailed View for a specific Gallery */
           <div className="space-y-8">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               onClick={() => setSelectedGalleryId(null)}
               className="flex items-center gap-2 -ml-2"
             >
               <ChevronLeft className="h-4 w-4" /> Back to Categories
             </Button>
-            
+
             <div>
               <h2 className="text-3xl font-bold text-foreground">{selectedGallery?.title}</h2>
               <p className="mt-2 text-muted-foreground">
@@ -105,8 +103,8 @@ function MemesPage() {
 
             <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4">
               {selectedGallery?.gallery_items.map((item: any) => (
-                <div 
-                  key={item.id} 
+                <div
+                  key={item.id}
                   className="break-inside-avoid overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all hover:shadow-md cursor-pointer group"
                   onClick={() => setSelectedImage(item.image_url)}
                 >
@@ -128,8 +126,8 @@ function MemesPage() {
             {filteredGalleries.map((gallery) => {
               const coverImage = gallery.gallery_items[0]?.image_url;
               return (
-                <Card 
-                  key={gallery.id} 
+                <Card
+                  key={gallery.id}
                   className="group cursor-pointer overflow-hidden transition-all hover:shadow-md border-border hover:border-primary/20"
                   onClick={() => setSelectedGalleryId(gallery.id)}
                 >
@@ -157,7 +155,9 @@ function MemesPage() {
             })}
             {filteredGalleries.length === 0 && (
               <div className="col-span-full py-20 text-center">
-                <p className="text-muted-foreground">No categories found matching "{searchQuery}"</p>
+                <p className="text-muted-foreground">
+                  No categories found matching "{searchQuery}"
+                </p>
               </div>
             )}
           </div>

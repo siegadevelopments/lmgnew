@@ -23,9 +23,10 @@ function RecipesPage() {
   const [search, setSearch] = useState("");
 
   const filteredRecipes = useMemo(() => {
-    return recipes.filter(recipe => 
-      (recipe.title?.toLowerCase() || "").includes(search.toLowerCase()) || 
-      (recipe.excerpt?.toLowerCase() || "").includes(search.toLowerCase())
+    return recipes.filter(
+      (recipe) =>
+        (recipe.title?.toLowerCase() || "").includes(search.toLowerCase()) ||
+        (recipe.excerpt?.toLowerCase() || "").includes(search.toLowerCase()),
     );
   }, [recipes, search]);
 
@@ -55,10 +56,9 @@ function RecipesPage() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-
         {filteredRecipes.length === 0 ? (
           <div className="text-center py-20 bg-muted/20 rounded-2xl border border-border">
-             <p className="text-muted-foreground text-lg">No recipes matched your search.</p>
+            <p className="text-muted-foreground text-lg">No recipes matched your search.</p>
           </div>
         ) : (
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
@@ -77,7 +77,9 @@ function RecipesPage() {
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   ) : (
-                    <div className="flex h-full items-center justify-center text-muted-foreground/30">No Image</div>
+                    <div className="flex h-full items-center justify-center text-muted-foreground/30">
+                      No Image
+                    </div>
                   )}
                   {(recipe.prep_time || recipe.cook_time) && (
                     <div className="absolute bottom-3 right-3 rounded-full bg-background/90 px-2.5 py-1 text-xs font-semibold backdrop-blur-sm">
@@ -90,7 +92,10 @@ function RecipesPage() {
                     {recipe.title}
                   </h3>
                   {recipe.excerpt && (
-                    <p className="mt-2 text-sm text-muted-foreground line-clamp-3" dangerouslySetInnerHTML={{ __html: recipe.excerpt }} />
+                    <p
+                      className="mt-2 text-sm text-muted-foreground line-clamp-3"
+                      dangerouslySetInnerHTML={{ __html: recipe.excerpt }}
+                    />
                   )}
                 </div>
               </Link>

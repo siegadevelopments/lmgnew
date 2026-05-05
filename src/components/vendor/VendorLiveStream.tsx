@@ -4,7 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Radio, Video, Copy, ExternalLink, RefreshCw, Layout, Monitor } from "lucide-react";
+import {
+  Loader2,
+  Radio,
+  Video,
+  Copy,
+  ExternalLink,
+  RefreshCw,
+  Layout,
+  Monitor,
+} from "lucide-react";
 import { toast } from "sonner";
 import MuxPlayer from "@mux/mux-player-react";
 import { BrowserBroadcast } from "./BrowserBroadcast";
@@ -22,8 +31,7 @@ export function VendorLiveStream({ vendorId }: { vendorId: string }) {
 
   async function loadStreamInfo() {
     setLoading(true);
-    const { data, error } = await (supabase
-      .from("vendor_streams") as any)
+    const { data, error } = await (supabase.from("vendor_streams") as any)
       .select("*")
       .eq("vendor_id", vendorId)
       .single();
@@ -39,20 +47,21 @@ export function VendorLiveStream({ vendorId }: { vendorId: string }) {
     setIsUpdating(true);
     try {
       const newStatus = !streamInfo.is_live;
-      const { error } = await (supabase
-        .from("vendor_streams") as any)
-        .update({ is_live: newStatus, last_streamed_at: newStatus ? new Date().toISOString() : streamInfo.last_streamed_at })
+      const { error } = await (supabase.from("vendor_streams") as any)
+        .update({
+          is_live: newStatus,
+          last_streamed_at: newStatus ? new Date().toISOString() : streamInfo.last_streamed_at,
+        })
         .eq("vendor_id", vendorId);
-      
+
       if (error) {
         toast.error(error.message);
       } else {
         setStreamInfo({ ...streamInfo, is_live: newStatus });
         toast.success(newStatus ? "You are now LIVE!" : "Stream ended");
-        
+
         // Also update vendor_profiles for easy discovery
-        await (supabase
-          .from("vendor_profiles") as any)
+        await (supabase.from("vendor_profiles") as any)
           .update({ is_live: newStatus })
           .eq("id", vendorId);
       }
@@ -76,17 +85,16 @@ export function VendorLiveStream({ vendorId }: { vendorId: string }) {
 
     setIsUpdating(true);
     try {
-      const { data, error } = await (supabase
-        .from("vendor_streams") as any)
-        .upsert({ 
-          vendor_id: vendorId, 
-          mux_stream_key: streamKey, 
+      const { data, error } = await (supabase.from("vendor_streams") as any)
+        .upsert({
+          vendor_id: vendorId,
+          mux_stream_key: streamKey,
           mux_playback_id: playbackId,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .select()
         .single();
-      
+
       if (error) throw error;
       setStreamInfo(data);
       toast.success("Stream settings saved successfully!");
@@ -102,7 +110,12 @@ export function VendorLiveStream({ vendorId }: { vendorId: string }) {
     toast.success(`${label} copied!`);
   };
 
-  if (loading) return <div className="flex justify-center p-10"><Loader2 className="animate-spin" /></div>;
+  if (loading)
+    return (
+      <div className="flex justify-center p-10">
+        <Loader2 className="animate-spin" />
+      </div>
+    );
 
   return (
     <div className="space-y-6">
@@ -111,14 +124,18 @@ export function VendorLiveStream({ vendorId }: { vendorId: string }) {
           <h2 className="text-2xl font-bold tracking-tight">Live Streaming</h2>
           <p className="text-muted-foreground">Connect with your audience in real-time.</p>
         </div>
-        <Button 
+        <Button
           variant={streamInfo?.is_live ? "destructive" : "default"}
           size="lg"
           className="font-bold"
           onClick={toggleLiveStatus}
           disabled={isUpdating || !streamInfo}
         >
-          {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Radio className="mr-2 h-4 w-4" />}
+          {isUpdating ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Radio className="mr-2 h-4 w-4" />
+          )}
           {streamInfo?.is_live ? "End Stream" : "Go Live Now"}
         </Button>
       </div>
@@ -142,7 +159,9 @@ export function VendorLiveStream({ vendorId }: { vendorId: string }) {
                 <CardTitle>Stream Preview</CardTitle>
                 <CardDescription>
                   {streamInfo?.is_live ? (
-                    <Badge variant="destructive" className="animate-pulse">LIVE</Badge>
+                    <Badge variant="destructive" className="animate-pulse">
+                      LIVE
+                    </Badge>
                   ) : (
                     <Badge variant="secondary">OFFLINE</Badge>
                   )}
@@ -175,20 +194,45 @@ export function VendorLiveStream({ vendorId }: { vendorId: string }) {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase text-muted-foreground">Server URL</label>
+                  <label className="text-xs font-bold uppercase text-muted-foreground">
+                    Server URL
+                  </label>
                   <div className="flex gap-2">
-                    <Input readOnly value="rtmps://global-live.mux.com:443/app" className="bg-muted text-xs" />
-                    <Button variant="ghost" size="icon" onClick={() => copyToClipboard("rtmps://global-live.mux.com:443/app", "Server URL")}>
+                    <Input
+                      readOnly
+                      value="rtmps://global-live.mux.com:443/app"
+                      className="bg-muted text-xs"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        copyToClipboard("rtmps://global-live.mux.com:443/app", "Server URL")
+                      }
+                    >
                       <Copy className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase text-muted-foreground">Stream Key</label>
+                  <label className="text-xs font-bold uppercase text-muted-foreground">
+                    Stream Key
+                  </label>
                   <div className="flex gap-2">
-                    <Input type="password" readOnly value={streamInfo?.mux_stream_key || "••••••••••••"} className="bg-muted text-xs" />
-                    <Button variant="ghost" size="icon" onClick={() => copyToClipboard(streamInfo?.mux_stream_key || "", "Stream Key")}>
+                    <Input
+                      type="password"
+                      readOnly
+                      value={streamInfo?.mux_stream_key || "••••••••••••"}
+                      className="bg-muted text-xs"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        copyToClipboard(streamInfo?.mux_stream_key || "", "Stream Key")
+                      }
+                    >
                       <Copy className="h-4 w-4" />
                     </Button>
                   </div>
@@ -213,13 +257,13 @@ export function VendorLiveStream({ vendorId }: { vendorId: string }) {
         <TabsContent value="browser" className="mt-0">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <BrowserBroadcast 
-                isLive={streamInfo?.is_live} 
-                isUpdating={isUpdating} 
-                onToggleLive={toggleLiveStatus} 
+              <BrowserBroadcast
+                isLive={streamInfo?.is_live}
+                isUpdating={isUpdating}
+                onToggleLive={toggleLiveStatus}
               />
             </div>
-            
+
             <Card className="h-fit">
               <CardHeader>
                 <CardTitle>Tips for Mobile Live</CardTitle>
@@ -227,15 +271,21 @@ export function VendorLiveStream({ vendorId }: { vendorId: string }) {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <p className="text-sm font-bold">Stable Connection</p>
-                  <p className="text-xs text-muted-foreground">Use WiFi if possible for the best stream quality and to avoid data charges.</p>
+                  <p className="text-xs text-muted-foreground">
+                    Use WiFi if possible for the best stream quality and to avoid data charges.
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm font-bold">Landscape Mode</p>
-                  <p className="text-xs text-muted-foreground">Rotate your phone for a better viewing experience for your customers.</p>
+                  <p className="text-xs text-muted-foreground">
+                    Rotate your phone for a better viewing experience for your customers.
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm font-bold">Lighting</p>
-                  <p className="text-xs text-muted-foreground">Ensure your face or products are well-lit for a professional look.</p>
+                  <p className="text-xs text-muted-foreground">
+                    Ensure your face or products are well-lit for a professional look.
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -251,8 +301,13 @@ export function VendorLiveStream({ vendorId }: { vendorId: string }) {
               Initialize Your Live Stream
             </CardTitle>
             <CardDescription>
-              To start streaming, you need to connect your Mux account. 
-              <a href="https://dashboard.mux.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline ml-1 inline-flex items-center gap-1">
+              To start streaming, you need to connect your Mux account.
+              <a
+                href="https://dashboard.mux.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline ml-1 inline-flex items-center gap-1"
+              >
                 Get your keys here <ExternalLink className="h-3 w-3" />
               </a>
             </CardDescription>
@@ -262,7 +317,12 @@ export function VendorLiveStream({ vendorId }: { vendorId: string }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-bold">Mux Stream Key</label>
-                  <Input name="streamKey" placeholder="Paste your stream key here" type="password" required />
+                  <Input
+                    name="streamKey"
+                    placeholder="Paste your stream key here"
+                    type="password"
+                    required
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-bold">Mux Playback ID</label>
@@ -270,7 +330,11 @@ export function VendorLiveStream({ vendorId }: { vendorId: string }) {
                 </div>
               </div>
               <Button type="submit" className="w-full" disabled={isUpdating}>
-                {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                {isUpdating ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                )}
                 Save and Initialize Stream
               </Button>
             </form>

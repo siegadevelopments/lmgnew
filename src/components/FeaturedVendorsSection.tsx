@@ -16,11 +16,12 @@ export function FeaturedVendorsSection() {
             <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
               Featured Vendors
             </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Trusted brands and practitioners
-            </p>
+            <p className="mt-2 text-sm text-muted-foreground">Trusted brands and practitioners</p>
           </div>
-          <Link to="/vendors" className="hidden text-sm font-medium text-primary hover:underline sm:block">
+          <Link
+            to="/vendors"
+            className="hidden text-sm font-medium text-primary hover:underline sm:block"
+          >
             View all vendors →
           </Link>
         </div>
@@ -44,7 +45,10 @@ export function FeaturedVendorsSection() {
                     <div className="relative">
                       <div className="absolute -inset-2 rounded-full bg-primary/5 opacity-0 transition-opacity group-hover:opacity-100" />
                       {vendor.store_logo_url ? (
-                        <img src={vendor.store_logo_url} className="h-20 w-20 rounded-full object-cover shadow-sm transition-transform group-hover:scale-110" />
+                        <img
+                          src={vendor.store_logo_url}
+                          className="h-20 w-20 rounded-full object-cover shadow-sm transition-transform group-hover:scale-110"
+                        />
                       ) : (
                         <div className="flex h-20 w-20 items-center justify-center rounded-full bg-wellness-muted text-2xl font-bold text-primary shadow-sm">
                           {vendor.store_name.charAt(0)}
@@ -60,7 +64,9 @@ export function FeaturedVendorsSection() {
         </div>
 
         <div className="mt-6 text-center sm:hidden">
-          <Link to="/vendors" className="text-sm font-medium text-primary hover:underline">View all vendors →</Link>
+          <Link to="/vendors" className="text-sm font-medium text-primary hover:underline">
+            View all vendors →
+          </Link>
         </div>
       </div>
     </section>

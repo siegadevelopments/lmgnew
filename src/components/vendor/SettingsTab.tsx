@@ -26,18 +26,20 @@ export function SettingsTab({ profile, setProfile, userId }: Props) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const { error } = await (supabase.from("vendor_profiles") as any).update({
-        store_name: profile.store_name, 
-        store_description: profile.store_description,
-        store_logo_url: profile.store_logo_url, 
-        store_banner_url: profile.store_banner_url,
-        website: profile.website,
-        instagram: profile.instagram,
-        facebook: profile.facebook,
-        twitter: profile.twitter,
-        store_categories: profile.store_categories || [],
-        updated_at: new Date().toISOString()
-      }).eq("id", userId);
+      const { error } = await (supabase.from("vendor_profiles") as any)
+        .update({
+          store_name: profile.store_name,
+          store_description: profile.store_description,
+          store_logo_url: profile.store_logo_url,
+          store_banner_url: profile.store_banner_url,
+          website: profile.website,
+          instagram: profile.instagram,
+          facebook: profile.facebook,
+          twitter: profile.twitter,
+          store_categories: profile.store_categories || [],
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", userId);
 
       if (error) throw error;
       toast.success("Settings saved successfully!");
@@ -63,33 +65,76 @@ export function SettingsTab({ profile, setProfile, userId }: Props) {
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-2 sm:col-span-2">
                 <Label>Store Name</Label>
-                <Input value={profile.store_name} onChange={e => setProfile({ ...profile, store_name: e.target.value })} />
+                <Input
+                  value={profile.store_name}
+                  onChange={(e) => setProfile({ ...profile, store_name: e.target.value })}
+                />
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label>Description</Label>
-                <Textarea rows={3} value={profile.store_description || ""} onChange={e => setProfile({ ...profile, store_description: e.target.value })} placeholder="Tell customers about your brand" />
+                <Textarea
+                  rows={3}
+                  value={profile.store_description || ""}
+                  onChange={(e) => setProfile({ ...profile, store_description: e.target.value })}
+                  placeholder="Tell customers about your brand"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Logo URL</Label>
                 <div className="flex gap-2">
-                  <Input value={profile.store_logo_url || ""} onChange={e => setProfile({ ...profile, store_logo_url: e.target.value })} className="flex-1" />
+                  <Input
+                    value={profile.store_logo_url || ""}
+                    onChange={(e) => setProfile({ ...profile, store_logo_url: e.target.value })}
+                    className="flex-1"
+                  />
                   <label className="shrink-0">
-                    <Button type="button" variant="secondary" asChild disabled={uploading}><span>{uploading ? "..." : "Upload"}</span></Button>
-                    <input type="file" className="hidden" accept="image/*" onChange={async e => {
-                      if (e.target.files?.[0]) { setUploading(true); const url = await uploadMedia(e.target.files[0], `stores/${userId}/logo`); if (url) setProfile({ ...profile, store_logo_url: url }); setUploading(false); }
-                    }} />
+                    <Button type="button" variant="secondary" asChild disabled={uploading}>
+                      <span>{uploading ? "..." : "Upload"}</span>
+                    </Button>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        if (e.target.files?.[0]) {
+                          setUploading(true);
+                          const url = await uploadMedia(e.target.files[0], `stores/${userId}/logo`);
+                          if (url) setProfile({ ...profile, store_logo_url: url });
+                          setUploading(false);
+                        }
+                      }}
+                    />
                   </label>
                 </div>
               </div>
               <div className="space-y-2">
                 <Label>Banner URL</Label>
                 <div className="flex gap-2">
-                  <Input value={profile.store_banner_url || ""} onChange={e => setProfile({ ...profile, store_banner_url: e.target.value })} className="flex-1" />
+                  <Input
+                    value={profile.store_banner_url || ""}
+                    onChange={(e) => setProfile({ ...profile, store_banner_url: e.target.value })}
+                    className="flex-1"
+                  />
                   <label className="shrink-0">
-                    <Button type="button" variant="secondary" asChild disabled={uploading}><span>{uploading ? "..." : "Upload"}</span></Button>
-                    <input type="file" className="hidden" accept="image/*" onChange={async e => {
-                      if (e.target.files?.[0]) { setUploading(true); const url = await uploadMedia(e.target.files[0], `stores/${userId}/banner`); if (url) setProfile({ ...profile, store_banner_url: url }); setUploading(false); }
-                    }} />
+                    <Button type="button" variant="secondary" asChild disabled={uploading}>
+                      <span>{uploading ? "..." : "Upload"}</span>
+                    </Button>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        if (e.target.files?.[0]) {
+                          setUploading(true);
+                          const url = await uploadMedia(
+                            e.target.files[0],
+                            `stores/${userId}/banner`,
+                          );
+                          if (url) setProfile({ ...profile, store_banner_url: url });
+                          setUploading(false);
+                        }
+                      }}
+                    />
                   </label>
                 </div>
               </div>
@@ -105,42 +150,67 @@ export function SettingsTab({ profile, setProfile, userId }: Props) {
                   <Label className="text-xs uppercase text-muted-foreground">Website</Label>
                   <div className="relative">
                     <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input className="pl-10" value={profile.website || ""} onChange={e => setProfile({ ...profile, website: e.target.value })} placeholder="https://yourstore.com" />
+                    <Input
+                      className="pl-10"
+                      value={profile.website || ""}
+                      onChange={(e) => setProfile({ ...profile, website: e.target.value })}
+                      placeholder="https://yourstore.com"
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs uppercase text-muted-foreground">Instagram</Label>
                   <div className="relative">
                     <Instagram className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input className="pl-10" value={profile.instagram || ""} onChange={e => setProfile({ ...profile, instagram: e.target.value })} placeholder="https://instagram.com/username" />
+                    <Input
+                      className="pl-10"
+                      value={profile.instagram || ""}
+                      onChange={(e) => setProfile({ ...profile, instagram: e.target.value })}
+                      placeholder="https://instagram.com/username"
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs uppercase text-muted-foreground">Facebook</Label>
                   <div className="relative">
                     <Facebook className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input className="pl-10" value={profile.facebook || ""} onChange={e => setProfile({ ...profile, facebook: e.target.value })} placeholder="https://facebook.com/page" />
+                    <Input
+                      className="pl-10"
+                      value={profile.facebook || ""}
+                      onChange={(e) => setProfile({ ...profile, facebook: e.target.value })}
+                      placeholder="https://facebook.com/page"
+                    />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs uppercase text-muted-foreground">Twitter / X</Label>
                   <div className="relative">
                     <Twitter className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input className="pl-10" value={profile.twitter || ""} onChange={e => setProfile({ ...profile, twitter: e.target.value })} placeholder="https://twitter.com/handle" />
+                    <Input
+                      className="pl-10"
+                      value={profile.twitter || ""}
+                      onChange={(e) => setProfile({ ...profile, twitter: e.target.value })}
+                      placeholder="https://twitter.com/handle"
+                    />
                   </div>
                 </div>
               </div>
             </div>
-            
+
             <div className="space-y-3 pt-4 border-t border-border">
               <Label className="text-base font-bold">Store Navigation Categories</Label>
-              <CardDescription>Add custom categories that will appear as tabs on your store profile page.</CardDescription>
+              <CardDescription>
+                Add custom categories that will appear as tabs on your store profile page.
+              </CardDescription>
               <div className="flex flex-wrap gap-2 mb-2">
                 {(profile.store_categories || []).map((cat, idx) => (
-                  <div key={idx} className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 group border border-primary/20">
+                  <div
+                    key={idx}
+                    className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 group border border-primary/20"
+                  >
                     {cat}
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => {
                         const newCats = [...(profile.store_categories || [])];
                         newCats.splice(idx, 1);
@@ -154,29 +224,35 @@ export function SettingsTab({ profile, setProfile, userId }: Props) {
                 ))}
               </div>
               <div className="flex gap-2">
-                <Input 
+                <Input
                   id="new-cat"
-                  placeholder="Add a category (e.g. Skin Care)" 
-                  className="max-w-xs" 
+                  placeholder="Add a category (e.g. Skin Care)"
+                  className="max-w-xs"
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === "Enter") {
                       e.preventDefault();
                       const val = e.currentTarget.value.trim();
                       if (val && !(profile.store_categories || []).includes(val)) {
-                        setProfile({ ...profile, store_categories: [...(profile.store_categories || []), val] });
+                        setProfile({
+                          ...profile,
+                          store_categories: [...(profile.store_categories || []), val],
+                        });
                         e.currentTarget.value = "";
                       }
                     }
                   }}
                 />
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => {
-                    const input = document.getElementById('new-cat') as HTMLInputElement;
+                    const input = document.getElementById("new-cat") as HTMLInputElement;
                     const val = input.value.trim();
                     if (val && !(profile.store_categories || []).includes(val)) {
-                      setProfile({ ...profile, store_categories: [...(profile.store_categories || []), val] });
+                      setProfile({
+                        ...profile,
+                        store_categories: [...(profile.store_categories || []), val],
+                      });
                       input.value = "";
                     }
                   }}
@@ -197,14 +273,17 @@ export function SettingsTab({ profile, setProfile, userId }: Props) {
   );
 }
 
-
 function Badge({ children, variant, className }: any) {
   return (
-    <span className={cn(
-      "px-2 py-0.5 rounded-full text-[10px] font-bold",
-      variant === "outline" ? "border border-border text-muted-foreground" : "bg-primary text-primary-foreground",
-      className
-    )}>
+    <span
+      className={cn(
+        "px-2 py-0.5 rounded-full text-[10px] font-bold",
+        variant === "outline"
+          ? "border border-border text-muted-foreground"
+          : "bg-primary text-primary-foreground",
+        className,
+      )}
+    >
       {children}
     </span>
   );

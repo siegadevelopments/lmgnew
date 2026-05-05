@@ -65,5 +65,12 @@ export function useWishlist() {
     [items],
   );
 
-  return { items, loading, addToWishlist, removeFromWishlist, isInWishlist, refresh: fetchWishlist };
+  return {
+    items,
+    loading,
+    addToWishlist,
+    removeFromWishlist,
+    isInWishlist,
+    refresh: fetchWishlist,
+  };
 }

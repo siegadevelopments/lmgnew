@@ -1,77 +1,88 @@
 // @ts-ignore
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 // @ts-ignore
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7'
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-const CLICKSEND_USERNAME = Deno.env.get('CLICKSEND_USERNAME')
-const CLICKSEND_API_KEY = Deno.env.get('CLICKSEND_API_KEY')
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const CLICKSEND_USERNAME = Deno.env.get("CLICKSEND_USERNAME");
+const CLICKSEND_API_KEY = Deno.env.get("CLICKSEND_API_KEY");
 
 serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    );
 
     const supabaseUser = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
-    )
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: req.headers.get("Authorization")! } } },
+    );
 
-    const { data: { user }, error: authError } = await supabaseUser.auth.getUser()
-    if (authError || !user) throw new Error('Unauthorized')
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseUser.auth.getUser();
+    if (authError || !user) throw new Error("Unauthorized");
 
-    const { booking_id, customer_email, customer_phone, product_title, start_time } = await req.json()
+    const { booking_id, customer_email, customer_phone, product_title, start_time } =
+      await req.json();
 
-    console.log(`Cancelling booking ID: ${booking_id} for user: ${user.id}`)
+    console.log(`Cancelling booking ID: ${booking_id} for user: ${user.id}`);
 
     // 1. Update Booking Status
     const { data: existingBooking, error: fetchError } = await supabaseAdmin
-      .from('bookings')
-      .select('id')
-      .eq('id', booking_id)
-      .eq('customer_id', user.id)
-      .single()
+      .from("bookings")
+      .select("id")
+      .eq("id", booking_id)
+      .eq("customer_id", user.id)
+      .single();
 
     if (fetchError || !existingBooking) {
-      console.error('Booking not found or not owned by user:', fetchError)
-      throw new Error('Booking not found or unauthorized')
+      console.error("Booking not found or not owned by user:", fetchError);
+      throw new Error("Booking not found or unauthorized");
     }
 
     const { error: bookingError } = await supabaseAdmin
-      .from('bookings')
-      .update({ status: 'cancelled' } as any)
-      .eq('id', booking_id)
+      .from("bookings")
+      .update({ status: "cancelled" } as any)
+      .eq("id", booking_id);
 
     if (bookingError) {
-      console.error('Booking Cancel Error:', bookingError)
-      throw bookingError
+      console.error("Booking Cancel Error:", bookingError);
+      throw bookingError;
     }
 
-    const formattedDate = new Date(start_time).toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    const formattedDate = new Date(start_time).toLocaleString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
     // 2. Send Email
     if (RESEND_API_KEY) {
       try {
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
+        await fetch("https://api.resend.com/emails", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${RESEND_API_KEY}`,
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${RESEND_API_KEY}`,
           },
           body: JSON.stringify({
-            from: 'Lifestyle Medicine Gateway <orders@lifestylemedicinegateway.com>',
+            from: "Lifestyle Medicine Gateway <orders@lifestylemedicinegateway.com>",
             to: [customer_email],
             subject: `Booking Cancelled: ${product_title}`,
             html: `
@@ -84,45 +95,44 @@ serve(async (req: Request) => {
               </div>
             `,
           }),
-        })
+        });
       } catch (e) {
-        console.error('Email cancel notification error:', e)
+        console.error("Email cancel notification error:", e);
       }
     }
 
     // 3. Send SMS via ClickSend
     if (CLICKSEND_USERNAME && CLICKSEND_API_KEY && customer_phone) {
       try {
-        const auth = btoa(`${CLICKSEND_USERNAME}:${CLICKSEND_API_KEY}`)
-        await fetch('https://rest.clicksend.com/v3/sms/send', {
-          method: 'POST',
+        const auth = btoa(`${CLICKSEND_USERNAME}:${CLICKSEND_API_KEY}`);
+        await fetch("https://rest.clicksend.com/v3/sms/send", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Basic ${auth}`,
+            "Content-Type": "application/json",
+            Authorization: `Basic ${auth}`,
           },
           body: JSON.stringify({
             messages: [
               {
                 body: `LMG: Your booking for ${product_title} on ${formattedDate} has been cancelled.`,
-                to: customer_phone
-              }
-            ]
+                to: customer_phone,
+              },
+            ],
           }),
-        })
+        });
       } catch (e) {
-        console.error('SMS cancel notification error:', e)
+        console.error("SMS cancel notification error:", e);
       }
     }
 
     return new Response(JSON.stringify({ success: true }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
-    })
-
+    });
   } catch (error: any) {
     return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,
-    })
+    });
   }
-})
+});

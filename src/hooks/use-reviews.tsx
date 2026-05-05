@@ -75,5 +75,13 @@ export function useReviews(productId: number) {
 
   const userReview = user ? reviews.find((r) => r.user_id === user.id) : null;
 
-  return { reviews, loading, averageRating, submitReview, deleteReview, userReview, refresh: fetchReviews };
+  return {
+    reviews,
+    loading,
+    averageRating,
+    submitReview,
+    deleteReview,
+    userReview,
+    refresh: fetchReviews,
+  };
 }

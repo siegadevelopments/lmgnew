@@ -6,29 +6,29 @@ export function SchemaOrg() {
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "name": "Lifestyle Medicine Gateway",
-    "url": "https://lifestylemedicinegateway.com",
-    "logo": "https://lifestylemedicinegateway.com/logo.png",
-    "sameAs": [
+    name: "Lifestyle Medicine Gateway",
+    url: "https://lifestylemedicinegateway.com",
+    logo: "https://lifestylemedicinegateway.com/logo.png",
+    sameAs: [
       "https://facebook.com/lifestylemedicinegateway",
       "https://instagram.com/lifestylemedicinegateway",
-      "https://twitter.com/lmgateway"
+      "https://twitter.com/lmgateway",
     ],
-    "description": "A marketplace for wellness products, services, and expert advice."
+    description: "A marketplace for wellness products, services, and expert advice.",
   };
 
   const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    "url": "https://lifestylemedicinegateway.com",
-    "potentialAction": {
+    url: "https://lifestylemedicinegateway.com",
+    potentialAction: {
       "@type": "SearchAction",
-      "target": {
+      target: {
         "@type": "EntryPoint",
-        "urlTemplate": "https://lifestylemedicinegateway.com/shop?q={search_term_string}"
+        urlTemplate: "https://lifestylemedicinegateway.com/shop?q={search_term_string}",
       },
-      "query-input": "required name=search_term_string"
-    }
+      "query-input": "required name=search_term_string",
+    },
   };
 
   return (

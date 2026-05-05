@@ -34,7 +34,7 @@ function LoginPage() {
     return params.get("type") === "recovery" || window.location.hash.includes("type=recovery");
   });
   const [searchParams] = useState(() => new URLSearchParams(window.location.search));
-  
+
   const { signIn, updatePassword } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -70,12 +70,12 @@ function LoginPage() {
     e.preventDefault();
     setError("");
     setSuccess("");
-    
+
     if (newPassword !== confirmPassword) {
       setError("Passwords do not match");
       return;
     }
-    
+
     if (newPassword.length < 6) {
       setError("Password must be at least 6 characters");
       return;
@@ -92,7 +92,7 @@ function LoginPage() {
 
     setSuccess("Password updated successfully! You can now sign in.");
     setIsLoading(false);
-    
+
     // Clear hash and switch back to login mode after a short delay
     setTimeout(() => {
       window.location.hash = "";
@@ -106,9 +106,7 @@ function LoginPage() {
         <Card className="w-full max-w-md border-primary/20 shadow-xl">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Reset Password</CardTitle>
-            <CardDescription>
-              Enter your new password below to regain access.
-            </CardDescription>
+            <CardDescription>Enter your new password below to regain access.</CardDescription>
           </CardHeader>
           <form onSubmit={handleRecovery}>
             <CardContent className="space-y-4">
@@ -161,9 +159,7 @@ function LoginPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Welcome back</CardTitle>
-          <CardDescription>
-            Sign in to your account to continue
-          </CardDescription>
+          <CardDescription>Sign in to your account to continue</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
@@ -201,11 +197,7 @@ function LoginPage() {
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 <span className="flex items-center gap-2">
-                  <svg
-                    className="h-4 w-4 animate-spin"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                  >
+                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
                     <circle
                       className="opacity-25"
                       cx="12"

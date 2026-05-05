@@ -48,7 +48,16 @@ const socialLinks = [
     label: "Instagram",
     href: "#",
     icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
         <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
         <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
@@ -59,7 +68,16 @@ const socialLinks = [
     label: "Facebook",
     href: "#",
     icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
       </svg>
     ),
@@ -68,7 +86,16 @@ const socialLinks = [
     label: "Twitter",
     href: "#",
     icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z" />
       </svg>
     ),
@@ -77,7 +104,16 @@ const socialLinks = [
     label: "YouTube",
     href: "#",
     icon: (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19.1c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z" />
         <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" />
       </svg>
@@ -96,13 +132,10 @@ export function Footer() {
     e.preventDefault();
     if (!email) return;
     setIsLoading(true);
-    
+
     const { error } = await supabase
       .from("newsletter_subscribers")
-      .upsert(
-        { email, full_name: name } as any, 
-        { onConflict: "email" }
-      );
+      .upsert({ email, full_name: name } as any, { onConflict: "email" });
 
     if (error) {
       toast.error(error.message || "Failed to subscribe");
@@ -111,7 +144,7 @@ export function Footer() {
       setOpen(false);
       toast.success("Welcome to the community!");
     }
-    
+
     setIsLoading(false);
   };
 
@@ -123,16 +156,27 @@ export function Footer() {
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-primary-foreground">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className="text-primary-foreground"
+                >
+                  <path
+                    d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
               </div>
-              <span className="text-sm font-bold text-foreground">
-                Lifestyle Medicine Gateway
-              </span>
+              <span className="text-sm font-bold text-foreground">Lifestyle Medicine Gateway</span>
             </Link>
             <p className="mt-3 max-w-xs text-xs leading-relaxed text-muted-foreground">
-              Your trusted marketplace for health, wellness, and lifestyle medicine products and services.
+              Your trusted marketplace for health, wellness, and lifestyle medicine products and
+              services.
             </p>
 
             {/* Footer newsletter */}
@@ -162,7 +206,12 @@ export function Footer() {
                     </DialogHeader>
                     <form onSubmit={handleNewsletterSubmit} className="space-y-4 py-4">
                       <div className="space-y-1">
-                        <Label htmlFor="footer-name" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Your Name</Label>
+                        <Label
+                          htmlFor="footer-name"
+                          className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
+                        >
+                          Your Name
+                        </Label>
                         <div className="relative">
                           <User className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                           <Input
@@ -176,7 +225,12 @@ export function Footer() {
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <Label htmlFor="footer-email" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Email Address</Label>
+                        <Label
+                          htmlFor="footer-email"
+                          className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
+                        >
+                          Email Address
+                        </Label>
                         <div className="relative">
                           <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                           <Input
@@ -190,11 +244,7 @@ export function Footer() {
                           />
                         </div>
                       </div>
-                      <Button 
-                        type="submit" 
-                        className="w-full h-10 font-bold" 
-                        disabled={isLoading}
-                      >
+                      <Button type="submit" className="w-full h-10 font-bold" disabled={isLoading}>
                         {isLoading ? "Subscribing..." : "Subscribe Now"}
                       </Button>
                     </form>
@@ -245,10 +295,30 @@ export function Footer() {
             © {new Date().getFullYear()} Lifestyle Medicine Gateway. All rights reserved.
           </p>
           <div className="flex gap-4">
-            <Link to="/privacy" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Privacy</Link>
-            <Link to="/terms" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Terms</Link>
-            <Link to="/refund-policy" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Refunds</Link>
-            <Link to="/contact" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Contact</Link>
+            <Link
+              to="/privacy"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Privacy
+            </Link>
+            <Link
+              to="/terms"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Terms
+            </Link>
+            <Link
+              to="/refund-policy"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Refunds
+            </Link>
+            <Link
+              to="/contact"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Contact
+            </Link>
           </div>
         </div>
       </div>

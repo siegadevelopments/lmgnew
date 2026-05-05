@@ -51,7 +51,12 @@ export const Route = createFileRoute("/products/$slug")({
       <div className="mx-auto max-w-3xl px-4 py-20 text-center">
         <h1 className="text-2xl font-bold text-foreground">Failed to load product</h1>
         <p className="mt-2 text-muted-foreground">{error.message}</p>
-        <button onClick={() => router.invalidate()} className="mt-4 rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground">Retry</button>
+        <button
+          onClick={() => router.invalidate()}
+          className="mt-4 rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground"
+        >
+          Retry
+        </button>
       </div>
     );
   },
@@ -68,7 +73,7 @@ function ProductPage() {
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<any>(
-    product.variants && product.variants.length > 0 ? product.variants[0] : null
+    product.variants && product.variants.length > 0 ? product.variants[0] : null,
   );
   const [booking, setBooking] = useState<{ start_time: string; end_time: string } | null>(null);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
@@ -76,7 +81,11 @@ function ProductPage() {
   const [customerPhone, setCustomerPhone] = useState("");
 
   const currentPrice = selectedVariant ? selectedVariant.price : product.price;
-  const currentStock = selectedVariant ? (selectedVariant.available ? product.stock : 0) : product.stock;
+  const currentStock = selectedVariant
+    ? selectedVariant.available
+      ? product.stock
+      : 0
+    : product.stock;
 
   const handleAddToCart = async () => {
     if (!user) {
@@ -84,10 +93,13 @@ function ProductPage() {
       return;
     }
 
-    if (product.product_type === 'service' && booking) {
+    if (product.product_type === "service" && booking) {
       // Fetch user profile phone if not set
       if (!customerPhone) {
-        const { data: profile } = await (supabase.from("profiles") as any).select("phone").eq("id", user.id).single();
+        const { data: profile } = await (supabase.from("profiles") as any)
+          .select("phone")
+          .eq("id", user.id)
+          .single();
         if (profile?.phone) setCustomerPhone(profile.phone);
       }
       setIsPaymentDialogOpen(true);
@@ -142,15 +154,15 @@ function ProductPage() {
           vendor_id: product.vendor_id,
           product_title: product.title,
           vendor_name: product.vendor?.store_name,
-          payment_method: 'store'
-        }
+          payment_method: "store",
+        },
       });
 
       if (error) throw error;
 
       toast.success("Booking confirmed! Check your email and SMS for details.");
       setIsPaymentDialogOpen(false);
-      navigate({ to: "/profile", search: { tab: 'bookings' } });
+      navigate({ to: "/profile", search: { tab: "bookings" } });
     } catch (err: any) {
       console.error("Booking error:", err);
       toast.error("Failed to confirm booking: " + err.message);
@@ -162,14 +174,15 @@ function ProductPage() {
   const { data: reviews, refetch: refetchReviews } = useQuery({
     queryKey: ["reviews", product.id],
     queryFn: async () => {
-       const { data } = await supabase.from("reviews")
-         .select("id, rating, title, content, created_at, user:profiles(full_name)")
-         .eq("product_id", product.id)
-         .order("created_at", { ascending: false });
-       return (data as any[]) || [];
-    }
+      const { data } = await supabase
+        .from("reviews")
+        .select("id, rating, title, content, created_at, user:profiles(full_name)")
+        .eq("product_id", product.id)
+        .order("created_at", { ascending: false });
+      return (data as any[]) || [];
+    },
   });
-  
+
   const { data: relatedProducts } = useQuery({
     queryKey: ["products", "related", product.category, product.id],
     queryFn: async () => {
@@ -179,20 +192,21 @@ function ProductPage() {
         .eq("status", "published")
         .neq("id", product.id)
         .limit(6);
-      
+
       if (product.category) {
         query = query.eq("category", product.category);
       }
-      
+
       const { data } = await query;
       return (data as any[]) || [];
     },
-    enabled: !!product.id
+    enabled: !!product.id,
   });
 
-  const averageRating = reviews && reviews.length > 0 
-    ? (reviews.reduce((acc, curr) => acc + curr.rating, 0) / reviews.length).toFixed(1) 
-    : 0;
+  const averageRating =
+    reviews && reviews.length > 0
+      ? (reviews.reduce((acc, curr) => acc + curr.rating, 0) / reviews.length).toFixed(1)
+      : 0;
 
   const [rating, setRating] = useState(5);
   const [reviewTitle, setReviewTitle] = useState("");
@@ -200,29 +214,33 @@ function ProductPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmitReview = async (e: React.FormEvent) => {
-     e.preventDefault();
-     if (!user) return;
-     setIsSubmitting(true);
-     await supabase.from("reviews").insert({
-        user_id: user.id,
-        product_id: product.id,
-        product_slug: product.slug,
-        rating,
-        title: reviewTitle,
-        content: reviewContent
-     } as any);
-     setReviewTitle("");
-     setReviewContent("");
-     setRating(5);
-     refetchReviews();
-     setIsSubmitting(false);
+    e.preventDefault();
+    if (!user) return;
+    setIsSubmitting(true);
+    await supabase.from("reviews").insert({
+      user_id: user.id,
+      product_id: product.id,
+      product_slug: product.slug,
+      rating,
+      title: reviewTitle,
+      content: reviewContent,
+    } as any);
+    setReviewTitle("");
+    setReviewContent("");
+    setRating(5);
+    refetchReviews();
+    setIsSubmitting(false);
   };
 
   return (
     <article className="py-10 sm:py-16">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
         {product.vendor ? (
-          <Link to="/vendors/$slug" params={{ slug: product.vendor.id }} className="text-sm font-medium text-primary hover:underline">
+          <Link
+            to="/vendors/$slug"
+            params={{ slug: product.vendor.id }}
+            className="text-sm font-medium text-primary hover:underline"
+          >
             ← Back to {product.vendor.store_name}
           </Link>
         ) : (
@@ -239,24 +257,39 @@ function ProductPage() {
           )}
 
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">{product.title}</h1>
-            
+            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              {product.title}
+            </h1>
+
             {product.vendor && (
               <div className="mt-3 flex items-center gap-3">
                 {product.vendor.store_logo_url ? (
-                  <img src={product.vendor.store_logo_url} className="h-8 w-8 rounded-full object-cover border border-border" alt={product.vendor.store_name} />
+                  <img
+                    src={product.vendor.store_logo_url}
+                    className="h-8 w-8 rounded-full object-cover border border-border"
+                    alt={product.vendor.store_name}
+                  />
                 ) : (
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
                     {product.vendor.store_name.charAt(0)}
                   </div>
                 )}
                 <span className="text-sm text-muted-foreground">
-                  Sold by <Link to="/vendors/$slug" params={{ slug: product.vendor.id }} className="font-semibold text-primary hover:underline">{product.vendor.store_name}</Link>
+                  Sold by{" "}
+                  <Link
+                    to="/vendors/$slug"
+                    params={{ slug: product.vendor.id }}
+                    className="font-semibold text-primary hover:underline"
+                  >
+                    {product.vendor.store_name}
+                  </Link>
                 </span>
                 {product.brand && (
                   <>
                     <span className="text-muted-foreground">•</span>
-                    <span className="text-sm font-medium text-muted-foreground">Brand: <span className="text-foreground">{product.brand}</span></span>
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Brand: <span className="text-foreground">{product.brand}</span>
+                    </span>
                   </>
                 )}
               </div>
@@ -264,14 +297,19 @@ function ProductPage() {
 
             <div className="mt-4 flex items-center gap-2">
               <div className="flex text-amber-500">
-                {"★".repeat(Math.round(Number(averageRating)))}{"☆".repeat(5-Math.round(Number(averageRating)))}
+                {"★".repeat(Math.round(Number(averageRating)))}
+                {"☆".repeat(5 - Math.round(Number(averageRating)))}
               </div>
-              <span className="text-sm font-medium">{Number(averageRating) > 0 ? averageRating : "No ratings"}</span>
-              {reviews && reviews.length > 0 && <span className="text-sm text-muted-foreground">({reviews.length} reviews)</span>}
+              <span className="text-sm font-medium">
+                {Number(averageRating) > 0 ? averageRating : "No ratings"}
+              </span>
+              {reviews && reviews.length > 0 && (
+                <span className="text-sm text-muted-foreground">({reviews.length} reviews)</span>
+              )}
             </div>
 
             <p className="mt-4 text-3xl font-bold text-primary">${currentPrice}</p>
-            
+
             {product.variants && product.variants.length > 0 && (
               <div className="mt-6 space-y-3">
                 <Label className="text-base font-semibold">Choose Your Size:</Label>
@@ -293,22 +331,29 @@ function ProductPage() {
               </div>
             )}
 
-            {product.product_type !== 'service' && (
-              currentStock > 0 ? (
-                <Badge variant="outline" className="mt-4 text-green-600 bg-green-500/10 border-green-200">
+            {product.product_type !== "service" &&
+              (currentStock > 0 ? (
+                <Badge
+                  variant="outline"
+                  className="mt-4 text-green-600 bg-green-500/10 border-green-200"
+                >
                   In Stock {currentStock < 50 ? `(${currentStock})` : ""}
                 </Badge>
               ) : (
-                <Badge variant="destructive" className="mt-4">Out of Stock</Badge>
-              )
-            )}
+                <Badge variant="destructive" className="mt-4">
+                  Out of Stock
+                </Badge>
+              ))}
 
             {product.excerpt && (
-              <p className="mt-6 text-sm text-muted-foreground leading-relaxed" dangerouslySetInnerHTML={{ __html: product.excerpt }} />
+              <p
+                className="mt-6 text-sm text-muted-foreground leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: product.excerpt }}
+              />
             )}
 
             {/* Add to Cart (Physical Products Only) */}
-            {product.product_type !== 'service' && (
+            {product.product_type !== "service" && (
               <div className="mt-6 flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <button
@@ -325,33 +370,34 @@ function ProductPage() {
                     +
                   </button>
                 </div>
-                <Button 
-                  onClick={handleAddToCart} 
-                  className="flex-1" 
-                  size="lg" 
+                <Button
+                  onClick={handleAddToCart}
+                  className="flex-1"
+                  size="lg"
                   disabled={currentStock <= 0}
                 >
                   {added ? "Added to Cart!" : currentStock <= 0 ? "Unavailable" : "Add to Cart"}
                 </Button>
               </div>
             )}
-
           </div>
         </div>
 
         {/* Booking Calendar for Services (Full Width) */}
-        {product.product_type === 'service' && (
+        {product.product_type === "service" && (
           <div className="mt-16 max-w-5xl mx-auto">
             <h2 className="text-2xl font-bold mb-8">Schedule Your Appointment</h2>
-            <BookingCalendar 
-              productId={product.id} 
-              vendorId={product.vendor_id} 
-              onSelect={setBooking} 
+            <BookingCalendar
+              productId={product.id}
+              vendorId={product.vendor_id}
+              onSelect={setBooking}
             />
-            
+
             <div className="mt-8 flex flex-col sm:flex-row items-center gap-6 p-6 bg-card rounded-2xl border border-border/50 shadow-sm">
               <div className="flex items-center gap-4">
-                <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Sessions:</span>
+                <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">
+                  Sessions:
+                </span>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -368,12 +414,16 @@ function ProductPage() {
                   </button>
                 </div>
               </div>
-              <Button 
-                onClick={handleAddToCart} 
-                className="flex-1 w-full h-14 text-lg font-black shadow-xl shadow-primary/20 transition-all hover:scale-[1.02]" 
+              <Button
+                onClick={handleAddToCart}
+                className="flex-1 w-full h-14 text-lg font-black shadow-xl shadow-primary/20 transition-all hover:scale-[1.02]"
                 disabled={!booking}
               >
-                {added ? "Booking Added to Cart!" : (booking ? "Confirm & Book Now" : "Select a time slot above to book")}
+                {added
+                  ? "Booking Added to Cart!"
+                  : booking
+                    ? "Confirm & Book Now"
+                    : "Select a time slot above to book"}
               </Button>
             </div>
           </div>
@@ -394,73 +444,106 @@ function ProductPage() {
           <div>
             <h2 className="text-2xl font-bold">Customer Reviews</h2>
             <div className="mt-8 space-y-8">
-               {reviews && reviews.length > 0 ? reviews.map(r => (
+              {reviews && reviews.length > 0 ? (
+                reviews.map((r) => (
                   <div key={r.id}>
-                     <div className="flex items-center gap-3">
-                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                            {(r.user?.full_name || "?").charAt(0).toUpperCase()}
-                         </div>
-                         <div>
-                            <p className="font-semibold">{r.user?.full_name || "Anonymous User"}</p>
-                            <div className="flex items-center gap-2">
-                               <div className="flex text-amber-500 text-sm">{"★".repeat(r.rating)}{"☆".repeat(5-r.rating)}</div>
-                               <span className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</span>
-                            </div>
-                         </div>
-                     </div>
-                     <h4 className="mt-3 font-semibold text-foreground">{r.title}</h4>
-                     <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{r.content}</p>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                        {(r.user?.full_name || "?").charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-semibold">{r.user?.full_name || "Anonymous User"}</p>
+                        <div className="flex items-center gap-2">
+                          <div className="flex text-amber-500 text-sm">
+                            {"★".repeat(r.rating)}
+                            {"☆".repeat(5 - r.rating)}
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(r.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <h4 className="mt-3 font-semibold text-foreground">{r.title}</h4>
+                    <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
+                      {r.content}
+                    </p>
                   </div>
-               )) : (
-                  <p className="text-muted-foreground">No reviews yet. Be the first to share your experience!</p>
-               )}
+                ))
+              ) : (
+                <p className="text-muted-foreground">
+                  No reviews yet. Be the first to share your experience!
+                </p>
+              )}
             </div>
           </div>
 
           {/* Write Review */}
           <div>
             <div className="rounded-xl border border-border bg-card p-6">
-               <h3 className="text-lg font-bold">Write a Review</h3>
-               {user ? (
-                 <form onSubmit={handleSubmitReview} className="mt-6 space-y-4">
-                    <div className="space-y-2">
-                       <Label>Rating (1-5)</Label>
-                       <div className="flex gap-2 text-2xl text-amber-500">
-                          {[1,2,3,4,5].map(star => (
-                             <button type="button" key={star} onClick={() => setRating(star)} className={star <= rating ? "text-amber-500" : "text-muted"}>
-                               ★
-                             </button>
-                          ))}
-                       </div>
+              <h3 className="text-lg font-bold">Write a Review</h3>
+              {user ? (
+                <form onSubmit={handleSubmitReview} className="mt-6 space-y-4">
+                  <div className="space-y-2">
+                    <Label>Rating (1-5)</Label>
+                    <div className="flex gap-2 text-2xl text-amber-500">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          type="button"
+                          key={star}
+                          onClick={() => setRating(star)}
+                          className={star <= rating ? "text-amber-500" : "text-muted"}
+                        >
+                          ★
+                        </button>
+                      ))}
                     </div>
-                    <div className="space-y-2">
-                       <Label>Review Title</Label>
-                       <Input required placeholder="Summary of your experience" value={reviewTitle} onChange={(e) => setReviewTitle(e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                       <Label>Your Review</Label>
-                       <Textarea required placeholder="What did you like or dislike?" rows={4} value={reviewContent} onChange={(e) => setReviewContent(e.target.value)} />
-                    </div>
-                    <Button type="submit" disabled={isSubmitting} className="w-full">
-                       {isSubmitting ? "Submitting..." : "Submit Review"}
-                    </Button>
-                 </form>
-               ) : (
-                 <div className="mt-6 rounded-lg bg-muted/50 p-6 text-center">
-                    <p className="text-sm text-muted-foreground">You must be logged in to leave a review.</p>
-                    <Button asChild variant="outline" className="mt-4">
-                       <Link to="/login" search={{ redirect: `/products/${product.slug}` }}>Log In</Link>
-                    </Button>
-                 </div>
-               )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Review Title</Label>
+                    <Input
+                      required
+                      placeholder="Summary of your experience"
+                      value={reviewTitle}
+                      onChange={(e) => setReviewTitle(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Your Review</Label>
+                    <Textarea
+                      required
+                      placeholder="What did you like or dislike?"
+                      rows={4}
+                      value={reviewContent}
+                      onChange={(e) => setReviewContent(e.target.value)}
+                    />
+                  </div>
+                  <Button type="submit" disabled={isSubmitting} className="w-full">
+                    {isSubmitting ? "Submitting..." : "Submit Review"}
+                  </Button>
+                </form>
+              ) : (
+                <div className="mt-6 rounded-lg bg-muted/50 p-6 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    You must be logged in to leave a review.
+                  </p>
+                  <Button asChild variant="outline" className="mt-4">
+                    <Link to="/login" search={{ redirect: `/products/${product.slug}` }}>
+                      Log In
+                    </Link>
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
-        
+
         {relatedProducts && relatedProducts.length > 0 && (
           <div className="mt-20">
             <h2 className="text-2xl font-bold tracking-tight text-foreground">You May Also Like</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Related products based on this item</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Related products based on this item
+            </p>
             <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {relatedProducts.map((p) => (
                 <ProductCard key={p.id} product={p as any} />
@@ -474,7 +557,9 @@ function ProductPage() {
             <div className="h-2 bg-gradient-to-r from-primary via-wellness-green to-primary" />
             <div className="p-8">
               <DialogHeader className="mb-8">
-                <DialogTitle className="text-2xl font-black tracking-tight text-center">Confirm Your Booking</DialogTitle>
+                <DialogTitle className="text-2xl font-black tracking-tight text-center">
+                  Confirm Your Booking
+                </DialogTitle>
                 <DialogDescription className="text-center text-base">
                   How would you like to pay for your session?
                 </DialogDescription>
@@ -482,10 +567,13 @@ function ProductPage() {
 
               <div className="space-y-4">
                 <div className="bg-muted/30 rounded-2xl p-4 border border-border/50 mb-6">
-                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 text-center">Booking Summary</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 text-center">
+                    Booking Summary
+                  </p>
                   <p className="font-bold text-center text-lg">{product.title}</p>
                   <p className="text-center text-sm text-primary font-semibold">
-                    {booking && `${new Date(booking.start_time).toLocaleDateString()} at ${new Date(booking.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                    {booking &&
+                      `${new Date(booking.start_time).toLocaleDateString()} at ${new Date(booking.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`}
                   </p>
                 </div>
 
@@ -513,19 +601,24 @@ function ProductPage() {
                     </div>
                     <div className="flex-1">
                       <p className="font-bold text-lg">Pay on Store / Clinic</p>
-                      <p className="text-xs text-muted-foreground">Confirm booking and pay in person</p>
+                      <p className="text-xs text-muted-foreground">
+                        Confirm booking and pay in person
+                      </p>
                     </div>
                     {isBookingLoading && <Loader2 className="h-5 w-5 animate-spin text-primary" />}
                   </button>
                 </div>
 
                 <div className="mt-8 pt-6 border-t border-border/50">
-                  <Label htmlFor="customer-phone" className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block">
+                  <Label
+                    htmlFor="customer-phone"
+                    className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2 block"
+                  >
                     Confirm your phone number for SMS
                   </Label>
-                  <Input 
+                  <Input
                     id="customer-phone"
-                    placeholder="+1234567890" 
+                    placeholder="+1234567890"
                     value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
                     className="rounded-xl h-12 shadow-inner"

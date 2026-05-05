@@ -27,7 +27,16 @@ export function CartButton() {
             animate={isPulsing ? { scale: [1, 1.2, 1], rotate: [0, -10, 10, 0] } : {}}
             transition={{ duration: 0.3 }}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <circle cx="8" cy="21" r="1" />
               <circle cx="19" cy="21" r="1" />
               <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
@@ -52,10 +61,18 @@ export function CartButton() {
         <SheetHeader>
           <SheetTitle>Shopping Cart ({totalItems})</SheetTitle>
         </SheetHeader>
-        
+
         {items.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-4">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-muted-foreground">
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              className="text-muted-foreground"
+            >
               <circle cx="8" cy="21" r="1" />
               <circle cx="19" cy="21" r="1" />
               <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
@@ -72,10 +89,19 @@ export function CartButton() {
                 {items.map((item) => (
                   <div key={item.id} className="flex gap-4">
                     {item.image && (
-                      <img src={item.image} alt={item.name} className="h-16 w-16 rounded-md object-cover" />
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="h-16 w-16 rounded-md object-cover"
+                      />
                     )}
                     <div className="flex-1">
-                      <Link to="/products/$slug" params={{ slug: item.slug }} className="font-medium hover:text-primary" onClick={() => setOpen(false)}>
+                      <Link
+                        to="/products/$slug"
+                        params={{ slug: item.slug }}
+                        className="font-medium hover:text-primary"
+                        onClick={() => setOpen(false)}
+                      >
                         {item.name}
                       </Link>
                       {item.variant_name && item.variant_name !== "Default Title" && (

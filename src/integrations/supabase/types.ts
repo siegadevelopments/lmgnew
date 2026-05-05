@@ -31,7 +31,10 @@ export interface Database {
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["vendor_profiles"]["Row"], "is_approved" | "created_at" | "updated_at">;
+        Insert: Omit<
+          Database["public"]["Tables"]["vendor_profiles"]["Row"],
+          "is_approved" | "created_at" | "updated_at"
+        >;
         Update: Partial<Database["public"]["Tables"]["vendor_profiles"]["Insert"]>;
       };
       orders: {
@@ -54,59 +57,62 @@ export interface Database {
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["orders"]["Row"], "id" | "status" | "created_at" | "updated_at">;
+        Insert: Omit<
+          Database["public"]["Tables"]["orders"]["Row"],
+          "id" | "status" | "created_at" | "updated_at"
+        >;
         Update: Partial<Database["public"]["Tables"]["orders"]["Insert"]>;
       };
       galleries: {
         Row: {
-          category: string
-          created_at: string | null
-          id: string
-          title: string
-        }
+          category: string;
+          created_at: string | null;
+          id: string;
+          title: string;
+        };
         Insert: {
-          category: string
-          created_at?: string | null
-          id?: string
-          title: string
-        }
+          category: string;
+          created_at?: string | null;
+          id?: string;
+          title: string;
+        };
         Update: {
-          category?: string
-          created_at?: string | null
-          id?: string
-          title?: string
-        }
-        Relationships: []
-      }
+          category?: string;
+          created_at?: string | null;
+          id?: string;
+          title?: string;
+        };
+        Relationships: [];
+      };
       gallery_items: {
         Row: {
-          created_at: string | null
-          gallery_id: string | null
-          id: string
-          image_url: string
-        }
+          created_at: string | null;
+          gallery_id: string | null;
+          id: string;
+          image_url: string;
+        };
         Insert: {
-          created_at?: string | null
-          gallery_id?: string | null
-          id?: string
-          image_url: string
-        }
+          created_at?: string | null;
+          gallery_id?: string | null;
+          id?: string;
+          image_url: string;
+        };
         Update: {
-          created_at?: string | null
-          gallery_id?: string | null
-          id?: string
-          image_url?: string
-        }
+          created_at?: string | null;
+          gallery_id?: string | null;
+          id?: string;
+          image_url?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "gallery_items_gallery_id_fkey"
-            columns: ["gallery_id"]
-            isOneToOne: false
-            referencedRelation: "galleries"
-            referencedColumns: ["id"]
+            foreignKeyName: "gallery_items_gallery_id_fkey";
+            columns: ["gallery_id"];
+            isOneToOne: false;
+            referencedRelation: "galleries";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       order_items: {
         Row: {
           id: string;
@@ -134,7 +140,10 @@ export interface Database {
           created_at: string;
           updated_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["reviews"]["Row"], "id" | "created_at" | "updated_at">;
+        Insert: Omit<
+          Database["public"]["Tables"]["reviews"]["Row"],
+          "id" | "created_at" | "updated_at"
+        >;
         Update: Partial<Database["public"]["Tables"]["reviews"]["Insert"]>;
       };
       wishlists: {
@@ -156,7 +165,10 @@ export interface Database {
           email: string;
           created_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["newsletter_subscribers"]["Row"], "id" | "created_at">;
+        Insert: Omit<
+          Database["public"]["Tables"]["newsletter_subscribers"]["Row"],
+          "id" | "created_at"
+        >;
         Update: Partial<Database["public"]["Tables"]["newsletter_subscribers"]["Insert"]>;
       };
       contact_messages: {
@@ -169,10 +181,13 @@ export interface Database {
           read: boolean;
           created_at: string;
         };
-        Insert: Omit<Database["public"]["Tables"]["contact_messages"]["Row"], "id" | "read" | "created_at">;
+        Insert: Omit<
+          Database["public"]["Tables"]["contact_messages"]["Row"],
+          "id" | "read" | "created_at"
+        >;
         Update: Partial<Database["public"]["Tables"]["contact_messages"]["Insert"]>;
       };
-      
+
       // CATALOG TABLES
       categories: {
         Row: {
@@ -236,7 +251,7 @@ export interface Database {
           embed_url: string;
           thumbnail_url: string | null;
           created_at: string | null;
-        }
+        };
         Insert: {
           id?: string;
           title: string;
@@ -244,16 +259,16 @@ export interface Database {
           embed_url: string;
           thumbnail_url?: string | null;
           created_at?: string | null;
-        }
+        };
         Update: {
           title?: string;
           description?: string | null;
           embed_url?: string;
           thumbnail_url?: string | null;
           created_at?: string | null;
-        }
-        Relationships: []
-      }
+        };
+        Relationships: [];
+      };
       recipes: {
         Row: {
           id: number;

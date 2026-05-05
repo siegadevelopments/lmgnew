@@ -47,8 +47,7 @@ export function AffiliatesTab() {
   const { data: affiliates = [], isLoading } = useQuery({
     queryKey: ["admin_affiliate_stores"],
     queryFn: async () => {
-      const { data, error } = await (supabase
-        .from("affiliate_stores" as any) as any)
+      const { data, error } = await (supabase.from("affiliate_stores" as any) as any)
         .select("*")
         .order("sort_order", { ascending: true });
       if (error) throw error;
@@ -88,15 +87,12 @@ export function AffiliatesTab() {
       };
 
       if (editTarget) {
-        const { error } = await (supabase
-          .from("affiliate_stores" as any) as any)
+        const { error } = await (supabase.from("affiliate_stores" as any) as any)
           .update(payload)
           .eq("id", editTarget.id);
         if (error) throw error;
       } else {
-        const { error } = await (supabase
-          .from("affiliate_stores" as any) as any)
-          .insert(payload);
+        const { error } = await (supabase.from("affiliate_stores" as any) as any).insert(payload);
         if (error) throw error;
       }
     },
@@ -113,8 +109,7 @@ export function AffiliatesTab() {
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await (supabase
-        .from("affiliate_stores" as any) as any)
+      const { error } = await (supabase.from("affiliate_stores" as any) as any)
         .delete()
         .eq("id", id);
       if (error) throw error;
@@ -130,8 +125,7 @@ export function AffiliatesTab() {
 
   const toggleActive = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
-      const { error } = await (supabase
-        .from("affiliate_stores" as any) as any)
+      const { error } = await (supabase.from("affiliate_stores" as any) as any)
         .update({ is_active, updated_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
@@ -157,19 +151,17 @@ export function AffiliatesTab() {
 
     try {
       setUploading(true);
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split(".").pop();
       const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
       const filePath = `affiliates/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('media')
-        .upload(filePath, file);
+      const { error: uploadError } = await supabase.storage.from("media").upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('media')
-        .getPublicUrl(filePath);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("media").getPublicUrl(filePath);
 
       setForm({ ...form, logo_url: publicUrl });
       toast.success("Logo uploaded successfully");
@@ -178,7 +170,7 @@ export function AffiliatesTab() {
     } finally {
       setUploading(false);
       // Reset input
-      e.target.value = '';
+      e.target.value = "";
     }
   };
 
@@ -198,7 +190,7 @@ export function AffiliatesTab() {
 
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map(i => (
+          {[1, 2, 3].map((i) => (
             <div key={i} className="h-48 rounded-xl bg-muted animate-pulse" />
           ))}
         </div>
@@ -215,7 +207,10 @@ export function AffiliatesTab() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {affiliates.map((store) => (
-            <Card key={store.id} className={`overflow-hidden transition-all ${!store.is_active ? "opacity-60" : ""}`}>
+            <Card
+              key={store.id}
+              className={`overflow-hidden transition-all ${!store.is_active ? "opacity-60" : ""}`}
+            >
               {/* Logo preview */}
               <div className="flex items-center justify-center bg-muted/50 border-b border-border/50 p-6 min-h-[120px]">
                 {store.logo_url ? (
@@ -227,8 +222,8 @@ export function AffiliatesTab() {
                       (e.target as HTMLImageElement).replaceWith(
                         Object.assign(document.createElement("div"), {
                           className: "text-sm text-muted-foreground",
-                          textContent: store.name
-                        })
+                          textContent: store.name,
+                        }),
                       );
                     }}
                   />
@@ -247,7 +242,10 @@ export function AffiliatesTab() {
                       </CardDescription>
                     )}
                   </div>
-                  <Badge variant={store.is_active ? "default" : "secondary"} className="text-[10px] shrink-0">
+                  <Badge
+                    variant={store.is_active ? "default" : "secondary"}
+                    className="text-[10px] shrink-0"
+                  >
                     {store.is_active ? "Active" : "Hidden"}
                   </Badge>
                 </div>
@@ -275,7 +273,9 @@ export function AffiliatesTab() {
                     variant="outline"
                     size="sm"
                     className="h-8 text-xs"
-                    onClick={() => toggleActive.mutate({ id: store.id, is_active: !store.is_active })}
+                    onClick={() =>
+                      toggleActive.mutate({ id: store.id, is_active: !store.is_active })
+                    }
                   >
                     {store.is_active ? "Hide" : "Show"}
                   </Button>
@@ -305,7 +305,7 @@ export function AffiliatesTab() {
               <Label>Company Name *</Label>
               <Input
                 value={form.name}
-                onChange={e => setForm({ ...form, name: e.target.value })}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="e.g. Youngevity"
                 required
               />
@@ -315,7 +315,7 @@ export function AffiliatesTab() {
               <Label>Affiliate URL *</Label>
               <Input
                 value={form.affiliate_url}
-                onChange={e => setForm({ ...form, affiliate_url: e.target.value })}
+                onChange={(e) => setForm({ ...form, affiliate_url: e.target.value })}
                 placeholder="https://yourpartner.com/ref=lmg"
                 type="url"
                 required
@@ -327,7 +327,7 @@ export function AffiliatesTab() {
               <div className="flex gap-2">
                 <Input
                   value={form.logo_url || ""}
-                  onChange={e => setForm({ ...form, logo_url: e.target.value })}
+                  onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
                   placeholder="https://example.com/logo.png"
                   className="flex-1"
                 />
@@ -351,7 +351,9 @@ export function AffiliatesTab() {
                     src={form.logo_url}
                     alt="Preview"
                     className="max-h-12 max-w-[180px] object-contain"
-                    onError={(e) => { (e.target as HTMLImageElement).src = ""; }}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "";
+                    }}
                   />
                 </div>
               )}
@@ -361,7 +363,7 @@ export function AffiliatesTab() {
               <Label>Description</Label>
               <Textarea
                 value={form.description || ""}
-                onChange={e => setForm({ ...form, description: e.target.value })}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
                 placeholder="Brief description of this affiliate and their offerings..."
                 rows={3}
               />
@@ -373,7 +375,7 @@ export function AffiliatesTab() {
                 <Input
                   type="number"
                   value={form.sort_order}
-                  onChange={e => setForm({ ...form, sort_order: Number(e.target.value) })}
+                  onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })}
                   min={0}
                 />
               </div>
@@ -382,7 +384,7 @@ export function AffiliatesTab() {
                   <input
                     type="checkbox"
                     checked={form.is_active}
-                    onChange={e => setForm({ ...form, is_active: e.target.checked })}
+                    onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
                     className="w-4 h-4 rounded"
                   />
                   <span className="text-sm font-medium">Active (visible publicly)</span>
@@ -409,10 +411,13 @@ export function AffiliatesTab() {
             <DialogTitle>Delete Affiliate?</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            This will permanently remove this affiliate store from the public page. This action cannot be undone.
+            This will permanently remove this affiliate store from the public page. This action
+            cannot be undone.
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>
+              Cancel
+            </Button>
             <Button
               variant="destructive"
               disabled={remove.isPending}

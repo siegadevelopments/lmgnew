@@ -20,18 +20,18 @@ export const Route = createFileRoute("/search")({
 function SearchPage() {
   const navigate = useNavigate();
   const { q: initialQ } = Route.useSearch();
-  const [results, setResults] = useState<{ 
-    products: any[], 
-    articles: any[], 
-    recipes: any[],
-    videos: any[],
-    remedies: any[]
-  }>({ 
-    products: [], 
-    articles: [], 
+  const [results, setResults] = useState<{
+    products: any[];
+    articles: any[];
+    recipes: any[];
+    videos: any[];
+    remedies: any[];
+  }>({
+    products: [],
+    articles: [],
     recipes: [],
     videos: [],
-    remedies: []
+    remedies: [],
   });
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
@@ -57,7 +57,12 @@ function SearchPage() {
       setSearched(true);
 
       const [productsRes, articlesRes, recipesRes, videosRes, remediesRes] = await Promise.all([
-        supabase.from("products").select("*").ilike("title", `%${query}%`).eq("status", "published").limit(6),
+        supabase
+          .from("products")
+          .select("*")
+          .ilike("title", `%${query}%`)
+          .eq("status", "published")
+          .limit(6),
         supabase.from("articles").select("*").ilike("title", `%${query}%`).limit(6),
         supabase.from("recipes").select("*").ilike("title", `%${query}%`).limit(6),
         supabase.from("videos").select("*").ilike("title", `%${query}%`).limit(6),
@@ -74,17 +79,31 @@ function SearchPage() {
       setLoading(false);
     }, 400);
 
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [query]);
 
-  const totalResults = results.products.length + results.articles.length + results.recipes.length + results.videos.length + results.remedies.length;
+  const totalResults =
+    results.products.length +
+    results.articles.length +
+    results.recipes.length +
+    results.videos.length +
+    results.remedies.length;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
       {/* Search Bar */}
       <div className="relative">
-        <svg className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-          <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+        <svg
+          className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
         <Input
           ref={inputRef}
@@ -104,7 +123,9 @@ function SearchPage() {
       {/* Results */}
       {searched && !loading && (
         <p className="mt-4 text-sm text-muted-foreground">
-          {totalResults === 0 ? `No results for "${query}"` : `${totalResults} result${totalResults !== 1 ? "s" : ""} for "${query}"`}
+          {totalResults === 0
+            ? `No results for "${query}"`
+            : `${totalResults} result${totalResults !== 1 ? "s" : ""} for "${query}"`}
         </p>
       )}
 
@@ -123,8 +144,12 @@ function SearchPage() {
                 params={{ slug: product.slug }}
                 className="group rounded-xl border border-border bg-card p-3 transition-all hover:shadow-card"
               >
-                {product.image_url && <img src={product.image_url} className="h-32 w-full rounded-lg object-cover" />}
-                <h3 className="mt-2 text-sm font-semibold text-foreground group-hover:text-primary line-clamp-2">{product.title}</h3>
+                {product.image_url && (
+                  <img src={product.image_url} className="h-32 w-full rounded-lg object-cover" />
+                )}
+                <h3 className="mt-2 text-sm font-semibold text-foreground group-hover:text-primary line-clamp-2">
+                  {product.title}
+                </h3>
                 <p className="mt-1 text-sm font-bold text-primary">${product.price}</p>
               </Link>
             ))}
@@ -147,11 +172,21 @@ function SearchPage() {
                 params={{ slug: article.slug }}
                 className="group flex gap-4 rounded-xl border border-border bg-card p-3 transition-all hover:shadow-card"
               >
-                {article.image_url && <img src={article.image_url} className="h-16 w-16 rounded-lg object-cover shrink-0" />}
+                {article.image_url && (
+                  <img
+                    src={article.image_url}
+                    className="h-16 w-16 rounded-lg object-cover shrink-0"
+                  />
+                )}
                 <div className="min-w-0">
-                  <h3 className="text-sm font-semibold text-foreground group-hover:text-primary line-clamp-1">{article.title}</h3>
+                  <h3 className="text-sm font-semibold text-foreground group-hover:text-primary line-clamp-1">
+                    {article.title}
+                  </h3>
                   {article.excerpt && (
-                    <p className="mt-1 text-xs text-muted-foreground line-clamp-2" dangerouslySetInnerHTML={{ __html: article.excerpt }} />
+                    <p
+                      className="mt-1 text-xs text-muted-foreground line-clamp-2"
+                      dangerouslySetInnerHTML={{ __html: article.excerpt }}
+                    />
                   )}
                 </div>
               </Link>
@@ -175,11 +210,21 @@ function SearchPage() {
                 params={{ slug: recipe.slug }}
                 className="group flex gap-4 rounded-xl border border-border bg-card p-3 transition-all hover:shadow-card"
               >
-                {recipe.image_url && <img src={recipe.image_url} className="h-16 w-16 rounded-lg object-cover shrink-0" />}
+                {recipe.image_url && (
+                  <img
+                    src={recipe.image_url}
+                    className="h-16 w-16 rounded-lg object-cover shrink-0"
+                  />
+                )}
                 <div className="min-w-0">
-                  <h3 className="text-sm font-semibold text-foreground group-hover:text-primary line-clamp-1">{recipe.title}</h3>
+                  <h3 className="text-sm font-semibold text-foreground group-hover:text-primary line-clamp-1">
+                    {recipe.title}
+                  </h3>
                   {recipe.excerpt && (
-                    <p className="mt-1 text-xs text-muted-foreground line-clamp-2" dangerouslySetInnerHTML={{ __html: recipe.excerpt }} />
+                    <p
+                      className="mt-1 text-xs text-muted-foreground line-clamp-2"
+                      dangerouslySetInnerHTML={{ __html: recipe.excerpt }}
+                    />
                   )}
                 </div>
               </Link>
@@ -202,9 +247,14 @@ function SearchPage() {
                 className="group rounded-xl border border-border bg-card p-3 transition-all hover:shadow-card"
               >
                 <div className="aspect-video overflow-hidden rounded-lg bg-black">
-                   <img src={`https://img.youtube.com/vi/${vid.embed_url?.split('/').pop()}/0.jpg`} className="h-full w-full object-cover" />
+                  <img
+                    src={`https://img.youtube.com/vi/${vid.embed_url?.split("/").pop()}/0.jpg`}
+                    className="h-full w-full object-cover"
+                  />
                 </div>
-                <h3 className="mt-2 text-sm font-semibold text-foreground group-hover:text-primary line-clamp-1">{vid.title}</h3>
+                <h3 className="mt-2 text-sm font-semibold text-foreground group-hover:text-primary line-clamp-1">
+                  {vid.title}
+                </h3>
               </Link>
             ))}
           </div>
@@ -224,10 +274,16 @@ function SearchPage() {
                 to="/natural-remedies"
                 className="group flex gap-4 rounded-xl border border-border bg-card p-3 transition-all hover:shadow-card"
               >
-                {rem.image_url && <img src={rem.image_url} className="h-16 w-16 rounded-lg object-cover shrink-0" />}
+                {rem.image_url && (
+                  <img src={rem.image_url} className="h-16 w-16 rounded-lg object-cover shrink-0" />
+                )}
                 <div className="min-w-0">
-                  <h3 className="text-sm font-semibold text-foreground group-hover:text-primary line-clamp-1">{rem.title}</h3>
-                  {rem.excerpt && <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{rem.excerpt}</p>}
+                  <h3 className="text-sm font-semibold text-foreground group-hover:text-primary line-clamp-1">
+                    {rem.title}
+                  </h3>
+                  {rem.excerpt && (
+                    <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{rem.excerpt}</p>
+                  )}
                 </div>
               </Link>
             ))}
@@ -237,8 +293,15 @@ function SearchPage() {
 
       {!searched && !loading && (
         <div className="mt-16 text-center">
-          <svg className="mx-auto h-16 w-16 text-muted-foreground/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1">
-            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          <svg
+            className="mx-auto h-16 w-16 text-muted-foreground/30"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth="1"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
           <p className="mt-4 text-sm text-muted-foreground">
             Start typing to search across products, articles, and recipes

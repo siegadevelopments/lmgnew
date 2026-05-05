@@ -1,5 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageCircle, Send } from "lucide-react";
@@ -37,8 +43,7 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
       if (!user) return null;
 
       // Try to find existing conversation
-      const { data, error } = await (supabase
-        .from("chat_conversations" as any) as any)
+      const { data, error } = await (supabase.from("chat_conversations" as any) as any)
         .select("*")
         .eq("customer_id", user.id)
         .eq("vendor_id", vendorId)
@@ -54,8 +59,7 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
     queryKey: ["chat_messages", conversation?.id],
     queryFn: async () => {
       if (!conversation?.id) return [];
-      const { data, error } = await (supabase
-        .from("chat_messages" as any) as any)
+      const { data, error } = await (supabase.from("chat_messages" as any) as any)
         .select("*")
         .eq("conversation_id", conversation.id)
         .order("created_at", { ascending: true });
@@ -81,11 +85,13 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
         },
         () => {
           queryClient.invalidateQueries({ queryKey: ["chat_messages", conversation.id] });
-        }
+        },
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [conversation?.id, queryClient]);
 
   // Auto-scroll to bottom
@@ -108,8 +114,9 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
 
       // Create conversation if it doesn't exist yet
       if (!currentConvId) {
-        const { data: newConv, error: convError } = await (supabase
-          .from("chat_conversations" as any) as any)
+        const { data: newConv, error: convError } = await (
+          supabase.from("chat_conversations" as any) as any
+        )
           .insert({ customer_id: user.id, vendor_id: vendorId })
           .select()
           .single();
@@ -119,19 +126,16 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
       }
 
       // Insert the message
-      const { error: msgError } = await (supabase
-        .from("chat_messages" as any) as any)
-        .insert({
-          conversation_id: currentConvId,
-          sender_id: user.id,
-          content,
-        });
+      const { error: msgError } = await (supabase.from("chat_messages" as any) as any).insert({
+        conversation_id: currentConvId,
+        sender_id: user.id,
+        content,
+      });
 
       if (msgError) throw msgError;
 
       // Update last_message_at on the conversation
-      await (supabase
-        .from("chat_conversations" as any) as any)
+      await (supabase.from("chat_conversations" as any) as any)
         .update({ last_message_at: new Date().toISOString() })
         .eq("id", currentConvId);
     },
@@ -184,17 +188,25 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
             {messages.map((msg) => {
               const isMe = msg.sender_id === user?.id;
               return (
-                <div key={msg.id} className={cn("flex flex-col", isMe ? "items-end" : "items-start")}>
-                  <div className={cn(
-                    "max-w-[80%] rounded-2xl px-4 py-2 text-sm shadow-sm whitespace-pre-wrap break-words",
-                    isMe
-                      ? "bg-primary text-primary-foreground rounded-tr-none"
-                      : "bg-white text-foreground rounded-tl-none border border-border"
-                  )}>
+                <div
+                  key={msg.id}
+                  className={cn("flex flex-col", isMe ? "items-end" : "items-start")}
+                >
+                  <div
+                    className={cn(
+                      "max-w-[80%] rounded-2xl px-4 py-2 text-sm shadow-sm whitespace-pre-wrap break-words",
+                      isMe
+                        ? "bg-primary text-primary-foreground rounded-tr-none"
+                        : "bg-white text-foreground rounded-tl-none border border-border",
+                    )}
+                  >
                     {msg.content}
                   </div>
                   <span className="text-[10px] text-muted-foreground mt-1 px-1">
-                    {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    {new Date(msg.created_at).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </span>
                 </div>
               );
@@ -215,7 +227,10 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
         </div>
 
         {/* Input */}
-        <form onSubmit={handleSubmit} className="p-3 border-t bg-white flex items-center gap-2 shrink-0">
+        <form
+          onSubmit={handleSubmit}
+          className="p-3 border-t bg-white flex items-center gap-2 shrink-0"
+        >
           <Input
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}

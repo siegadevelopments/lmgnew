@@ -8,7 +8,12 @@ interface AuthContextType {
   role: string | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, metadata?: Record<string, unknown>, redirectTo?: string) => Promise<{ error: Error | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    metadata?: Record<string, unknown>,
+    redirectTo?: string,
+  ) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   updatePassword: (password: string) => Promise<{ error: Error | null }>;
 }
@@ -22,7 +27,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const fetchRole = useCallback(async (userId: string) => {
     try {
-      const { data, error } = await supabase.from("profiles").select("role").eq("id", userId).single();
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", userId)
+        .single();
       if (error) {
         console.error("Error fetching role:", error);
         setRole("customer");
@@ -74,13 +83,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = useCallback(
-    async (email: string, password: string, metadata?: Record<string, unknown>, redirectTo?: string) => {
+    async (
+      email: string,
+      password: string,
+      metadata?: Record<string, unknown>,
+      redirectTo?: string,
+    ) => {
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: { 
+        options: {
           data: metadata,
-          emailRedirectTo: redirectTo
+          emailRedirectTo: redirectTo,
         },
       });
       return { error: error ? new Error(error.message) : null };
@@ -98,7 +112,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, session, role, loading, signIn, signUp, signOut, updatePassword }}>
+    <AuthContext.Provider
+      value={{ user, session, role, loading, signIn, signUp, signOut, updatePassword }}
+    >
       {children}
     </AuthContext.Provider>
   );

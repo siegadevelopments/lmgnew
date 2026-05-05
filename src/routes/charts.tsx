@@ -12,7 +12,10 @@ export const Route = createFileRoute("/charts")({
   head: () => ({
     meta: [
       { title: "Charts & References — Lifestyle Medicine Gateway" },
-      { name: "description", content: "Explore our collection of helpful charts, protocols, and wellness references." },
+      {
+        name: "description",
+        content: "Explore our collection of helpful charts, protocols, and wellness references.",
+      },
     ],
   }),
   component: ChartsPage,
@@ -39,13 +42,11 @@ function ChartsPage() {
 
   const filteredGalleries = useMemo(() => {
     if (!galleries) return [];
-    return galleries.filter(g => 
-      g.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    return galleries.filter((g) => g.title.toLowerCase().includes(searchQuery.toLowerCase()));
   }, [galleries, searchQuery]);
 
   const selectedGallery = useMemo(() => {
-    return galleries?.find(g => g.id === selectedGalleryId);
+    return galleries?.find((g) => g.id === selectedGalleryId);
   }, [galleries, selectedGalleryId]);
 
   if (isLoading) {
@@ -88,14 +89,14 @@ function ChartsPage() {
         {selectedGalleryId ? (
           /* Detailed View for a specific Gallery */
           <div className="space-y-8">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               onClick={() => setSelectedGalleryId(null)}
               className="flex items-center gap-2 -ml-2"
             >
               <ChevronLeft className="h-4 w-4" /> Back to Categories
             </Button>
-            
+
             <div>
               <h2 className="text-3xl font-bold text-foreground">{selectedGallery?.title}</h2>
               <p className="mt-2 text-muted-foreground">
@@ -105,8 +106,8 @@ function ChartsPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {selectedGallery?.gallery_items.map((item: any) => (
-                <div 
-                  key={item.id} 
+                <div
+                  key={item.id}
                   className="overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all hover:shadow-md cursor-pointer group"
                   onClick={() => setSelectedImage(item.image_url)}
                 >
@@ -128,8 +129,8 @@ function ChartsPage() {
             {filteredGalleries.map((gallery) => {
               const coverImage = gallery.gallery_items[0]?.image_url;
               return (
-                <Card 
-                  key={gallery.id} 
+                <Card
+                  key={gallery.id}
                   className="group cursor-pointer overflow-hidden transition-all hover:shadow-md border-border hover:border-primary/20"
                   onClick={() => setSelectedGalleryId(gallery.id)}
                 >
@@ -157,7 +158,9 @@ function ChartsPage() {
             })}
             {filteredGalleries.length === 0 && (
               <div className="col-span-full py-20 text-center">
-                <p className="text-muted-foreground">No chart categories found matching "{searchQuery}"</p>
+                <p className="text-muted-foreground">
+                  No chart categories found matching "{searchQuery}"
+                </p>
               </div>
             )}
           </div>

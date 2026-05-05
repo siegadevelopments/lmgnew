@@ -8,7 +8,11 @@ export function WhatIsLifestyleMedicine() {
           </h2>
           <div className="mt-6 text-lg leading-relaxed text-muted-foreground">
             <p>
-              Lifestyle medicine is a medical approach that uses evidence-based lifestyle interventions—such as a healthy diet, regular physical activity, adequate sleep, stress management, avoiding risky substances, and positive social connections—to prevent, treat, and even reverse chronic diseases. It focuses on addressing the root causes of illness rather than just managing symptoms.
+              Lifestyle medicine is a medical approach that uses evidence-based lifestyle
+              interventions—such as a healthy diet, regular physical activity, adequate sleep,
+              stress management, avoiding risky substances, and positive social connections—to
+              prevent, treat, and even reverse chronic diseases. It focuses on addressing the root
+              causes of illness rather than just managing symptoms.
             </p>
           </div>
         </div>

@@ -1,16 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { 
-  CheckCircle2, 
-  Zap, 
-  ShieldCheck, 
-  DollarSign, 
-  BarChart3, 
-  Users, 
-  Rocket, 
+import {
+  CheckCircle2,
+  Zap,
+  ShieldCheck,
+  DollarSign,
+  BarChart3,
+  Users,
+  Rocket,
   Heart,
-  ArrowRight
+  ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,7 +19,11 @@ export const Route = createFileRoute("/sell-with-us")({
   head: () => ({
     meta: [
       { title: "Sell With Us — Hassle-Free & Profitable | LMG" },
-      { name: "description", content: "Sell your wellness products on Lifestyle Medicine Gateway with zero monthly fees and free advertising." },
+      {
+        name: "description",
+        content:
+          "Sell your wellness products on Lifestyle Medicine Gateway with zero monthly fees and free advertising.",
+      },
     ],
   }),
 });
@@ -33,7 +37,7 @@ function SellWithUsPage() {
           <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1542744173-8e7e53415bb0?q=80&w=2070')] bg-cover bg-center opacity-10" />
           <div className="absolute -right-20 -top-20 h-96 w-96 rounded-full bg-wellness/20 blur-3xl animate-pulse" />
           <div className="absolute -bottom-20 -left-20 h-96 w-96 rounded-full bg-calm/20 blur-3xl animate-pulse" />
-          
+
           <div className="relative z-10 mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
             <Badge className="mb-6 bg-wellness-light text-wellness-dark border-none px-4 py-1.5 text-sm font-bold animate-bounce">
               Now Accepting New Vendors
@@ -42,16 +46,24 @@ function SellWithUsPage() {
               Sell With Us — <span className="text-wellness-light">Hassle-Free</span> and Profitable
             </h1>
             <p className="mx-auto mt-8 max-w-2xl text-xl leading-relaxed text-primary-foreground/90">
-              Reach a passionate audience interested in natural, holistic, and sustainable wellness solutions — all without paying any upfront fees.
+              Reach a passionate audience interested in natural, holistic, and sustainable wellness
+              solutions — all without paying any upfront fees.
             </p>
             <div className="mt-12 flex flex-wrap justify-center gap-6">
               <Link to="/signup">
-                <Button size="lg" className="bg-wellness text-wellness-dark hover:bg-wellness-light h-14 px-10 text-lg shadow-2xl shadow-wellness/20">
+                <Button
+                  size="lg"
+                  className="bg-wellness text-wellness-dark hover:bg-wellness-light h-14 px-10 text-lg shadow-2xl shadow-wellness/20"
+                >
                   Start Selling for Free
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
-              <Button variant="outline" size="lg" className="h-14 px-10 text-lg border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-14 px-10 text-lg border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+              >
                 View FAQ
               </Button>
             </div>
@@ -76,7 +88,8 @@ function SellWithUsPage() {
                   </div>
                   <h3 className="text-xl font-bold">Free Advertising</h3>
                   <p className="text-muted-foreground leading-relaxed">
-                    We promote your products through our newsletter, social channels, and blog. We handle the marketing, you handle the sales.
+                    We promote your products through our newsletter, social channels, and blog. We
+                    handle the marketing, you handle the sales.
                   </p>
                 </CardContent>
               </Card>
@@ -88,7 +101,8 @@ function SellWithUsPage() {
                   </div>
                   <h3 className="text-xl font-bold">No Monthly Fees</h3>
                   <p className="text-muted-foreground leading-relaxed">
-                    Zero subscriptions or hidden charges. You only pay a small commission when you make a sale. No risk, all reward.
+                    Zero subscriptions or hidden charges. You only pay a small commission when you
+                    make a sale. No risk, all reward.
                   </p>
                 </CardContent>
               </Card>
@@ -100,7 +114,8 @@ function SellWithUsPage() {
                   </div>
                   <h3 className="text-xl font-bold">We Handle the Tech</h3>
                   <p className="text-muted-foreground leading-relaxed">
-                    From payment processing to SEO and performance — we take care of the tech so you can focus on your craft.
+                    From payment processing to SEO and performance — we take care of the tech so you
+                    can focus on your craft.
                   </p>
                 </CardContent>
               </Card>
@@ -111,27 +126,45 @@ function SellWithUsPage() {
         {/* How it Works */}
         <section className="py-24 bg-white relative overflow-hidden">
           <div className="absolute right-0 top-0 h-full w-1/3 bg-primary/5 -skew-x-12 translate-x-1/2" />
-          
+
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
               <div>
                 <h2 className="text-4xl font-bold tracking-tight text-foreground mb-8">
-                  Fast, Simple, and Effective <br/>
+                  Fast, Simple, and Effective <br />
                   <span className="text-primary">How It Works</span>
                 </h2>
                 <div className="space-y-8">
                   {[
-                    { step: "01", title: "Sign Up as a Vendor", desc: "Create your free vendor account in minutes. No credit card required." },
-                    { step: "02", title: "Upload Your Offerings", desc: "List your products, services, or even digital content like videos and articles." },
-                    { step: "03", title: "We Publish & Promote", desc: "Our team reviews and optimizes your listings for maximum visibility." },
-                    { step: "04", title: "You Get Paid Directly", desc: "Automated payouts directly to your account. Fast and secure." },
+                    {
+                      step: "01",
+                      title: "Sign Up as a Vendor",
+                      desc: "Create your free vendor account in minutes. No credit card required.",
+                    },
+                    {
+                      step: "02",
+                      title: "Upload Your Offerings",
+                      desc: "List your products, services, or even digital content like videos and articles.",
+                    },
+                    {
+                      step: "03",
+                      title: "We Publish & Promote",
+                      desc: "Our team reviews and optimizes your listings for maximum visibility.",
+                    },
+                    {
+                      step: "04",
+                      title: "You Get Paid Directly",
+                      desc: "Automated payouts directly to your account. Fast and secure.",
+                    },
                   ].map((item) => (
                     <div key={item.step} className="flex gap-6 group">
                       <div className="text-5xl font-black text-primary/10 transition-colors group-hover:text-primary/20 shrink-0">
                         {item.step}
                       </div>
                       <div>
-                        <h4 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">{item.title}</h4>
+                        <h4 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">
+                          {item.title}
+                        </h4>
                         <p className="text-muted-foreground">{item.desc}</p>
                       </div>
                     </div>
@@ -140,9 +173,9 @@ function SellWithUsPage() {
               </div>
               <div className="relative">
                 <div className="aspect-square rounded-3xl overflow-hidden shadow-2xl border-8 border-white">
-                  <img 
-                    src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070" 
-                    alt="Store" 
+                  <img
+                    src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=2070"
+                    alt="Store"
                     className="h-full w-full object-cover"
                   />
                 </div>
@@ -154,7 +187,8 @@ function SellWithUsPage() {
                     <p className="font-bold text-sm">Real-time Analytics</p>
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Track your sales, visitor growth, and customer engagement directly from your vendor dashboard.
+                    Track your sales, visitor growth, and customer engagement directly from your
+                    vendor dashboard.
                   </p>
                 </div>
               </div>
@@ -182,7 +216,10 @@ function SellWithUsPage() {
                 { label: "Yoga Creators", icon: Heart },
                 { label: "Natural Advocates", icon: ShieldCheck },
               ].map((cat) => (
-                <div key={cat.label} className="bg-white p-6 rounded-2xl text-center shadow-sm border border-border/50 hover:border-primary transition-all group">
+                <div
+                  key={cat.label}
+                  className="bg-white p-6 rounded-2xl text-center shadow-sm border border-border/50 hover:border-primary transition-all group"
+                >
                   <cat.icon className="h-8 w-8 mx-auto mb-4 text-muted-foreground group-hover:text-primary transition-colors" />
                   <p className="text-sm font-bold">{cat.label}</p>
                 </div>
@@ -200,14 +237,18 @@ function SellWithUsPage() {
               Scale Your Wellness Business
             </div>
             <h2 className="text-4xl font-bold tracking-tight sm:text-5xl mb-8">
-              We Don't Just List Your Products. <br/>
+              We Don't Just List Your Products. <br />
               <span className="text-wellness-light">We Tell Your Story.</span>
             </h2>
             <p className="mx-auto max-w-2xl text-lg text-primary-foreground/80 mb-12">
-              Our marketing team works with you to create blog features, social highlights, and exclusive spotlights to ensure your brand gets the attention it deserves.
+              Our marketing team works with you to create blog features, social highlights, and
+              exclusive spotlights to ensure your brand gets the attention it deserves.
             </p>
             <Link to="/signup">
-              <Button size="lg" className="bg-white text-primary hover:bg-white/90 h-14 px-12 text-xl font-black">
+              <Button
+                size="lg"
+                className="bg-white text-primary hover:bg-white/90 h-14 px-12 text-xl font-black"
+              >
                 Apply to Become a Vendor
               </Button>
             </Link>
@@ -223,7 +264,12 @@ function SellWithUsPage() {
 
 function Badge({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn("inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2", className)}>
+    <div
+      className={cn(
+        "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+        className,
+      )}
+    >
       {children}
     </div>
   );

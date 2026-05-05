@@ -7,7 +7,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/ProductCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageCircle, Plus, Star, Users, Package, UserPlus, Clock, Calendar, Check, Search, Video, Play, Maximize2, X } from "lucide-react";
+import {
+  MessageCircle,
+  Plus,
+  Star,
+  Users,
+  Package,
+  UserPlus,
+  Clock,
+  Calendar,
+  Check,
+  Search,
+  Video,
+  Play,
+  Maximize2,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -71,7 +86,9 @@ export const Route = createFileRoute("/vendors/$slug")({
     // For vendors, we are currently passing ID in place of slug
     const { data: vendor } = await supabase
       .from("vendor_profiles")
-      .select("id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, vendor_type, created_at, updated_at")
+      .select(
+        "id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, vendor_type, created_at, updated_at",
+      )
       .eq("id", slug)
       .single();
     if (!vendor) throw notFound();
@@ -108,10 +125,7 @@ function VendorPage() {
   const { data: vendorVideos } = useQuery({
     queryKey: ["videos", "vendor", slug],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("videos")
-        .select("*")
-        .eq("author_id", slug);
+      const { data } = await supabase.from("videos").select("*").eq("author_id", slug);
       return (data as any[]) || [];
     },
   });
@@ -119,8 +133,7 @@ function VendorPage() {
   const { data: streamInfo } = useQuery({
     queryKey: ["vendor_stream", slug],
     queryFn: async () => {
-      const { data } = await (supabase
-        .from("vendor_streams") as any)
+      const { data } = await (supabase.from("vendor_streams") as any)
         .select("*")
         .eq("vendor_id", slug)
         .maybeSingle();
@@ -130,7 +143,10 @@ function VendorPage() {
 
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const joinedDate = new Date(vendor.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+  const joinedDate = new Date(vendor.created_at).toLocaleDateString("en-US", {
+    month: "short",
+    year: "numeric",
+  });
   const productCount = vendorProducts?.length || 0;
   const [activeCategory, setActiveCategory] = useState("home");
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -159,10 +175,10 @@ function VendorPage() {
     queryFn: async () => {
       const { count } = await supabase
         .from("vendor_follows" as any)
-        .select("*", { count: 'exact', head: true })
+        .select("*", { count: "exact", head: true })
         .eq("vendor_id", slug);
       return (count || 0) + 5900; // Adding dummy base for "WOW" effect as requested in design guidelines
-    }
+    },
   });
 
   const toggleFollow = useMutation({
@@ -175,9 +191,10 @@ function VendorPage() {
           .eq("user_id", user.id)
           .eq("vendor_id", slug);
       } else {
-        await (supabase
-          .from("vendor_follows" as any) as any)
-          .insert({ user_id: user.id, vendor_id: slug });
+        await (supabase.from("vendor_follows" as any) as any).insert({
+          user_id: user.id,
+          vendor_id: slug,
+        });
       }
     },
     onSuccess: () => {
@@ -187,11 +204,15 @@ function VendorPage() {
     },
     onError: (err: any) => {
       toast.error(err.message);
-    }
+    },
   });
 
-  const filteredProducts = vendorProducts?.filter(p => {
-    const matchesCategory = activeCategory === "home" || activeCategory === "all" || activeCategory === "about" || p.category === activeCategory;
+  const filteredProducts = vendorProducts?.filter((p) => {
+    const matchesCategory =
+      activeCategory === "home" ||
+      activeCategory === "all" ||
+      activeCategory === "about" ||
+      p.category === activeCategory;
     const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
@@ -207,7 +228,10 @@ function VendorPage() {
               <div className="flex items-center gap-4">
                 <div className="relative">
                   {vendor.store_logo_url ? (
-                    <img src={vendor.store_logo_url} className="h-16 w-16 rounded-full border-2 border-white/20 object-cover" />
+                    <img
+                      src={vendor.store_logo_url}
+                      className="h-16 w-16 rounded-full border-2 border-white/20 object-cover"
+                    />
                   ) : (
                     <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-2xl font-bold border-2 border-white/20">
                       {(vendor.store_name || "V").charAt(0)}
@@ -218,18 +242,20 @@ function VendorPage() {
                   </div>
                 </div>
                 <div>
-                  <h1 className="text-lg font-bold truncate max-w-[180px]">{vendor.store_name || "Vendor"}</h1>
+                  <h1 className="text-lg font-bold truncate max-w-[180px]">
+                    {vendor.store_name || "Vendor"}
+                  </h1>
                   <p className="text-[10px] text-white/60">Active 37 minutes ago</p>
                 </div>
               </div>
               <div className="mt-4 flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => toggleFollow.mutate()}
                   className={cn(
                     "flex-1 bg-transparent border-white/30 text-white hover:bg-white/10 h-8 text-xs gap-1",
-                    isFollowing && "bg-white/20 border-white/50"
+                    isFollowing && "bg-white/20 border-white/50",
                   )}
                 >
                   {isFollowing ? (
@@ -242,9 +268,9 @@ function VendorPage() {
                     </>
                   )}
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => {
                     if (!user) {
                       toast.error("Please login to chat with vendors");
@@ -261,79 +287,115 @@ function VendorPage() {
 
             {/* Store Stats Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-8 lg:col-span-2 py-2">
-               <div className="flex items-center gap-3">
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                  <div className="text-xs">
-                    <span className="text-muted-foreground">Products:</span> <span className="text-primary font-bold">{productCount}</span>
-                  </div>
-               </div>
-               <div className="flex items-center gap-3">
-                  <UserPlus className="h-4 w-4 text-muted-foreground" />
-                  <div className="text-xs">
-                    <span className="text-muted-foreground">Following:</span> <span className="text-primary font-bold">17</span>
-                  </div>
-               </div>
-               <div className="flex items-center gap-3">
-                  <MessageCircle className="h-4 w-4 text-muted-foreground" />
-                  <div className="text-xs">
-                    <span className="text-muted-foreground">Chat Performance:</span> <span className="text-primary font-bold">95%</span>
-                  </div>
-               </div>
-               <div className="flex items-center gap-3">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                   <div className="text-xs">
-                    <span className="text-muted-foreground">Followers:</span> <span className="text-primary font-bold">{(followerCount / 1000).toFixed(1)}K</span>
-                  </div>
-               </div>
-               <div className="flex items-center gap-3">
-                  <Star className="h-4 w-4 text-muted-foreground" />
-                  <div className="text-xs">
-                    <span className="text-muted-foreground">Rating:</span> <span className="text-primary font-bold">4.8 (7K Rating)</span>
-                  </div>
-               </div>
-               <div className="flex items-center gap-3">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <div className="text-xs">
-                    <span className="text-muted-foreground">Joined:</span> <span className="text-primary font-bold">{joinedDate}</span>
-                  </div>
-               </div>
+              <div className="flex items-center gap-3">
+                <Package className="h-4 w-4 text-muted-foreground" />
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Products:</span>{" "}
+                  <span className="text-primary font-bold">{productCount}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <UserPlus className="h-4 w-4 text-muted-foreground" />
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Following:</span>{" "}
+                  <span className="text-primary font-bold">17</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Chat Performance:</span>{" "}
+                  <span className="text-primary font-bold">95%</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Followers:</span>{" "}
+                  <span className="text-primary font-bold">
+                    {(followerCount / 1000).toFixed(1)}K
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Star className="h-4 w-4 text-muted-foreground" />
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Rating:</span>{" "}
+                  <span className="text-primary font-bold">4.8 (7K Rating)</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Joined:</span>{" "}
+                  <span className="text-primary font-bold">{joinedDate}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Tab Navigation & Search */}
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <Tabs value={activeCategory} onValueChange={setActiveCategory} className="w-full md:w-auto">
-                 <TabsList className="bg-transparent border-b-0 h-12 gap-4 sm:gap-8 p-0 overflow-x-auto overflow-y-hidden no-scrollbar">
-                    <TabsTrigger value="home" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">Home</TabsTrigger>
-                    <TabsTrigger value="all" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">
-                      {vendor.vendor_type === "service" ? "All Services" : "All Products"}
-                    </TabsTrigger>
-                    <TabsTrigger value="videos" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">Videos</TabsTrigger>
-                    {(vendor.store_categories || []).map((cat: string) => (
-                      <TabsTrigger key={cat} value={cat} className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">{cat}</TabsTrigger>
-                    ))}
-                    <TabsTrigger value="about" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap">Profile</TabsTrigger>
-                 </TabsList>
-              </Tabs>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <Tabs
+              value={activeCategory}
+              onValueChange={setActiveCategory}
+              className="w-full md:w-auto"
+            >
+              <TabsList className="bg-transparent border-b-0 h-12 gap-4 sm:gap-8 p-0 overflow-x-auto overflow-y-hidden no-scrollbar">
+                <TabsTrigger
+                  value="home"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap"
+                >
+                  Home
+                </TabsTrigger>
+                <TabsTrigger
+                  value="all"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap"
+                >
+                  {vendor.vendor_type === "service" ? "All Services" : "All Products"}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="videos"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap"
+                >
+                  Videos
+                </TabsTrigger>
+                {(vendor.store_categories || []).map((cat: string) => (
+                  <TabsTrigger
+                    key={cat}
+                    value={cat}
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap"
+                  >
+                    {cat}
+                  </TabsTrigger>
+                ))}
+                <TabsTrigger
+                  value="about"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap"
+                >
+                  Profile
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
 
-              <div className="relative w-full md:w-64 mb-3 md:mb-0">
-                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                 <input
-                    type="text"
-                    placeholder="Search in this shop"
-                    value={searchQuery}
-                    onChange={(e) => {
-                      setSearchQuery(e.target.value);
-                      if (e.target.value && activeCategory === "home") {
-                        setActiveCategory("all");
-                      }
-                    }}
-                    className="w-full bg-muted/50 border border-border/50 rounded-full py-2 pl-10 pr-4 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                 />
-              </div>
-           </div>
+            <div className="relative w-full md:w-64 mb-3 md:mb-0">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search in this shop"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  if (e.target.value && activeCategory === "home") {
+                    setActiveCategory("all");
+                  }
+                }}
+                className="w-full bg-muted/50 border border-border/50 rounded-full py-2 pl-10 pr-4 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -342,8 +404,12 @@ function VendorPage() {
         {streamInfo?.is_live && streamInfo?.mux_playback_id && (
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Badge variant="destructive" className="animate-pulse px-3 py-1">LIVE NOW</Badge>
-              <h2 className="text-xl font-bold">{streamInfo.stream_title || "Vendor Live Stream"}</h2>
+              <Badge variant="destructive" className="animate-pulse px-3 py-1">
+                LIVE NOW
+              </Badge>
+              <h2 className="text-xl font-bold">
+                {streamInfo.stream_title || "Vendor Live Stream"}
+              </h2>
             </div>
             <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-elevated border border-border">
               <MuxPlayer
@@ -358,29 +424,45 @@ function VendorPage() {
 
         {/* Home Content */}
         <div className="space-y-12">
-           {activeCategory === "home" && (
-             <>
-               {/* Section: Recommended */}
-               <section>
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Recommended For You</h2>
-                    <button onClick={() => setActiveCategory("all")} className="text-xs font-bold text-primary hover:underline flex items-center gap-1">See All <span className="text-[10px]">›</span></button>
-                  </div>
-                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                    {vendorProducts && vendorProducts.slice(0, 6).map((product) => (
-                      <ProductCard key={product.id} product={product} />
-                    ))}
-                  </div>
-               </section>
+          {activeCategory === "home" && (
+            <>
+              {/* Section: Recommended */}
+              <section>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                    Recommended For You
+                  </h2>
+                  <button
+                    onClick={() => setActiveCategory("all")}
+                    className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+                  >
+                    See All <span className="text-[10px]">›</span>
+                  </button>
+                </div>
+                <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {vendorProducts &&
+                    vendorProducts
+                      .slice(0, 6)
+                      .map((product) => <ProductCard key={product.id} product={product} />)}
+                </div>
+              </section>
 
-               {/* Section: Top Products */}
-               <section>
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Top Products</h2>
-                    <button onClick={() => setActiveCategory("all")} className="text-xs font-bold text-primary hover:underline flex items-center gap-1">See All <span className="text-[10px]">›</span></button>
-                  </div>
-                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                    {vendorProducts && vendorProducts.slice(6, 12).map((product, idx) => (
+              {/* Section: Top Products */}
+              <section>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                    Top Products
+                  </h2>
+                  <button
+                    onClick={() => setActiveCategory("all")}
+                    className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
+                  >
+                    See All <span className="text-[10px]">›</span>
+                  </button>
+                </div>
+                <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {vendorProducts &&
+                    vendorProducts.slice(6, 12).map((product, idx) => (
                       <div key={product.id} className="relative">
                         <ProductCard product={product} />
                         <div className="absolute top-0 left-0 bg-primary/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-br-md shadow-sm">
@@ -388,114 +470,145 @@ function VendorPage() {
                         </div>
                       </div>
                     ))}
+                </div>
+              </section>
+            </>
+          )}
+
+          {(activeCategory === "all" ||
+            (activeCategory !== "home" &&
+              activeCategory !== "about" &&
+              activeCategory !== "videos")) && (
+            <section>
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                  {activeCategory === "all"
+                    ? vendor.vendor_type === "service"
+                      ? "All Services"
+                      : "All Products"
+                    : activeCategory}
+                </h2>
+              </div>
+              <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                {filteredProducts?.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+                {filteredProducts?.length === 0 && (
+                  <div className="col-span-full py-12 text-center text-muted-foreground bg-white rounded-xl border border-dashed">
+                    No products found in this category.
                   </div>
-               </section>
-             </>
-           )}
+                )}
+              </div>
+            </section>
+          )}
 
-           {(activeCategory === "all" || (activeCategory !== "home" && activeCategory !== "about" && activeCategory !== "videos")) && (
-             <section>
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                    {activeCategory === "all" ? (vendor.vendor_type === "service" ? "All Services" : "All Products") : activeCategory}
-                  </h2>
-                </div>
-                <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                  {filteredProducts?.map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
-                  {filteredProducts?.length === 0 && (
-                    <div className="col-span-full py-12 text-center text-muted-foreground bg-white rounded-xl border border-dashed">
-                      No products found in this category.
-                    </div>
-                  )}
-                </div>
-             </section>
-           )}
+          {activeCategory === "videos" && (
+            <section className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                  Videos from {vendor.store_name}
+                </h2>
+              </div>
+              {vendorVideos && vendorVideos.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {vendorVideos.map((video) => {
+                    const isDirectVideo =
+                      !!video.embed_url?.match(/\.(mp4|webm|ogg|mov)$/i) ||
+                      video.embed_url?.includes("supabase.co");
+                    const ytId = video.embed_url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1];
+                    const thumbnail =
+                      video.thumbnail_url ||
+                      (ytId
+                        ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`
+                        : "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=800");
 
-           {activeCategory === "videos" && (
-             <section className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Videos from {vendor.store_name}</h2>
-                </div>
-                {vendorVideos && vendorVideos.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {vendorVideos.map((video) => {
-                      const isDirectVideo = !!video.embed_url?.match(/\.(mp4|webm|ogg|mov)$/i) || video.embed_url?.includes('supabase.co');
-                      const ytId = video.embed_url.match(/(?:v=|\/)([0-9A-Za-z_-]{11})/)?.[1];
-                      const thumbnail = video.thumbnail_url || (ytId ? `https://img.youtube.com/vi/${ytId}/maxresdefault.jpg` : 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=800');
-                      
-                      return (
-                        <div 
-                          key={video.id} 
-                          className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm border border-border group transition-all hover:shadow-md cursor-pointer"
-                          onClick={() => setPlayingId(video.embed_url)}
-                        >
-                          <div className="relative aspect-video bg-black overflow-hidden">
-                            <img 
-                              src={thumbnail} 
-                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                              alt={video.title} 
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=800';
-                              }}
-                            />
-                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-                              <div className="h-12 w-12 rounded-full bg-white/90 text-primary flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
-                                <Play className="h-6 w-6 fill-current" />
-                              </div>
+                    return (
+                      <div
+                        key={video.id}
+                        className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm border border-border group transition-all hover:shadow-md cursor-pointer"
+                        onClick={() => setPlayingId(video.embed_url)}
+                      >
+                        <div className="relative aspect-video bg-black overflow-hidden">
+                          <img
+                            src={thumbnail}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            alt={video.title}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                "https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&q=80&w=800";
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                            <div className="h-12 w-12 rounded-full bg-white/90 text-primary flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
+                              <Play className="h-6 w-6 fill-current" />
                             </div>
                           </div>
-                          <div className="p-4">
-                            <h3 className="font-bold text-foreground line-clamp-1 group-hover:text-primary transition-colors">{video.title}</h3>
-                            {video.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{video.description}</p>}
-                          </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="py-12 text-center text-muted-foreground bg-white rounded-xl border border-dashed">
-                    This vendor hasn't uploaded any videos yet.
-                  </div>
-                )}
-             </section>
-           )}
+                        <div className="p-4">
+                          <h3 className="font-bold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+                            {video.title}
+                          </h3>
+                          {video.description && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                              {video.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="py-12 text-center text-muted-foreground bg-white rounded-xl border border-dashed">
+                  This vendor hasn't uploaded any videos yet.
+                </div>
+              )}
+            </section>
+          )}
 
-           {activeCategory === "about" && (
-             <section className="bg-white rounded-xl p-8 border border-border shadow-sm">
-                <h2 className="text-xl font-bold mb-4">About {vendor.store_name}</h2>
-                <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{vendor.store_description || "No description provided."}</p>
-                {vendor.website && (
-                  <a href={vendor.website} target="_blank" rel="noopener noreferrer" className="mt-6 inline-block text-primary font-bold hover:underline">
-                    Visit Official Website ↗
-                  </a>
-                )}
-             </section>
-           )}
+          {activeCategory === "about" && (
+            <section className="bg-white rounded-xl p-8 border border-border shadow-sm">
+              <h2 className="text-xl font-bold mb-4">About {vendor.store_name}</h2>
+              <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                {vendor.store_description || "No description provided."}
+              </p>
+              {vendor.website && (
+                <a
+                  href={vendor.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-6 inline-block text-primary font-bold hover:underline"
+                >
+                  Visit Official Website ↗
+                </a>
+              )}
+            </section>
+          )}
 
-           {/* Full Catalog link if many products and on Home */}
-           {activeCategory === "home" && productCount > 12 && (
-             <div className="text-center pt-8">
-               <Button variant="outline" className="px-12" onClick={() => setActiveCategory("all")}>
-                 View Full Catalog ({productCount})
-               </Button>
-             </div>
-           )}
+          {/* Full Catalog link if many products and on Home */}
+          {activeCategory === "home" && productCount > 12 && (
+            <div className="text-center pt-8">
+              <Button variant="outline" className="px-12" onClick={() => setActiveCategory("all")}>
+                View Full Catalog ({productCount})
+              </Button>
+            </div>
+          )}
 
-           {productCount === 0 && (
-             <div className="rounded-xl border border-dashed border-border py-12 text-center bg-white">
-               <p className="text-muted-foreground">This vendor hasn't published any products yet.</p>
-             </div>
-           )}
+          {productCount === 0 && (
+            <div className="rounded-xl border border-dashed border-border py-12 text-center bg-white">
+              <p className="text-muted-foreground">
+                This vendor hasn't published any products yet.
+              </p>
+            </div>
+          )}
         </div>
       </div>
-      
-      <ChatDialog 
-        vendorId={slug} 
-        vendorName={vendor.store_name} 
-        isOpen={isChatOpen} 
-        onOpenChange={setIsChatOpen} 
+
+      <ChatDialog
+        vendorId={slug}
+        vendorName={vendor.store_name}
+        isOpen={isChatOpen}
+        onOpenChange={setIsChatOpen}
       />
 
       <Dialog open={!!playingId} onOpenChange={(open) => !open && setPlayingId(null)}>

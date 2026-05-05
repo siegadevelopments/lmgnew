@@ -16,9 +16,16 @@ export const Route = createFileRoute("/services/")({
   head: () => ({
     meta: [
       { title: "Wellness Services — Book Appointments | Lifestyle Medicine Gateway" },
-      { name: "description", content: "Book curated health and wellness services from trusted professionals." },
+      {
+        name: "description",
+        content: "Book curated health and wellness services from trusted professionals.",
+      },
       { property: "og:title", content: "Wellness Services | Lifestyle Medicine Gateway" },
-      { property: "og:description", content: "Discover and book the best wellness services for your lifestyle medicine journey." },
+      {
+        property: "og:description",
+        content:
+          "Discover and book the best wellness services for your lifestyle medicine journey.",
+      },
     ],
   }),
   component: ServicesPage,
@@ -28,7 +35,12 @@ export const Route = createFileRoute("/services/")({
       <div className="mx-auto max-w-7xl px-4 py-20 text-center">
         <h1 className="text-2xl font-bold text-foreground">Failed to load services</h1>
         <p className="mt-2 text-muted-foreground">{error.message}</p>
-        <button onClick={() => router.invalidate()} className="mt-4 rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground">Retry</button>
+        <button
+          onClick={() => router.invalidate()}
+          className="mt-4 rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground"
+        >
+          Retry
+        </button>
       </div>
     );
   },
@@ -43,7 +55,7 @@ function ServicesPage() {
 
   const filteredServices = useMemo(() => {
     return products.filter((p) => {
-      const isService = p.product_type === 'service';
+      const isService = p.product_type === "service";
       const matchesSearch = p.title.toLowerCase().includes(searchInput.toLowerCase());
       const matchesCategory = activeCategory === "All" || p.category === activeCategory;
       return isService && matchesSearch && matchesCategory;
@@ -61,39 +73,39 @@ function ServicesPage() {
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
             Book professional services for your lifestyle medicine journey.
           </p>
-          
+
           <div className="mx-auto mt-8 max-w-2xl">
             <div className="relative flex items-center gap-2 bg-card p-1 rounded-xl border border-border shadow-md focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-               <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    placeholder="Search for items, brands, or categories..."
-                    className="pl-10 border-0 focus-visible:ring-0 shadow-none h-12"
-                  />
-               </div>
-               <Button className="h-12 px-8 rounded-lg font-bold">Search</Button>
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Search for items, brands, or categories..."
+                  className="pl-10 border-0 focus-visible:ring-0 shadow-none h-12"
+                />
+              </div>
+              <Button className="h-12 px-8 rounded-lg font-bold">Search</Button>
             </div>
           </div>
 
           {/* Quick Categories */}
           <div className="mx-auto mt-8 flex flex-wrap justify-center gap-4">
-             {categories.map(cat => (
-               <button
-                 key={cat}
-                 onClick={() => setActiveCategory(cat)}
-                 className={cn(
-                   "px-4 py-2 rounded-full text-xs font-bold transition-all border",
-                   activeCategory === cat 
-                    ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" 
-                    : "bg-background text-muted-foreground border-border hover:border-primary/50"
-                 )}
-               >
-                 {cat}
-               </button>
-             ))}
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={cn(
+                  "px-4 py-2 rounded-full text-xs font-bold transition-all border",
+                  activeCategory === cat
+                    ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
+                    : "bg-background text-muted-foreground border-border hover:border-primary/50",
+                )}
+              >
+                {cat}
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -109,13 +121,23 @@ function ServicesPage() {
         {filteredServices.length === 0 && (
           <div className="text-center py-20">
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-wellness-muted">
-              <svg className="h-10 w-10 text-primary/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
-                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 01-8 0" />
+              <svg
+                className="h-10 w-10 text-primary/40"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
+                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <path d="M16 10a4 4 0 01-8 0" />
               </svg>
             </div>
             <h2 className="mt-6 text-xl font-semibold text-foreground">No services found</h2>
             <p className="mt-2 text-muted-foreground">
-              {searchInput ? "Try adjusting your search" : "Services from professionals will appear here once they're published."}
+              {searchInput
+                ? "Try adjusting your search"
+                : "Services from professionals will appear here once they're published."}
             </p>
           </div>
         )}

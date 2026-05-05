@@ -15,7 +15,9 @@ export function MantraAndPositivitySection() {
               “Good before Bad”
             </h2>
             <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
-              This is a mantra to have in the forefront of your mind to create excellent daily habits, the idea is that you always do something positive before considering alternatives in improving your healthy lifestyle choices.
+              This is a mantra to have in the forefront of your mind to create excellent daily
+              habits, the idea is that you always do something positive before considering
+              alternatives in improving your healthy lifestyle choices.
             </p>
 
             <div className="mt-8 space-y-4">
@@ -44,7 +46,8 @@ export function MantraAndPositivitySection() {
             <div className="p-6">
               <h2 className="text-xl font-bold text-foreground">Start Your Day with Positivity</h2>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Here’s your daily dose of feel-good energy – a positivity meme to make you smile and inspire a fresh, positive start.
+                Here’s your daily dose of feel-good energy – a positivity meme to make you smile and
+                inspire a fresh, positive start.
               </p>
             </div>
             <div className="flex-1 bg-muted relative min-h-[300px]">
@@ -62,9 +65,13 @@ export function MantraAndPositivitySection() {
             </div>
             <div className="p-6">
               <p className="text-sm text-muted-foreground italic">
-                Because when you feel good, you do good – for your body, your mind, and your life. Let today be your best yet!
+                Because when you feel good, you do good – for your body, your mind, and your life.
+                Let today be your best yet!
               </p>
-              <Link to="/memes" className="mt-4 inline-flex items-center text-sm font-semibold text-primary hover:underline">
+              <Link
+                to="/memes"
+                className="mt-4 inline-flex items-center text-sm font-semibold text-primary hover:underline"
+              >
                 See more memes →
               </Link>
             </div>

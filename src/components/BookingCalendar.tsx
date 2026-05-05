@@ -28,10 +28,10 @@ export function BookingCalendar({ productId, vendorId, onSelect }: Props) {
         .from("service_availability")
         .select("*")
         .eq("product_id", productId);
-      
+
       if (error) throw error;
       return (data || []) as any[];
-    }
+    },
   });
 
   // 2. Fetch existing bookings for the selected date
@@ -51,37 +51,37 @@ export function BookingCalendar({ productId, vendorId, onSelect }: Props) {
         .gte("start_time", start.toISOString())
         .lte("start_time", end.toISOString())
         .neq("status", "cancelled");
-      
+
       if (error) throw error;
       return (data || []) as any[];
     },
-    enabled: !!selectedDate
+    enabled: !!selectedDate,
   });
 
   // Calculate available slots for the selected date
   const slots = useMemo(() => {
     if (!selectedDate || !availability) return [];
-    
+
     const dayOfWeek = selectedDate.getDay();
-    const dayAvail = availability.find(a => a.day_of_week === dayOfWeek);
-    
+    const dayAvail = availability.find((a) => a.day_of_week === dayOfWeek);
+
     if (!dayAvail) return [];
 
     const availableSlots: { start: Date; end: Date }[] = [];
     const [startH, startM] = dayAvail.start_time.split(":").map(Number);
     const [endH, endM] = dayAvail.end_time.split(":").map(Number);
-    
+
     let current = new Date(selectedDate);
     current.setHours(startH, startM, 0, 0);
-    
+
     const endTime = new Date(selectedDate);
     endTime.setHours(endH, endM, 0, 0);
 
     while (current < endTime) {
       const slotEnd = addMinutes(current, dayAvail.slot_duration || 60);
-      
+
       // Check if slot is already booked
-      const isBooked = existingBookings?.some(b => {
+      const isBooked = existingBookings?.some((b) => {
         const bStart = parseISO(b.start_time);
         return bStart.getTime() === current.getTime();
       });
@@ -90,7 +90,7 @@ export function BookingCalendar({ productId, vendorId, onSelect }: Props) {
       if (!isBooked && current > new Date()) {
         availableSlots.push({ start: new Date(current), end: new Date(slotEnd) });
       }
-      
+
       current = slotEnd;
     }
 
@@ -102,7 +102,7 @@ export function BookingCalendar({ productId, vendorId, onSelect }: Props) {
     setSelectedSlot(slotId);
     onSelect({
       start_time: slot.start.toISOString(),
-      end_time: slot.end.toISOString()
+      end_time: slot.end.toISOString(),
     });
   };
 
@@ -137,14 +137,19 @@ export function BookingCalendar({ productId, vendorId, onSelect }: Props) {
               setSelectedSlot(null);
               onSelect(null);
             }}
-            disabled={(date) => date < startOfToday() || !availability?.some(a => a.day_of_week === date.getDay())}
+            disabled={(date) =>
+              date < startOfToday() || !availability?.some((a) => a.day_of_week === date.getDay())
+            }
             className="w-full max-w-[350px] p-0"
             classNames={{
-              day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-xl shadow-lg shadow-primary/30 scale-110 transition-all",
+              day_selected:
+                "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-xl shadow-lg shadow-primary/30 scale-110 transition-all",
               day_today: "bg-accent text-accent-foreground font-bold rounded-xl",
               day: "h-10 w-10 sm:h-12 sm:w-12 p-0 font-medium aria-selected:opacity-100 hover:bg-primary/10 hover:text-primary rounded-xl transition-all duration-200",
-              head_cell: "text-muted-foreground font-bold text-[10px] uppercase tracking-widest pb-4",
-              nav_button: "hover:bg-primary/10 hover:text-primary rounded-lg transition-colors border-none",
+              head_cell:
+                "text-muted-foreground font-bold text-[10px] uppercase tracking-widest pb-4",
+              nav_button:
+                "hover:bg-primary/10 hover:text-primary rounded-lg transition-colors border-none",
             }}
           />
         </div>
@@ -157,19 +162,24 @@ export function BookingCalendar({ productId, vendorId, onSelect }: Props) {
               <span className="font-bold text-lg">Available Times</span>
             </div>
             {selectedDate && (
-              <Badge variant="secondary" className="px-3 py-1 rounded-full bg-primary/5 text-primary border-primary/10 font-semibold">
+              <Badge
+                variant="secondary"
+                className="px-3 py-1 rounded-full bg-primary/5 text-primary border-primary/10 font-semibold"
+              >
                 {format(selectedDate, "EEEE, MMMM do")}
               </Badge>
             )}
           </div>
-          
-          {(loadingBookings) ? (
-             <div className="flex h-64 items-center justify-center bg-card rounded-3xl border border-border/50 shadow-inner">
-               <div className="flex flex-col items-center gap-3">
-                 <Loader2 className="h-10 w-10 animate-spin text-primary/40" />
-                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Finding slots...</p>
-               </div>
-             </div>
+
+          {loadingBookings ? (
+            <div className="flex h-64 items-center justify-center bg-card rounded-3xl border border-border/50 shadow-inner">
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="h-10 w-10 animate-spin text-primary/40" />
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                  Finding slots...
+                </p>
+              </div>
+            </div>
           ) : slots.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pr-2 max-h-[420px] overflow-y-auto custom-scrollbar pb-4">
               {slots.map((slot) => {
@@ -183,25 +193,29 @@ export function BookingCalendar({ productId, vendorId, onSelect }: Props) {
                     onClick={() => handleSlotSelect(slot)}
                     className={cn(
                       "group relative h-20 flex flex-col items-center justify-center gap-1 rounded-2xl border-2 transition-all duration-300 overflow-hidden shadow-sm",
-                      isSelected 
-                        ? "bg-primary border-primary text-primary-foreground shadow-xl shadow-primary/20 ring-4 ring-primary/10" 
-                        : "bg-card border-border/50 hover:border-primary/50 hover:bg-primary/5 text-foreground"
+                      isSelected
+                        ? "bg-primary border-primary text-primary-foreground shadow-xl shadow-primary/20 ring-4 ring-primary/10"
+                        : "bg-card border-border/50 hover:border-primary/50 hover:bg-primary/5 text-foreground",
                     )}
                   >
-                    <span className={cn(
-                      "text-base font-black tracking-tight",
-                      isSelected ? "text-white" : "group-hover:text-primary"
-                    )}>
+                    <span
+                      className={cn(
+                        "text-base font-black tracking-tight",
+                        isSelected ? "text-white" : "group-hover:text-primary",
+                      )}
+                    >
                       {format(slot.start, "h:mm")}
                     </span>
-                    <span className={cn(
-                      "text-[10px] font-bold uppercase tracking-wider opacity-60",
-                      isSelected ? "text-white/80" : "text-muted-foreground"
-                    )}>
+                    <span
+                      className={cn(
+                        "text-[10px] font-bold uppercase tracking-wider opacity-60",
+                        isSelected ? "text-white/80" : "text-muted-foreground",
+                      )}
+                    >
                       {format(slot.start, "a")}
                     </span>
                     {isSelected && (
-                      <motion.div 
+                      <motion.div
                         layoutId="active-slot"
                         className="absolute bottom-0 left-0 right-0 h-1 bg-white/30"
                       />
@@ -217,8 +231,8 @@ export function BookingCalendar({ productId, vendorId, onSelect }: Props) {
               </div>
               <h4 className="text-lg font-bold text-foreground mb-2">No Open Slots</h4>
               <p className="text-sm font-medium text-muted-foreground max-w-[240px] leading-relaxed">
-                {selectedDate 
-                  ? "The vendor hasn't set any availability for this date yet. Try checking another day!" 
+                {selectedDate
+                  ? "The vendor hasn't set any availability for this date yet. Try checking another day!"
                   : "Pick a date on the left to see the professional's available time slots."}
               </p>
             </div>

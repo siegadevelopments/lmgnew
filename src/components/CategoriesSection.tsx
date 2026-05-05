@@ -42,9 +42,7 @@ export function CategoriesSection() {
                 <p className="text-sm font-semibold text-card-foreground group-hover:text-primary transition-colors">
                   {cat.name}
                 </p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {cat.count} listings
-                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{cat.count} listings</p>
               </div>
             </button>
           ))}
