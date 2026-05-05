@@ -140,7 +140,7 @@ export const videosQueryOptions = () =>
         }
         
         // Filter in JS to avoid complex cross-table OR logic issues in PostgREST
-        const filtered = (data || []).filter(v => 
+        const filtered = (data || []).filter((v: any) => 
           v.is_featured === true || v.author?.role === 'admin'
         );
 

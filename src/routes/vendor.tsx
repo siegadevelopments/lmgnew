@@ -80,7 +80,7 @@ interface OrderItem {
   status: string;
   tracking_number: string | null;
 }
-interface VideoData { id: string; title: string; embed_url: string; description: string | null; created_at: string | null; }
+interface VideoData { id: string; title: string; embed_url: string; thumbnail_url: string | null; description: string | null; created_at: string | null; }
 interface Article { id: number; title: string; slug: string; excerpt: string | null; image_url: string | null; created_at: string; content?: string; }
 
 function VendorDashboardPage() {

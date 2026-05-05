@@ -52,12 +52,13 @@ function CheckoutPage() {
     if (user) {
       supabase.from("profiles").select("full_name, phone").eq("id", user.id).single().then(({ data }) => {
         if (data) {
-          const names = data.full_name ? data.full_name.split(" ") : [];
+          const profileData = data as any;
+          const names = profileData.full_name ? profileData.full_name.split(" ") : [];
           setFormData(prev => ({
             ...prev,
             firstName: prev.firstName || names[0] || "",
             lastName: prev.lastName || (names.length > 1 ? names.slice(1).join(" ") : ""),
-            phone: prev.phone || data.phone || "",
+            phone: prev.phone || profileData.phone || "",
           }));
         }
       });

@@ -173,7 +173,7 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Video Content</CardTitle>
         {!isEditing && (
-          <Button onClick={() => { setForm({ id: "", title: "", embed_url: "", description: "" }); setIsEditing(true); }}>
+          <Button onClick={() => { setForm({ id: "", title: "", embed_url: "", thumbnail_url: "", description: "" }); setIsEditing(true); }}>
             <Plus className="mr-2 h-4 w-4" /> Add Video
           </Button>
         )}
