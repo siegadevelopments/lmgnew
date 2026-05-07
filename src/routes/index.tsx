@@ -40,7 +40,7 @@ function Index() {
       <JustForYouSection />
       <FeaturesSection />
       <NewArrivalsSection />
-      <YoungevityPromoSection />
+      {/* <YoungevityPromoSection /> */}
       <FeaturedVendorsSection />
       <LatestArticlesSection />
       <TestimonialsSection />
