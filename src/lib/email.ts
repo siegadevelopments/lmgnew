@@ -78,7 +78,7 @@ export const emailTemplates = {
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
         <h2>Password Reset Request</h2>
         <p>We received a request to reset your password. Click the button below to choose a new one:</p>
-        <a href="https://lmgnew.vercel.app/reset-password?token=${token}" 
+        <a href="https://lifestylemedicinegateway.com/reset-password?token=${token}" 
            style="display: inline-block; background: #3b82f6; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0;">
           Reset Password
         </a>
@@ -96,7 +96,7 @@ export const emailTemplates = {
         <h1 style="color: #3b82f6;">Congratulations!</h1>
         <p>Your store <strong>${storeName}</strong> has been approved by the Lifestyle Medicine Gateway team.</p>
         <p>You can now log in to your dashboard and start adding products, articles, and going live!</p>
-        <a href="https://lmgnew.vercel.app/vendor" 
+        <a href="https://lifestylemedicinegateway.com/vendor" 
            style="display: inline-block; background: #3b82f6; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0;">
           Go to Dashboard
         </a>
@@ -164,7 +164,7 @@ export const emailTemplates = {
 
         <p>Please log in to your dashboard to mark these items as <strong>Shipped</strong> and provide a tracking number.</p>
         
-        <a href="https://lmgnew.vercel.app/vendor" 
+        <a href="https://lifestylemedicinegateway.com/vendor" 
            style="display: inline-block; background: #10b981; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0;">
           Manage Fulfillment
         </a>

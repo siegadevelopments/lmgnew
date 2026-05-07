@@ -57,7 +57,7 @@ export function UserEditDialog({ user, isOpen, onClose, onSuccess }: UserEditDia
     }
     setResetLoading(true);
     const resetUrl = window.location.origin.includes("localhost")
-      ? "https://lmgnew.vercel.app/login?type=recovery"
+      ? "https://lifestylemedicinegateway.com/login?type=recovery"
       : `${window.location.origin}/login?type=recovery`;
 
     try {
