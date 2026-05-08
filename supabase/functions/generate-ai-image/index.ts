@@ -36,7 +36,12 @@ serve(async (req: Request) => {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              instances: [{ prompt: `A professional, high-quality cinematic thumbnail for a wellness/health theme: ${truncatedPrompt}. Minimalist, clean, modern aesthetic. No text on image.` }],
+              instances: [{ 
+                prompt: `A stunning, high-quality cinematic lifestyle photograph representing: ${truncatedPrompt.substring(0, 500)}. 
+                        Style: Modern, minimalist, premium wellness aesthetic. 
+                        CRITICAL: No text, no labels, no anatomical diagrams, no charts. 
+                        Focus on mood, lighting, and a serene environment or abstract wellness representation.` 
+              }],
               parameters: { sampleCount: 1, aspectRatio: "16:9" }
             }),
           }
@@ -75,7 +80,10 @@ serve(async (req: Request) => {
           },
           body: JSON.stringify({
             model: "dall-e-3",
-            prompt: `A professional, high-quality cinematic thumbnail for a wellness/health video. Theme: ${truncatedPrompt}. Minimalist, clean, modern aesthetic. No text on image.`,
+            prompt: `A stunning, high-quality cinematic lifestyle photograph representing: ${truncatedPrompt.substring(0, 500)}. 
+                    Style: Modern, minimalist, premium wellness aesthetic. 
+                    CRITICAL: No text, no labels, no anatomical diagrams, no charts. 
+                    Focus on mood, lighting, and a serene environment or abstract wellness representation.`,
             n: 1,
             size: "1024x1024",
           }),
