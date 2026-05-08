@@ -20,18 +20,23 @@ serve(async (req: Request) => {
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) throw new Error("Missing GEMINI_API_KEY secret");
 
-    console.log(`Generating AI image with Gemini for prompt: ${prompt}`);
+    console.log(`Generating AI image with Imagen 3 for prompt: ${prompt}`);
 
-    // 1. Call Gemini 2.0 Flash
+    // 1. Call Imagen 3.0 via Predict endpoint
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: `Generate a high-quality, professional cinematic thumbnail image for a wellness/health theme: ${prompt}. Minimalist, clean, modern aesthetic. No text on image.` }] }],
-          generationConfig: {
-            response_modalities: ["IMAGE"]
+          instances: [
+            {
+              prompt: `A professional, high-quality cinematic thumbnail for a wellness/health theme: ${prompt}. Minimalist, clean, modern aesthetic. No text on image.`
+            }
+          ],
+          parameters: {
+            sampleCount: 1,
+            aspectRatio: "16:9"
           }
         }),
       }
@@ -40,15 +45,15 @@ serve(async (req: Request) => {
     const aiData = await response.json();
     if (aiData.error) throw new Error(aiData.error.message);
     
-    const imagePart = aiData.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
-    if (!imagePart) {
-       console.error("Gemini Response:", JSON.stringify(aiData));
-       throw new Error("Gemini failed to generate an image. Check your prompt or API key permissions.");
+    const prediction = aiData.predictions?.[0];
+    if (!prediction || !prediction.bytesBase64Encoded) {
+       console.error("Imagen Response:", JSON.stringify(aiData));
+       throw new Error("Imagen failed to generate an image. Check your prompt or API key permissions.");
     }
 
-    const base64Data = imagePart.inlineData.data;
-    const mimeType = imagePart.inlineData.mimeType || "image/png";
-    console.log(`Successfully generated image with mimeType: ${mimeType}`);
+    const base64Data = prediction.bytesBase64Encoded;
+    const mimeType = prediction.mimeType || "image/png";
+    console.log(`Successfully generated image with Imagen 3. MimeType: ${mimeType}`);
 
     // 2. Convert base64 to Blob
     const binaryData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
