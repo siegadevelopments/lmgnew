@@ -70,6 +70,8 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         if (parsed.embedUrl) setEmbedUrl(parsed.embedUrl);
         if (parsed.activeType) setActiveType(parsed.activeType);
         if (parsed.selectedVendorId) setSelectedVendorId(parsed.selectedVendorId);
+        if (parsed.editingId) setEditingId(parsed.editingId);
+        if (parsed.category) setCategory(parsed.category);
       } catch (e) {
         console.error("Failed to parse draft", e);
       }
@@ -78,9 +80,9 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
 
   useEffect(() => {
     // 2. Save drafts on every change
-    const draft = { title, content, imageUrl, embedUrl, activeType, selectedVendorId };
+    const draft = { title, content, imageUrl, embedUrl, activeType, selectedVendorId, editingId, category };
     localStorage.setItem("admin_content_draft", JSON.stringify(draft));
-  }, [title, content, imageUrl, embedUrl, activeType, selectedVendorId]);
+  }, [title, content, imageUrl, embedUrl, activeType, selectedVendorId, editingId, category]);
 
   const clearDraft = () => {
     localStorage.removeItem("admin_content_draft");
@@ -92,6 +94,9 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     async function loadItems() {
       setLoading(true);
       setItems([]); // Clear previous items to avoid "ghost content"
+      
+      // Reset form when switching tabs to prevent ID leakage
+      resetForm();
 
       try {
         const { data, error } = await (supabase.from(activeType) as any)
@@ -743,7 +748,10 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
             </div>
 
             <div className="flex gap-2">
-              <Button type="submit" className="flex-1 md:flex-none">
+              <Button 
+                type="submit" 
+                className={`flex-1 md:flex-none ${editingId ? "bg-amber-600 hover:bg-amber-700 text-white" : ""}`}
+              >
                 {editingId ? (
                   <>
                     <CheckCircle2 className="mr-2 h-4 w-4" /> Update {activeType.slice(0, -1)}
