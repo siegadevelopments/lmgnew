@@ -15,7 +15,15 @@ import {
   Utensils,
   CheckCircle2,
   Sparkles,
+  Eye,
+  ExternalLink,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { uploadMedia } from "@/lib/upload";
 import { useQueryClient } from "@tanstack/react-query";
@@ -30,6 +38,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [videoUploadProgress, setVideoUploadProgress] = useState<string>("");
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
   const listRef = useRef<HTMLDivElement>(null);
@@ -651,12 +660,59 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
               />
             </div>
 
-            <Button type="submit" className="w-full md:w-auto">
-              <Plus className="mr-2 h-4 w-4" /> Create {activeType.slice(0, -1)}
-            </Button>
+            <div className="flex gap-2">
+              <Button type="submit" className="flex-1 md:flex-none">
+                <Plus className="mr-2 h-4 w-4" /> Create {activeType.slice(0, -1)}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPreviewOpen(true)}
+                className="flex-1 md:flex-none"
+              >
+                <Eye className="mr-2 h-4 w-4" /> Live Preview
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Live Preview: {title || "Untitled"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            {imageUrl && (
+              <div className="aspect-video w-full rounded-xl overflow-hidden border">
+                <img src={imageUrl} className="w-full h-full object-cover" alt="Preview" />
+              </div>
+            )}
+            <div className="space-y-4">
+              <h1 className="text-3xl font-bold">{title || "Your Title Here"}</h1>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                  <User className="h-4 w-4" />
+                </div>
+                <span>{vendors.find(v => v.id === selectedVendorId)?.store_name || "Author Name"}</span>
+                <span>•</span>
+                <span>{new Date().toLocaleDateString()}</span>
+              </div>
+              <div className="prose prose-slate max-w-none dark:prose-invert">
+                {content ? (
+                  content.split('\n').map((para, i) => (
+                    <p key={i} className="mb-4 text-lg leading-relaxed text-slate-700 dark:text-slate-300">
+                      {para}
+                    </p>
+                  ))
+                ) : (
+                  <p className="text-muted-foreground italic">No content written yet...</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div ref={listRef} className="grid gap-4 scroll-mt-6">
         <h3 className="text-lg font-bold flex items-center gap-2 capitalize">
@@ -743,8 +799,19 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                           />
                         </Button>
                       )}
-                      <Button variant="ghost" size="sm" onClick={() => deleteItem(item.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
+                      {item.slug && activeType === "articles" && (
+                        <a 
+                          href={`/articles/${item.slug}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="p-2 hover:bg-muted rounded-md text-muted-foreground transition-colors"
+                          title="View Published Page"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      )}
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive/80" onClick={() => deleteItem(item.id)}>
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </CardContent>
