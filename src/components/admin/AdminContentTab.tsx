@@ -149,6 +149,21 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     }
   };
 
+  const handlePublish = async (id: any) => {
+    try {
+      const { error } = await supabase
+        .from(activeType)
+        .update({ status: "published" } as any)
+        .eq("id", id);
+
+      if (error) throw error;
+      toast.success(`${activeType.slice(0, -1)} published successfully!`);
+      loadItems(); // Refresh the list
+    } catch (err: any) {
+      toast.error(`Error publishing: ${err.message}`);
+    }
+  };
+
   /** Reload list, highlight new IDs, scroll to list */
   async function refreshAndHighlight(ids: string[]) {
     await loadItems();
@@ -908,6 +923,17 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                           <CheckCircle2
                             className={`h-4 w-4 ${item.is_featured ? "fill-current" : ""}`}
                           />
+                        </Button>
+                      )}
+                      {(activeType === "articles" || activeType === "recipes") && item.status === "draft" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-emerald-600 hover:text-emerald-500 hover:bg-emerald-50"
+                          onClick={() => handlePublish(item.id)}
+                          title="Approve & Publish"
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
                         </Button>
                       )}
                       {item.slug && activeType === "articles" && (
