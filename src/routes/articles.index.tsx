@@ -98,12 +98,22 @@ function ArticlesPage() {
                   <h3 className="text-xl font-bold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors">
                     {decodeEntities(article.title || "")}
                   </h3>
-                  {article.excerpt && (
-                    <p
-                      className="mt-3 text-sm leading-relaxed text-muted-foreground line-clamp-3"
-                      dangerouslySetInnerHTML={{ __html: article.excerpt }}
-                    />
-                  )}
+                  {(() => {
+                    const excerptText = article.excerpt || 
+                      (article.content ? 
+                        article.content
+                          .replace(/<[^>]*>?/gm, '') // Strip HTML tags
+                          .replace(/##\s+/g, '')     // Strip markdown headers
+                          .replace(/\*\*/g, '')      // Strip bold
+                          .slice(0, 160) + '...' 
+                        : '');
+                    
+                    return excerptText ? (
+                      <p className="mt-3 text-sm leading-relaxed text-muted-foreground line-clamp-3">
+                        {excerptText}
+                      </p>
+                    ) : null;
+                  })()}
                 </div>
               </Link>
             ))}

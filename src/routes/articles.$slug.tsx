@@ -91,8 +91,8 @@ function ArticlePage() {
                 // Otherwise, transform markdown-style plain text to HTML
                 return html
                   .split('\n')
-                  .filter(p => p.trim())
-                  .map(p => {
+                  .filter((p: string) => p.trim())
+                  .map((p: string) => {
                     let trimmed = p.trim();
                     
                     // Handle Headings (Explicit ## or ###)
