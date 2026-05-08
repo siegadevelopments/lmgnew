@@ -229,7 +229,10 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     const toastId = toast.loading("AI is painting a thumbnail...");
     try {
       const { data, error } = await supabase.functions.invoke("generate-ai-image", {
-        body: { prompt: `${title} ${content || ""}`.trim() },
+        body: { 
+          prompt: `${title} ${content || ""}`.trim(),
+          author_id: selectedVendorId
+        },
       });
       if (error) throw error;
       if (data?.url) {

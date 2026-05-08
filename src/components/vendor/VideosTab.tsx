@@ -130,7 +130,10 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
     const toastId = toast.loading("AI is painting a thumbnail...");
     try {
       const { data, error } = await supabase.functions.invoke("generate-ai-image", {
-        body: { prompt: `${form.title} ${form.description || ""}`.trim() },
+        body: { 
+          prompt: `${form.title} ${form.description || ""}`.trim(),
+          author_id: userId
+        },
       });
       if (error) throw error;
       if (data?.url) {

@@ -2,6 +2,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 // @ts-ignore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// @ts-ignore
+import { Image } from "https://deno.land/x/imagescript@1.2.15/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,7 +16,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { prompt, folder = "ai-thumbnails" } = await req.json();
+    const { prompt, folder = "ai-thumbnails", author_id } = await req.json();
     // Truncate prompt to stay within model limits (OpenAI limit is 4000)
     const truncatedPrompt = prompt.substring(0, 3000);
     if (!truncatedPrompt) throw new Error("Prompt is required");
@@ -47,7 +49,8 @@ serve(async (req: Request) => {
             const base64Data = prediction.bytesBase64Encoded;
             const mimeType = prediction.mimeType || "image/png";
             const binaryData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
-            return await uploadToSupabase(new Blob([binaryData], { type: mimeType }), folder, mimeType);
+            const watermarkedBlob = await watermarkImage(new Blob([binaryData], { type: mimeType }), author_id);
+            return await uploadToSupabase(watermarkedBlob, folder, "image/png");
           }
         } else {
           const errText = await response.text();
@@ -83,7 +86,8 @@ serve(async (req: Request) => {
           const imageUrl = aiData.data[0].url;
           const imageRes = await fetch(imageUrl);
           const blob = await imageRes.blob();
-          return await uploadToSupabase(blob, folder, "image/png");
+          const watermarkedBlob = await watermarkImage(blob, author_id);
+          return await uploadToSupabase(watermarkedBlob, folder, "image/png");
         } else {
           const errText = await response.text();
           console.error("OpenAI failed:", errText);
@@ -104,6 +108,51 @@ serve(async (req: Request) => {
     });
   }
 });
+
+async function watermarkImage(imageBlob: Blob, authorId: string | null) {
+  if (!authorId) return imageBlob;
+  
+  try {
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    );
+
+    const { data: vendor } = await supabaseAdmin
+      .from('vendor_profiles')
+      .select('store_logo_url')
+      .eq('id', authorId)
+      .single();
+    
+    if (!vendor?.store_logo_url) {
+      console.log("No vendor logo found for watermarking");
+      return imageBlob;
+    }
+    
+    console.log(`Watermarking with logo: ${vendor.store_logo_url}`);
+    const logoRes = await fetch(vendor.store_logo_url);
+    if (!logoRes.ok) return imageBlob;
+    
+    const logoData = new Uint8Array(await logoRes.arrayBuffer());
+    const mainImageData = new Uint8Array(await imageBlob.arrayBuffer());
+    
+    const mainImg = await Image.decode(mainImageData);
+    const logoImg = await Image.decode(logoData);
+    
+    // Resize logo to ~20% of main image width
+    const targetWidth = mainImg.width * 0.20;
+    logoImg.resize(targetWidth, Image.RESIZE_AUTO);
+    
+    // Composite bottom-right with 20px padding
+    mainImg.composite(logoImg, mainImg.width - logoImg.width - 20, mainImg.height - logoImg.height - 20);
+    
+    const finalBuffer = await mainImg.encode();
+    return new Blob([finalBuffer], { type: 'image/png' });
+  } catch (e) {
+    console.error("Watermarking failed, returning original image:", e);
+    return imageBlob;
+  }
+}
 
 async function uploadToSupabase(blob: Blob, folder: string, contentType: string) {
   const supabaseAdmin = createClient(
