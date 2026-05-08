@@ -78,7 +78,7 @@ export function SettingsTab({ profile, setProfile, userId }: Props) {
                   onChange={(e) => setProfile({ ...profile, representative_name: e.target.value })}
                   placeholder="e.g. John Doe"
                 />
-                <p className=\"text-[10px] text-muted-foreground italic\">
+                <p className="text-[10px] text-muted-foreground italic">
                   This name will be credited on the articles you write.
                 </p>
               </div>
