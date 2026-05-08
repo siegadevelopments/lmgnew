@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { uploadMedia } from "@/lib/upload";
+import { Badge } from "@/components/ui/badge";
 import { useQueryClient } from "@tanstack/react-query";
 
 export function AdminContentTab({ vendors }: { vendors: any[] }) {
