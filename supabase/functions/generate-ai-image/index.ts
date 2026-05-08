@@ -118,11 +118,7 @@ serve(async (req: Request) => {
 });
 
 async function watermarkImage(imageBlob: Blob, authorId: string | null) {
-  console.log(`Watermark request for authorId: ${authorId}`);
-  if (!authorId) {
-    console.log("No authorId provided, skipping watermark");
-    return imageBlob;
-  }
+  console.log(`Watermark request for authorId: "${authorId}"`);
   
   try {
     const supabaseAdmin = createClient(
@@ -130,31 +126,30 @@ async function watermarkImage(imageBlob: Blob, authorId: string | null) {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    const { data: vendor, error: vendorError } = await supabaseAdmin
-      .from('vendor_profiles')
-      .select('store_logo_url')
-      .eq('id', authorId)
-      .single();
-    
-    if (vendorError) {
-      console.error("Error fetching vendor profile:", vendorError);
-      return imageBlob;
+    let logoUrl = null;
+
+    // 1. Try to get vendor logo if authorId is provided
+    if (authorId && authorId.trim() !== "") {
+      const { data: vendor, error: vendorError } = await supabaseAdmin
+        .from('vendor_profiles')
+        .select('store_logo_url')
+        .eq('id', authorId)
+        .single();
+      
+      if (vendorError) {
+        console.error("Error fetching vendor profile:", vendorError);
+      } else {
+        logoUrl = vendor?.store_logo_url;
+      }
     }
 
-    let logoUrl = vendor?.store_logo_url;
-    
-    if (!logoUrl) {
-      console.log(`No store_logo_url found for vendor ${authorId}. Using site fallback.`);
-      // Use the site's main logo as a fallback
-      logoUrl = "https://www.lifestylemedicinegateway.com/logo.png";
-    }
-
-    if (logoUrl.toLowerCase().endsWith('.svg')) {
-      console.warn("SVG logos are not supported. Using site fallback.");
+    // 2. Fallback to site logo if no vendor logo or invalid format
+    if (!logoUrl || logoUrl.toLowerCase().endsWith('.svg')) {
+      console.log(`Using site fallback logo (Original: ${logoUrl})`);
       logoUrl = "https://www.lifestylemedicinegateway.com/logo.png";
     }
     
-    console.log(`Fetching logo from: ${logoUrl}`);
+    console.log(`Final logo URL for watermarking: ${logoUrl}`);
     const logoRes = await fetch(logoUrl);
     if (!logoRes.ok) {
       console.error(`Failed to fetch logo from ${logoUrl}: ${logoRes.status}`);
