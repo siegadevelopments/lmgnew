@@ -98,9 +98,36 @@ export function AdminMarketingTab() {
     source_url: "",
   });
 
+  // Content Selection states
+  const [contentList, setContentList] = useState<{ id: string; title: string; type: string; image_url?: string; slug?: string; excerpt?: string; content?: string }[]>([]);
+  const [selectedContentId, setSelectedContentId] = useState<string>("");
+  const [targetPlatform, setTargetPlatform] = useState<"facebook" | "instagram" | "both">("both");
+  const [loadingContent, setLoadingContent] = useState(false);
+
   useEffect(() => {
     loadPosts();
+    loadSourceContent();
   }, []);
+
+  async function loadSourceContent() {
+    setLoadingContent(true);
+    try {
+      const [articles, recipes] = await Promise.all([
+        supabase.from("articles").select("id, title, image_url, slug, excerpt, content").order("created_at", { ascending: false }).limit(20),
+        supabase.from("recipes").select("id, title, image_url, slug, excerpt, content").order("created_at", { ascending: false }).limit(20),
+      ]);
+
+      const combined = [
+        ...(articles.data || []).map(a => ({ ...a, type: "Article" })),
+        ...(recipes.data || []).map(r => ({ ...r, type: "Recipe" })),
+      ];
+      setContentList(combined);
+    } catch (err) {
+      console.error("Error loading source content:", err);
+    } finally {
+      setLoadingContent(false);
+    }
+  }
 
   async function loadPosts() {
     setLoading(true);
@@ -682,6 +709,141 @@ export function AdminMarketingTab() {
               onSubmit={handleManualCreate}
               className="grid gap-4 sm:grid-cols-2"
             >
+              <div className="space-y-4 sm:col-span-2 bg-background/50 p-4 rounded-xl border border-primary/10">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-sm font-bold flex items-center gap-2 text-primary">
+                    <Megaphone className="h-4 w-4" />
+                    Generate from Content
+                  </h4>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant={targetPlatform === "facebook" ? "secondary" : "ghost"}
+                      size="sm"
+                      className="h-7 text-[10px] px-2 font-bold"
+                      onClick={() => setTargetPlatform("facebook")}
+                    >
+                      <Facebook className="h-3 w-3 mr-1" /> FB
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={targetPlatform === "instagram" ? "secondary" : "ghost"}
+                      size="sm"
+                      className="h-7 text-[10px] px-2 font-bold"
+                      onClick={() => setTargetPlatform("instagram")}
+                    >
+                      <Instagram className="h-3 w-3 mr-1" /> IG
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={targetPlatform === "both" ? "secondary" : "ghost"}
+                      size="sm"
+                      className="h-7 text-[10px] px-2 font-bold"
+                      onClick={() => setTargetPlatform("both")}
+                    >
+                      Both
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Select Article or Recipe</Label>
+                    <select
+                      className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none"
+                      value={selectedContentId}
+                      onChange={(e) => setSelectedContentId(e.target.value)}
+                    >
+                      <option value="">-- Choose existing content --</option>
+                      {contentList.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          [{c.type}] {c.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-end">
+                    <Button
+                      type="button"
+                      className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-10"
+                      disabled={!selectedContentId || enhancingField === "viral"}
+                      onClick={async () => {
+                        const content = contentList.find(c => c.id === selectedContentId);
+                        if (!content) return;
+                        
+                        setEnhancingField("viral");
+                        try {
+                          const { data: { session } } = await supabase.auth.getSession();
+                          if (!session) throw new Error("Not authenticated");
+
+                          const prompt = `Create a viral social media post for ${targetPlatform === "both" ? "Facebook and Instagram" : targetPlatform}. 
+                          Content Title: ${content.title}
+                          Excerpt: ${content.excerpt || ""}
+                          Content: ${content.content?.substring(0, 1000) || ""}
+                          
+                          BEST PRACTICES:
+                          1. Start with a powerful HOOK (first line).
+                          2. Use engaging emojis throughout.
+                          3. Focus on benefits and curiosity.
+                          4. End with a clear CALL TO ACTION.
+                          5. Keep it conversational and relatable.
+                          6. For Instagram, use more white space and bullet points.
+                          
+                          Return JSON-like structure:
+                          TITLE: [Viral Title]
+                          CAPTION: [Engaging Caption]
+                          HASHTAGS: [comma-separated hashtags]`;
+
+                          const response = await fetch("/api/ai-enhance", {
+                            method: "POST",
+                            headers: {
+                              "Content-Type": "application/json",
+                              Authorization: `Bearer ${session.access_token}`,
+                            },
+                            body: JSON.stringify({
+                              field: "custom",
+                              value: prompt,
+                              context: "viral_social_media_generator"
+                            }),
+                          });
+
+                          const data = await response.json();
+                          if (!response.ok) throw new Error(data.error || "Generation failed");
+
+                          // Parse the result
+                          const res = data.result || "";
+                          const titleMatch = res.match(/TITLE:\s*(.*)/i);
+                          const captionMatch = res.match(/CAPTION:\s*([\s\S]*?)(?=HASHTAGS:|$)/i);
+                          const hashtagsMatch = res.match(/HASHTAGS:\s*(.*)/i);
+
+                          setManualForm(prev => ({
+                            ...prev,
+                            title: titleMatch?.[1]?.trim() || content.title,
+                            caption: captionMatch?.[1]?.trim() || "",
+                            hashtags: hashtagsMatch?.[1]?.trim() || "",
+                            image_url: content.image_url || "",
+                            source_url: `/${content.type.toLowerCase()}s/${content.slug}`,
+                          }));
+
+                          toast.success("Viral post generated!");
+                        } catch (err: any) {
+                          toast.error(err.message || "Failed to generate viral post");
+                        } finally {
+                          setEnhancingField(null);
+                        }
+                      }}
+                    >
+                      {enhancingField === "viral" ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Sparkles className="mr-2 h-4 w-4" />
+                      )}
+                      Generate Viral Post
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-2 sm:col-span-2">
                 <div className="flex items-center justify-between">
                   <Label>Title</Label>
