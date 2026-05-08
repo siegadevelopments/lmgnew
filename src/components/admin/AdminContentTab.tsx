@@ -201,15 +201,18 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     let result;
     if (editingId) {
       if (activeType === "articles") {
+        console.log("Updating article:", editingId);
         result = await (supabase.from("articles") as any)
           .update({
             ...commonData,
             content,
             image_url: imageUrl,
             category_name: category,
+            slug: title.toLowerCase().replace(/ /g, "-"),
           })
           .eq("id", editingId);
       } else if (activeType === "recipes") {
+        console.log("Updating recipe:", editingId);
         result = await (supabase.from("recipes") as any)
           .update({
             ...commonData,
@@ -217,6 +220,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
             image_url: imageUrl,
             prep_time: prepTime,
             cook_time: cookTime,
+            slug: title.toLowerCase().replace(/ /g, "-"),
           })
           .eq("id", editingId);
       } else if (activeType === "videos") {
@@ -230,6 +234,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
           })
           .eq("id", editingId);
       } else if (activeType === "products") {
+        console.log("Updating product:", editingId);
         result = await (supabase.from("products") as any)
           .update({
             title,
@@ -237,6 +242,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
             price: parseFloat(imageUrl) || 0,
             image_url: embedUrl,
             vendor_id: selectedVendorId,
+            slug: title.toLowerCase().replace(/ /g, "-"),
           })
           .eq("id", editingId);
       }
@@ -281,7 +287,12 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     }
 
     if (result?.error) {
-      toast.error("Failed to save item: " + result.error.message);
+      console.error("Save error:", result.error);
+      if (result.error.message?.includes("articles_slug_key")) {
+        toast.error("An article with this title already exists. Please use a unique title.");
+      } else {
+        toast.error("Failed to save item: " + result.error.message);
+      }
     } else {
       const inserted = result as any;
       const newId = inserted?.data?.[0]?.id || inserted?.data?.id;
