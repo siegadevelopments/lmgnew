@@ -80,8 +80,47 @@ function ArticlePage() {
 
         {article.content && (
           <div
-            className="wp-content prose prose-green mt-12 max-w-none text-foreground prose-headings:text-foreground prose-a:text-primary prose-img:rounded-xl"
-            dangerouslySetInnerHTML={{ __html: article.content }}
+            className="wp-content prose prose-green mt-12 max-w-none text-foreground prose-headings:text-foreground prose-a:text-primary prose-img:rounded-xl leading-relaxed text-lg"
+            dangerouslySetInnerHTML={{ 
+              __html: (() => {
+                let html = article.content;
+                
+                // If it's already HTML (contains <p> or <h tags), return as is
+                if (html.includes('<p>') || html.includes('<h')) return html;
+                
+                // Otherwise, transform markdown-style plain text to HTML
+                return html
+                  .split('\n')
+                  .filter(p => p.trim())
+                  .map(p => {
+                    let trimmed = p.trim();
+                    
+                    // Handle Headings (e.g. ## Title)
+                    if (trimmed.startsWith('## ')) {
+                      return `<h2 class="text-2xl font-bold mt-8 mb-4 flex items-center gap-2">${trimmed.replace('## ', '')}</h2>`;
+                    }
+                    if (trimmed.startsWith('### ')) {
+                      return `<h3 class="text-xl font-bold mt-6 mb-3">${trimmed.replace('### ', '')}</h3>`;
+                    }
+                    
+                    // Handle Bold (**text**)
+                    trimmed = trimmed.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    
+                    // Handle Italic (*text*)
+                    trimmed = trimmed.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                    
+                    // Handle Bullet points (- item)
+                    if (trimmed.startsWith('- ')) {
+                      return `<li class="ml-4 list-disc mb-2">${trimmed.replace('- ', '')}</li>`;
+                    }
+                    
+                    return `<p class="mb-6">${trimmed}</p>`;
+                  })
+                  .join('\n')
+                  // Wrap contiguous <li> tags in <ul>
+                  .replace(/(<li.*<\/li>(\n<li.*<\/li>)*)/g, '<ul class="my-6">$1</ul>');
+              })()
+            }}
           />
         )}
       </div>

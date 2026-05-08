@@ -260,7 +260,13 @@ html.dark main {
 }
 
 .wp-content p {
-  margin-bottom: 1.25em;
+  margin-bottom: 1.5em;
+  font-size: 1.125rem;
+}
+
+.wp-content strong {
+  color: var(--foreground);
+  font-weight: 700;
 }
 
 .wp-content a {

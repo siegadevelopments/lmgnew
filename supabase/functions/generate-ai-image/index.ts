@@ -10,6 +10,22 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Cache font to avoid re-fetching on every request
+let cachedFont: Uint8Array | null = null;
+async function getFont() {
+  if (cachedFont) return cachedFont;
+  try {
+    console.log("Fetching font for watermark...");
+    const fontRes = await fetch("https://github.com/google/fonts/raw/main/ofl/outfit/Outfit-Bold.ttf");
+    if (!fontRes.ok) throw new Error(`Font fetch failed: ${fontRes.status}`);
+    cachedFont = new Uint8Array(await fontRes.arrayBuffer());
+    return cachedFont;
+  } catch (e) {
+    console.error("Failed to fetch font, using default:", e);
+    return null;
+  }
+}
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -127,20 +143,28 @@ async function watermarkImage(imageBlob: Blob, authorId: string | null) {
     );
 
     let logoUrl = null;
+    let vendorName = "E-training group";
+    let representativeName = "Georgia Erevnidis";
 
-    // 1. Try to get vendor logo if authorId is provided
+    // 1. Try to get vendor info if authorId is provided
     if (authorId && authorId.trim() !== "") {
       const { data: vendor, error: vendorError } = await supabaseAdmin
         .from('vendor_profiles')
-        .select('store_logo_url')
+        .select('store_logo_url, store_name, representative_name')
         .eq('id', authorId)
         .single();
       
       if (vendorError) {
         console.error("Error fetching vendor profile:", vendorError);
-      } else {
-        logoUrl = vendor?.store_logo_url;
+      } else if (vendor) {
+        logoUrl = vendor.store_logo_url;
+        vendorName = vendor.store_name;
+        representativeName = vendor.representative_name;
       }
+    } else {
+      // Use site defaults if no authorId
+      vendorName = "E-training group";
+      representativeName = "Georgia Erevnidis";
     }
 
     // 2. Fallback to site logo if no vendor logo or invalid format
@@ -162,24 +186,55 @@ async function watermarkImage(imageBlob: Blob, authorId: string | null) {
     const mainImg = await Image.decode(mainImageData);
     const logoImg = await Image.decode(logoData);
     
-    // Resize logo to ~12% of main image width (smaller and more professional)
-    const targetWidth = mainImg.width * 0.12;
+    // Resize logo to ~15% of main image width (slightly larger for better visibility)
+    const targetWidth = mainImg.width * 0.15;
     logoImg.resize(targetWidth, Image.RESIZE_AUTO);
     
-    // Create a small white semi-transparent background box for visibility
-    const padding = 10;
-    const bgWidth = logoImg.width + (padding * 2);
-    const bgHeight = logoImg.height + (padding * 2);
+    // Prepare attribution text
+    const attributionText = representativeName 
+      ? `By ${representativeName}` 
+      : vendorName;
+      
+    const fontData = await getFont();
+    let textImg = null;
+    if (fontData) {
+      // Use dark slate color for text on light background
+      textImg = Image.renderText(fontData, Math.max(16, mainImg.width * 0.015), attributionText, 0x1e293bff);
+    }
+    
+    // Create a premium background box
+    const padding = 15;
+    const spacing = 10; // between logo and text
+    const bgWidth = logoImg.width + (textImg ? textImg.width + spacing : 0) + (padding * 2);
+    const bgHeight = Math.max(logoImg.height, textImg ? textImg.height : 0) + (padding * 2);
+    
+    // Create background (Solid white for maximum logo visibility)
     const bg = new Image(bgWidth, bgHeight);
-    bg.fill(0xffffff88); // Semi-transparent white
+    bg.fill(0xffffffff); 
     
-    // Composite logo onto background
-    bg.composite(logoImg, padding, padding);
+    // Add a subtle border
+    const borderColor = 0xe2e8f0ff; // Slate 200
+    for (let i = 0; i < bgWidth; i++) {
+      bg.setPixelAt(i + 1, 1, borderColor);
+      bg.setPixelAt(i + 1, bgHeight, borderColor);
+    }
+    for (let i = 0; i < bgHeight; i++) {
+      bg.setPixelAt(1, i + 1, borderColor);
+      bg.setPixelAt(bgWidth, i + 1, borderColor);
+    }
     
-    // Composite the watermarked logo bottom-right with 40px padding
-    mainImg.composite(bg, mainImg.width - bg.width - 40, mainImg.height - bg.height - 40);
+    // Composite logo
+    bg.composite(logoImg, padding, (bgHeight - logoImg.height) / 2);
     
-    console.log("Watermark applied successfully with background");
+    // Composite text if available
+    if (textImg) {
+      bg.composite(textImg, padding + logoImg.width + spacing, (bgHeight - textImg.height) / 2);
+    }
+    
+    // Composite the watermarked logo bottom-right with 50px padding
+    mainImg.composite(bg, mainImg.width - bg.width - 50, mainImg.height - bg.height - 50);
+    
+    console.log("Enhanced branded watermark applied successfully");
     const finalBuffer = await mainImg.encode();
     return new Blob([finalBuffer], { type: 'image/png' });
   } catch (e) {
