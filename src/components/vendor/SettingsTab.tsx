@@ -29,6 +29,7 @@ export function SettingsTab({ profile, setProfile, userId }: Props) {
       const { error } = await (supabase.from("vendor_profiles") as any)
         .update({
           store_name: profile.store_name,
+          representative_name: profile.representative_name,
           store_description: profile.store_description,
           store_logo_url: profile.store_logo_url,
           store_banner_url: profile.store_banner_url,
@@ -69,6 +70,17 @@ export function SettingsTab({ profile, setProfile, userId }: Props) {
                   value={profile.store_name}
                   onChange={(e) => setProfile({ ...profile, store_name: e.target.value })}
                 />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Owner / Representative Name</Label>
+                <Input
+                  value={profile.representative_name || ""}
+                  onChange={(e) => setProfile({ ...profile, representative_name: e.target.value })}
+                  placeholder="e.g. John Doe"
+                />
+                <p className=\"text-[10px] text-muted-foreground italic\">
+                  This name will be credited on the articles you write.
+                </p>
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label>Description</Label>

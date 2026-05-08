@@ -28,6 +28,7 @@ export interface Database {
           facebook: string | null;
           twitter: string | null;
           is_approved: boolean;
+          representative_name: string | null;
           created_at: string;
           updated_at: string;
         };

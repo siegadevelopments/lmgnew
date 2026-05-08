@@ -30,6 +30,7 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
   const [email, setEmail] = useState(vendor?.email || "");
   const [formData, setFormData] = useState({
     store_name: vendor?.store_name || "",
+    representative_name: vendor?.representative_name || "",
     store_description: vendor?.store_description || "",
     store_logo_url: vendor?.store_logo_url || "",
     store_banner_url: vendor?.store_banner_url || "",
@@ -106,6 +107,7 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
       // Explicitly pick columns to avoid any "column not found" or schema cache issues
       const updateData = {
         store_name: formData.store_name,
+        representative_name: formData.representative_name,
         store_description: formData.store_description,
         store_logo_url: formData.store_logo_url,
         store_banner_url: formData.store_banner_url,
@@ -175,6 +177,16 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
                 value={formData.store_name}
                 onChange={handleChange}
                 required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="representative_name">Representative Name</Label>
+              <Input
+                id="representative_name"
+                name="representative_name"
+                value={formData.representative_name}
+                onChange={handleChange}
+                placeholder="e.g. John Doe"
               />
             </div>
 

@@ -33,6 +33,7 @@ function ArticlePage() {
   const { slug } = Route.useParams();
   const { data: articles } = useSuspenseQuery(articleBySlugQueryOptions(slug));
   const article = articles[0];
+  const authorName = article.author?.representative_name || article.author?.store_name || "Georgia Erevnidis from E-training group";
 
   return (
     <article className="py-12 sm:py-16">
@@ -44,8 +45,10 @@ function ArticlePage() {
           {decodeEntities(article.title || "")}
         </h1>
 
-        <div className="mt-6 flex items-center gap-4 text-sm text-muted-foreground font-medium">
+        <div className="mt-6 flex items-center gap-4 text-sm text-muted-foreground font-medium uppercase tracking-wider">
           <span>{new Date(article.created_at).toLocaleDateString()}</span>
+          <span className="opacity-30">•</span>
+          <span className="text-primary font-bold">By {authorName}</span>
         </div>
 
         {article.image_url && (

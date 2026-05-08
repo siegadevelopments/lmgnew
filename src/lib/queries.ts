@@ -109,7 +109,11 @@ export const articleBySlugQueryOptions = (slug: string) =>
   queryOptions({
     queryKey: ["articles", "bySlug", slug],
     queryFn: async () => {
-      const { data, error } = await supabase.from("articles").select("*").eq("slug", slug).limit(1);
+      const { data, error } = await supabase
+        .from("articles")
+        .select("*, author:vendor_profiles(representative_name, store_name)")
+        .eq("slug", slug)
+        .limit(1);
       if (error) throw new Error(error.message);
       return (data || []) as any[];
     },

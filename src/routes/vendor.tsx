@@ -64,6 +64,7 @@ export interface VendorProfile {
   instagram?: string | null;
   facebook?: string | null;
   twitter?: string | null;
+  representative_name?: string | null;
   is_approved: boolean;
   store_categories?: string[];
   vendor_type?: "products" | "services" | "both";
@@ -161,7 +162,7 @@ function VendorDashboardPage() {
       console.log("Loading vendor data for user:", user.id);
       const { data: vendorData, error: vError } = await (supabase.from("vendor_profiles") as any)
         .select(
-          "id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, created_at, updated_at, ai_enabled, ai_instructions, store_categories, vendor_type",
+          "id, store_name, representative_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, created_at, updated_at, ai_enabled, ai_instructions, store_categories, vendor_type",
         )
         .eq("id", user.id)
         .single();
