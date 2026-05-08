@@ -140,6 +140,12 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
     } catch (err: any) {
       console.error("AI Generation Error:", err);
       let message = err.message || "AI Generation failed";
+
+      // Handle Supabase Function errors specifically
+      if (err.context?.error) {
+        message = err.context.error.message || message;
+      }
+
       if (message.includes("Failed to fetch") || message.includes("Failed to send a request")) {
         message =
           "Cannot reach AI service. Please ensure the 'generate-ai-image' function is deployed and your project is active.";

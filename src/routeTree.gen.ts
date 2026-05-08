@@ -26,6 +26,7 @@ import { Route as FaqRouteImport } from './routes/faq'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as ChartsRouteImport } from './routes/charts'
+import { Route as AnecdotesRouteImport } from './routes/anecdotes'
 import { Route as AffiliatesRouteImport } from './routes/affiliates'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AboutRouteImport } from './routes/about'
@@ -125,6 +126,11 @@ const ChartsRoute = ChartsRouteImport.update({
   path: '/charts',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AnecdotesRoute = AnecdotesRouteImport.update({
+  id: '/anecdotes',
+  path: '/anecdotes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AffiliatesRoute = AffiliatesRouteImport.update({
   id: '/affiliates',
   path: '/affiliates',
@@ -196,6 +202,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
   '/affiliates': typeof AffiliatesRoute
+  '/anecdotes': typeof AnecdotesRoute
   '/charts': typeof ChartsRoute
   '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
@@ -228,6 +235,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
   '/affiliates': typeof AffiliatesRoute
+  '/anecdotes': typeof AnecdotesRoute
   '/charts': typeof ChartsRoute
   '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
@@ -261,6 +269,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/admin': typeof AdminRoute
   '/affiliates': typeof AffiliatesRoute
+  '/anecdotes': typeof AnecdotesRoute
   '/charts': typeof ChartsRoute
   '/checkout': typeof CheckoutRoute
   '/contact': typeof ContactRoute
@@ -295,6 +304,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/admin'
     | '/affiliates'
+    | '/anecdotes'
     | '/charts'
     | '/checkout'
     | '/contact'
@@ -327,6 +337,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/admin'
     | '/affiliates'
+    | '/anecdotes'
     | '/charts'
     | '/checkout'
     | '/contact'
@@ -359,6 +370,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/admin'
     | '/affiliates'
+    | '/anecdotes'
     | '/charts'
     | '/checkout'
     | '/contact'
@@ -392,6 +404,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRoute
   AffiliatesRoute: typeof AffiliatesRoute
+  AnecdotesRoute: typeof AnecdotesRoute
   ChartsRoute: typeof ChartsRoute
   CheckoutRoute: typeof CheckoutRoute
   ContactRoute: typeof ContactRoute
@@ -541,6 +554,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChartsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/anecdotes': {
+      id: '/anecdotes'
+      path: '/anecdotes'
+      fullPath: '/anecdotes'
+      preLoaderRoute: typeof AnecdotesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/affiliates': {
       id: '/affiliates'
       path: '/affiliates'
@@ -640,6 +660,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AdminRoute: AdminRoute,
   AffiliatesRoute: AffiliatesRoute,
+  AnecdotesRoute: AnecdotesRoute,
   ChartsRoute: ChartsRoute,
   CheckoutRoute: CheckoutRoute,
   ContactRoute: ContactRoute,

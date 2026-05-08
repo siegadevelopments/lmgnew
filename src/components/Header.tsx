@@ -25,6 +25,7 @@ const exploreItems = [
   { to: "/videos" as const, label: "Videos" },
   { to: "/charts" as const, label: "Charts" },
   { to: "/articles" as const, label: "Articles & References" },
+  { to: "/anecdotes" as const, label: "Anecdotes" },
   { to: "/recipes" as const, label: "Recipes" },
   { to: "/natural-remedies" as const, label: "Natural Remedies" },
   { to: "/studies" as const, label: "Studies" },
