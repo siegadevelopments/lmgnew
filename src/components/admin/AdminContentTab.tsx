@@ -17,6 +17,8 @@ import {
   Sparkles,
   Eye,
   ExternalLink,
+  Pencil,
+  X,
 } from "lucide-react";
 import {
   Dialog,
@@ -41,7 +43,9 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [videoUploadProgress, setVideoUploadProgress] = useState<string>("");
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
+  const [editingId, setEditingId] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
   // Form states
@@ -163,7 +167,23 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     setPrepTime("");
     setCookTime("");
     setCategory("General");
+    setEditingId(null);
     clearDraft(); // Clear draft when manually resetting
+  };
+
+  const handleEdit = (item: any) => {
+    setEditingId(item.id);
+    setTitle(item.title || "");
+    setContent(item.content || item.description || "");
+    setImageUrl(item.image_url || item.thumbnail_url || (activeType === "products" ? item.price?.toString() : ""));
+    setEmbedUrl(item.embed_url || (activeType === "products" ? item.image_url : ""));
+    setCategory(item.category_name || "General");
+    setPrepTime(item.prep_time || "");
+    setCookTime(item.cook_time || "");
+    setSelectedVendorId(item.author_id || item.vendor_id || "");
+    
+    // Scroll to form
+    formRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   async function handleSubmit(e: React.FormEvent) {
@@ -175,46 +195,89 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
 
     const commonData = {
       title,
-      author_id: selectedVendorId,
+      [activeType === "products" ? "vendor_id" : "author_id"]: selectedVendorId,
     };
 
     let result;
-    if (activeType === "articles") {
-      result = await (supabase.from("articles") as any).insert({
-        ...commonData,
-        content,
-        image_url: imageUrl,
-        slug: title.toLowerCase().replace(/ /g, "-"),
-        category_name: category,
-      });
-    } else if (activeType === "recipes") {
-      result = await (supabase.from("recipes") as any).insert({
-        ...commonData,
-        content,
-        image_url: imageUrl,
-        slug: title.toLowerCase().replace(/ /g, "-"),
-        prep_time: prepTime,
-        cook_time: cookTime,
-      });
-    } else if (activeType === "videos") {
-      result = await (supabase.from("videos") as any).insert({
-        title,
-        description: content,
-        embed_url: embedUrl,
-        thumbnail_url: imageUrl,
-        author_id: selectedVendorId,
-        status: embedUrl.includes("video-uploads") ? "uploading" : "ready",
-      });
-    } else if (activeType === "products") {
-      result = await (supabase.from("products") as any).insert({
-        title,
-        description: content,
-        price: parseFloat(imageUrl) || 0,
-        image_url: embedUrl, // Reusing embedUrl for product image in the UI form
-        vendor_id: selectedVendorId,
-        status: "published",
-        slug: title.toLowerCase().replace(/ /g, "-"),
-      });
+    if (editingId) {
+      if (activeType === "articles") {
+        result = await (supabase.from("articles") as any)
+          .update({
+            ...commonData,
+            content,
+            image_url: imageUrl,
+            category_name: category,
+          })
+          .eq("id", editingId);
+      } else if (activeType === "recipes") {
+        result = await (supabase.from("recipes") as any)
+          .update({
+            ...commonData,
+            content,
+            image_url: imageUrl,
+            prep_time: prepTime,
+            cook_time: cookTime,
+          })
+          .eq("id", editingId);
+      } else if (activeType === "videos") {
+        result = await (supabase.from("videos") as any)
+          .update({
+            title,
+            description: content,
+            embed_url: embedUrl,
+            thumbnail_url: imageUrl,
+            author_id: selectedVendorId,
+          })
+          .eq("id", editingId);
+      } else if (activeType === "products") {
+        result = await (supabase.from("products") as any)
+          .update({
+            title,
+            description: content,
+            price: parseFloat(imageUrl) || 0,
+            image_url: embedUrl,
+            vendor_id: selectedVendorId,
+          })
+          .eq("id", editingId);
+      }
+    } else {
+      if (activeType === "articles") {
+        result = await (supabase.from("articles") as any).insert({
+          ...commonData,
+          content,
+          image_url: imageUrl,
+          slug: title.toLowerCase().replace(/ /g, "-"),
+          category_name: category,
+        });
+      } else if (activeType === "recipes") {
+        result = await (supabase.from("recipes") as any).insert({
+          ...commonData,
+          content,
+          image_url: imageUrl,
+          slug: title.toLowerCase().replace(/ /g, "-"),
+          prep_time: prepTime,
+          cook_time: cookTime,
+        });
+      } else if (activeType === "videos") {
+        result = await (supabase.from("videos") as any).insert({
+          title,
+          description: content,
+          embed_url: embedUrl,
+          thumbnail_url: imageUrl,
+          author_id: selectedVendorId,
+          status: embedUrl.includes("video-uploads") ? "uploading" : "ready",
+        });
+      } else if (activeType === "products") {
+        result = await (supabase.from("products") as any).insert({
+          title,
+          description: content,
+          price: parseFloat(imageUrl) || 0,
+          image_url: embedUrl, // Reusing embedUrl for product image in the UI form
+          vendor_id: selectedVendorId,
+          status: "published",
+          slug: title.toLowerCase().replace(/ /g, "-"),
+        });
+      }
     }
 
     if (result?.error) {
@@ -222,10 +285,11 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     } else {
       const inserted = result as any;
       const newId = inserted?.data?.[0]?.id || inserted?.data?.id;
-      toast.success("Item saved!");
+      toast.success(editingId ? "Item updated!" : "Item saved!");
       resetForm();
+      setEditingId(null);
       clearDraft(); // Ensure draft is cleared after successful save
-      await refreshAndHighlight(newId ? [newId] : []);
+      await refreshAndHighlight(editingId ? [editingId] : (newId ? [newId] : []));
     }
   }
 
@@ -300,10 +364,17 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">Add New Content</CardTitle>
+    <div className="space-y-6" ref={formRef}>
+      <Card className={editingId ? "ring-2 ring-primary border-primary/20 bg-primary/5" : ""}>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-xl">
+            {editingId ? `Edit ${activeType.slice(0, -1)}` : "Add New Content"}
+          </CardTitle>
+          {editingId && (
+            <Button variant="ghost" size="sm" onClick={resetForm} className="h-8">
+              <X className="mr-2 h-4 w-4" /> Cancel Edit
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="grid gap-4">
@@ -662,7 +733,15 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
 
             <div className="flex gap-2">
               <Button type="submit" className="flex-1 md:flex-none">
-                <Plus className="mr-2 h-4 w-4" /> Create {activeType.slice(0, -1)}
+                {editingId ? (
+                  <>
+                    <CheckCircle2 className="mr-2 h-4 w-4" /> Update {activeType.slice(0, -1)}
+                  </>
+                ) : (
+                  <>
+                    <Plus className="mr-2 h-4 w-4" /> Create {activeType.slice(0, -1)}
+                  </>
+                )}
               </Button>
               <Button
                 type="button"
@@ -810,6 +889,15 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                           <ExternalLink className="h-4 w-4" />
                         </a>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                        onClick={() => handleEdit(item)}
+                        title="Edit Item"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive/80" onClick={() => deleteItem(item.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
