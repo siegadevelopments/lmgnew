@@ -867,6 +867,19 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                             </span>
                           )}
                         </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider">
+                            {activeType.slice(0, -1)}
+                          </Badge>
+                          {item.status === 'draft' && (
+                            <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200 text-[10px] font-bold uppercase">
+                              Draft
+                            </Badge>
+                          )}
+                          <span className="text-[10px] text-muted-foreground font-medium ml-2">
+                            {new Date(item.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
                         <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                           <User className="h-3 w-3" /> {vendorName}
                         </p>
