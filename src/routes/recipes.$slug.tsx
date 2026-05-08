@@ -1,6 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { recipeBySlugQueryOptions } from "@/lib/queries";
+import { decodeEntities } from "@/lib/utils";
 
 export const Route = createFileRoute("/recipes/$slug")({
   loader: async ({ context: { queryClient }, params: { slug } }) => {
@@ -12,7 +13,7 @@ export const Route = createFileRoute("/recipes/$slug")({
     if (!loaderData) return {};
     return {
       meta: [
-        { title: `${loaderData.title} — Lifestyle Medicine Gateway` },
+        { title: `${decodeEntities(loaderData.title || "")} — Lifestyle Medicine Gateway` },
         ...(loaderData.image_url ? [{ property: "og:image", content: loaderData.image_url }] : []),
       ],
     };
@@ -32,7 +33,7 @@ function RecipePage() {
           ← Back to recipes
         </Link>
         <h1 className="mt-6 text-3xl font-bold text-foreground sm:text-4xl lg:text-5xl">
-          {recipe.title}
+          {decodeEntities(recipe.title || "")}
         </h1>
 
         <div className="mt-4 flex flex-wrap gap-4 text-sm text-muted-foreground font-medium">

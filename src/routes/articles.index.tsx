@@ -4,6 +4,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { articlesQueryOptions } from "@/lib/queries";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { decodeEntities } from "@/lib/utils";
 
 export const Route = createFileRoute("/articles/")({
   loader: ({ context: { queryClient } }) => {
@@ -34,6 +35,7 @@ function ArticlesPage() {
   const filteredArticles = articles.filter(
     (article) =>
       (article.title?.toLowerCase() || "").includes(search.toLowerCase()) ||
+      (decodeEntities(article.title || "").toLowerCase()).includes(search.toLowerCase()) ||
       (article.excerpt?.toLowerCase() || "").includes(search.toLowerCase()),
   );
 
@@ -94,7 +96,7 @@ function ArticlesPage() {
                     <span>{new Date(article.created_at).toLocaleDateString()}</span>
                   </div>
                   <h3 className="text-xl font-bold text-foreground line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                    {article.title}
+                    {decodeEntities(article.title || "")}
                   </h3>
                   {article.excerpt && (
                     <p

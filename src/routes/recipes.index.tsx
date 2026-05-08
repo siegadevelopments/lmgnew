@@ -4,6 +4,7 @@ import { recipesQueryOptions } from "@/lib/queries";
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { decodeEntities } from "@/lib/utils";
 
 export const Route = createFileRoute("/recipes/")({
   loader: ({ context: { queryClient } }) => {
@@ -26,6 +27,7 @@ function RecipesPage() {
     return recipes.filter(
       (recipe) =>
         (recipe.title?.toLowerCase() || "").includes(search.toLowerCase()) ||
+        (decodeEntities(recipe.title || "").toLowerCase()).includes(search.toLowerCase()) ||
         (recipe.excerpt?.toLowerCase() || "").includes(search.toLowerCase()),
     );
   }, [recipes, search]);
@@ -89,7 +91,7 @@ function RecipesPage() {
                 </div>
                 <div className="p-5 flex flex-col flex-1">
                   <h3 className="text-lg font-bold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
-                    {recipe.title}
+                    {decodeEntities(recipe.title || "")}
                   </h3>
                   {recipe.excerpt && (
                     <p

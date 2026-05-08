@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Radio, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useMemo } from "react";
+import { decodeEntities } from "@/lib/utils";
 
 export const Route = createFileRoute("/videos")({
   head: () => ({
@@ -22,22 +23,6 @@ export const Route = createFileRoute("/videos")({
   loader: ({ context: { queryClient } }) => queryClient.ensureQueryData(videosQueryOptions()),
   component: VideosPage,
 });
-
-/** Decode HTML entities like &#8211; &amp; etc. */
-function decodeEntities(str: string): string {
-  if (typeof document !== "undefined") {
-    const el = document.createElement("textarea");
-    el.innerHTML = str;
-    return el.value;
-  }
-  return str
-    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'");
-}
 
 /** Extract YouTube video ID from any known URL format */
 function extractYouTubeId(url: string): string | null {
@@ -59,7 +44,9 @@ function extractYouTubeId(url: string): string | null {
 /** Returns true if URL points to a raw video file or Supabase storage */
 function isDirectVideoUrl(url: string): boolean {
   if (!url) return false;
-  return /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url) || url.includes("supabase.co/storage");
+  return (
+    /\.(mp4|webm|ogg|mov|m4v|mts)(\?|$)/i.test(url) || url.includes("supabase.co/storage")
+  );
 }
 
 /** Build a clean YouTube embed URL (no autoplay yet) */
@@ -306,15 +293,23 @@ function VideosPage() {
       <Dialog open={!!fullscreenVideo} onOpenChange={(open) => !open && setFullscreenVideo(null)}>
         <DialogContent className="max-w-5xl p-0 bg-black border-none shadow-2xl overflow-hidden rounded-xl">
           {fullscreenVideo && (
-            <div className="relative w-full aspect-video flex items-center justify-center">
+            <div className="relative w-full aspect-video flex flex-col items-center justify-center">
               {isDirectVideoUrl(fullscreenVideo) ? (
-                <video
-                  src={fullscreenVideo}
-                  controls
-                  autoPlay
-                  playsInline
-                  className="w-full h-full object-contain bg-black"
-                />
+                <>
+                  <video
+                    src={fullscreenVideo}
+                    controls
+                    autoPlay
+                    playsInline
+                    className="w-full h-full object-contain bg-black"
+                  />
+                  {fullscreenVideo.toLowerCase().endsWith(".mts") && (
+                    <div className="absolute top-4 inset-x-0 mx-auto max-w-xs bg-black/60 backdrop-blur-md p-3 rounded-lg text-[10px] text-white/80 text-center border border-white/10">
+                      Note: .MTS files may not play in all browsers. <br />
+                      If it doesn't load, please use Chrome or convert to MP4.
+                    </div>
+                  )}
+                </>
               ) : (
                 <iframe
                   src={getEmbedUrl(fullscreenVideo, true)}

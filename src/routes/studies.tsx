@@ -4,6 +4,7 @@ import { articlesQueryOptions } from "@/lib/queries";
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { decodeEntities } from "@/lib/utils";
 
 export const Route = createFileRoute("/studies")({
   loader: ({ context: { queryClient } }) => {
@@ -26,6 +27,7 @@ function StudiesPage() {
     return articles.filter(
       (article) =>
         (article.title?.toLowerCase() || "").includes(search.toLowerCase()) ||
+        (decodeEntities(article.title || "").toLowerCase()).includes(search.toLowerCase()) ||
         (article.excerpt?.toLowerCase() || "").includes(search.toLowerCase()),
     );
   }, [articles, search]);
@@ -84,7 +86,7 @@ function StudiesPage() {
                 </div>
                 <div className="flex flex-1 flex-col p-6">
                   <h3 className="text-xl font-bold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
-                    {article.title}
+                    {decodeEntities(article.title || "")}
                   </h3>
                   <p className="mt-3 text-muted-foreground line-clamp-3 text-sm">
                     {article.excerpt

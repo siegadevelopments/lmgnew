@@ -9,11 +9,16 @@ export const productsQueryOptions = () =>
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*, vendor_profiles(store_name)")
+        .select("*, vendor_profiles!inner(store_name, is_approved)")
         .eq("status", "published")
-        .order("created_at", { ascending: false });
+        .eq("vendor_profiles.is_approved", true);
+        
       if (error) throw new Error(error.message);
-      return (data || []) as any[];
+      
+      // Shuffle the results for the "randomized" shop feel
+      const shuffled = (data || []).sort(() => Math.random() - 0.5);
+      
+      return shuffled as any[];
     },
   });
 
@@ -23,9 +28,10 @@ export const productBySlugQueryOptions = (slug: string) =>
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*, vendor:vendor_profiles(*)")
+        .select("*, vendor:vendor_profiles!inner(*)")
         .eq("slug", slug)
         .eq("status", "published")
+        .eq("vendor:vendor_profiles.is_approved", true)
         .limit(1);
       if (error) throw new Error(error.message);
       return (data || []) as any[];
@@ -52,8 +58,9 @@ export const featuredProductsQueryOptions = () =>
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*, vendor_profiles(store_name)")
+        .select("*, vendor_profiles!inner(store_name, is_approved)")
         .eq("status", "published")
+        .eq("vendor_profiles.is_approved", true)
         .limit(4)
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);

@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { decodeEntities } from "@/lib/utils";
 
 export const Route = createFileRoute("/search")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -59,9 +60,10 @@ function SearchPage() {
       const [productsRes, articlesRes, recipesRes, videosRes, remediesRes] = await Promise.all([
         supabase
           .from("products")
-          .select("*")
+          .select("*, vendor_profiles!inner(is_approved)")
           .ilike("title", `%${query}%`)
           .eq("status", "published")
+          .eq("vendor_profiles.is_approved", true)
           .limit(6),
         supabase.from("articles").select("*").ilike("title", `%${query}%`).limit(6),
         supabase.from("recipes").select("*").ilike("title", `%${query}%`).limit(6),
@@ -148,7 +150,7 @@ function SearchPage() {
                   <img src={product.image_url} className="h-32 w-full rounded-lg object-cover" />
                 )}
                 <h3 className="mt-2 text-sm font-semibold text-foreground group-hover:text-primary line-clamp-2">
-                  {product.title}
+                  {decodeEntities(product.title || "")}
                 </h3>
                 <p className="mt-1 text-sm font-bold text-primary">${product.price}</p>
               </Link>
@@ -180,7 +182,7 @@ function SearchPage() {
                 )}
                 <div className="min-w-0">
                   <h3 className="text-sm font-semibold text-foreground group-hover:text-primary line-clamp-1">
-                    {article.title}
+                    {decodeEntities(article.title || "")}
                   </h3>
                   {article.excerpt && (
                     <p
@@ -218,7 +220,7 @@ function SearchPage() {
                 )}
                 <div className="min-w-0">
                   <h3 className="text-sm font-semibold text-foreground group-hover:text-primary line-clamp-1">
-                    {recipe.title}
+                    {decodeEntities(recipe.title || "")}
                   </h3>
                   {recipe.excerpt && (
                     <p
@@ -253,7 +255,7 @@ function SearchPage() {
                   />
                 </div>
                 <h3 className="mt-2 text-sm font-semibold text-foreground group-hover:text-primary line-clamp-1">
-                  {vid.title}
+                  {decodeEntities(vid.title || "")}
                 </h3>
               </Link>
             ))}
@@ -279,7 +281,7 @@ function SearchPage() {
                 )}
                 <div className="min-w-0">
                   <h3 className="text-sm font-semibold text-foreground group-hover:text-primary line-clamp-1">
-                    {rem.title}
+                    {decodeEntities(rem.title || "")}
                   </h3>
                   {rem.excerpt && (
                     <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{rem.excerpt}</p>

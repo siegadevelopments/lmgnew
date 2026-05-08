@@ -1,6 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { articleBySlugQueryOptions } from "@/lib/queries";
+import { decodeEntities } from "@/lib/utils";
 
 export const Route = createFileRoute("/articles/$slug")({
   loader: async ({ context: { queryClient }, params: { slug } }) => {
@@ -12,7 +13,7 @@ export const Route = createFileRoute("/articles/$slug")({
     if (!loaderData) return {};
     return {
       meta: [
-        { title: `${loaderData.title} — Lifestyle Medicine Gateway` },
+        { title: `${decodeEntities(loaderData.title || "")} — Lifestyle Medicine Gateway` },
         {
           name: "description",
           content: loaderData.excerpt
@@ -40,12 +41,22 @@ function ArticlePage() {
           ← Back to articles
         </Link>
         <h1 className="mt-6 text-3xl font-bold text-foreground sm:text-4xl lg:text-5xl leading-tight">
-          {article.title}
+          {decodeEntities(article.title || "")}
         </h1>
 
         <div className="mt-6 flex items-center gap-4 text-sm text-muted-foreground font-medium">
           <span>{new Date(article.created_at).toLocaleDateString()}</span>
         </div>
+
+        {article.image_url && (
+          <div className="mt-8 overflow-hidden rounded-2xl border border-border shadow-sm bg-muted">
+            <img
+              src={article.image_url}
+              alt={decodeEntities(article.title || "")}
+              className="w-full object-cover aspect-[16/9]"
+            />
+          </div>
+        )}
 
         {article.content && (
           <div
