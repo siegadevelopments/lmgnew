@@ -365,6 +365,26 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
                     />
                   </Button>
                 </div>
+                {form.thumbnail_url && (
+                  <div className="mt-2 relative group overflow-hidden rounded-lg border border-border aspect-[16/9] max-w-[240px]">
+                    <img 
+                      src={form.thumbnail_url} 
+                      alt="Thumbnail Preview" 
+                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Button 
+                        type="button"
+                        variant="destructive" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={() => setForm({ ...form, thumbnail_url: "" })}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
                 <p className="text-[10px] text-muted-foreground mt-1">
                   If left empty, AI will automatically generate a thumbnail after processing.
                 </p>

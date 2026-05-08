@@ -553,6 +553,25 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                   </div>
                 )}
               </div>
+              {imageUrl && activeType !== "products" && (
+                <div className="mt-2 relative group overflow-hidden rounded-lg border border-border aspect-[16/9] max-w-[300px]">
+                  <img 
+                    src={imageUrl} 
+                    alt="Preview" 
+                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Button 
+                      variant="destructive" 
+                      size="icon" 
+                      className="h-8 w-8"
+                      onClick={() => setImageUrl("")}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {activeType === "products" && (
