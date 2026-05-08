@@ -249,6 +249,16 @@ html.dark main {
   letter-spacing: -0.02em;
 }
 
+.wp-content h2,
+.wp-content h3,
+h1.text-3xl {
+  background: linear-gradient(to right, var(--wellness-light) 0%, transparent 100%);
+  padding: 0.2em 0.5em;
+  border-radius: 0.2em;
+  display: inline-block;
+  margin-left: -0.5em;
+}
+
 .wp-content h2 {
   font-size: 1.5rem;
 }

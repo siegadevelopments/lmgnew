@@ -95,12 +95,25 @@ function ArticlePage() {
                   .map(p => {
                     let trimmed = p.trim();
                     
-                    // Handle Headings (e.g. ## Title)
+                    // Handle Headings (Explicit ## or ###)
                     if (trimmed.startsWith('## ')) {
-                      return `<h2 class="text-2xl font-bold mt-8 mb-4 flex items-center gap-2">${trimmed.replace('## ', '')}</h2>`;
+                      return `<h2 class="text-2xl font-bold mt-10 mb-4">${trimmed.replace('## ', '')}</h2>`;
                     }
                     if (trimmed.startsWith('### ')) {
-                      return `<h3 class="text-xl font-bold mt-6 mb-3">${trimmed.replace('### ', '')}</h3>`;
+                      return `<h3 class="text-xl font-bold mt-8 mb-3">${trimmed.replace('### ', '')}</h3>`;
+                    }
+                    
+                    // Auto-detect headings (Short lines without ending punctuation)
+                    // But exclude lines that look like list items
+                    const looksLikeHeading = trimmed.length < 70 && 
+                                            !trimmed.endsWith('.') && 
+                                            !trimmed.endsWith(':') && 
+                                            !trimmed.endsWith(',') &&
+                                            !trimmed.startsWith('- ') &&
+                                            !trimmed.startsWith('* ');
+                    
+                    if (looksLikeHeading && trimmed.length > 3) {
+                      return `<h2 class="text-2xl font-bold mt-10 mb-4">${trimmed}</h2>`;
                     }
                     
                     // Handle Bold (**text**)
@@ -111,14 +124,14 @@ function ArticlePage() {
                     
                     // Handle Bullet points (- item)
                     if (trimmed.startsWith('- ')) {
-                      return `<li class="ml-4 list-disc mb-2">${trimmed.replace('- ', '')}</li>`;
+                      return `<li class="ml-4 list-disc mb-2 text-slate-700">${trimmed.replace('- ', '')}</li>`;
                     }
                     
-                    return `<p class="mb-6">${trimmed}</p>`;
+                    return `<p class="mb-6 leading-relaxed">${trimmed}</p>`;
                   })
                   .join('\n')
                   // Wrap contiguous <li> tags in <ul>
-                  .replace(/(<li.*<\/li>(\n<li.*<\/li>)*)/g, '<ul class="my-6">$1</ul>');
+                  .replace(/(<li.*<\/li>(\n<li.*<\/li>)*)/g, '<ul class="my-6 space-y-2">$1</ul>');
               })()
             }}
           />
