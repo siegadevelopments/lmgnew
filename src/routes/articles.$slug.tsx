@@ -2,6 +2,8 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { articleBySlugQueryOptions } from "@/lib/queries";
 import { decodeEntities } from "@/lib/utils";
+import { useState } from "react";
+import { AlertCircle } from "lucide-react";
 
 export const Route = createFileRoute("/articles/$slug")({
   loader: async ({ context: { queryClient }, params: { slug } }) => {
@@ -32,6 +34,7 @@ export const Route = createFileRoute("/articles/$slug")({
 function ArticlePage() {
   const { slug } = Route.useParams();
   const { data: articles } = useSuspenseQuery(articleBySlugQueryOptions(slug));
+  const [imageError, setImageError] = useState(false);
   const article = articles[0];
   const authorName = article.author?.representative_name || article.author?.store_name || "Georgia Erevnidis from E-training group";
 
@@ -52,12 +55,26 @@ function ArticlePage() {
         </div>
 
         {article.image_url && (
-          <div className="mt-8 overflow-hidden rounded-2xl border border-border shadow-sm bg-muted">
-            <img
-              src={article.image_url}
-              alt={decodeEntities(article.title || "")}
-              className="w-full object-cover aspect-[16/9]"
-            />
+          <div className="mt-8 overflow-hidden rounded-2xl border border-border shadow-sm bg-muted relative min-h-[200px] flex items-center justify-center">
+            {imageError ? (
+              <div className="flex flex-col items-center gap-3 p-8 text-center">
+                <AlertCircle className="h-8 w-8 text-amber-500" />
+                <div>
+                  <p className="font-bold text-foreground">Image blocked by external host</p>
+                  <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+                    This image is hosted on an external site that prevents it from being displayed
+                    here. Please re-upload it to Supabase.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <img
+                src={article.image_url}
+                alt={decodeEntities(article.title || "")}
+                className="w-full object-cover aspect-[16/9]"
+                onError={() => setImageError(true)}
+              />
+            )}
           </div>
         )}
 

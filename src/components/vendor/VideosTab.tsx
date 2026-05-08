@@ -139,7 +139,12 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
       }
     } catch (err: any) {
       console.error("AI Generation Error:", err);
-      toast.error(err.message || "AI Generation failed", { id: toastId });
+      let message = err.message || "AI Generation failed";
+      if (message.includes("Failed to fetch") || message.includes("Failed to send a request")) {
+        message =
+          "Cannot reach AI service. Please ensure the 'generate-ai-image' function is deployed and your project is active.";
+      }
+      toast.error(message, { id: toastId });
     } finally {
       setGeneratingImage(false);
     }
