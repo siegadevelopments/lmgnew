@@ -186,8 +186,8 @@ async function watermarkImage(imageBlob: Blob, authorId: string | null) {
     const mainImg = await Image.decode(mainImageData);
     const logoImg = await Image.decode(logoData);
     
-    // Resize logo to ~15% of main image width (slightly larger for better visibility)
-    const targetWidth = mainImg.width * 0.15;
+    // Resize logo to ~6% of main image width (to match website header logo feel)
+    const targetWidth = mainImg.width * 0.06;
     logoImg.resize(targetWidth, Image.RESIZE_AUTO);
     
     // Prepare attribution text
@@ -199,12 +199,12 @@ async function watermarkImage(imageBlob: Blob, authorId: string | null) {
     let textImg = null;
     if (fontData) {
       // Use dark slate color for text on light background
-      textImg = Image.renderText(fontData, Math.max(16, mainImg.width * 0.015), attributionText, 0x1e293bff);
+      textImg = Image.renderText(fontData, Math.max(14, mainImg.width * 0.014), attributionText, 0x1e293bff);
     }
     
     // Create a premium background box
-    const padding = 15;
-    const spacing = 10; // between logo and text
+    const padding = 10;
+    const spacing = 8; // between logo and text
     const bgWidth = logoImg.width + (textImg ? textImg.width + spacing : 0) + (padding * 2);
     const bgHeight = Math.max(logoImg.height, textImg ? textImg.height : 0) + (padding * 2);
     
