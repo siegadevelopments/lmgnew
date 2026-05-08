@@ -24,12 +24,12 @@ serve(async (req: Request) => {
 
     // 1. Call Gemini 2.0 Flash
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: `A professional, high-quality cinematic thumbnail for a wellness/health theme: ${prompt}. Minimalist, clean, modern aesthetic. No text on image.` }] }],
+          contents: [{ parts: [{ text: `Generate a high-quality, professional cinematic thumbnail image for a wellness/health theme: ${prompt}. Minimalist, clean, modern aesthetic. No text on image.` }] }],
           generationConfig: {
             response_modalities: ["IMAGE"]
           }
