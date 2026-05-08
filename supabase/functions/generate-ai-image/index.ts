@@ -147,12 +147,12 @@ async function watermarkImage(imageBlob: Blob, authorId: string | null) {
     const mainImg = await Image.decode(mainImageData);
     const logoImg = await Image.decode(logoData);
     
-    // Resize logo to ~20% of main image width
-    const targetWidth = mainImg.width * 0.20;
+    // Resize logo to ~12% of main image width (smaller and more professional)
+    const targetWidth = mainImg.width * 0.12;
     logoImg.resize(targetWidth, Image.RESIZE_AUTO);
     
-    // Composite bottom-right with 20px padding
-    mainImg.composite(logoImg, mainImg.width - logoImg.width - 20, mainImg.height - logoImg.height - 20);
+    // Composite bottom-right with 40px padding to avoid edges/rounded corners
+    mainImg.composite(logoImg, mainImg.width - logoImg.width - 40, mainImg.height - logoImg.height - 40);
     
     const finalBuffer = await mainImg.encode();
     return new Blob([finalBuffer], { type: 'image/png' });
