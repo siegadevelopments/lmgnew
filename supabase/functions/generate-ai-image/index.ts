@@ -18,72 +18,82 @@ serve(async (req: Request) => {
     if (!prompt) throw new Error("Prompt is required");
 
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) throw new Error("Missing GEMINI_API_KEY secret");
-
-    console.log(`Generating AI image with Imagen 3 for prompt: ${prompt}`);
-
-    // 1. Call Imagen 3.0 via Predict endpoint
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          instances: [
-            {
-              prompt: `A professional, high-quality cinematic thumbnail for a wellness/health theme: ${prompt}. Minimalist, clean, modern aesthetic. No text on image.`
-            }
-          ],
-          parameters: {
-            sampleCount: 1,
-            aspectRatio: "16:9"
-          }
-        }),
-      }
-    );
-
-    const aiData = await response.json();
-    if (aiData.error) throw new Error(aiData.error.message);
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     
-    const prediction = aiData.predictions?.[0];
-    if (!prediction || !prediction.bytesBase64Encoded) {
-       console.error("Imagen Response:", JSON.stringify(aiData));
-       throw new Error("Imagen failed to generate an image. Check your prompt or API key permissions.");
+    let errorDetails = "";
+
+    // 1. Try Gemini (Imagen 3)
+    if (GEMINI_API_KEY) {
+      try {
+        console.log(`Attempting image generation with Gemini/Imagen 3...`);
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${GEMINI_API_KEY}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              instances: [{ prompt: `A professional, high-quality cinematic thumbnail for a wellness/health theme: ${prompt}. Minimalist, clean, modern aesthetic. No text on image.` }],
+              parameters: { sampleCount: 1, aspectRatio: "16:9" }
+            }),
+          }
+        );
+
+        if (response.ok) {
+          const aiData = await response.json();
+          const prediction = aiData.predictions?.[0];
+          if (prediction?.bytesBase64Encoded) {
+            const base64Data = prediction.bytesBase64Encoded;
+            const mimeType = prediction.mimeType || "image/png";
+            const binaryData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
+            return await uploadToSupabase(new Blob([binaryData], { type: mimeType }), folder, mimeType);
+          }
+        } else {
+          const errText = await response.text();
+          console.error("Gemini failed:", errText);
+          errorDetails += `Gemini: ${response.status} ${errText} | `;
+        }
+      } catch (e: any) {
+        console.error("Gemini exception:", e.message);
+        errorDetails += `Gemini Exception: ${e.message} | `;
+      }
     }
 
-    const base64Data = prediction.bytesBase64Encoded;
-    const mimeType = prediction.mimeType || "image/png";
-    console.log(`Successfully generated image with Imagen 3. MimeType: ${mimeType}`);
+    // 2. Try OpenAI (DALL-E 3)
+    if (OPENAI_API_KEY) {
+      try {
+        console.log(`Attempting fallback image generation with OpenAI DALL-E 3...`);
+        const response = await fetch("https://api.openai.com/v1/images/generations", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: "dall-e-3",
+            prompt: `A professional, high-quality cinematic thumbnail for a wellness/health video. Theme: ${prompt}. Minimalist, clean, modern aesthetic. No text on image.`,
+            n: 1,
+            size: "1024x1024",
+          }),
+        });
 
-    // 2. Convert base64 to Blob
-    const binaryData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
-    const blob = new Blob([binaryData], { type: mimeType });
+        if (response.ok) {
+          const aiData = await response.json();
+          const imageUrl = aiData.data[0].url;
+          const imageRes = await fetch(imageUrl);
+          const blob = await imageRes.blob();
+          return await uploadToSupabase(blob, folder, "image/png");
+        } else {
+          const errText = await response.text();
+          console.error("OpenAI failed:", errText);
+          errorDetails += `OpenAI: ${response.status} ${errText} | `;
+        }
+      } catch (e: any) {
+        console.error("OpenAI exception:", e.message);
+        errorDetails += `OpenAI Exception: ${e.message} | `;
+      }
+    }
 
-    // 3. Upload to Supabase Storage
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    );
-
-    const fileName = `${Date.now()}.png`;
-    const filePath = `${folder}/${fileName}`;
-
-    const { data, error: uploadError } = await supabaseAdmin.storage
-      .from("media")
-      .upload(filePath, blob, {
-        contentType: "image/png",
-        cacheControl: "3600",
-        upsert: true,
-      });
-
-    if (uploadError) throw uploadError;
-
-    const { data: publicUrlData } = supabaseAdmin.storage.from("media").getPublicUrl(filePath);
-
-    return new Response(JSON.stringify({ url: publicUrlData.publicUrl }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    throw new Error(`AI generation failed. ${errorDetails}`);
   } catch (error: any) {
     console.error("AI Generation Error:", error.message);
     return new Response(JSON.stringify({ error: error.message }), {
@@ -92,3 +102,33 @@ serve(async (req: Request) => {
     });
   }
 });
+
+async function uploadToSupabase(blob: Blob, folder: string, contentType: string) {
+  const supabaseAdmin = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+  );
+
+  const fileName = `${Date.now()}.png`;
+  const filePath = `${folder}/${fileName}`;
+
+  const { data, error: uploadError } = await supabaseAdmin.storage
+    .from("media")
+    .upload(filePath, blob, {
+      contentType,
+      cacheControl: "3600",
+      upsert: true,
+    });
+
+  if (uploadError) throw uploadError;
+
+  const { data: publicUrlData } = supabaseAdmin.storage.from("media").getPublicUrl(filePath);
+  return new Response(JSON.stringify({ url: publicUrlData.publicUrl }), {
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+      "Content-Type": "application/json"
+    },
+    status: 200,
+  });
+}
