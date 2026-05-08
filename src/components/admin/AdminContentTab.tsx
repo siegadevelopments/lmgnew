@@ -237,12 +237,20 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         toast.success("AI Thumbnail generated!", { id: toastId });
       }
     } catch (err: any) {
-      console.error("AI Generation Error:", err);
+      console.error("AI Generation Error details:", err);
       let message = err.message || "AI Generation failed";
       
-      // Handle Supabase Function errors specifically
-      if (err.context?.error) {
-        message = err.context.error.message || message;
+      // Try to extract the actual error message from the response body
+      if (err.context && typeof err.context.json === 'function') {
+        try {
+          const errorBody = await err.context.json();
+          if (errorBody.error) message = errorBody.error;
+        } catch (e) {
+          try {
+            const text = await err.context.text();
+            if (text) message = text;
+          } catch (e2) {}
+        }
       }
 
       if (message.includes("Failed to fetch") || message.includes("Failed to send a request")) {
