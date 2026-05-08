@@ -15,7 +15,9 @@ serve(async (req: Request) => {
 
   try {
     const { prompt, folder = "ai-thumbnails" } = await req.json();
-    if (!prompt) throw new Error("Prompt is required");
+    // Truncate prompt to stay within model limits (OpenAI limit is 4000)
+    const truncatedPrompt = prompt.substring(0, 3000);
+    if (!truncatedPrompt) throw new Error("Prompt is required");
 
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
@@ -32,7 +34,7 @@ serve(async (req: Request) => {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              instances: [{ prompt: `A professional, high-quality cinematic thumbnail for a wellness/health theme: ${prompt}. Minimalist, clean, modern aesthetic. No text on image.` }],
+              instances: [{ prompt: `A professional, high-quality cinematic thumbnail for a wellness/health theme: ${truncatedPrompt}. Minimalist, clean, modern aesthetic. No text on image.` }],
               parameters: { sampleCount: 1, aspectRatio: "16:9" }
             }),
           }
@@ -70,7 +72,7 @@ serve(async (req: Request) => {
           },
           body: JSON.stringify({
             model: "dall-e-3",
-            prompt: `A professional, high-quality cinematic thumbnail for a wellness/health video. Theme: ${prompt}. Minimalist, clean, modern aesthetic. No text on image.`,
+            prompt: `A professional, high-quality cinematic thumbnail for a wellness/health video. Theme: ${truncatedPrompt}. Minimalist, clean, modern aesthetic. No text on image.`,
             n: 1,
             size: "1024x1024",
           }),
