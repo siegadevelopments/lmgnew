@@ -17,35 +17,42 @@ serve(async (req: Request) => {
     const { prompt, folder = "ai-thumbnails" } = await req.json();
     if (!prompt) throw new Error("Prompt is required");
 
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (!OPENAI_API_KEY) throw new Error("Missing OPENAI_API_KEY secret");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) throw new Error("Missing GEMINI_API_KEY secret");
 
-    console.log(`Generating AI image for prompt: ${prompt}`);
+    console.log(`Generating AI image with Gemini for prompt: ${prompt}`);
 
-    // 1. Call OpenAI DALL-E
-    const response = await fetch("https://api.openai.com/v1/images/generations", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "dall-e-3",
-        prompt: `A professional, high-quality cinematic thumbnail for a wellness/health video. Theme: ${prompt}. Minimalist, clean, modern aesthetic. No text on image.`,
-        n: 1,
-        size: "1024x1024",
-      }),
-    });
+    // 1. Call Gemini 2.0 Flash
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `A professional, high-quality cinematic thumbnail for a wellness/health theme: ${prompt}. Minimalist, clean, modern aesthetic. No text on image.` }] }],
+          generationConfig: {
+            response_modalities: ["IMAGE"]
+          }
+        }),
+      }
+    );
 
     const aiData = await response.json();
     if (aiData.error) throw new Error(aiData.error.message);
+    
+    const imagePart = aiData.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData);
+    if (!imagePart) {
+       console.error("Gemini Response:", JSON.stringify(aiData));
+       throw new Error("Gemini failed to generate an image. Check your prompt or API key permissions.");
+    }
 
-    const imageUrl = aiData.data[0].url;
-    console.log(`Successfully generated image: ${imageUrl}`);
+    const base64Data = imagePart.inlineData.data;
+    const mimeType = imagePart.inlineData.mimeType || "image/png";
+    console.log(`Successfully generated image with mimeType: ${mimeType}`);
 
-    // 2. Download the image
-    const imageRes = await fetch(imageUrl);
-    const blob = await imageRes.blob();
+    // 2. Convert base64 to Blob
+    const binaryData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
+    const blob = new Blob([binaryData], { type: mimeType });
 
     // 3. Upload to Supabase Storage
     const supabaseAdmin = createClient(
