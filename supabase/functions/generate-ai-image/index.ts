@@ -118,7 +118,11 @@ serve(async (req: Request) => {
 });
 
 async function watermarkImage(imageBlob: Blob, authorId: string | null) {
-  if (!authorId) return imageBlob;
+  console.log(`Watermark request for authorId: ${authorId}`);
+  if (!authorId) {
+    console.log("No authorId provided, skipping watermark");
+    return imageBlob;
+  }
   
   try {
     const supabaseAdmin = createClient(
@@ -126,20 +130,36 @@ async function watermarkImage(imageBlob: Blob, authorId: string | null) {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    const { data: vendor } = await supabaseAdmin
+    const { data: vendor, error: vendorError } = await supabaseAdmin
       .from('vendor_profiles')
       .select('store_logo_url')
       .eq('id', authorId)
       .single();
     
-    if (!vendor?.store_logo_url) {
-      console.log("No vendor logo found for watermarking");
+    if (vendorError) {
+      console.error("Error fetching vendor profile:", vendorError);
       return imageBlob;
     }
+
+    let logoUrl = vendor?.store_logo_url;
     
-    console.log(`Watermarking with logo: ${vendor.store_logo_url}`);
-    const logoRes = await fetch(vendor.store_logo_url);
-    if (!logoRes.ok) return imageBlob;
+    if (!logoUrl) {
+      console.log(`No store_logo_url found for vendor ${authorId}. Using site fallback.`);
+      // Use the site's main logo as a fallback
+      logoUrl = "https://www.lifestylemedicinegateway.com/logo.png";
+    }
+
+    if (logoUrl.toLowerCase().endsWith('.svg')) {
+      console.warn("SVG logos are not supported. Using site fallback.");
+      logoUrl = "https://www.lifestylemedicinegateway.com/logo.png";
+    }
+    
+    console.log(`Fetching logo from: ${logoUrl}`);
+    const logoRes = await fetch(logoUrl);
+    if (!logoRes.ok) {
+      console.error(`Failed to fetch logo from ${logoUrl}: ${logoRes.status}`);
+      return imageBlob;
+    }
     
     const logoData = new Uint8Array(await logoRes.arrayBuffer());
     const mainImageData = new Uint8Array(await imageBlob.arrayBuffer());
@@ -151,9 +171,20 @@ async function watermarkImage(imageBlob: Blob, authorId: string | null) {
     const targetWidth = mainImg.width * 0.12;
     logoImg.resize(targetWidth, Image.RESIZE_AUTO);
     
-    // Composite bottom-right with 40px padding to avoid edges/rounded corners
-    mainImg.composite(logoImg, mainImg.width - logoImg.width - 40, mainImg.height - logoImg.height - 40);
+    // Create a small white semi-transparent background box for visibility
+    const padding = 10;
+    const bgWidth = logoImg.width + (padding * 2);
+    const bgHeight = logoImg.height + (padding * 2);
+    const bg = new Image(bgWidth, bgHeight);
+    bg.fill(0xffffff88); // Semi-transparent white
     
+    // Composite logo onto background
+    bg.composite(logoImg, padding, padding);
+    
+    // Composite the watermarked logo bottom-right with 40px padding
+    mainImg.composite(bg, mainImg.width - bg.width - 40, mainImg.height - bg.height - 40);
+    
+    console.log("Watermark applied successfully with background");
     const finalBuffer = await mainImg.encode();
     return new Blob([finalBuffer], { type: 'image/png' });
   } catch (e) {
