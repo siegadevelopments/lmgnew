@@ -10,21 +10,54 @@ export const Route = createFileRoute("/articles/")({
   loader: ({ context: { queryClient } }) => {
     return queryClient.ensureQueryData(articlesQueryOptions());
   },
-  head: () => ({
-    meta: [
-      { title: "Wellness & Lifestyle Medicine Articles | Expert Insights" },
-      {
-        name: "description",
-        content:
-          "Explore the latest research, expert tips, and news on preventative health and lifestyle medicine.",
-      },
-      { property: "og:title", content: "Wellness & Lifestyle Medicine Articles" },
-      {
-        property: "og:description",
-        content: "Read expert insights and tips for a healthier life.",
-      },
-    ],
-  }),
+  head: () => {
+    const title = "Wellness & Lifestyle Medicine Articles | Expert Insights";
+    const description = "Explore the latest research, expert tips, and news on preventative health and lifestyle medicine. Our articles help you stay informed and healthy.";
+    const imageUrl = "https://lifestylemedicinegateway.com/logo.png";
+    const canonicalUrl = "https://lifestylemedicinegateway.com/articles";
+
+    const breadcrumbLd = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://lifestylemedicinegateway.com"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Articles",
+          "item": canonicalUrl
+        }
+      ]
+    };
+
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:image", content: imageUrl },
+        { property: "og:url", content: canonicalUrl },
+        { property: "og:type", content: "website" },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: description },
+        { name: "twitter:image", content: imageUrl },
+        { name: "canonical", content: canonicalUrl },
+      ],
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify(breadcrumbLd),
+        }
+      ]
+    };
+  },
   component: ArticlesPage,
 });
 

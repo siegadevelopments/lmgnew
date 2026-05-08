@@ -13,19 +13,59 @@ export const Route = createFileRoute("/articles/$slug")({
   },
   head: ({ loaderData }) => {
     if (!loaderData) return {};
+    const title = `${decodeEntities(loaderData.title || "")} — Lifestyle Medicine Gateway`;
+    const description = loaderData.excerpt
+      ? String(loaderData.excerpt).replace(/<[^>]*>?/gm, "").trim()
+      : "Expert insights, research, and tips for preventative health and lifestyle medicine.";
+    const imageUrl = loaderData.image_url || "https://lifestylemedicinegateway.com/logo.png";
+    const canonicalUrl = `https://lifestylemedicinegateway.com/articles/${loaderData.slug}`;
+    
+    // Structured Data for Google/AI
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": decodeEntities(loaderData.title || ""),
+      "image": [imageUrl],
+      "datePublished": loaderData.created_at,
+      "dateModified": loaderData.updated_at || loaderData.created_at,
+      "author": [{
+        "@type": "Person",
+        "name": loaderData.author?.representative_name || "Georgia Erevnidis",
+        "url": "https://lifestylemedicinegateway.com"
+      }],
+      "publisher": {
+        "@type": "Organization",
+        "name": "Lifestyle Medicine Gateway",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://lifestylemedicinegateway.com/logo.png"
+        }
+      },
+      "description": description
+    };
+
     return {
       meta: [
-        { title: `${decodeEntities(loaderData.title || "")} — Lifestyle Medicine Gateway` },
-        {
-          name: "description",
-          content: loaderData.excerpt
-            ? String(loaderData.excerpt)
-                .replace(/<[^>]*>?/gm, "")
-                .trim()
-            : "Wellness article",
-        },
-        ...(loaderData.image_url ? [{ property: "og:image", content: loaderData.image_url }] : []),
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:image", content: imageUrl },
+        { property: "og:url", content: canonicalUrl },
+        { property: "og:type", content: "article" },
+        { property: "og:site_name", content: "Lifestyle Medicine Gateway" },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: description },
+        { name: "twitter:image", content: imageUrl },
+        { name: "canonical", content: canonicalUrl },
       ],
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify(jsonLd),
+        }
+      ]
     };
   },
   component: ArticlePage,
