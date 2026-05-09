@@ -1,14 +1,16 @@
 # Lifestyle Medicine Gateway Robots.txt
-# Optimized for Google and AI Search Engines
+# Optimized for Google, Bing, and AI Search Engines
 
 User-agent: *
 Allow: /
 Disallow: /admin
-Disallow: /vendor/dashboard
+Disallow: /vendor
 Disallow: /login
 Disallow: /signup
+Disallow: /profile
+Disallow: /checkout
 
-# AI Crawlers - explicitly allowed to index for better RAG/AI Search performance
+# AI Crawlers - explicitly allowed
 User-agent: GPTBot
 Allow: /
 
@@ -27,4 +29,13 @@ Allow: /
 User-agent: Claude-Web
 Allow: /
 
-Sitemap: https://lifestylemedicinegateway.com/sitemap.xml
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+Sitemap: https://www.lifestylemedicinegateway.com/sitemap.xml

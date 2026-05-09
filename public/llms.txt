@@ -1,0 +1,56 @@
+# Lifestyle Medicine Gateway — LLMs.txt
+
+> Lifestyle Medicine Gateway is a wellness marketplace and health resource platform based in Australia. It connects consumers with trusted vendors offering wellness products, professional health services, educational articles, healthy recipes, natural remedies, and scientific studies.
+
+## About
+Lifestyle Medicine Gateway is an online marketplace dedicated to lifestyle medicine — a branch of evidence-based healthcare focused on helping people adopt and sustain healthy behaviors. The platform bridges the gap between wellness product vendors, health practitioners, and consumers seeking a healthier lifestyle.
+
+## Content Types
+
+### Products
+Wellness and health products including supplements, organic foods, equipment, skincare, and more from verified vendors.
+URL pattern: /products and /products/{slug}
+
+### Services
+Professional wellness services such as coaching, consultations, yoga, reiki, and holistic health sessions bookable through the platform.
+URL pattern: /services
+
+### Articles
+Evidence-based health and wellness articles written by qualified contributors covering nutrition, mental health, fitness, and preventive care.
+URL pattern: /articles and /articles/{slug}
+
+### Recipes
+Healthy recipes focused on whole foods, plant-based nutrition, and dietary wellness aligned with lifestyle medicine principles.
+URL pattern: /recipes and /recipes/{slug}
+
+### Natural Remedies
+Traditional and evidence-informed natural remedy guides for common health concerns.
+URL pattern: /natural-remedies
+
+### Scientific Studies
+Curated summaries and references to peer-reviewed research in lifestyle medicine, nutrition science, and preventive healthcare.
+URL pattern: /studies
+
+### Videos
+Educational wellness videos from health practitioners and vendors on topics including nutrition, exercise, mindfulness, and product demonstrations.
+URL pattern: /videos
+
+### Vendors
+Approved wellness brands and health practitioners with their own storefronts on the marketplace.
+URL pattern: /vendors and /vendors/{slug}
+
+## Key Pages
+- Homepage: https://www.lifestylemedicinegateway.com/
+- Products: https://www.lifestylemedicinegateway.com/products
+- Services: https://www.lifestylemedicinegateway.com/services
+- Articles: https://www.lifestylemedicinegateway.com/articles
+- Recipes: https://www.lifestylemedicinegateway.com/recipes
+- Vendors: https://www.lifestylemedicinegateway.com/vendors
+- About: https://www.lifestylemedicinegateway.com/about
+- Contact: https://www.lifestylemedicinegateway.com/contact
+- FAQ: https://www.lifestylemedicinegateway.com/faq
+
+## Contact
+Website: https://www.lifestylemedicinegateway.com
+Email: info@lifestylemedicinegateway.com
+Location: Australia

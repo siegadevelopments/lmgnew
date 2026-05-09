@@ -2,49 +2,139 @@
  * Component to inject JSON-LD structured data.
  * This helps Google and AI search engines understand the site structure and organization.
  */
-export function SchemaOrg() {
+
+interface SchemaOrgProps {
+  type?: 'WebSite' | 'Product' | 'Article' | 'Recipe';
+  name?: string;
+  description?: string;
+  url?: string;
+  image?: string;
+  price?: number;
+  currency?: string;
+  author?: string;
+  datePublished?: string;
+  dateModified?: string;
+}
+
+export function SchemaOrg({
+  type = 'WebSite',
+  name,
+  description,
+  url,
+  image,
+  price,
+  currency = 'AUD',
+  author,
+  datePublished,
+  dateModified,
+}: SchemaOrgProps) {
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: "Lifestyle Medicine Gateway",
-    url: "https://lifestylemedicinegateway.com",
-    logo: "https://lifestylemedicinegateway.com/logo.png",
+    url: "https://www.lifestylemedicinegateway.com",
+    logo: "https://www.lifestylemedicinegateway.com/logo.png",
     sameAs: [
       "https://facebook.com/lifestylemedicinegateway",
       "https://instagram.com/lifestylemedicinegateway",
-      "https://twitter.com/lmgateway",
     ],
-    description: "A marketplace for wellness products, services, and expert advice.",
+    description: "A marketplace for wellness products, services, and expert advice in lifestyle medicine.",
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "customer service",
+      url: "https://www.lifestylemedicinegateway.com/contact",
+    },
   };
 
   const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
-    url: "https://lifestylemedicinegateway.com",
+    name: "Lifestyle Medicine Gateway",
+    url: "https://www.lifestylemedicinegateway.com",
     potentialAction: {
       "@type": "SearchAction",
       target: {
         "@type": "EntryPoint",
-        urlTemplate: "https://lifestylemedicinegateway.com/shop?q={search_term_string}",
+        urlTemplate: "https://www.lifestylemedicinegateway.com/search?q={search_term_string}",
       },
       "query-input": "required name=search_term_string",
     },
   };
 
+  const schemas: object[] = [organizationSchema, websiteSchema];
+
+  // Add page-specific schema
+  if (type === 'Product' && name) {
+    schemas.push({
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name,
+      description: description || '',
+      url: url || '',
+      image: image || '',
+      offers: {
+        "@type": "Offer",
+        price: price || 0,
+        priceCurrency: currency,
+        availability: "https://schema.org/InStock",
+        seller: {
+          "@type": "Organization",
+          name: "Lifestyle Medicine Gateway",
+        },
+      },
+    });
+  }
+
+  if (type === 'Article' && name) {
+    schemas.push({
+      "@context": "https://schema.org",
+      "@type": "Article",
+      headline: name,
+      description: description || '',
+      url: url || '',
+      image: image || '',
+      author: {
+        "@type": "Person",
+        name: author || "Lifestyle Medicine Gateway",
+      },
+      publisher: {
+        "@type": "Organization",
+        name: "Lifestyle Medicine Gateway",
+        logo: {
+          "@type": "ImageObject",
+          url: "https://www.lifestylemedicinegateway.com/logo.png",
+        },
+      },
+      datePublished: datePublished || new Date().toISOString(),
+      dateModified: dateModified || datePublished || new Date().toISOString(),
+    });
+  }
+
+  if (type === 'Recipe' && name) {
+    schemas.push({
+      "@context": "https://schema.org",
+      "@type": "Recipe",
+      name,
+      description: description || '',
+      url: url || '',
+      image: image || '',
+      author: {
+        "@type": "Person",
+        name: author || "Lifestyle Medicine Gateway",
+      },
+      datePublished: datePublished || new Date().toISOString(),
+    });
+  }
+
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
-      />
+      {schemas.map((schema, i) => (
+        <script
+          key={i}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+        />
+      ))}
     </>
   );
 }
-
-// NOTE: Using a placeholder for dangerouslySetInnerHTML key to avoid potential issues in some environments,
-// but in standard React it's __html.
-// Let's fix that.
