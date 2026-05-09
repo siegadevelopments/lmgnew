@@ -34,3 +34,6 @@ DROP POLICY IF EXISTS "Public can view all gallery items" ON public.gallery_item
 CREATE POLICY "Public can view all gallery items"
   ON public.gallery_items FOR SELECT
   USING (true);
+-- Fix category constraint to allow vendor galleries
+ALTER TABLE public.galleries DROP CONSTRAINT IF EXISTS galleries_category_check;
+ALTER TABLE public.galleries ADD CONSTRAINT galleries_category_check CHECK (category IN ('memes', 'charts', 'vendor_gallery'));
