@@ -129,6 +129,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
                 sizes="(max-width: 768px) 50vw, 25vw"
                 className="object-cover transition-transform duration-600 group-hover:scale-105"
                 loading="lazy"
+                quality={80}
               />
             </div>
           ) : (

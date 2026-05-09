@@ -92,8 +92,6 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.className}>
       <head>
-        {/* Preload the Hero LCP Image */}
-        <link rel="preload" href="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fhero-bg.6468091a.jpg&w=1920&q=75" as="image" />
       </head>
       <body>
         <Providers>

@@ -28,10 +28,10 @@ export const productBySlugQueryOptions = (slug: string) =>
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*, vendor:vendor_profiles!inner(*)")
+        .select("*, vendor_profiles!inner(*)")
         .eq("slug", slug)
         .eq("status", "published")
-        .eq("vendor:vendor_profiles.is_approved", true)
+        .eq("vendor_profiles.is_approved", true)
         .limit(1);
       if (error) throw new Error(error.message);
       return (data || []) as any[];
@@ -163,7 +163,8 @@ export const brandsQueryOptions = () =>
         .from("vendor_profiles")
         .select("id, store_name, store_description, store_logo_url, created_at")
         .eq("is_approved", true)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(100);
       if (error) throw new Error(error.message);
       return (data || []) as any[];
     },

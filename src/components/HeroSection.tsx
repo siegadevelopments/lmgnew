@@ -54,7 +54,9 @@ export function HeroSection() {
         alt="Wellness pathway through lush greenery - Lifestyle Medicine Gateway Hero"
         fill
         priority
+        fetchPriority="high"
         className="object-cover"
+        quality={90}
       />
       <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 via-foreground/60 to-foreground/30" />
 

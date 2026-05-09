@@ -43,6 +43,7 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
     ai_enabled: vendor?.ai_enabled || false,
     ai_instructions: vendor?.ai_instructions || "",
     vendor_type: vendor?.vendor_type || "products",
+    is_approved: vendor?.is_approved || false,
   });
 
   const handleChange = (
@@ -118,6 +119,7 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
         ai_enabled: (formData as any).ai_enabled,
         ai_instructions: (formData as any).ai_instructions,
         vendor_type: formData.vendor_type,
+        is_approved: (formData as any).is_approved,
         updated_at: new Date().toISOString(),
       };
 
@@ -165,6 +167,23 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6 py-4">
+          <div className="flex items-center justify-between p-4 rounded-xl border border-primary/20 bg-primary/5">
+            <div>
+              <Label htmlFor="is_approved" className="font-bold text-primary">Approved Status</Label>
+              <p className="text-[10px] text-muted-foreground italic">
+                Whether this vendor and their products are visible on the site.
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              id="is_approved"
+              name="is_approved"
+              checked={(formData as any).is_approved}
+              onChange={(e) => setFormData((prev) => ({ ...prev, is_approved: e.target.checked }))}
+              className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+            />
+          </div>
+
           <div className="space-y-4">
             <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
               Store Details

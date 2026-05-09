@@ -51,6 +51,7 @@ export function FeaturedVendorsSection() {
                           fill
                           className="rounded-full object-cover shadow-sm transition-transform group-hover:scale-110"
                           sizes="80px"
+                          quality={80}
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center rounded-full bg-wellness-muted text-2xl font-bold text-primary shadow-sm">

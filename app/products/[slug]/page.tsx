@@ -121,7 +121,7 @@ function ProductContent() {
           product_id: product.id,
           vendor_id: product.vendor_id,
           product_title: product.title,
-          vendor_name: product.vendor?.store_name,
+          vendor_name: product.vendor_profiles?.store_name,
           payment_method: "store",
         },
       });
@@ -203,12 +203,12 @@ function ProductContent() {
   return (
     <article className="py-10 sm:py-16">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
-        {product.vendor ? (
+        {product.vendor_profiles ? (
           <Link
-            href={`/vendors/${product.vendor.id}`}
+            href={`/vendors/${product.vendor_profiles.id}`}
             className="text-sm font-medium text-primary hover:underline"
           >
-            ← Back to {product.vendor.store_name}
+            ← Back to {product.vendor_profiles.store_name}
           </Link>
         ) : (
           <Link href="/products" className="text-sm font-medium text-primary hover:underline">
@@ -235,13 +235,13 @@ function ProductContent() {
               {product.title}
             </h1>
 
-            {product.vendor && (
+            {product.vendor_profiles && (
             <div className="mt-3 flex items-center gap-3">
-                {product.vendor.store_logo_url ? (
+                {product.vendor_profiles.store_logo_url ? (
                   <div className="relative h-8 w-8 overflow-hidden rounded-full border border-border">
                     <Image
-                      src={product.vendor.store_logo_url}
-                      alt={product.vendor.store_name}
+                      src={product.vendor_profiles.store_logo_url}
+                      alt={product.vendor_profiles.store_name}
                       fill
                       className="object-cover"
                       sizes="32px"
@@ -249,16 +249,16 @@ function ProductContent() {
                   </div>
                 ) : (
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                    {product.vendor.store_name.charAt(0)}
+                    {product.vendor_profiles.store_name.charAt(0)}
                   </div>
                 )}
                 <span className="text-sm text-muted-foreground">
                   Sold by{" "}
                   <Link
-                    href={`/vendors/${product.vendor.id}`}
+                    href={`/vendors/${product.vendor_profiles.id}`}
                     className="font-semibold text-primary hover:underline"
                   >
-                    {product.vendor.store_name}
+                    {product.vendor_profiles.store_name}
                   </Link>
                 </span>
                 {product.brand && (
