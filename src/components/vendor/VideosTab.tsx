@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -269,8 +269,7 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
                     const url = await uploadMedia(file, `videos/${userId}`, "video-uploads");
                     if (url) {
                       const fileName = file.name.split(".").slice(0, -1).join(".");
-                      const { data: inserted, error } = await supabase
-                        .from("videos")
+                      const { data: inserted, error } = await (supabase.from("videos") as any)
                         .insert({
                           title: fileName,
                           embed_url: url,
