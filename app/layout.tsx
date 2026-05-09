@@ -89,6 +89,7 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  console.log("LMG RootLayout v1.0.5 Loaded");
   return (
     <html lang="en" className={inter.className}>
       <head>

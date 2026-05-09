@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const productsQueryOptions = () =>
   queryOptions({
-    queryKey: ["products", "list"],
+    queryKey: ["products", "list", "v2"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
@@ -24,7 +24,7 @@ export const productsQueryOptions = () =>
 
 export const productBySlugQueryOptionsV2 = (slug: string) =>
   queryOptions({
-    queryKey: ["products", "bySlug", slug],
+    queryKey: ["products", "bySlug", "v2", slug],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
