@@ -173,7 +173,7 @@ function AdminPage() {
             supabase
               .from("vendor_profiles")
               .select(
-                "id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, created_at, updated_at, ai_enabled, ai_instructions",
+                "id, store_name, representative_name, vendor_type, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, created_at, updated_at, ai_enabled, ai_instructions",
               )
               .order("created_at", { ascending: false }),
             supabase
