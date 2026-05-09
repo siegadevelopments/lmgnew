@@ -46,9 +46,10 @@ export function HeroSection() {
         animate={{ scale: 1 }}
         transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
         src={heroBg}
-        alt="Wellness pathway through lush greenery"
+        alt="Wellness pathway through lush greenery - Lifestyle Medicine Gateway Hero"
         width={1920}
         height={1080}
+        loading="eager"
         className="absolute inset-0 h-full w-full object-cover"
       />
       <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 via-foreground/60 to-foreground/30" />

@@ -117,9 +117,10 @@ export function ProductCard({ product, className }: ProductCardProps) {
           {product.image_url ? (
             <motion.img
               src={product.image_url}
-              alt={product.title}
+              alt={`${product.title} - Lifestyle Medicine Product`}
               whileHover={{ scale: 1.05 }}
               transition={{ duration: 0.6 }}
+              loading="lazy"
               className="h-full w-full object-cover"
             />
           ) : (

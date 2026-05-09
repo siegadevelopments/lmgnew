@@ -143,7 +143,7 @@ export function Header() {
               variant="ghost"
               size="icon"
               className="text-muted-foreground"
-              aria-label="Search"
+              aria-label="Search Catalog"
             >
               <svg
                 width="18"
@@ -209,7 +209,7 @@ export function Header() {
             </DropdownMenu>
           ) : (
             <Link to="/login">
-              <Button variant="ghost" size="icon" className="text-muted-foreground">
+              <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label="Sign In">
                 <svg
                   width="18"
                   height="18"

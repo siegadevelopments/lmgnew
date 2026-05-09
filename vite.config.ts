@@ -44,4 +44,21 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "framer-motion", "lucide-react"],
+          supabase: ["@supabase/supabase-js"],
+          ui: [
+            "@radix-ui/react-tabs",
+            "@radix-ui/react-dialog",
+            "@radix-ui/react-dropdown-menu",
+            "@radix-ui/react-select",
+          ],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1000,
+  },
 });
