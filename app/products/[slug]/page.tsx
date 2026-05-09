@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
-import { productBySlugQueryOptions } from "@/lib/queries";
+import { productBySlugQueryOptionsV2 } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/hooks/use-cart";
@@ -31,7 +31,7 @@ function ProductContent() {
   const params = useParams();
   const slug = params?.slug as string;
   const router = useRouter();
-  const { data: products } = useSuspenseQuery(productBySlugQueryOptions(slug)) as any;
+  const { data: products } = useSuspenseQuery(productBySlugQueryOptionsV2(slug)) as any;
   const product = (products as any)?.[0];
   const { user } = useAuth();
 

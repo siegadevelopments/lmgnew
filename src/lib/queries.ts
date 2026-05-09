@@ -22,7 +22,7 @@ export const productsQueryOptions = () =>
     },
   });
 
-export const productBySlugQueryOptions = (slug: string) =>
+export const productBySlugQueryOptionsV2 = (slug: string) =>
   queryOptions({
     queryKey: ["products", "bySlug", slug],
     queryFn: async () => {
