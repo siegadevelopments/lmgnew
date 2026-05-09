@@ -50,7 +50,7 @@ function extractYouTubeId(url: string): string | null {
 /** Returns true if URL points to a raw video file or Supabase storage */
 function isDirectVideoUrl(url: string): boolean {
   if (!url) return false;
-  return /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url) || url.includes("supabase.co/storage");
+  return /\.(mp4|webm|ogg|mov|m4v|mts)(\?|$)/i.test(url) || url.includes("supabase.co/storage");
 }
 
 /** Build a clean YouTube embed URL */
@@ -616,13 +616,29 @@ function VendorPage() {
           {playingId && (
             <div className="relative w-full aspect-video flex items-center justify-center">
               {isDirectVideoUrl(playingId) ? (
-                <video
-                  src={playingId}
-                  controls
-                  autoPlay
-                  playsInline
-                  className="w-full h-full object-contain bg-black"
-                />
+                <>
+                  <video
+                    src={playingId}
+                    controls
+                    autoPlay
+                    playsInline
+                    crossOrigin="anonymous"
+                    className="w-full h-full object-contain bg-black"
+                  />
+                  {/\.(mts)(\?|$)/i.test(playingId) && (
+                    <div className="absolute top-4 inset-x-0 mx-auto max-w-xs bg-black/60 backdrop-blur-md p-3 rounded-lg text-[10px] text-white/80 text-center border border-white/10 z-20">
+                      Note: .MTS files may not play in all browsers. <br />
+                      If it doesn't load, please use Chrome or convert to MP4.
+                      <a 
+                        href={playingId} 
+                        download 
+                        className="block mt-2 text-primary hover:underline font-bold"
+                      >
+                        Download Video to View
+                      </a>
+                    </div>
+                  )}
+                </>
               ) : (
                 <iframe
                   src={getEmbedUrl(playingId, true)}

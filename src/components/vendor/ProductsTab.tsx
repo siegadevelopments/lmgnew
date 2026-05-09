@@ -112,9 +112,13 @@ export function ProductsTab({
       if (form.video_url) {
         // Simple way to append video, though ideally it should be a separate field
         if (!payload.content?.includes(form.video_url)) {
+          const isMts = /\.(mts)(\?|$)/i.test(form.video_url);
+          const mtsNote = isMts 
+            ? `<p style="font-size: 10px; color: #666; margin-top: 4px;">Note: .MTS files may not play in all browsers. If it doesn't load, please use Chrome or convert to MP4.</p>` 
+            : "";
           payload.content =
             (payload.content || "") +
-            `\n<video src="${form.video_url}" controls class="w-full rounded-lg mt-4"></video>`;
+            `\n<video src="${form.video_url}" controls class="w-full rounded-lg mt-4"></video>${mtsNote}`;
         }
       }
 

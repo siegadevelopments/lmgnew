@@ -152,9 +152,8 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
 
   const handlePublish = async (id: any) => {
     try {
-      const { error } = await supabase
-        .from(activeType)
-        .update({ status: "published" } as any)
+      const { error } = await (supabase.from(activeType) as any)
+        .update({ status: "published" })
         .eq("id", id);
 
       if (error) throw error;
@@ -797,7 +796,29 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
             <DialogTitle>Live Preview: {title || "Untitled"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-6 py-4">
-            {imageUrl && (
+            {activeType === "videos" && embedUrl ? (
+              <div className="aspect-video w-full rounded-xl overflow-hidden border bg-black relative">
+                <video
+                  src={embedUrl}
+                  controls
+                  className="w-full h-full object-contain"
+                  crossOrigin="anonymous"
+                />
+                {/\.(mts)(\?|$)/i.test(embedUrl) && (
+                  <div className="absolute top-4 inset-x-0 mx-auto max-w-xs bg-black/60 backdrop-blur-md p-3 rounded-lg text-[10px] text-white/80 text-center border border-white/10 z-10">
+                    Note: .MTS files may not play in all browsers. <br />
+                    If it doesn't load, please use Chrome or convert to MP4.
+                    <a 
+                      href={embedUrl} 
+                      download 
+                      className="block mt-2 text-primary hover:underline font-bold"
+                    >
+                      Download Video to View
+                    </a>
+                  </div>
+                )}
+              </div>
+            ) : imageUrl && (
               <div className="aspect-video w-full rounded-xl overflow-hidden border">
                 <img src={imageUrl} className="w-full h-full object-cover" alt="Preview" />
               </div>

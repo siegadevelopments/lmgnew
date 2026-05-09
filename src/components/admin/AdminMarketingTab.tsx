@@ -23,6 +23,7 @@ import {
   X,
   Facebook,
   Instagram,
+  Megaphone,
   Zap,
   BarChart3,
   RefreshCw,
@@ -118,8 +119,8 @@ export function AdminMarketingTab() {
       ]);
 
       const combined = [
-        ...(articles.data || []).map(a => ({ ...a, type: "Article" })),
-        ...(recipes.data || []).map(r => ({ ...r, type: "Recipe" })),
+        ...(articles.data || []).map((a: any) => ({ ...a, type: "Article" })),
+        ...(recipes.data || []).map((r: any) => ({ ...r, type: "Recipe" })),
       ];
       setContentList(combined);
     } catch (err) {

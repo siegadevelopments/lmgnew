@@ -301,12 +301,20 @@ function VideosPage() {
                     controls
                     autoPlay
                     playsInline
+                    crossOrigin="anonymous"
                     className="w-full h-full object-contain bg-black"
                   />
-                  {fullscreenVideo.toLowerCase().endsWith(".mts") && (
+                  {/\.(mts)(\?|$)/i.test(fullscreenVideo) && (
                     <div className="absolute top-4 inset-x-0 mx-auto max-w-xs bg-black/60 backdrop-blur-md p-3 rounded-lg text-[10px] text-white/80 text-center border border-white/10">
                       Note: .MTS files may not play in all browsers. <br />
                       If it doesn't load, please use Chrome or convert to MP4.
+                      <a 
+                        href={fullscreenVideo} 
+                        download 
+                        className="block mt-2 text-primary hover:underline font-bold"
+                      >
+                        Download Video to View
+                      </a>
                     </div>
                   )}
                 </>
