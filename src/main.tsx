@@ -5,7 +5,7 @@ import "./styles.css";
 import { registerSW } from "virtual:pwa-register";
 
 // Register PWA service worker
-registerSW({ immediate: true });
+registerSW();
 
 const router = getRouter();
 

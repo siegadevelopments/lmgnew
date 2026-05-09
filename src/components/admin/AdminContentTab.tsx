@@ -1080,6 +1080,24 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
           </div>
         )}
       </div>
+      {uploadingVideo && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="flex flex-col items-center gap-4 p-8 bg-card border border-border shadow-2xl rounded-2xl max-w-sm w-full mx-4">
+            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <Loader2 className="h-8 w-8 text-primary animate-spin" />
+            </div>
+            <div className="text-center">
+              <h3 className="text-xl font-bold">Bulk Uploading Videos</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                {videoUploadProgress || "Preparing files..."}
+              </p>
+              <p className="text-[10px] text-primary/70 font-medium uppercase tracking-widest mt-4">
+                Please do not close or refresh this page
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
