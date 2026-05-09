@@ -104,7 +104,7 @@ function SearchContent() {
           type="search"
           placeholder="Search products, articles, recipes..."
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
           className="h-14 pl-12 text-lg rounded-xl border-2 focus-visible:ring-2"
         />
         {loading && (

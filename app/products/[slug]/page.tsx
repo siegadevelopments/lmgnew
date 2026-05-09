@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { ProductCard } from "@/components/ProductCard";
 import { BookingCalendar } from "@/components/BookingCalendar";
+import Image from "next/image";
 import {
   Dialog,
   DialogContent,
@@ -30,8 +31,8 @@ function ProductContent() {
   const params = useParams();
   const slug = params?.slug as string;
   const router = useRouter();
-  const { data: products } = useSuspenseQuery(productBySlugQueryOptions(slug));
-  const product = products?.[0];
+  const { data: products } = useSuspenseQuery(productBySlugQueryOptions(slug)) as any;
+  const product = (products as any)?.[0];
   const { user } = useAuth();
 
   const { addItem } = useCart();
@@ -481,7 +482,7 @@ function ProductContent() {
                       required
                       placeholder="Summary of your experience"
                       value={reviewTitle}
-                      onChange={(e) => setReviewTitle(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setReviewTitle(e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
@@ -491,7 +492,7 @@ function ProductContent() {
                       placeholder="What did you like or dislike?"
                       rows={4}
                       value={reviewContent}
-                      onChange={(e) => setReviewContent(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReviewContent(e.target.value)}
                     />
                   </div>
                   <Button type="submit" disabled={isSubmitting} className="w-full">
@@ -596,7 +597,7 @@ function ProductContent() {
                     id="customer-phone"
                     placeholder="+1234567890"
                     value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomerPhone(e.target.value)}
                     className="rounded-xl h-12 shadow-inner"
                   />
                   <p className="text-[10px] text-muted-foreground mt-2 text-center">

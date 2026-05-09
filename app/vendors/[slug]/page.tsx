@@ -707,7 +707,7 @@ export default function VendorPage() {
         onOpenChange={setIsChatOpen}
       />
 
-      <Dialog open={!!playingId} onOpenChange={(open) => !open && setPlayingId(null)}>
+      <Dialog open={!!playingId} onOpenChange={(open: boolean) => !open && setPlayingId(null)}>
         <DialogContent className="max-w-5xl p-0 bg-black border-none shadow-2xl overflow-hidden rounded-xl">
           {playingId && (
             <div className="relative w-full aspect-video flex items-center justify-center">
