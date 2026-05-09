@@ -9,16 +9,18 @@ export const productsQueryOptions = () =>
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*, vendor_profiles!inner(store_name, is_approved)")
-        .eq("status", "published")
-        .eq("vendor_profiles.is_approved", true);
+        .select("*, vendor_profiles(store_name, is_approved)")
+        .eq("status", "published");
         
       if (error) throw new Error(error.message);
       
-      // Shuffle the results for the "randomized" shop feel
-      const shuffled = (data || []).sort(() => Math.random() - 0.5);
+      // Filter for approved vendors manually for maximum compatibility
+      const filtered = (data || []).filter((p: any) => p.vendor_profiles?.is_approved);
       
-      return shuffled as any[];
+      // Shuffle the results for the "randomized" shop feel
+      const shuffled = filtered.sort(() => Math.random() - 0.5);
+      
+      return shuffled;
     },
   });
 
@@ -28,13 +30,17 @@ export const productBySlugQueryOptionsV2 = (slug: string) =>
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*, vendor_profiles!inner(*)")
+        .select("*, vendor_profiles(*)")
         .eq("slug", slug)
         .eq("status", "published")
-        .eq("vendor_profiles.is_approved", true)
         .limit(1);
+
       if (error) throw new Error(error.message);
-      return (data || []) as any[];
+      
+      // Filter for approved vendors
+      const filtered = (data || []).filter((p: any) => p.vendor_profiles?.is_approved);
+      
+      return filtered;
     },
   });
 
