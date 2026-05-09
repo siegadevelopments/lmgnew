@@ -62,8 +62,8 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
 
   // --- Auto-Save Draft Logic ---
   useEffect(() => {
-    // 1. Load drafts on mount
-    const draft = localStorage.getItem("admin_content_draft");
+    // 1. Load drafts on mount and tab switch
+    const draft = localStorage.getItem(`admin_content_draft_${activeType}`);
     if (draft) {
       try {
         const parsed = JSON.parse(draft);
@@ -71,24 +71,37 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         if (parsed.content) setContent(parsed.content);
         if (parsed.imageUrl) setImageUrl(parsed.imageUrl);
         if (parsed.embedUrl) setEmbedUrl(parsed.embedUrl);
-        if (parsed.activeType) setActiveType(parsed.activeType);
         if (parsed.selectedVendorId) setSelectedVendorId(parsed.selectedVendorId);
-        if (parsed.editingId) setEditingId(parsed.editingId);
         if (parsed.category) setCategory(parsed.category);
+        if (parsed.prepTime) setPrepTime(parsed.prepTime);
+        if (parsed.cookTime) setCookTime(parsed.cookTime);
       } catch (e) {
         console.error("Failed to parse draft", e);
       }
+    } else {
+      // If no draft for this type, clear the form (but don't clear other drafts)
+      setTitle("");
+      setContent("");
+      setImageUrl("");
+      setEmbedUrl("");
+      setPrepTime("");
+      setCookTime("");
+      setCategory("General");
     }
-  }, []);
+  }, [activeType]);
 
   useEffect(() => {
     // 2. Save drafts on every change
-    const draft = { title, content, imageUrl, embedUrl, activeType, selectedVendorId, editingId, category };
-    localStorage.setItem("admin_content_draft", JSON.stringify(draft));
-  }, [title, content, imageUrl, embedUrl, activeType, selectedVendorId, editingId, category]);
+    if (editingId) return; // Don't save drafts while editing existing items
+    
+    const draft = { 
+      title, content, imageUrl, embedUrl, selectedVendorId, category, prepTime, cookTime 
+    };
+    localStorage.setItem(`admin_content_draft_${activeType}`, JSON.stringify(draft));
+  }, [title, content, imageUrl, embedUrl, activeType, selectedVendorId, category, prepTime, cookTime, editingId]);
 
-  const clearDraft = () => {
-    localStorage.removeItem("admin_content_draft");
+  const clearDraft = (type = activeType) => {
+    localStorage.removeItem(`admin_content_draft_${type}`);
   };
 
   useEffect(() => {
@@ -98,8 +111,9 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       setLoading(true);
       setItems([]); // Clear previous items to avoid "ghost content"
       
-      // Reset form when switching tabs to prevent ID leakage
-      resetForm();
+      // We no longer call resetForm() here because it clears the draft.
+      // The draft loading useEffect handles form state when activeType changes.
+      setEditingId(null); 
 
       try {
         const { data, error } = await (supabase.from(activeType) as any)
