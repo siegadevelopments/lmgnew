@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { randomMemeQueryOptions } from "@/lib/queries";
+import Image from "next/image";
 
 export function MantraAndPositivitySection() {
   const { data: meme } = useQuery(randomMemeQueryOptions()) as any;
@@ -52,10 +53,12 @@ export function MantraAndPositivitySection() {
             </div>
             <div className="flex-1 bg-muted relative min-h-[300px]">
               {meme ? (
-                <img
+                <Image
                   src={meme.image_url}
                   alt="Daily positivity meme"
-                  className="absolute inset-0 h-full w-full object-cover"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 450px"
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center p-8 text-center text-muted-foreground">
@@ -69,7 +72,7 @@ export function MantraAndPositivitySection() {
                 Let today be your best yet!
               </p>
               <Link
-                to="/memes"
+                href="/memes"
                 className="mt-4 inline-flex items-center text-sm font-semibold text-primary hover:underline"
               >
                 See more memes →

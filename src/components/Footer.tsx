@@ -1,4 +1,6 @@
-import { Link } from "@tanstack/react-router";
+'use client'
+
+import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -154,7 +156,7 @@ export function Footer() {
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-6">
           {/* Brand + Newsletter */}
           <div className="lg:col-span-2">
-            <Link to="/" className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
                 <svg
                   width="16"
@@ -278,7 +280,7 @@ export function Footer() {
                 {links.map((link) => (
                   <li key={link.label}>
                     <Link
-                      to={link.to}
+                      href={link.to}
                       className="text-xs text-muted-foreground transition-colors hover:text-foreground"
                     >
                       {link.label}
@@ -296,25 +298,25 @@ export function Footer() {
           </p>
           <div className="flex gap-4">
             <Link
-              to="/privacy"
+              href="/privacy"
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               Privacy
             </Link>
             <Link
-              to="/terms"
+              href="/terms"
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               Terms
             </Link>
             <Link
-              to="/refund-policy"
+              href="/refund-policy"
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               Refunds
             </Link>
             <Link
-              to="/contact"
+              href="/contact"
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               Contact

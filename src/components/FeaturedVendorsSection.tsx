@@ -1,7 +1,8 @@
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { brandsQueryOptions } from "@/lib/queries";
 import { Skeleton } from "@/components/ui/skeleton";
+import Image from "next/image";
 
 export function FeaturedVendorsSection() {
   const { data: vendors, isLoading } = useQuery(brandsQueryOptions());
@@ -19,7 +20,7 @@ export function FeaturedVendorsSection() {
             <p className="mt-2 text-sm text-muted-foreground">Trusted brands and practitioners</p>
           </div>
           <Link
-            to="/vendors"
+            href="/vendors"
             className="hidden text-sm font-medium text-primary hover:underline sm:block"
           >
             View all vendors →
@@ -38,19 +39,21 @@ export function FeaturedVendorsSection() {
               : [...(vendors || []), ...(vendors || [])].map((vendor, idx) => (
                   <Link
                     key={`${vendor.id}-${idx}`}
-                    to="/vendors/$slug"
-                    params={{ slug: vendor.id }}
+                    href={`/vendors/${vendor.id}`}
                     className="group flex flex-col items-center gap-4 transition-all duration-300 hover:-translate-y-2 shrink-0"
                   >
-                    <div className="relative">
+                    <div className="relative h-20 w-20">
                       <div className="absolute -inset-2 rounded-full bg-primary/5 opacity-0 transition-opacity group-hover:opacity-100" />
                       {vendor.store_logo_url ? (
-                        <img
+                        <Image
                           src={vendor.store_logo_url}
-                          className="h-20 w-20 rounded-full object-cover shadow-sm transition-transform group-hover:scale-110"
+                          alt={vendor.store_name}
+                          fill
+                          className="rounded-full object-cover shadow-sm transition-transform group-hover:scale-110"
+                          sizes="80px"
                         />
                       ) : (
-                        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-wellness-muted text-2xl font-bold text-primary shadow-sm">
+                        <div className="flex h-full w-full items-center justify-center rounded-full bg-wellness-muted text-2xl font-bold text-primary shadow-sm">
                           {vendor.store_name.charAt(0)}
                         </div>
                       )}
@@ -64,7 +67,7 @@ export function FeaturedVendorsSection() {
         </div>
 
         <div className="mt-6 text-center sm:hidden">
-          <Link to="/vendors" className="text-sm font-medium text-primary hover:underline">
+          <Link href="/vendors" className="text-sm font-medium text-primary hover:underline">
             View all vendors →
           </Link>
         </div>

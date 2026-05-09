@@ -1,4 +1,8 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+'use client'
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
@@ -25,7 +29,7 @@ interface ProductCardProps {
 export function ProductCard({ product, className }: ProductCardProps) {
   const { addItem } = useCart();
   const { user } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [isAdding, setIsAdding] = useState(false);
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -38,7 +42,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
         action: {
           label: "Register",
           onClick: () =>
-            navigate({ to: "/signup", search: { redirect: window.location.pathname } }),
+            router.push(`/signup?redirect=${encodeURIComponent(window.location.pathname)}`),
         },
       });
       return;
@@ -76,8 +80,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
       className="h-full"
     >
       <Link
-        to="/products/$slug"
-        params={{ slug: product.slug }}
+        href={`/products/${product.slug}`}
         className={cn(
           "group flex flex-col h-full overflow-hidden bg-card transition-all hover:shadow-xl border border-border/50 hover:border-primary/30 relative",
           className,
@@ -99,8 +102,11 @@ export function ProductCard({ product, className }: ProductCardProps) {
             >
               <div className="w-40 h-40">
                 {product.image_url ? (
-                  <img
+                  <Image
                     src={product.image_url}
+                    alt={product.title}
+                    width={160}
+                    height={160}
                     className="h-full w-full object-cover rounded-xl shadow-2xl ring-4 ring-primary"
                   />
                 ) : (
@@ -115,14 +121,16 @@ export function ProductCard({ product, className }: ProductCardProps) {
 
         <div className="relative aspect-square overflow-hidden bg-muted">
           {product.image_url ? (
-            <motion.img
-              src={product.image_url}
-              alt={`${product.title} - Lifestyle Medicine Product`}
-              whileHover={{ scale: 1.05 }}
-              transition={{ duration: 0.6 }}
-              loading="lazy"
-              className="h-full w-full object-cover"
-            />
+            <div className="relative h-full w-full">
+              <Image
+                src={product.image_url}
+                alt={`${product.title} - Lifestyle Medicine Product`}
+                fill
+                sizes="(max-width: 768px) 50vw, 25vw"
+                className="object-cover transition-transform duration-600 group-hover:scale-105"
+                loading="lazy"
+              />
+            </div>
           ) : (
             <div className="flex h-full items-center justify-center text-muted-foreground bg-muted/50">
               <ShoppingCart className="h-10 w-10 opacity-10" />

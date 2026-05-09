@@ -1,7 +1,8 @@
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { recipesQueryOptions } from "@/lib/queries";
 import { Skeleton } from "@/components/ui/skeleton";
+import Image from "next/image";
 
 export function FeaturedRecipesSection() {
   const { data, isLoading } = useQuery({
@@ -24,7 +25,7 @@ export function FeaturedRecipesSection() {
             </p>
           </div>
           <Link
-            to="/recipes"
+            href="/recipes"
             className="hidden text-sm font-medium text-primary hover:underline sm:block"
           >
             View all recipes →
@@ -48,17 +49,18 @@ export function FeaturedRecipesSection() {
             : data?.map((recipe) => (
                 <Link
                   key={recipe.id}
-                  to="/recipes/$slug"
-                  params={{ slug: recipe.slug }}
+                  href={`/recipes/${recipe.slug}`}
                   className="flex-none w-[42%] sm:w-auto group block rounded-2xl border border-border bg-card p-4 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-card"
                 >
                   <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
                     {recipe.image_url && (
-                      <img
+                      <Image
                         src={recipe.image_url}
                         alt={recipe.title}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
                         loading="lazy"
+                        sizes="(max-width: 768px) 42vw, 25vw"
                       />
                     )}
                     {(recipe.prep_time || recipe.cook_time) && (
@@ -80,7 +82,7 @@ export function FeaturedRecipesSection() {
         </div>
 
         <div className="mt-6 text-center sm:hidden">
-          <Link to="/recipes" className="text-sm font-medium text-primary hover:underline">
+          <Link href="/recipes" className="text-sm font-medium text-primary hover:underline">
             View all recipes →
           </Link>
         </div>

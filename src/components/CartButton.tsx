@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { useCart } from "@/hooks/use-cart";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, parseISO } from "date-fns";
+import Image from "next/image";
 
 export function CartButton() {
   const { items, totalItems, totalPrice, removeItem, updateQuantity } = useCart();
@@ -79,7 +80,7 @@ export function CartButton() {
             </svg>
             <p className="text-muted-foreground">Your cart is empty</p>
             <Button asChild onClick={() => setOpen(false)}>
-              <Link to="/products">Continue Shopping</Link>
+              <Link href="/products">Continue Shopping</Link>
             </Button>
           </div>
         ) : (
@@ -89,16 +90,19 @@ export function CartButton() {
                 {items.map((item) => (
                   <div key={item.id} className="flex gap-4">
                     {item.image && (
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="h-16 w-16 rounded-md object-cover"
-                      />
+                      <div className="h-16 w-16 relative rounded-md overflow-hidden shrink-0">
+                        <Image
+                          src={item.image}
+                          alt={item.name}
+                          fill
+                          className="object-cover"
+                          sizes="64px"
+                        />
+                      </div>
                     )}
                     <div className="flex-1">
                       <Link
-                        to="/products/$slug"
-                        params={{ slug: item.slug }}
+                        href={`/products/${item.slug}`}
                         className="font-medium hover:text-primary"
                         onClick={() => setOpen(false)}
                       >
@@ -148,7 +152,7 @@ export function CartButton() {
                 <span className="text-lg font-bold">${totalPrice.toFixed(2)}</span>
               </div>
               <Button className="mt-4 w-full" size="lg" asChild onClick={() => setOpen(false)}>
-                <Link to="/checkout">Checkout</Link>
+                <Link href="/checkout">Checkout</Link>
               </Button>
             </div>
           </>

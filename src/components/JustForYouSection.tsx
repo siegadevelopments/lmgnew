@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { featuredProductsQueryOptions } from "@/lib/queries";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,7 +22,7 @@ export function JustForYouSection() {
             </p>
           </div>
           <Link
-            to="/products"
+            href="/products"
             className="hidden text-sm font-medium text-primary hover:underline sm:block"
           >
             View all products →
@@ -51,7 +51,7 @@ export function JustForYouSection() {
         </div>
 
         <div className="mt-6 text-center sm:hidden">
-          <Link to="/products" className="text-sm font-medium text-primary hover:underline">
+          <Link href="/products" className="text-sm font-medium text-primary hover:underline">
             View all products →
           </Link>
         </div>

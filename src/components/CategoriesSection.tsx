@@ -1,4 +1,4 @@
-import { useNavigate } from "@tanstack/react-router";
+import { useRouter } from "next/navigation";
 
 const categories = [
   { name: "Nutrition", icon: "🥗", count: 142 },
@@ -12,10 +12,10 @@ const categories = [
 ];
 
 export function CategoriesSection() {
-  const navigate = useNavigate();
+  const router = useRouter();
 
   const handleCategoryClick = (category: string) => {
-    navigate({ to: "/products", search: { q: "", category, page: 1 } });
+    router.push(`/products?category=${encodeURIComponent(category)}`);
   };
 
   return (

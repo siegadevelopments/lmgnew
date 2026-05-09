@@ -1,7 +1,8 @@
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { articlesQueryOptions } from "@/lib/queries";
 import { Skeleton } from "@/components/ui/skeleton";
+import Image from "next/image";
 
 export function LatestArticlesSection() {
   const { data, isLoading } = useQuery({
@@ -22,7 +23,7 @@ export function LatestArticlesSection() {
             </p>
           </div>
           <Link
-            to="/articles"
+            href="/articles"
             className="hidden text-sm font-medium text-primary hover:underline sm:block"
           >
             View all articles →
@@ -47,17 +48,18 @@ export function LatestArticlesSection() {
             : data?.map((post) => (
                 <Link
                   key={post.id}
-                  to="/articles/$slug"
-                  params={{ slug: post.slug }}
+                  href={`/articles/${post.slug}`}
                   className="flex-none w-[42%] sm:w-auto group overflow-hidden rounded-xl border border-border bg-card shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-card"
                 >
-                  <div className="aspect-video overflow-hidden bg-muted">
+                  <div className="aspect-video overflow-hidden bg-muted relative">
                     {post.image_url ? (
-                      <img
+                      <Image
                         src={post.image_url}
                         alt={post.title}
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
                         loading="lazy"
+                        sizes="(max-width: 768px) 42vw, 25vw"
                       />
                     ) : null}
                   </div>
@@ -74,7 +76,7 @@ export function LatestArticlesSection() {
         </div>
 
         <div className="mt-6 text-center sm:hidden">
-          <Link to="/articles" className="text-sm font-medium text-primary hover:underline">
+          <Link href="/articles" className="text-sm font-medium text-primary hover:underline">
             View all articles →
           </Link>
         </div>

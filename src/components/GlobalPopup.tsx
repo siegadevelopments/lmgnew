@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { Sparkles, Mail, X, ArrowRight, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
-import { useNavigate } from "@tanstack/react-router";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 interface Popup {
   id: string;
@@ -30,7 +31,7 @@ export function GlobalPopup() {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const navigate = useNavigate();
+  const router = useRouter();
 
   useEffect(() => {
     async function checkPopups() {
@@ -69,7 +70,7 @@ export function GlobalPopup() {
     }
 
     checkPopups();
-  }, [window.location.pathname, window.location.search]);
+  }, [typeof window !== 'undefined' ? window.location.pathname : '', typeof window !== 'undefined' ? window.location.search : '']);
 
   const handleDismiss = () => {
     setIsOpen(false);
@@ -88,7 +89,7 @@ export function GlobalPopup() {
       if (popup.cta_url.startsWith("http")) {
         window.open(popup.cta_url, "_blank");
       } else {
-        navigate({ to: popup.cta_url as any });
+        router.push(popup.cta_url);
       }
     } else if (popup.cta_type === "email") {
       if (!email) return;
@@ -117,7 +118,12 @@ export function GlobalPopup() {
         <div className="flex flex-col">
           {popup.image_url && (
             <div className="relative h-64 w-full">
-              <img src={popup.image_url} alt={popup.title} className="h-full w-full object-cover" />
+              <Image 
+                src={popup.image_url} 
+                alt={popup.title} 
+                fill
+                className="h-full w-full object-cover" 
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
               <button
                 onClick={handleDismiss}

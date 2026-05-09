@@ -1,22 +1,27 @@
+'use client'
+
 import { useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import heroBg from "@/assets/hero-bg.jpg";
 import { motion, Variants } from "framer-motion";
 
+const MotionImage = motion(Image);
+
 export function HeroSection() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate({ to: "/search", search: { q: searchQuery } });
+      router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
     }
   };
 
   const handleCategoryClick = (category: string) => {
-    navigate({ to: "/products", search: { q: "", category, page: 1 } });
+    router.push(`/products?category=${encodeURIComponent(category)}`);
   };
 
   const containerVariants: Variants = {
@@ -41,16 +46,15 @@ export function HeroSection() {
 
   return (
     <section className="relative flex min-h-[540px] items-center overflow-hidden sm:min-h-[600px]">
-      <motion.img
+      <MotionImage
         initial={{ scale: 1.1 }}
         animate={{ scale: 1 }}
         transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
         src={heroBg}
         alt="Wellness pathway through lush greenery - Lifestyle Medicine Gateway Hero"
-        width={1920}
-        height={1080}
-        loading="eager"
-        className="absolute inset-0 h-full w-full object-cover"
+        fill
+        priority
+        className="object-cover"
       />
       <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 via-foreground/60 to-foreground/30" />
 

@@ -1,4 +1,7 @@
-import { Link, useRouter } from "@tanstack/react-router";
+'use client'
+
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect } from "react";
 import { CartButton } from "@/components/CartButton";
@@ -36,37 +39,40 @@ export function Header() {
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const { user, role, loading, signOut } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   // Close mobile menu on route change
   useEffect(() => {
     setMobileOpen(false);
-  }, [router.state.location.pathname]);
+  }, [pathname]);
 
   const handleBecomeVendor = () => {
     if (user) {
-      router.navigate({ to: "/vendor" });
+      router.push("/vendor");
     } else {
-      router.navigate({ to: "/signup", search: { redirect: "/vendor" } as any });
+      router.push("/signup?redirect=/vendor");
     }
     setMobileOpen(false);
   };
 
   const handleSignOut = async () => {
     await signOut();
-    router.navigate({ to: "/" });
+    router.push("/");
   };
-
-  // Close mobile menu on route change
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [router.state.location.pathname]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-lg">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
-        <Link to="/" className="flex items-center">
-          <img src="/logo.png" alt="Lifestyle Medicine Gateway" className="h-10 w-auto" />
+        <Link href="/" className="flex items-center">
+          <Image 
+            src="/logo.png" 
+            alt="Lifestyle Medicine Gateway" 
+            width={160} 
+            height={40} 
+            className="h-10 w-auto" 
+            priority
+          />
         </Link>
 
         {/* Desktop Nav */}
@@ -81,7 +87,7 @@ export function Header() {
               {exploreItems.map((item) => (
                 <DropdownMenuItem key={item.label} asChild>
                   <Link
-                    to={item.to}
+                    href={item.to}
                     className="w-full cursor-pointer hover:bg-accent focus:bg-accent outline-none block px-3 py-2 rounded-sm outline-none w-full"
                   >
                     {item.label}
@@ -92,26 +98,24 @@ export function Header() {
           </DropdownMenu>
 
           {topNavItems.map((item) => {
-            const isProductsPath = router.state.location.pathname.startsWith("/products");
-            const match = router.state.matches.find((m) => m.routeId === "/products/$slug");
-            const loaderData = match?.loaderData as any;
-            const isServiceDetail = isProductsPath && loaderData?.product_type === "service";
+            const isProductsPath = pathname.startsWith("/products");
+            const isServiceDetail = false;
 
             let isActive = false;
             if ((item.to as string) === "/") {
-              isActive = router.state.location.pathname === "/";
+              isActive = pathname === "/";
             } else if (item.to === "/services") {
-              isActive = router.state.location.pathname.startsWith("/services") || isServiceDetail;
+              isActive = pathname.startsWith("/services") || isServiceDetail;
             } else if (item.to === "/products") {
               isActive = isProductsPath && !isServiceDetail;
             } else {
-              isActive = router.state.location.pathname.startsWith(item.to);
+              isActive = pathname.startsWith(item.to);
             }
 
             return (
               <Link
                 key={item.label}
-                to={item.to}
+                href={item.to}
                 className={`relative rounded-md px-3 py-2 text-sm font-medium transition-colors hover:text-foreground ${isActive ? "text-foreground bg-accent/50" : "text-muted-foreground"}`}
               >
                 {item.label}
@@ -123,7 +127,7 @@ export function Header() {
         {/* Actions */}
         <div className="flex items-center gap-2">
           {!loading && user && (role === "vendor" || role === "admin") ? (
-            <Link to="/vendor">
+            <Link href="/vendor">
               <Button variant="wellness" size="sm" className="hidden sm:inline-flex">
                 Dashboard
               </Button>
@@ -138,7 +142,7 @@ export function Header() {
               Become a Vendor
             </Button>
           )}
-          <Link to="/search">
+          <Link href="/search">
             <Button
               variant="ghost"
               size="icon"
@@ -180,20 +184,20 @@ export function Header() {
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to="/profile">My Account</Link>
+                  <Link href="/profile">My Account</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/profile">My Wishlist</Link>
+                  <Link href="/profile">My Wishlist</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to="/vendor">Vendor Dashboard</Link>
+                  <Link href="/vendor">Vendor Dashboard</Link>
                 </DropdownMenuItem>
                 {role === "admin" ||
                 user?.email === "siegaej@gmail.com" ||
                 user?.email === "siegadevelopments@gmail.com" ||
                 user?.email === "siegapython@gmail.com" ? (
                   <DropdownMenuItem asChild>
-                    <Link to="/admin" className="text-primary font-bold">
+                    <Link href="/admin" className="text-primary font-bold">
                       Platform Admin
                     </Link>
                   </DropdownMenuItem>
@@ -208,7 +212,7 @@ export function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <Link to="/login">
+            <Link href="/login">
               <Button variant="ghost" size="icon" className="text-muted-foreground" aria-label="Sign In">
                 <svg
                   width="18"
@@ -270,10 +274,8 @@ export function Header() {
           {exploreItems.map((item) => (
             <Link
               key={item.label}
-              to={item.to}
-              className="rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors [&.active]:text-primary [&.active]:bg-primary/10 ml-2"
-              activeOptions={{ exact: (item.to as string) === "/" }}
-              activeProps={{ className: "active" }}
+              href={item.to}
+              className={`rounded-md px-3 py-2.5 text-sm font-medium transition-colors ml-2 ${pathname === item.to ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
               onClick={() => setMobileOpen(false)}
             >
               {item.label}
@@ -281,26 +283,24 @@ export function Header() {
           ))}
           <div className="h-px bg-border/50 my-2"></div>
           {topNavItems.map((item) => {
-            const isProductsPath = router.state.location.pathname.startsWith("/products");
-            const match = router.state.matches.find((m) => m.routeId === "/products/$slug");
-            const loaderData = match?.loaderData as any;
-            const isServiceDetail = isProductsPath && loaderData?.product_type === "service";
+            const isProductsPath = pathname.startsWith("/products");
+            const isServiceDetail = false;
 
             let isActive = false;
             if ((item.to as string) === "/") {
-              isActive = router.state.location.pathname === "/";
+              isActive = pathname === "/";
             } else if (item.to === "/services") {
-              isActive = router.state.location.pathname.startsWith("/services") || isServiceDetail;
+              isActive = pathname.startsWith("/services") || isServiceDetail;
             } else if (item.to === "/products") {
               isActive = isProductsPath && !isServiceDetail;
             } else {
-              isActive = router.state.location.pathname.startsWith(item.to);
+              isActive = pathname.startsWith(item.to);
             }
 
             return (
               <Link
                 key={item.label}
-                to={item.to}
+                href={item.to}
                 className={`relative rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${isActive ? "text-primary bg-primary/10" : "text-foreground hover:bg-accent hover:text-foreground"}`}
                 onClick={() => setMobileOpen(false)}
               >
@@ -313,7 +313,7 @@ export function Header() {
             user?.email === "siegadevelopments@gmail.com" ||
             user?.email === "siegapython@gmail.com") && (
             <Link
-              to="/admin"
+              href="/admin"
               className="rounded-md px-3 py-2.5 text-sm font-bold text-primary hover:bg-primary/10 transition-colors"
               onClick={() => setMobileOpen(false)}
             >
@@ -321,7 +321,7 @@ export function Header() {
             </Link>
           )}
           {!loading && user && (role === "vendor" || role === "admin") ? (
-            <Link to="/vendor">
+            <Link href="/vendor">
               <Button
                 variant="wellness"
                 size="sm"

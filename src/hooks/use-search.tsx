@@ -1,8 +1,8 @@
 import { useState, useCallback } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useRouter } from "next/navigation";
 
 export function useSearch() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleSearch = useCallback(
@@ -11,22 +11,16 @@ export function useSearch() {
       if (!q.trim()) return;
 
       // Navigate to products with search query
-      navigate({
-        to: "/products",
-        search: { q, page: 1, category: "" },
-      });
+      router.push(`/products?q=${encodeURIComponent(q)}&page=1`);
     },
-    [navigate, searchQuery],
+    [router, searchQuery],
   );
 
   const handleCategoryClick = useCallback(
     (category: string) => {
-      navigate({
-        to: "/products",
-        search: { q: "", page: 1, category },
-      });
+      router.push(`/products?category=${encodeURIComponent(category)}&page=1`);
     },
-    [navigate],
+    [router],
   );
 
   return {
