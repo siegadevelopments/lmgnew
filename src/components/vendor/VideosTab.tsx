@@ -206,14 +206,82 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Video Content</CardTitle>
         {!isEditing && (
-          <Button
-            onClick={() => {
-              setForm({ id: "", title: "", embed_url: "", thumbnail_url: "", description: "" });
-              setIsEditing(true);
-            }}
-          >
-            <Plus className="mr-2 h-4 w-4" /> Add Video
-          </Button>
+          <div className="flex gap-2">
+            <label
+              htmlFor="video-bulk-upload"
+              className={`inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 cursor-pointer ${
+                submitting ? "opacity-50 pointer-events-none" : ""
+              }`}
+            >
+              {submitting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="mr-2 h-4 w-4" />
+              )}
+              Bulk Upload
+            </label>
+            <input
+              id="video-bulk-upload"
+              type="file"
+              accept="video/*"
+              multiple
+              className="hidden"
+              disabled={submitting}
+              onChange={async (e) => {
+                const files = Array.from(e.target.files || []);
+                if (files.length === 0) return;
+                
+                setSubmitting(true);
+                const toastId = toast.loading(`Uploading ${files.length} videos...`);
+                const newVideos: Video[] = [];
+
+                for (let i = 0; i < files.length; i++) {
+                  const file = files[i];
+                  try {
+                    const url = await uploadMedia(file, `videos/${userId}`, "video-uploads");
+                    if (url) {
+                      const fileName = file.name.split(".").slice(0, -1).join(".");
+                      const { data: inserted, error } = await supabase
+                        .from("videos")
+                        .insert({
+                          title: fileName,
+                          embed_url: url,
+                          author_id: userId,
+                          thumbnail_url: form.thumbnail_url || null,
+                          status: "uploading",
+                          description: `Bulk uploaded on ${new Date().toLocaleDateString()}`,
+                        })
+                        .select()
+                        .single();
+
+                      if (error) throw error;
+                      if (inserted) newVideos.push(inserted as Video);
+                    }
+                  } catch (err: any) {
+                    toast.error(`Error uploading ${file.name}: ${err.message}`);
+                  }
+                }
+
+                if (newVideos.length > 0) {
+                  setVideos((prev) => [...newVideos, ...prev]);
+                  toast.success(`Successfully uploaded ${newVideos.length} videos!`, { id: toastId });
+                  queryClient.invalidateQueries({ queryKey: ["videos", "list"] });
+                } else {
+                  toast.dismiss(toastId);
+                }
+                setSubmitting(false);
+                e.target.value = "";
+              }}
+            />
+            <Button
+              onClick={() => {
+                setForm({ id: "", title: "", embed_url: "", thumbnail_url: "", description: "" });
+                setIsEditing(true);
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" /> Add Single
+            </Button>
+          </div>
         )}
       </CardHeader>
       <CardContent>

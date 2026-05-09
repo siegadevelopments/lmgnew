@@ -647,6 +647,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                                 author_id: selectedVendorId,
                                 status: "uploading", // Ensure status is set to trigger function
                                 description: `Uploaded via admin on ${new Date().toLocaleDateString()}`,
+                                thumbnail_url: imageUrl || null,
                               })
                               .select("id")
                               .single();
