@@ -19,6 +19,8 @@ import {
   ExternalLink,
   Pencil,
   X,
+  Package,
+  Image as ImageIcon,
 } from "lucide-react";
 import {
   Dialog,
@@ -32,7 +34,7 @@ import { Badge } from "@/components/ui/badge";
 import { useQueryClient } from "@tanstack/react-query";
 
 export function AdminContentTab({ vendors }: { vendors: any[] }) {
-  const [activeType, setActiveType] = useState<"articles" | "videos" | "recipes" | "products">(
+  const [activeType, setActiveType] = useState<"articles" | "videos" | "recipes" | "products" | "media">(
     "articles",
   );
   const [items, setItems] = useState<any[]>([]);
@@ -132,17 +134,36 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   }, [activeType]);
 
   const loadItems = async () => {
-    // This is now a manual trigger function if needed,
-    // but the effect handles the main loading logic.
     setLoading(true);
     try {
-      const { data, error } = await (supabase.from(activeType) as any)
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(50);
+      let query;
+      if (activeType === "media") {
+        query = (supabase.from("gallery_items") as any)
+          .select("*, galleries!inner(*)")
+          .eq("galleries.category", "vendor_gallery");
+        
+        if (selectedVendorId) {
+          query = query.eq("galleries.vendor_id", selectedVendorId);
+        }
+      } else {
+        query = (supabase.from(activeType) as any)
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(50);
+      }
 
+      const { data, error } = await query;
       if (error) throw error;
-      setItems(data || []);
+      
+      if (activeType === "media") {
+        setItems(data.map((item: any) => ({
+          ...item,
+          title: item.galleries?.title || "Gallery Image",
+          vendor_id: item.galleries?.vendor_id
+        })) || []);
+      } else {
+        setItems(data || []);
+      }
     } catch (err) {
       console.error(`Error reloading ${activeType}:`, err);
     } finally {
@@ -158,21 +179,18 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
 
       if (error) throw error;
       toast.success(`${activeType.slice(0, -1)} published successfully!`);
-      loadItems(); // Refresh the list
+      loadItems();
     } catch (err: any) {
       toast.error(`Error publishing: ${err.message}`);
     }
   };
 
-  /** Reload list, highlight new IDs, scroll to list */
   async function refreshAndHighlight(ids: string[]) {
     await loadItems();
     if (ids.length > 0) {
       const idSet = new Set(ids);
       setNewIds(idSet);
-      // Clear highlights after 4s
       setTimeout(() => setNewIds(new Set()), 4000);
-      // Scroll to list
       setTimeout(() => {
         listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 150);
@@ -188,7 +206,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     setCookTime("");
     setCategory("General");
     setEditingId(null);
-    clearDraft(); // Clear draft when manually resetting
+    clearDraft();
   };
 
   const handleEdit = (item: any) => {
@@ -201,128 +219,151 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     setPrepTime(item.prep_time || "");
     setCookTime(item.cook_time || "");
     setSelectedVendorId(item.author_id || item.vendor_id || "");
-    
-    // Scroll to form
     formRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  async function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !selectedVendorId) {
-      toast.error("Please provide a title and select a vendor");
+    if (!selectedVendorId && activeType !== "videos" && activeType !== "media") {
+      toast.error("Please select a vendor/author first");
       return;
     }
 
-    const commonData = {
-      title,
-      [activeType === "products" ? "vendor_id" : "author_id"]: selectedVendorId,
-    };
+    setLoading(true);
+    try {
+      if (activeType === "media") {
+        let { data: gallery } = await (supabase.from("galleries") as any)
+          .select("id")
+          .eq("vendor_id", selectedVendorId)
+          .eq("category", "vendor_gallery")
+          .maybeSingle();
 
-    let result;
-    if (editingId) {
-      if (activeType === "articles") {
-        console.log("Updating article:", editingId);
-        result = await (supabase.from("articles") as any)
-          .update({
+        if (!gallery) {
+          const { data: newGallery, error: galleryError } = await (supabase.from("galleries") as any)
+            .insert({
+              title: "Vendor Gallery",
+              category: "vendor_gallery",
+              vendor_id: selectedVendorId
+            })
+            .select()
+            .single();
+          if (galleryError) throw galleryError;
+          gallery = newGallery;
+        }
+
+        const { error: itemError } = await (supabase.from("gallery_items") as any)
+          .insert({
+            gallery_id: gallery.id,
+            image_url: imageUrl
+          });
+        if (itemError) throw itemError;
+
+        toast.success("Image added to vendor gallery!");
+        resetForm();
+        loadItems();
+        return;
+      }
+
+      const commonData = {
+        title,
+        [activeType === "products" ? "vendor_id" : "author_id"]: selectedVendorId,
+      };
+
+      let result;
+      if (editingId) {
+        if (activeType === "articles") {
+          result = await (supabase.from("articles") as any)
+            .update({
+              ...commonData,
+              content,
+              image_url: imageUrl,
+              category_name: category,
+              slug: title.toLowerCase().replace(/ /g, "-"),
+            })
+            .eq("id", editingId);
+        } else if (activeType === "recipes") {
+          result = await (supabase.from("recipes") as any)
+            .update({
+              ...commonData,
+              content,
+              image_url: imageUrl,
+              prep_time: prepTime,
+              cook_time: cookTime,
+              slug: title.toLowerCase().replace(/ /g, "-"),
+            })
+            .eq("id", editingId);
+        } else if (activeType === "videos") {
+          result = await (supabase.from("videos") as any)
+            .update({
+              title,
+              description: content,
+              embed_url: embedUrl,
+              thumbnail_url: imageUrl,
+              author_id: selectedVendorId,
+            })
+            .eq("id", editingId);
+        } else if (activeType === "products") {
+          result = await (supabase.from("products") as any)
+            .update({
+              title,
+              description: content,
+              price: parseFloat(imageUrl) || 0,
+              image_url: embedUrl,
+              vendor_id: selectedVendorId,
+              slug: title.toLowerCase().replace(/ /g, "-"),
+            })
+            .eq("id", editingId);
+        }
+      } else {
+        if (activeType === "articles") {
+          result = await (supabase.from("articles") as any).insert({
             ...commonData,
             content,
             image_url: imageUrl,
-            category_name: category,
             slug: title.toLowerCase().replace(/ /g, "-"),
-          })
-          .eq("id", editingId);
-      } else if (activeType === "recipes") {
-        console.log("Updating recipe:", editingId);
-        result = await (supabase.from("recipes") as any)
-          .update({
+            category_name: category,
+          });
+        } else if (activeType === "recipes") {
+          result = await (supabase.from("recipes") as any).insert({
             ...commonData,
             content,
             image_url: imageUrl,
+            slug: title.toLowerCase().replace(/ /g, "-"),
             prep_time: prepTime,
             cook_time: cookTime,
-            slug: title.toLowerCase().replace(/ /g, "-"),
-          })
-          .eq("id", editingId);
-      } else if (activeType === "videos") {
-        result = await (supabase.from("videos") as any)
-          .update({
+          });
+        } else if (activeType === "videos") {
+          result = await (supabase.from("videos") as any).insert({
             title,
             description: content,
             embed_url: embedUrl,
             thumbnail_url: imageUrl,
             author_id: selectedVendorId,
-          })
-          .eq("id", editingId);
-      } else if (activeType === "products") {
-        console.log("Updating product:", editingId);
-        result = await (supabase.from("products") as any)
-          .update({
+            status: embedUrl.includes("video-uploads") ? "uploading" : "ready",
+          });
+        } else if (activeType === "products") {
+          result = await (supabase.from("products") as any).insert({
             title,
             description: content,
             price: parseFloat(imageUrl) || 0,
             image_url: embedUrl,
             vendor_id: selectedVendorId,
             slug: title.toLowerCase().replace(/ /g, "-"),
-          })
-          .eq("id", editingId);
+            status: "published",
+          });
+        }
       }
-    } else {
-      if (activeType === "articles") {
-        result = await (supabase.from("articles") as any).insert({
-          ...commonData,
-          content,
-          image_url: imageUrl,
-          slug: title.toLowerCase().replace(/ /g, "-"),
-          category_name: category,
-        });
-      } else if (activeType === "recipes") {
-        result = await (supabase.from("recipes") as any).insert({
-          ...commonData,
-          content,
-          image_url: imageUrl,
-          slug: title.toLowerCase().replace(/ /g, "-"),
-          prep_time: prepTime,
-          cook_time: cookTime,
-        });
-      } else if (activeType === "videos") {
-        result = await (supabase.from("videos") as any).insert({
-          title,
-          description: content,
-          embed_url: embedUrl,
-          thumbnail_url: imageUrl,
-          author_id: selectedVendorId,
-          status: embedUrl.includes("video-uploads") ? "uploading" : "ready",
-        });
-      } else if (activeType === "products") {
-        result = await (supabase.from("products") as any).insert({
-          title,
-          description: content,
-          price: parseFloat(imageUrl) || 0,
-          image_url: embedUrl, // Reusing embedUrl for product image in the UI form
-          vendor_id: selectedVendorId,
-          status: "published",
-          slug: title.toLowerCase().replace(/ /g, "-"),
-        });
-      }
-    }
 
-    if (result?.error) {
-      console.error("Save error:", result.error);
-      if (result.error.message?.includes("articles_slug_key")) {
-        toast.error("An article with this title already exists. Please use a unique title.");
-      } else {
-        toast.error("Failed to save item: " + result.error.message);
-      }
-    } else {
-      const inserted = result as any;
-      const newId = inserted?.data?.[0]?.id || inserted?.data?.id;
-      toast.success(editingId ? "Item updated!" : "Item saved!");
+      if (result?.error) throw result.error;
+      toast.success(`${activeType.slice(0, -1)} ${editingId ? "updated" : "created"}!`);
       resetForm();
-      setEditingId(null);
-      clearDraft(); // Ensure draft is cleared after successful save
-      await refreshAndHighlight(editingId ? [editingId] : (newId ? [newId] : []));
+      loadItems();
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   const generateAIThumbnail = async () => {
     if (!title) {
@@ -346,24 +387,6 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     } catch (err: any) {
       console.error("AI Generation Error details:", err);
       let message = err.message || "AI Generation failed";
-      
-      // Try to extract the actual error message from the response body
-      if (err.context && typeof err.context.json === 'function') {
-        try {
-          const errorBody = await err.context.json();
-          if (errorBody.error) message = errorBody.error;
-        } catch (e) {
-          try {
-            const text = await err.context.text();
-            if (text) message = text;
-          } catch (e2) {}
-        }
-      }
-
-      if (message.includes("Failed to fetch") || message.includes("Failed to send a request")) {
-        message =
-          "Cannot reach AI service. Please ensure the 'generate-ai-image' function is deployed and your project is active.";
-      }
       toast.error(message, { id: toastId });
     } finally {
       setGeneratingImage(false);
@@ -443,7 +466,15 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                     onClick={() => setActiveType("products")}
                     size="sm"
                   >
-                    <Plus className="mr-2 h-4 w-4" /> Product
+                    <Package className="mr-2 h-4 w-4" /> Product
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={activeType === "media" ? "default" : "outline"}
+                    onClick={() => setActiveType("media")}
+                    size="sm"
+                  >
+                    <ImageIcon className="mr-2 h-4 w-4" /> Media
                   </Button>
                 </div>
               </div>
@@ -467,11 +498,13 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Title</label>
+              <label className="text-sm font-medium">
+                {activeType === "media" ? "Image Title (Internal)" : "Title"}
+              </label>
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter title"
+                placeholder={activeType === "media" ? "e.g. Clinic Interior 1" : "Enter title"}
                 required
               />
             </div>

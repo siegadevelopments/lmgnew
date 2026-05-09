@@ -28,7 +28,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChatDialog } from "@/components/chat/ChatDialog";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 /** Extract YouTube video ID from any known URL format */
 function extractYouTubeId(url: string): string | null {
@@ -126,6 +126,18 @@ function VendorPage() {
     queryKey: ["videos", "vendor", slug],
     queryFn: async () => {
       const { data } = await supabase.from("videos").select("*").eq("author_id", slug);
+      return (data as any[]) || [];
+    },
+  });
+
+  const { data: vendorGallery } = useQuery({
+    queryKey: ["vendor_gallery", slug],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("gallery_items")
+        .select("*, galleries!inner(*)")
+        .eq("galleries.vendor_id", slug)
+        .eq("galleries.category", "vendor_gallery");
       return (data as any[]) || [];
     },
   });
@@ -362,6 +374,12 @@ function VendorPage() {
                 >
                   Videos
                 </TabsTrigger>
+                <TabsTrigger
+                  value="gallery"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap"
+                >
+                  Gallery
+                </TabsTrigger>
                 {(vendor.store_categories || []).map((cat: string) => (
                   <TabsTrigger
                     key={cat}
@@ -561,6 +579,49 @@ function VendorPage() {
               ) : (
                 <div className="py-12 text-center text-muted-foreground bg-white rounded-xl border border-dashed">
                   This vendor hasn't uploaded any videos yet.
+                </div>
+              )}
+            </section>
+          )}
+
+          {activeCategory === "gallery" && (
+            <section className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                  Media Gallery
+                </h2>
+              </div>
+              {vendorGallery && vendorGallery.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  {vendorGallery.map((item: any) => (
+                    <Dialog key={item.id}>
+                      <DialogTrigger asChild>
+                        <div className="group relative aspect-square rounded-2xl overflow-hidden bg-muted cursor-pointer ring-1 ring-border/50 hover:ring-primary/50 transition-all">
+                          <img
+                            src={item.image_url}
+                            alt="Gallery item"
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                            <Maximize2 className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </div>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 overflow-hidden bg-transparent border-none">
+                        <div className="relative w-full h-full flex items-center justify-center p-4">
+                          <img
+                            src={item.image_url}
+                            alt="Gallery item large"
+                            className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+                          />
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-12 text-center text-muted-foreground bg-white rounded-xl border border-dashed">
+                  This vendor hasn't uploaded any gallery images yet.
                 </div>
               )}
             </section>

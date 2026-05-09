@@ -11,11 +11,19 @@ export function AdminGalleriesTab() {
   const [galleries, setGalleries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [newGalleryTitle, setNewGalleryTitle] = useState("");
-  const [newGalleryCategory, setNewGalleryCategory] = useState<"memes" | "charts">("memes");
+  const [newGalleryCategory, setNewGalleryCategory] = useState<"memes" | "charts" | "vendor_gallery">("memes");
+  const [selectedVendorId, setSelectedVendorId] = useState<string>("");
+  const [vendors, setVendors] = useState<any[]>([]);
 
   useEffect(() => {
     loadGalleries();
+    loadVendors();
   }, []);
+
+  async function loadVendors() {
+    const { data } = await supabase.from("vendor_profiles").select("id, store_name");
+    setVendors(data || []);
+  }
 
   async function loadGalleries() {
     setLoading(true);
@@ -35,7 +43,11 @@ export function AdminGalleriesTab() {
     if (!newGalleryTitle.trim()) return;
 
     const { data, error } = await (supabase.from("galleries") as any)
-      .insert({ title: newGalleryTitle, category: newGalleryCategory })
+      .insert({ 
+        title: newGalleryTitle, 
+        category: newGalleryCategory,
+        vendor_id: newGalleryCategory === "vendor_gallery" ? selectedVendorId || null : null
+      })
       .select()
       .single();
 
@@ -106,7 +118,24 @@ export function AdminGalleriesTab() {
             >
               <option value="memes">Memes</option>
               <option value="charts">Charts</option>
+              <option value="vendor_gallery">Vendor Gallery</option>
             </select>
+
+            {newGalleryCategory === "vendor_gallery" && (
+              <select
+                className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                value={selectedVendorId}
+                onChange={(e) => setSelectedVendorId(e.target.value)}
+              >
+                <option value="">Select Vendor</option>
+                {vendors.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.store_name}
+                  </option>
+                ))}
+              </select>
+            )}
+
             <Button onClick={createGallery}>
               <Plus className="mr-2 h-4 w-4" /> Create
             </Button>
