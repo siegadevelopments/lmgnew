@@ -123,31 +123,31 @@ function VendorPage() {
   });
 
   const { data: vendorVideos } = useQuery({
-    queryKey: ["videos", "vendor", slug],
+    queryKey: ["videos", "vendor", vendor.id],
     queryFn: async () => {
-      const { data } = await supabase.from("videos").select("*").eq("author_id", slug);
+      const { data } = await supabase.from("videos").select("*").eq("author_id", vendor.id);
       return (data as any[]) || [];
     },
   });
 
   const { data: vendorGallery } = useQuery({
-    queryKey: ["vendor_gallery", slug],
+    queryKey: ["vendor_gallery", vendor.id],
     queryFn: async () => {
       const { data } = await supabase
         .from("gallery_items")
         .select("*, galleries!inner(*)")
-        .eq("galleries.vendor_id", slug)
+        .eq("galleries.vendor_id", vendor.id)
         .eq("galleries.category", "vendor_gallery");
       return (data as any[]) || [];
     },
   });
 
   const { data: streamInfo } = useQuery({
-    queryKey: ["vendor_stream", slug],
+    queryKey: ["vendor_stream", vendor.id],
     queryFn: async () => {
       const { data } = await (supabase.from("vendor_streams") as any)
         .select("*")
-        .eq("vendor_id", slug)
+        .eq("vendor_id", vendor.id)
         .maybeSingle();
       return data;
     },

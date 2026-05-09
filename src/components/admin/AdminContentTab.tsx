@@ -109,25 +109,42 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
 
     async function loadItems() {
       setLoading(true);
-      setItems([]); // Clear previous items to avoid "ghost content"
-      
-      // We no longer call resetForm() here because it clears the draft.
-      // The draft loading useEffect handles form state when activeType changes.
+      setItems([]); 
       setEditingId(null); 
 
       try {
-        const { data, error } = await (supabase.from(activeType) as any)
-          .select("*")
-          .order("created_at", { ascending: false })
-          .limit(50);
+        let query;
+        if (activeType === "media") {
+          query = (supabase.from("gallery_items") as any)
+            .select("*, galleries!inner(*)")
+            .eq("galleries.category", "vendor_gallery");
+          
+          if (selectedVendorId) {
+            query = query.eq("galleries.vendor_id", selectedVendorId);
+          }
+        } else {
+          query = (supabase.from(activeType) as any)
+            .select("*")
+            .order("created_at", { ascending: false })
+            .limit(50);
+        }
 
+        const { data, error } = await query;
         if (isCancelled) return;
 
         if (error) {
           console.error(`Error loading ${activeType}:`, error);
           toast.error(`Failed to load ${activeType}`);
         } else {
-          setItems(data || []);
+          if (activeType === "media") {
+            setItems(data.map((item: any) => ({
+              ...item,
+              title: item.galleries?.title || "Gallery Image",
+              vendor_id: item.galleries?.vendor_id
+            })) || []);
+          } else {
+            setItems(data || []);
+          }
         }
       } catch (err) {
         if (isCancelled) return;
@@ -145,7 +162,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     return () => {
       isCancelled = true;
     };
-  }, [activeType]);
+  }, [activeType, selectedVendorId]);
 
   const loadItems = async () => {
     setLoading(true);
