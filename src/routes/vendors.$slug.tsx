@@ -220,13 +220,24 @@ function VendorPage() {
   });
 
   const filteredProducts = vendorProducts?.filter((p) => {
+    // Determine if it matches the main type filter
+    let matchesType = true;
+    if (activeCategory === "products") {
+      matchesType = p.product_type !== "service";
+    } else if (activeCategory === "services") {
+      matchesType = p.product_type === "service";
+    }
+
     const matchesCategory =
       activeCategory === "home" ||
       activeCategory === "all" ||
+      activeCategory === "products" ||
+      activeCategory === "services" ||
       activeCategory === "about" ||
       p.category === activeCategory;
+
     const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    return matchesType && matchesCategory && matchesSearch;
   });
 
   return (
@@ -362,12 +373,29 @@ function VendorPage() {
                 >
                   Home
                 </TabsTrigger>
-                <TabsTrigger
-                  value="all"
-                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap"
-                >
-                  {vendor.vendor_type === "service" ? "All Services" : "All Products"}
-                </TabsTrigger>
+                {vendor.vendor_type === "both" ? (
+                  <>
+                    <TabsTrigger
+                      value="products"
+                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap"
+                    >
+                      Products
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="services"
+                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap"
+                    >
+                      Services
+                    </TabsTrigger>
+                  </>
+                ) : (
+                  <TabsTrigger
+                    value="all"
+                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap"
+                  >
+                    {vendor.vendor_type === "service" ? "All Services" : "All Products"}
+                  </TabsTrigger>
+                )}
                 <TabsTrigger
                   value="videos"
                   className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary h-full px-2 sm:px-4 text-xs sm:text-sm font-medium whitespace-nowrap"
@@ -504,6 +532,10 @@ function VendorPage() {
                     ? vendor.vendor_type === "service"
                       ? "All Services"
                       : "All Products"
+                    : activeCategory === "products"
+                    ? "Product Catalog"
+                    : activeCategory === "services"
+                    ? "Service Offerings"
                     : activeCategory}
                 </h2>
               </div>

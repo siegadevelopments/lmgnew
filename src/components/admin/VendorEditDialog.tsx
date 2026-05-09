@@ -212,6 +212,7 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
               >
                 <option value="products">Physical Products Marketplace</option>
                 <option value="services">Services & Consultations</option>
+                <option value="both">Both (Products & Services)</option>
               </select>
               <p className="text-[10px] text-muted-foreground italic">
                 Classification affects whether the store shows "Products" or "Services" tabs.

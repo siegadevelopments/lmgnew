@@ -69,6 +69,17 @@ export function ProductsTab({
       | "service"
       | "digital",
   });
+
+  // Re-sync default product type if vendorType changes
+  useEffect(() => {
+    if (!editing) {
+      setForm(prev => ({
+        ...prev,
+        product_type: (vendorType === "services" ? "service" : "physical"),
+        category: vendorType === "services" ? "Services" : "Supplements"
+      }));
+    }
+  }, [vendorType, editing]);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
 
@@ -268,16 +279,45 @@ export function ProductsTab({
           <div className="mb-8 rounded-xl border border-primary/20 p-6 bg-primary/5 animate-in fade-in slide-in-from-top-2 duration-300">
             <h3 className="text-lg font-bold mb-4">
               {form.id
-                ? vendorType === "services"
-                  ? "Edit Service"
-                  : "Edit Product"
-                : vendorType === "services"
-                  ? "New Service"
-                  : "New Product"}
+                ? vendorType === "both"
+                  ? `Edit ${form.product_type === "service" ? "Service" : "Product"}`
+                  : vendorType === "services"
+                    ? "Edit Service"
+                    : "Edit Product"
+                : vendorType === "both"
+                  ? `New ${form.product_type === "service" ? "Service" : "Product"}`
+                  : vendorType === "services"
+                    ? "New Service"
+                    : "New Product"}
             </h3>
+            {vendorType === "both" && !form.id && (
+              <div className="space-y-2 sm:col-span-2 mb-2">
+                <Label className="text-xs font-bold uppercase tracking-wider opacity-60">
+                  Listing Type
+                </Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    type="button"
+                    variant={form.product_type === "physical" ? "default" : "outline"}
+                    className="h-10"
+                    onClick={() => setForm({ ...form, product_type: "physical", category: "Supplements" })}
+                  >
+                    Physical Product
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={form.product_type === "service" ? "default" : "outline"}
+                    className="h-10"
+                    onClick={() => setForm({ ...form, product_type: "service", category: "Services" })}
+                  >
+                    Service / Booking
+                  </Button>
+                </div>
+              </div>
+            )}
             <form onSubmit={handleSave} className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
-                <Label>{vendorType === "services" ? "Service Name" : "Product Title"}</Label>
+                <Label>{vendorType === "both" ? (form.product_type === "service" ? "Service Name" : "Product Title") : (vendorType === "services" ? "Service Name" : "Product Title")}</Label>
                 <Input
                   required
                   value={form.title}

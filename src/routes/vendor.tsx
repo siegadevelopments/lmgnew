@@ -365,7 +365,11 @@ function VendorDashboardPage() {
     { id: "analytics", label: "Dashboard", icon: LayoutDashboard },
     {
       id: "products",
-      label: profile.vendor_type === "services" ? "My Services" : "My Products",
+      label: profile.vendor_type === "both" 
+        ? "Products & Services" 
+        : profile.vendor_type === "services" 
+          ? "My Services" 
+          : "My Products",
       icon: Package,
     },
     { id: "live", label: "Live Stream", icon: Radio },
@@ -512,11 +516,14 @@ function VendorDashboardPage() {
             <TabsContent value="products" className="mt-0 border-0 p-0">
               <div className="mb-6 flex flex-col gap-1">
                 <h1 className="text-2xl font-bold tracking-tight">
-                  {profile.vendor_type === "services" ? "Service Offerings" : "Product Catalog"}
+                  {profile.vendor_type === "both"
+                    ? "Products & Services"
+                    : profile.vendor_type === "services"
+                    ? "Service Offerings"
+                    : "Product Catalog"}
                 </h1>
                 <p className="text-muted-foreground">
-                  Add and manage the {profile.vendor_type === "services" ? "services" : "products"}{" "}
-                  you sell.
+                  Add and manage the items you sell.
                 </p>
               </div>
               <ProductsTab
