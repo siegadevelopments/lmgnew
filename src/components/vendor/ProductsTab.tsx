@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
-import { uploadMedia } from "@/lib/upload";
+import { uploadMedia, deleteMediaWithSafety } from "@/lib/upload";
 import { toast } from "sonner";
 import {
   Plus,
@@ -206,12 +206,22 @@ export function ProductsTab({
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Delete this product?")) return;
+    const productToDelete = products.find(p => p.id === id);
+    if (!productToDelete) return;
+
+    if (!confirm(`Delete "${productToDelete.title}"?`)) return;
+    
     try {
       const { error } = await supabase.from("products").delete().eq("id", id);
       if (error) throw error;
+      
       setProducts(products.filter((p) => p.id !== id));
-      toast.success("Product deleted");
+      
+      if (productToDelete.image_url) {
+        deleteMediaWithSafety(productToDelete.image_url);
+      }
+
+      toast.success("Product deleted and storage cleanup initiated");
     } catch (err: any) {
       toast.error(err.message);
     }

@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trash2, Plus, Image as ImageIcon, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { deleteMediaWithSafety } from "@/lib/upload";
 
 export function AdminGalleriesTab() {
   const [galleries, setGalleries] = useState<any[]>([]);
@@ -61,14 +62,23 @@ export function AdminGalleriesTab() {
   }
 
   async function deleteGallery(id: string) {
-    if (!confirm("Are you sure? This will delete all items in this gallery.")) return;
+    const gallery = galleries.find(g => g.id === id);
+    if (!gallery) return;
+
+    if (!confirm(`Are you sure? This will delete "${gallery.title}" and all its items.`)) return;
+
+    // Capture all URLs in this gallery for cleanup
+    const urlsToCleanup = (gallery.gallery_items || []).map((item: any) => item.image_url);
 
     const { error } = await (supabase.from("galleries") as any).delete().eq("id", id);
     if (error) {
       toast.error("Failed to delete gallery");
     } else {
-      toast.success("Gallery deleted");
+      toast.success("Gallery deleted and storage cleanup initiated");
       loadGalleries();
+      
+      // Safe cleanup of all items
+      urlsToCleanup.forEach((url: string) => deleteMediaWithSafety(url));
     }
   }
 
@@ -89,11 +99,24 @@ export function AdminGalleriesTab() {
   }
 
   async function deleteImage(itemId: string) {
+    // Find the item to get its URL before deletion
+    let imageUrl = "";
+    for (const g of galleries) {
+      const item = (g.gallery_items || []).find((i: any) => i.id === itemId);
+      if (item) {
+        imageUrl = item.image_url;
+        break;
+      }
+    }
+
     const { error } = await (supabase.from("gallery_items") as any).delete().eq("id", itemId);
     if (error) {
       toast.error("Failed to delete image");
     } else {
       loadGalleries();
+      if (imageUrl) {
+        deleteMediaWithSafety(imageUrl);
+      }
     }
   }
 

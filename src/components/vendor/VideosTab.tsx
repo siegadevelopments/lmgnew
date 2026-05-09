@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { uploadMedia } from "@/lib/upload";
+import { uploadMedia, deleteMediaWithSafety } from "@/lib/upload";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface Video {
@@ -188,14 +188,30 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this video?")) return;
+    const videoToDelete = videos.find(v => v.id === id);
+    if (!videoToDelete) return;
+
+    if (!confirm(`Delete "${videoToDelete.title}"?`)) return;
+
     try {
+      // 1. Delete from DB first
       const { error } = await (supabase.from("videos") as any).delete().eq("id", id);
       if (error) throw error;
+
+      // 2. Remove from local state
       setVideos(videos.filter((v) => v.id !== id));
+      
+      // 3. Trigger safe cleanup of storage files
+      if (videoToDelete.embed_url) {
+        deleteMediaWithSafety(videoToDelete.embed_url);
+      }
+      if (videoToDelete.thumbnail_url) {
+        deleteMediaWithSafety(videoToDelete.thumbnail_url);
+      }
+
       // Invalidate the public videos page cache
       queryClient.invalidateQueries({ queryKey: ["videos", "list"] });
-      toast.success("Video deleted");
+      toast.success("Video deleted and storage cleanup triggered");
     } catch (err: any) {
       toast.error(err.message);
     }

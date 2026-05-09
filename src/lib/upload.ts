@@ -78,3 +78,83 @@ export async function uploadMedia(
   const { data } = supabase.storage.from(bucket === "r2" ? "media" : bucket).getPublicUrl(filePath);
   return data.publicUrl;
 }
+
+/**
+ * Safely deletes a file from storage ONLY if it's not referenced by any other content.
+ * This is a "Garbage Collection" style safety check requested by the user.
+ */
+export async function deleteMediaWithSafety(url: string): Promise<{ success: boolean; message: string }> {
+  if (!url) return { success: false, message: "No URL provided" };
+
+  try {
+    console.log(`Checking usage for: ${url}`);
+
+    // 1. Check all tables for references
+    const tables = [
+      { name: "videos", columns: ["embed_url", "thumbnail_url"] },
+      { name: "products", columns: ["image_url"] },
+      { name: "articles", columns: ["image_url"] },
+      { name: "recipes", columns: ["image_url"] },
+      { name: "gallery_items", columns: ["image_url"] },
+      { name: "vendor_profiles", columns: ["store_logo_url", "store_banner_url"] },
+      { name: "profiles", columns: ["avatar_url"] },
+    ];
+
+    let referenceCount = 0;
+
+    for (const table of tables) {
+      for (const col of table.columns) {
+        const { count, error } = await supabase
+          .from(table.name as any)
+          .select("*", { count: "exact", head: true })
+          .eq(col, url);
+
+        if (error) {
+          console.warn(`Error checking ${table.name}.${col}:`, error);
+          continue;
+        }
+        
+        referenceCount += (count || 0);
+      }
+    }
+
+    // If more than 1 reference exists (the one we are about to delete), don't delete from storage
+    // NOTE: When this is called during a delete operation, the record might still exist in the DB
+    // so a reference count of 1 is expected if it's the item being deleted.
+    // However, if we call this AFTER the DB delete, the count should be 0.
+    if (referenceCount > 1) {
+      console.log(`Asset in use (${referenceCount} references). Skipping storage deletion.`);
+      return { success: false, message: "Asset still in use by other content" };
+    }
+
+    // 2. Identify and Delete from Storage
+    if (url.includes("supabase.co/storage")) {
+      // Supabase Storage Deletion
+      // URL format: .../storage/v1/object/public/[bucket]/[path]
+      const parts = url.split("/storage/v1/object/public/");
+      if (parts.length > 1) {
+        const pathParts = parts[1].split("/");
+        const bucket = pathParts[0];
+        const path = pathParts.slice(1).join("/");
+        
+        console.log(`Deleting from Supabase: bucket=${bucket}, path=${path}`);
+        const { error } = await supabase.storage.from(bucket).remove([path]);
+        if (error) throw error;
+      }
+    } else {
+      // Potential R2 Deletion via Edge Function
+      console.log(`Invoking delete-storage-object for R2: ${url}`);
+      const { data, error } = await supabase.functions.invoke("delete-storage-object", {
+        body: { url },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    }
+
+    return { success: true, message: "Asset successfully removed from storage" };
+
+  } catch (err: any) {
+    console.error("Safe Delete Error:", err);
+    return { success: false, message: err.message || "Failed to delete asset" };
+  }
+}

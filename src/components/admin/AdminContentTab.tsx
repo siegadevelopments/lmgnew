@@ -29,7 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { uploadMedia } from "@/lib/upload";
+import { uploadMedia, deleteMediaWithSafety } from "@/lib/upload";
 import { Badge } from "@/components/ui/badge";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -425,12 +425,26 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   };
 
   async function deleteItem(id: string) {
-    if (!confirm("Are you sure?")) return;
+    const itemToDelete = items.find(i => i.id === id);
+    if (!itemToDelete) return;
+
+    if (!confirm(`Are you sure you want to delete this ${activeType.slice(0, -1)}?`)) return;
+    
+    // Capture URLs for cleanup
+    const urlsToCleanup = [];
+    if (itemToDelete.image_url) urlsToCleanup.push(itemToDelete.image_url);
+    if (itemToDelete.embed_url) urlsToCleanup.push(itemToDelete.embed_url);
+    if (itemToDelete.thumbnail_url) urlsToCleanup.push(itemToDelete.thumbnail_url);
+
     const { error } = await (supabase.from(activeType) as any).delete().eq("id", id);
     if (error) toast.error("Failed to delete");
     else {
       queryClient.invalidateQueries({ queryKey: ["videos", "list"] });
       loadItems();
+      
+      // Trigger safe cleanup
+      urlsToCleanup.forEach(url => deleteMediaWithSafety(url));
+      toast.success("Item deleted and storage cleanup initiated");
     }
   }
 
