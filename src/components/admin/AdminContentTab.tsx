@@ -100,6 +100,18 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     localStorage.setItem(`admin_content_draft_${activeType}`, JSON.stringify(draft));
   }, [title, content, imageUrl, embedUrl, activeType, selectedVendorId, category, prepTime, cookTime, editingId]);
 
+  // Prevent accidental navigation during uploads
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (uploadingVideo || uploadingImage || loading) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [uploadingVideo, uploadingImage, loading]);
+
   const clearDraft = (type = activeType) => {
     localStorage.removeItem(`admin_content_draft_${type}`);
   };

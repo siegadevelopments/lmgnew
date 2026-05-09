@@ -55,6 +55,18 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
+  // Prevent accidental navigation during uploads
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (submitting) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [submitting]);
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
