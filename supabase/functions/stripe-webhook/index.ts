@@ -139,6 +139,34 @@ serve(async (req: Request) => {
       }
 
       console.log(`Order ${orderId} completed and paid. Notifications sent.`);
+
+      // 4. Notify Admin of Paid Order
+      if (RESEND_API_KEY) {
+        await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${RESEND_API_KEY}`,
+          },
+          body: JSON.stringify({
+            from: "Lifestyle Medicine Gateway <orders@lifestylemedicinegateway.com>",
+            to: ["info@lifestylemedicinegateway.com"],
+            subject: `New PAID Order: #${orderId.substring(0, 8)}`,
+            html: `
+              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                <h1 style="color: #10b981;">New Order Payment Received!</h1>
+                <p>Order <strong>#${orderId}</strong> has been paid and confirmed.</p>
+                <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                  <p style="margin: 5px 0;"><strong>Customer:</strong> ${session.customer_details?.email || "N/A"}</p>
+                  <p style="margin: 5px 0;"><strong>Total Amount:</strong> $${(session.amount_total! / 100).toFixed(2)}</p>
+                  <p style="margin: 5px 0;"><strong>Stripe Session:</strong> ${session.id}</p>
+                </div>
+                <p>View details in the <a href="https://lifestylemedicinegateway.com/admin/orders">Admin Dashboard</a>.</p>
+              </div>
+            `,
+          }),
+        });
+      }
     }
 
     return new Response(JSON.stringify({ received: true }), {

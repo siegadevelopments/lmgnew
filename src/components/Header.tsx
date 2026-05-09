@@ -80,7 +80,12 @@ export function Header() {
         <nav className="hidden items-center gap-1 md:flex">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
+              <button 
+                className="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                aria-label="Explore categories"
+                aria-expanded={undefined}
+                aria-haspopup="true"
+              >
                 Explore <ChevronDown className="h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
@@ -173,7 +178,7 @@ export function Header() {
           ) : user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative text-muted-foreground">
+                <Button variant="ghost" size="icon" className="relative text-muted-foreground" aria-label="User Profile Menu">
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                     {user.email?.charAt(0).toUpperCase() || "U"}
                   </div>
@@ -236,6 +241,8 @@ export function Header() {
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             className="inline-flex items-center justify-center rounded-md p-2 text-muted-foreground md:hidden"
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileOpen}
           >
             <svg
               width="20"

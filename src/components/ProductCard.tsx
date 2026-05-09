@@ -179,12 +179,14 @@ export function ProductCard({ product, className }: ProductCardProps) {
         </div>
 
         <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none flex items-end justify-center pb-20">
-          <motion.div
+          <motion.button
+            type="button"
             initial={{ y: 20, opacity: 0 }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             animate={{ y: 0, opacity: 1 }}
             className="bg-primary text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-xl pointer-events-auto cursor-pointer"
+            aria-label={`${(product as any).product_type === "service" ? "Book" : "Add"} ${product.title} to cart`}
             onClick={(e) => {
               if (
                 (product as any).product_type === "service" ||
@@ -201,7 +203,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
               : product.variants && product.variants.length > 1
                 ? "Select Options"
                 : "Quick Add"}
-          </motion.div>
+          </motion.button>
         </div>
       </Link>
     </motion.div>

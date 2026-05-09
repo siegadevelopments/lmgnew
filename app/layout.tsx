@@ -8,7 +8,7 @@ import { MessengerBubble } from "@/components/chat/GlobalChat";
 import { GlobalPopup } from "@/components/GlobalPopup";
 import { AppInstallPopup } from "@/components/AppInstallPopup";
 import { Inter } from 'next/font/google';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -78,6 +78,12 @@ export const metadata: Metadata = {
   category: 'health',
 };
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -85,6 +91,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={inter.className}>
+      <head>
+        {/* Preload the Hero LCP Image */}
+        <link rel="preload" href="/_next/image?url=%2F_next%2Fstatic%2Fmedia%2Fhero-bg.6468091a.jpg&w=1920&q=75" as="image" />
+      </head>
       <body>
         <Providers>
           <div className="flex flex-col min-h-screen bg-background text-foreground">

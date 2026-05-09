@@ -97,6 +97,7 @@ export function HeroSection() {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="What are you looking for?"
               className="flex-1 bg-transparent px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-w-0"
+              aria-label="Search catalog"
             />
             <Button type="submit" variant="wellness" className="rounded-xl px-6 h-11 font-bold">
               Search
@@ -111,6 +112,7 @@ export function HeroSection() {
                 whileTap={{ scale: 0.95 }}
                 onClick={() => handleCategoryClick(tag)}
                 className="rounded-full border border-primary-foreground/20 px-3 py-1 text-xs font-medium text-primary-foreground/70 transition-colors hover:bg-primary-foreground/10 cursor-pointer"
+                aria-label={`Browse ${tag} products`}
               >
                 {tag}
               </motion.button>

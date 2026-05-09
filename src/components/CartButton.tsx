@@ -23,7 +23,7 @@ export function CartButton() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative text-muted-foreground">
+        <Button variant="ghost" size="icon" className="relative text-muted-foreground" aria-label="Open Shopping Cart">
           <motion.div
             animate={isPulsing ? { scale: [1, 1.2, 1], rotate: [0, -10, 10, 0] } : {}}
             transition={{ duration: 0.3 }}
@@ -124,6 +124,7 @@ export function CartButton() {
                         <button
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
                           className="h-6 w-6 rounded border text-xs"
+                          aria-label="Decrease quantity"
                         >
                           -
                         </button>
@@ -131,6 +132,7 @@ export function CartButton() {
                         <button
                           onClick={() => updateQuantity(item.id, item.quantity + 1)}
                           className="h-6 w-6 rounded border text-xs"
+                          aria-label="Increase quantity"
                         >
                           +
                         </button>
