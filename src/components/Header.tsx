@@ -104,16 +104,13 @@ export function Header() {
           </DropdownMenu>
 
           {topNavItems.map((item) => {
-            const isProductsPath = pathname.startsWith("/products");
-            const isServiceDetail = false;
-
             let isActive = false;
             if ((item.to as string) === "/") {
               isActive = pathname === "/";
             } else if (item.to === "/services") {
-              isActive = pathname.startsWith("/services") || isServiceDetail;
+              isActive = pathname.startsWith("/services");
             } else if (item.to === "/products") {
-              isActive = isProductsPath && !isServiceDetail;
+              isActive = pathname.startsWith("/products");
             } else {
               isActive = pathname.startsWith(item.to);
             }
@@ -291,16 +288,13 @@ export function Header() {
           ))}
           <div className="h-px bg-border/50 my-2"></div>
           {topNavItems.map((item) => {
-            const isProductsPath = pathname.startsWith("/products");
-            const isServiceDetail = false;
-
             let isActive = false;
             if ((item.to as string) === "/") {
               isActive = pathname === "/";
             } else if (item.to === "/services") {
-              isActive = pathname.startsWith("/services") || isServiceDetail;
+              isActive = pathname.startsWith("/services");
             } else if (item.to === "/products") {
-              isActive = isProductsPath && !isServiceDetail;
+              isActive = pathname.startsWith("/products");
             } else {
               isActive = pathname.startsWith(item.to);
             }

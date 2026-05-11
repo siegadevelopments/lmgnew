@@ -1,6 +1,6 @@
 'use client'
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, usePathname } from "next/navigation";
 import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { productBySlugQueryOptionsV2 } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,8 @@ function ProductContent() {
   const params = useParams();
   const slug = params?.slug as string;
   const router = useRouter();
+  const pathname = usePathname();
+  const isServiceRoute = pathname?.startsWith("/services");
   const { data: products } = useSuspenseQuery(productBySlugQueryOptionsV2(slug)) as any;
   const product = (products as any)?.[0];
   const { user } = useAuth();
@@ -57,7 +59,7 @@ function ProductContent() {
 
   const handleAddToCart = async () => {
     if (!user) {
-      router.push(`/signup?redirect=/products/${slug}`);
+      router.push(`/signup?redirect=${isServiceRoute ? '/services' : '/products'}/${slug}`);
       return;
     }
 
@@ -130,7 +132,7 @@ function ProductContent() {
 
       toast.success("Booking confirmed! Check your email and SMS for details.");
       setIsPaymentDialogOpen(false);
-      router.push("/profile?tab=bookings");
+      router.push("/profile");
     } catch (err: any) {
       console.error("Booking error:", err);
       toast.error("Failed to confirm booking: " + err.message);
@@ -211,8 +213,8 @@ function ProductContent() {
             ← Back to {product.vendor_profiles.store_name}
           </Link>
         ) : (
-          <Link href="/products" className="text-sm font-medium text-primary hover:underline">
-            ← Back to products
+          <Link href={isServiceRoute ? "/services" : "/products"} className="text-sm font-medium text-primary hover:underline">
+            ← Back to {isServiceRoute ? "services" : "products"}
           </Link>
         )}
 
@@ -505,7 +507,7 @@ function ProductContent() {
                     You must be logged in to leave a review.
                   </p>
                   <Button asChild variant="outline" className="mt-4">
-                    <Link href={`/login?redirect=/products/${product.slug}`}>
+                    <Link href={`/login?redirect=${isServiceRoute ? '/services' : '/products'}/${product.slug}`}>
                       Log In
                     </Link>
                   </Button>

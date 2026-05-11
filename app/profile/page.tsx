@@ -112,7 +112,7 @@ function ProfileContent() {
     // Fetch bookings
     supabase
       .from("bookings")
-      .select("*, product:products(title, image_url, vendor:vendor_profiles(store_name))")
+      .select("*, product:products(title, image_url, vendor_profiles(store_name))")
       .eq("customer_id", user.id)
       .order("start_time", { ascending: true })
       .then(({ data }) => {
@@ -276,7 +276,7 @@ function ProfileContent() {
                               </h4>
                               <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-0.5">
                                 <User className="h-3.5 w-3.5" />{" "}
-                                {booking.product?.vendor?.store_name}
+                                {booking.product?.vendor_profiles?.store_name}
                               </p>
                               <div className="flex items-center gap-4 mt-2 text-xs font-semibold">
                                 <span className="flex items-center gap-1 text-primary">

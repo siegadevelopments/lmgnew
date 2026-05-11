@@ -106,7 +106,7 @@ function VideosContent() {
     queryKey: ["live_streams"],
     queryFn: async () => {
       const { data } = await (supabase.from("vendor_streams") as any)
-        .select("*, vendor:vendor_profiles(store_name, store_logo_url)")
+        .select("*, vendor_profiles(store_name, store_logo_url)")
         .eq("is_live", true);
       return (data as any[]) || [];
     },
@@ -167,15 +167,15 @@ function VideosContent() {
                     </div>
                     <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
                       <div className="flex items-center gap-3">
-                        {stream.vendor?.store_logo_url && (
+                        {stream.vendor_profiles?.store_logo_url && (
                           <img
-                            src={stream.vendor.store_logo_url}
+                            src={stream.vendor_profiles.store_logo_url}
                             className="h-8 w-8 rounded-full border border-white/20"
                           />
                         )}
                         <div>
                           <p className="text-white font-bold">
-                            {stream.vendor?.store_name || "Vendor"}
+                            {stream.vendor_profiles?.store_name || "Vendor"}
                           </p>
                           <p className="text-white/70 text-sm line-clamp-1">
                             {stream.stream_title || "Lifestyle Medicine Live Session"}

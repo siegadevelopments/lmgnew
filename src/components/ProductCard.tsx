@@ -80,7 +80,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
       className="h-full"
     >
       <Link
-        href={`/products/${product.slug}`}
+        href={`/${(product as any).product_type === "service" ? "services" : "products"}/${product.slug}`}
         className={cn(
           "group flex flex-col h-full overflow-hidden bg-card transition-all hover:shadow-xl border border-border/50 hover:border-primary/30 relative",
           className,

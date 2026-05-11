@@ -117,7 +117,7 @@ export const articleBySlugQueryOptions = (slug: string) =>
     queryFn: async () => {
       const { data, error } = await supabase
         .from("articles")
-        .select("*, author:vendor_profiles(representative_name, store_name)")
+        .select("*, vendor_profiles(representative_name, store_name)")
         .eq("slug", slug)
         .limit(1);
       if (error) throw new Error(error.message);
@@ -136,7 +136,7 @@ export const videosQueryOptions = () =>
           .select(
             `
             *,
-            author:profiles(role)
+            profiles(role)
           `,
           )
           .eq("status", "ready")
@@ -149,7 +149,7 @@ export const videosQueryOptions = () =>
 
         // Filter in JS to avoid complex cross-table OR logic issues in PostgREST
         const filtered = (data || []).filter(
-          (v: any) => v.is_featured === true || v.author?.role === "admin",
+          (v: any) => v.is_featured === true || v.profiles?.role === "admin",
         );
 
         return filtered as any[];

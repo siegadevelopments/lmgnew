@@ -17,7 +17,7 @@ function ArticleContent() {
 
   if (!article) return <div className="p-20 text-center">Article not found</div>;
 
-  const authorName = article.author?.representative_name || article.author?.store_name || "Georgia Erevnidis from E-training group";
+  const authorName = article.vendor_profiles?.representative_name || article.vendor_profiles?.store_name || "Georgia Erevnidis from E-training group";
 
   return (
     <article className="py-12 sm:py-16">
