@@ -11,6 +11,27 @@ const corsHeaders = {
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const CLICKSEND_USERNAME = Deno.env.get("CLICKSEND_USERNAME");
 const CLICKSEND_API_KEY = Deno.env.get("CLICKSEND_API_KEY");
+const ADMIN_EMAIL = "info@lifestylemedicinegateway.com";
+const FROM_EMAIL = "Lifestyle Medicine Gateway <orders@lifestylemedicinegateway.com>";
+
+/** Sends a single email via Resend. Silently logs errors so one failure doesn't break others. */
+async function sendEmail(to: string[], subject: string, html: string) {
+  if (!RESEND_API_KEY) return;
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+      },
+      body: JSON.stringify({ from: FROM_EMAIL, to, subject, html }),
+    });
+    if (!res.ok) console.error(`Failed to send email to ${to.join(", ")}:`, await res.text());
+    else console.log(`Email sent to ${to.join(", ")}`);
+  } catch (e) {
+    console.error("Email fetch error:", e);
+  }
+}
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -69,42 +90,109 @@ serve(async (req: Request) => {
       throw bookingError;
     }
 
-    // 2. Send Email
-    if (RESEND_API_KEY) {
-      try {
-        const emailRes = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${RESEND_API_KEY}`,
-          },
-          body: JSON.stringify({
-            from: "Lifestyle Medicine Gateway <orders@lifestylemedicinegateway.com>",
-            to: [customer_email],
-            subject: `Booking Confirmation: ${product_title}`,
-            html: `
-              <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; rounded: 10px;">
-                <h1 style="color: #10b981;">Booking Confirmed!</h1>
-                <p>Hi,</p>
-                <p>Your appointment for <strong>${product_title}</strong> with <strong>${vendor_name}</strong> has been successfully scheduled.</p>
-                <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                  <p style="margin: 5px 0;"><strong>Date:</strong> ${new Date(booking.start_time).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
-                  <p style="margin: 5px 0;"><strong>Time:</strong> ${new Date(booking.start_time).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</p>
-                  <p style="margin: 5px 0;"><strong>Payment Method:</strong> ${payment_method === "store" ? "Pay on Store" : "Paid Online"}</p>
-                </div>
-                <p>If you need to reschedule or cancel, please visit your profile on our website.</p>
-                <p>Best regards,<br>The LMG Team</p>
-              </div>
-            `,
-          }),
-        });
-        if (!emailRes.ok) console.error("Failed to send email:", await emailRes.text());
-      } catch (e) {
-        console.error("Email fetch error:", e);
-      }
+    // 2. Look up vendor's auth email so we can notify them
+    let vendorEmail: string | null = null;
+    try {
+      const { data: vendorAuthUser } = await supabaseAdmin.auth.admin.getUserById(vendor_id);
+      vendorEmail = vendorAuthUser?.user?.email ?? null;
+      console.log("Vendor email:", vendorEmail);
+    } catch (e) {
+      console.error("Could not fetch vendor email:", e);
     }
 
-    // 3. Send SMS via ClickSend
+    // Shared booking detail block used in all emails
+    const bookingDate = new Date(booking.start_time).toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const bookingTime = new Date(booking.start_time).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const bookingEndTime = new Date(booking.end_time).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    const paymentLabel = payment_method === "store" ? "Pay on Store / Clinic" : "Paid Online via Stripe";
+
+    const detailsBlock = `
+      <div style="background:#f9fafb;padding:16px 20px;border-radius:10px;margin:20px 0;border:1px solid #e5e7eb;">
+        <p style="margin:6px 0"><strong>Service:</strong> ${product_title}</p>
+        <p style="margin:6px 0"><strong>Provider:</strong> ${vendor_name}</p>
+        <p style="margin:6px 0"><strong>Date:</strong> ${bookingDate}</p>
+        <p style="margin:6px 0"><strong>Time:</strong> ${bookingTime} – ${bookingEndTime}</p>
+        <p style="margin:6px 0"><strong>Payment:</strong> ${paymentLabel}</p>
+        <p style="margin:6px 0"><strong>Status:</strong> ${payment_method === "store" ? "Pending — pay on arrival" : "Confirmed"}</p>
+      </div>
+    `;
+
+    // 3a. Customer confirmation email
+    await sendEmail(
+      [customer_email],
+      `Booking Confirmation: ${product_title}`,
+      `
+        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+          <h1 style="color:#10b981;">Booking Confirmed!</h1>
+          <p>Hi,</p>
+          <p>Your appointment for <strong>${product_title}</strong> with <strong>${vendor_name}</strong> has been successfully scheduled.</p>
+          ${detailsBlock}
+          <p>If you need to reschedule or cancel, please visit your profile on our website.</p>
+          <p>Best regards,<br>The LMG Team</p>
+        </div>
+      `,
+    );
+
+    // 3b. Vendor notification email
+    if (vendorEmail) {
+      await sendEmail(
+        [vendorEmail],
+        `New Booking: ${product_title} — ${bookingDate}`,
+        `
+          <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+            <h1 style="color:#10b981;">New Appointment Booked!</h1>
+            <p>Hi ${vendor_name},</p>
+            <p>A customer has just booked your service <strong>${product_title}</strong>. Here are the details:</p>
+            ${detailsBlock}
+            <div style="background:#fff7ed;padding:16px 20px;border-radius:10px;margin:20px 0;border:1px solid #fed7aa;">
+              <p style="margin:6px 0;font-weight:bold;">Customer Contact</p>
+              <p style="margin:6px 0"><strong>Email:</strong> ${customer_email}</p>
+              ${customer_phone ? `<p style="margin:6px 0"><strong>Phone:</strong> ${customer_phone}</p>` : ""}
+            </div>
+            <p>You can view and manage this booking in your <a href="https://www.lifestylemedicinegateway.com/vendor?tab=bookings" style="color:#10b981;">Vendor Dashboard → Bookings</a>.</p>
+            <p>Best regards,<br>The LMG Team</p>
+          </div>
+        `,
+      );
+    }
+
+    // 3c. Admin notification email
+    await sendEmail(
+      [ADMIN_EMAIL],
+      `[New Booking] ${product_title} — ${bookingDate}`,
+      `
+        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+          <h1 style="color:#6366f1;">New Service Booking</h1>
+          <p>A new booking has been made on Lifestyle Medicine Gateway.</p>
+          ${detailsBlock}
+          <div style="background:#f0fdf4;padding:16px 20px;border-radius:10px;margin:20px 0;border:1px solid #bbf7d0;">
+            <p style="margin:6px 0;font-weight:bold;">Customer Details</p>
+            <p style="margin:6px 0"><strong>Email:</strong> ${customer_email}</p>
+            ${customer_phone ? `<p style="margin:6px 0"><strong>Phone:</strong> ${customer_phone}</p>` : ""}
+          </div>
+          <div style="background:#f0f9ff;padding:16px 20px;border-radius:10px;margin:20px 0;border:1px solid #bae6fd;">
+            <p style="margin:6px 0;font-weight:bold;">Vendor Details</p>
+            <p style="margin:6px 0"><strong>Store:</strong> ${vendor_name}</p>
+            <p style="margin:6px 0"><strong>Email:</strong> ${vendorEmail ?? "N/A"}</p>
+            <p style="margin:6px 0"><strong>Vendor ID:</strong> ${vendor_id}</p>
+          </div>
+          <p>Manage all bookings in the <a href="https://www.lifestylemedicinegateway.com/admin" style="color:#6366f1;">Admin Dashboard</a>.</p>
+        </div>
+      `,
+    );
+
+    // 4. Send SMS to customer via ClickSend
     if (CLICKSEND_USERNAME && CLICKSEND_API_KEY && customer_phone) {
       try {
         const auth = btoa(`${CLICKSEND_USERNAME}:${CLICKSEND_API_KEY}`);
