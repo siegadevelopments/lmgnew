@@ -250,8 +250,7 @@ html.dark main {
 }
 
 .wp-content h2,
-.wp-content h3,
-h1.text-3xl {
+.wp-content h3 {
   background: linear-gradient(to right, var(--wellness-light) 0%, transparent 100%);
   padding: 0.2em 0.5em;
   border-radius: 0.2em;

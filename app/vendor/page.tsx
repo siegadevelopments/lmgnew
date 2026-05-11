@@ -15,7 +15,7 @@ import { AnalyticsTab } from "@/components/vendor/AnalyticsTab";
 import { ProductsTab } from "@/components/vendor/ProductsTab";
 import { VideosTab } from "@/components/vendor/VideosTab";
 import { ArticlesTab } from "@/components/vendor/ArticlesTab";
-import { WithdrawTab } from "@/components/vendor/WithdrawTab";
+import { VendorWalletTab } from "@/components/vendor/VendorWalletTab";
 import { SettingsTab } from "@/components/vendor/SettingsTab";
 import { VendorLiveStream } from "@/components/vendor/VendorLiveStream";
 import { ChatTab } from "@/components/vendor/ChatTab";
@@ -460,7 +460,7 @@ function VendorDashboardContent() {
                 <h1 className="text-2xl font-bold tracking-tight">Payouts & Withdrawals</h1>
                 <p className="text-muted-foreground">Manage your earnings and transfer funds.</p>
               </div>
-              <WithdrawTab totalSales={totalSales} vendorId={user?.id} />
+              <VendorWalletTab vendorId={user!.id} />
             </TabsContent>
 
             {profile.vendor_type !== "services" && (

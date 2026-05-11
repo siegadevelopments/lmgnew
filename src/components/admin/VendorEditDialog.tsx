@@ -45,6 +45,7 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
     ai_instructions: vendor?.ai_instructions || "",
     vendor_type: vendor?.vendor_type || "products",
     is_approved: vendor?.is_approved || false,
+    commission_rate: vendor?.commission_rate ?? 10,
   });
 
   const handleChange = (
@@ -117,6 +118,7 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
         ai_instructions: (formData as any).ai_instructions,
         vendor_type: formData.vendor_type,
         is_approved: (formData as any).is_approved,
+        commission_rate: Number((formData as any).commission_rate),
         updated_at: new Date().toISOString(),
       };
 
@@ -178,6 +180,24 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
               checked={(formData as any).is_approved}
               onChange={(e) => setFormData((prev) => ({ ...prev, is_approved: e.target.checked }))}
               className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+            />
+          </div>
+
+          <div className="grid gap-2 p-4 rounded-xl border border-primary/20 bg-primary/5">
+            <Label htmlFor="commission_rate" className="font-bold text-primary">Platform Commission Rate (%)</Label>
+            <p className="text-[10px] text-muted-foreground italic">
+              The percentage of each sale kept by the platform (e.g., 10 for 10%). The rest goes to the vendor's wallet.
+            </p>
+            <Input
+              id="commission_rate"
+              name="commission_rate"
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
+              value={(formData as any).commission_rate}
+              onChange={handleChange}
+              required
             />
           </div>
 

@@ -22,6 +22,7 @@ import { UserEditDialog } from "@/components/admin/UserEditDialog";
 import { sendBrandedResetEmail } from "@/lib/admin-actions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ProductsTab } from "@/components/vendor/ProductsTab";
+import { AdminPayoutsTab } from "@/components/admin/AdminPayoutsTab";
 import { toast } from "sonner";
 import {
   Edit,
@@ -373,6 +374,7 @@ export default function AdminPage() {
     { id: "overview", label: "Dashboard", icon: LayoutDashboard },
     { id: "orders", label: `Orders (${orders.length})`, icon: ShoppingBag },
     { id: "vendors", label: "Vendors", icon: Store },
+    { id: "payouts", label: "Payouts", icon: DollarSign },
     { id: "streams", label: "Live Streams", icon: Radio },
     { id: "products", label: `Products (${products.length})`, icon: Package },
     { id: "content", label: "Content Manager", icon: FileText },
@@ -803,6 +805,11 @@ export default function AdminPage() {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* PAYOUTS */}
+            <TabsContent value="payouts" className="mt-0 border-0 p-0">
+              <AdminPayoutsTab />
             </TabsContent>
 
             {/* PRODUCTS */}

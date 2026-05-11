@@ -45,10 +45,35 @@ serve(async (req: Request) => {
         expand: ["data.price.product"],
       });
 
+      const earningsToInsert = [];
+
       for (const item of lineItems.data) {
         const product = item.price?.product as Stripe.Product;
         const bookingStart = product.metadata?.booking_start;
         const bookingEnd = product.metadata?.booking_end;
+        const vendorId = product.metadata?.vendor_id;
+
+        if (vendorId) {
+          // Fetch commission rate, default to 10 if not set
+          const { data: vendorProfile } = await supabaseAdmin
+            .from("vendor_profiles")
+            .select("commission_rate")
+            .eq("id", vendorId)
+            .single();
+            
+          const commissionRate = vendorProfile?.commission_rate ?? 10;
+          const itemTotal = (item.amount_total / 100); // Stripe amount is in cents
+          const platformFee = itemTotal * (commissionRate / 100);
+          const vendorCut = itemTotal - platformFee;
+          
+          earningsToInsert.push({
+            vendor_id: vendorId,
+            order_id: orderId,
+            amount: vendorCut,
+            platform_fee: platformFee,
+            status: 'pending'
+          });
+        }
 
         if (bookingStart && bookingEnd) {
           // Create booking
@@ -56,12 +81,17 @@ serve(async (req: Request) => {
             order_id: orderId,
             product_id: parseInt(product.metadata.product_id),
             customer_id: userId,
-            vendor_id: product.metadata.vendor_id, // We need vendor_id in metadata too
+            vendor_id: vendorId, // We need vendor_id in metadata too
             start_time: bookingStart,
             end_time: bookingEnd,
             status: "confirmed",
           } as any);
         }
+      }
+
+      if (earningsToInsert.length > 0) {
+        await supabaseAdmin.from("vendor_earnings").insert(earningsToInsert);
+        console.log(`Created ${earningsToInsert.length} earning records for order ${orderId}`);
       }
 
       // 3. Trigger Email & SMS Notifications for Bookings

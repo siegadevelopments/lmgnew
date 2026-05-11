@@ -70,7 +70,10 @@ export const featuredProductsQueryOptions = () =>
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*, vendor_profiles!inner(store_name, is_approved)")
+        .select(`
+          id, vendor_id, title, slug, excerpt, content, price, image_url, stock, status, created_at, updated_at,
+          vendor_profiles!inner(store_name, is_approved)
+        `)
         .eq("status", "published")
         .eq("vendor_profiles.is_approved", true)
         .limit(4)
