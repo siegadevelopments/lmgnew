@@ -12,9 +12,11 @@ export async function uploadMedia(
   const fileMB = file.size / 1024 / 1024;
   const isVideo = file.type.startsWith("video/");
 
-  // Use R2 for videos or files > 45MB (to stay safe under 50MB Supabase limit)
-  if (isVideo || fileMB > 45 || bucket === "r2") {
-    console.log(`Routing ${file.name} to Cloudflare R2...`);
+  // ALWAYS use R2 by default now because Supabase storage is full (1GB limit reached)
+  const shouldForceR2 = true; 
+
+  if (shouldForceR2 || isVideo || fileMB > 45 || bucket === "r2") {
+    console.log(`Routing ${file.name} to Cloudflare R2 (Supabase is full)...`);
     try {
       const fileExt = file.name.split(".").pop();
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 60);
