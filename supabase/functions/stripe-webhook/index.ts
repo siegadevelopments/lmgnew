@@ -94,12 +94,97 @@ serve(async (req: Request) => {
         console.log(`Created ${earningsToInsert.length} earning records for order ${orderId}`);
       }
 
-      // 3. Trigger Email & SMS Notifications for Bookings
+      // 3. Notify Vendors of their specific items
+      const vendorItemsMap: Record<string, any[]> = {};
+      for (const item of lineItems.data) {
+        const product = item.price?.product as Stripe.Product;
+        const vendorId = product.metadata?.vendor_id;
+        if (vendorId) {
+          if (!vendorItemsMap[vendorId]) vendorItemsMap[vendorId] = [];
+          vendorItemsMap[vendorId].push({
+            name: product.name,
+            quantity: item.quantity,
+            price: item.amount_total / 100 / (item.quantity || 1)
+          });
+        }
+      }
+
       const { data: order } = await supabaseAdmin
         .from("orders")
         .select("*")
         .eq("id", orderId)
         .single();
+
+      if (order && RESEND_API_KEY) {
+        for (const [vendorId, items] of Object.entries(vendorItemsMap)) {
+          const { data: vendorProfile } = await supabaseAdmin
+            .from("vendor_profiles")
+            .select("representative_email, store_name")
+            .eq("id", vendorId)
+            .single();
+
+          const vendorEmail = vendorProfile?.representative_email;
+          if (vendorEmail) {
+            await fetch("https://api.resend.com/emails", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${RESEND_API_KEY}`,
+              },
+              body: JSON.stringify({
+                from: "Lifestyle Medicine Gateway <orders@lifestylemedicinegateway.com>",
+                to: [vendorEmail],
+                subject: `New Order Received - LMG-${orderId.substring(0, 8).toUpperCase()}`,
+                html: `
+                  <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+                    <h1 style="color: #10b981;">New Order for Your Store!</h1>
+                    <p>Hello,</p>
+                    <p>You have received a new paid order on Lifestyle Medicine Gateway. Please fulfill the following items:</p>
+                    
+                    <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;">
+                      <h3 style="margin-top: 0; color: #1e293b;">Customer Details</h3>
+                      <p style="margin: 5px 0;"><strong>Name:</strong> ${order.first_name} ${order.last_name}</p>
+                      <p style="margin: 5px 0;"><strong>Email:</strong> ${order.email}</p>
+                      <p style="margin: 5px 0;"><strong>Phone:</strong> ${order.phone || "Not provided"}</p>
+                      <p style="margin: 5px 0;"><strong>Address:</strong><br />${order.address}<br />${order.city}, ${order.state} ${order.zip}</p>
+                    </div>
+
+                    <div style="margin: 20px 0;">
+                      <h3 style="color: #1e293b;">Items to Fulfill</h3>
+                      <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                          <tr style="text-align: left; border-bottom: 2px solid #e2e8f0;">
+                            <th style="padding: 10px 0;">Product</th>
+                            <th style="padding: 10px 0;">Qty</th>
+                            <th style="padding: 10px 0; text-align: right;">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${items.map(item => `
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                              <td style="padding: 10px 0;">${item.name}</td>
+                              <td style="padding: 10px 0;">${item.quantity}</td>
+                              <td style="padding: 10px 0; text-align: right;">$${(item.price * item.quantity).toFixed(2)}</td>
+                            </tr>
+                          `).join('')}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <p>Please log in to your dashboard to manage fulfillment.</p>
+                    <a href="https://lifestylemedicinegateway.com/vendor" 
+                       style="display: inline-block; background: #10b981; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0;">
+                      Manage Fulfillment
+                    </a>
+                  </div>
+                `,
+              }),
+            });
+          }
+        }
+      }
+
+      // 4. Trigger Email & SMS Notifications for Bookings
 
       for (const item of lineItems.data) {
         const product = item.price?.product as Stripe.Product;

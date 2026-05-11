@@ -342,7 +342,7 @@ export default function CheckoutPage() {
                     <div className="mt-6 flex flex-row items-center justify-center gap-2 opacity-80 grayscale hover:grayscale-0 transition-all duration-500">
                       <div className="flex h-8 w-12 items-center justify-center rounded border border-border bg-white shadow-sm px-1">
                         <img
-                          src="https://upload.wikimedia.org/wikipedia/commons/d/d6/Visa_2021.svg"
+                          src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg"
                           alt="Visa"
                           className="h-2.5 object-contain"
                         />
@@ -363,7 +363,7 @@ export default function CheckoutPage() {
                       </div>
                       <div className="flex h-8 w-16 items-center justify-center rounded border border-border bg-white shadow-sm px-1">
                         <img
-                          src="https://upload.wikimedia.org/wikipedia/commons/a/a2/Discover_Card_logo.svg"
+                          src="https://upload.wikimedia.org/wikipedia/commons/8/8d/Discover-logo.svg"
                           alt="Discover"
                           className="h-3 object-contain"
                         />

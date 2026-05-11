@@ -39,24 +39,6 @@ serve(async (req: Request) => {
           <p>View user in <a href="https://lifestylemedicinegateway.com/admin/users">Admin Dashboard</a></p>
         </div>
       `;
-    } else if (table === "orders" && type === "INSERT") {
-        // This handles cases where an order is created but not necessarily paid yet (if that's desired)
-        // However, usually admin wants to know about PAID orders.
-        // We'll handle paid orders in stripe-webhook, but maybe also notify about "Pending" orders?
-        // User asked for "new registration, orders, etc."
-        subject = `New Order Created: #${record.id.substring(0, 8)}`;
-        html = `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-            <h2 style="color: #3b82f6;">New Order Placed</h2>
-            <p>A new order has been placed on the marketplace.</p>
-            <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
-              <p style="margin: 5px 0;"><strong>Order ID:</strong> ${record.id}</p>
-              <p style="margin: 5px 0;"><strong>Total:</strong> $${record.total_amount}</p>
-              <p style="margin: 5px 0;"><strong>Status:</strong> ${record.status}</p>
-            </div>
-            <p>View order in <a href="https://lifestylemedicinegateway.com/admin/orders">Admin Dashboard</a></p>
-          </div>
-        `;
     } else if (table === "contact_messages" && type === "INSERT") {
       subject = `New Contact Message: ${record.subject}`;
       html = `
