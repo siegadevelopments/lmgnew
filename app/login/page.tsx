@@ -22,11 +22,27 @@ function LoginContent() {
   const searchParams = useSearchParams();
   
   const [isRecovery, setIsRecovery] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
 
   useEffect(() => {
     const type = searchParams.get("type");
     const code = searchParams.get("code");
     const hash = window.location.hash;
+    
+    // Check for errors in the hash or search params (Supabase sends them this way)
+    const errorParam = searchParams.get("error") || (hash.includes("error=") ? new URLSearchParams(hash.substring(1)).get("error") : null);
+    const errorDesc = searchParams.get("error_description") || (hash.includes("error_description=") ? new URLSearchParams(hash.substring(1)).get("error_description") : null);
+
+    if (errorParam === "access_denied" && errorDesc?.toLowerCase().includes("expired")) {
+      setError("This password reset link has expired. Please request a new one.");
+      setIsForgotPassword(true);
+      return;
+    }
+
+    if (errorParam) {
+      setError(errorDesc || "An authentication error occurred.");
+    }
     
     // Explicitly set recovery if type=recovery is present in search or hash
     if (type === "recovery" || hash.includes("type=recovery") || code) {
@@ -34,7 +50,7 @@ function LoginContent() {
     }
   }, [searchParams]);
 
-  const { signIn, updatePassword } = useAuth();
+  const { signIn, updatePassword, resetPassword } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -105,6 +121,78 @@ function LoginContent() {
       router.push("/login");
     }, 2000);
   };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+    setIsLoading(true);
+
+    const { error: resetError } = await resetPassword(resetEmail);
+
+    if (resetError) {
+      setError(resetError.message);
+    } else {
+      setSuccess("If an account exists for this email, you will receive a reset link shortly.");
+      setResetEmail("");
+    }
+    setIsLoading(false);
+  };
+
+  if (isForgotPassword) {
+    return (
+      <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12">
+        <Card className="w-full max-w-md border-primary/20 shadow-xl">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Forgot Password?</CardTitle>
+            <CardDescription>Enter your email and we'll send you a recovery link.</CardDescription>
+          </CardHeader>
+          <form onSubmit={handleForgotPassword}>
+            <CardContent className="space-y-4">
+              {error && (
+                <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
+              {success && (
+                <div className="rounded-md bg-green-500/10 p-3 text-sm text-green-600">
+                  {success}
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="reset-email">Email Address</Label>
+                <Input
+                  id="reset-email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  required
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="flex flex-col gap-4">
+              <Button type="submit" className="w-full" disabled={isLoading || !!success}>
+                {isLoading ? "Sending..." : "Send Reset Link"}
+              </Button>
+              <Button 
+                type="button" 
+                variant="ghost" 
+                className="w-full"
+                onClick={() => {
+                  setIsForgotPassword(false);
+                  setError("");
+                  setSuccess("");
+                }}
+              >
+                Back to Login
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
+    );
+  }
 
   if (isRecovery) {
     return (
@@ -188,6 +276,17 @@ function LoginContent() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="login-password">Password</Label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsForgotPassword(true);
+                    setError("");
+                    setSuccess("");
+                  }}
+                  className="text-xs text-primary hover:underline"
+                >
+                  Forgot password?
+                </button>
               </div>
               <Input
                 id="login-password"

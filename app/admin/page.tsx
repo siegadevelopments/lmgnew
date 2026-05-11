@@ -16,7 +16,6 @@ import { AdminEmailMarketingTab } from "@/components/admin/AdminEmailMarketingTa
 import { AdminSubscribersTab } from "@/components/admin/AdminSubscribersTab";
 import { AdminPopupsTab } from "@/components/admin/AdminPopupsTab";
 import { AffiliatesTab } from "@/components/admin/AffiliatesTab";
-import { UsersTable } from "@/components/admin/UsersTable";
 import { VendorEditDialog } from "@/components/admin/VendorEditDialog";
 import { UserEditDialog } from "@/components/admin/UserEditDialog";
 import { sendBrandedResetEmail } from "@/lib/admin-actions";
@@ -45,6 +44,8 @@ import {
   MessageSquare,
   Sparkles,
   Trash2,
+  DollarSign,
+  Loader2,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -225,7 +226,7 @@ export default function AdminPage() {
 
         const productsData = (productsRes.data || []).map((p: any) => ({
           ...p,
-          vendor: p.vendor_profiles,
+          vendor: p.vendor_profiles || null,
         }));
         setProducts(productsData);
 

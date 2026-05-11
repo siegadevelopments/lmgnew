@@ -9,6 +9,7 @@ export function AdminPayoutsTab() {
   const [vendors, setVendors] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadPayouts();
@@ -16,6 +17,8 @@ export function AdminPayoutsTab() {
 
   const loadPayouts = async () => {
     try {
+      setLoading(true);
+      setError(null);
       // Fetch all vendors
       const { data: vendorsData, error: vendorsError } = await supabase
         .from("vendor_profiles")
@@ -29,7 +32,15 @@ export function AdminPayoutsTab() {
         .select("vendor_id, amount")
         .eq("status", "pending");
 
-      if (earningsError) throw earningsError;
+      if (earningsError) {
+        if (earningsError.code === "PGRST116" || earningsError.message?.includes("relation") || earningsError.message?.includes("does not exist")) {
+           console.warn("vendor_earnings table missing.");
+           setError("Database setup required. Please contact support or run the commission setup script.");
+           setLoading(false);
+           return;
+        }
+        throw earningsError;
+      }
 
       const vendorsWithBalances = vendorsData.map((vendor) => {
         const vendorEarnings = earningsData.filter((e) => e.vendor_id === vendor.id);
@@ -43,7 +54,7 @@ export function AdminPayoutsTab() {
       setVendors(vendorsWithBalances.sort((a, b) => b.pendingBalance - a.pendingBalance));
     } catch (err: any) {
       console.error("Error loading payouts:", err);
-      toast.error("Failed to load payout data");
+      setError(err.message || "Failed to load payout data");
     } finally {
       setLoading(false);
     }
@@ -76,6 +87,25 @@ export function AdminPayoutsTab() {
 
   if (loading) {
     return <div className="p-8 text-center">Loading payout data...</div>;
+  }
+
+  if (error) {
+    return (
+      <Card className="border-destructive/20 bg-destructive/5 m-6">
+        <CardHeader>
+          <CardTitle className="text-destructive flex items-center gap-2">
+            <Wallet className="h-5 w-5" />
+            Payout System Error
+          </CardTitle>
+          <CardDescription>{error}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button onClick={loadPayouts} variant="outline" size="sm">
+            Retry Loading
+          </Button>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
