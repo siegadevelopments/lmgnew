@@ -45,6 +45,7 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
     ai_instructions: vendor?.ai_instructions || "",
     vendor_type: vendor?.vendor_type || "products",
     is_approved: vendor?.is_approved || false,
+    is_live: vendor?.is_live || false,
     commission_rate: vendor?.commission_rate ?? 10,
   });
 
@@ -118,6 +119,7 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
         ai_instructions: (formData as any).ai_instructions,
         vendor_type: formData.vendor_type,
         is_approved: (formData as any).is_approved,
+        is_live: (formData as any).is_live,
         commission_rate: Number((formData as any).commission_rate),
         updated_at: new Date().toISOString(),
       };
@@ -179,6 +181,23 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
               name="is_approved"
               checked={(formData as any).is_approved}
               onChange={(e) => setFormData((prev) => ({ ...prev, is_approved: e.target.checked }))}
+              className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+            />
+          </div>
+
+          <div className="flex items-center justify-between p-4 rounded-xl border border-primary/20 bg-primary/5">
+            <div>
+              <Label htmlFor="is_live" className="font-bold text-primary">Live Status</Label>
+              <p className="text-[10px] text-muted-foreground italic">
+                Whether this vendor's profile is fully live to the public. Both Approved and Live must be checked for products to show up.
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              id="is_live"
+              name="is_live"
+              checked={(formData as any).is_live}
+              onChange={(e) => setFormData((prev) => ({ ...prev, is_live: e.target.checked }))}
               className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
             />
           </div>
