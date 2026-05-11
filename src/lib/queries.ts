@@ -31,20 +31,38 @@ export const productBySlugQueryOptionsV2 = (slug: string) =>
   queryOptions({
     queryKey: ["products", "bySlug", "v2", slug],
     queryFn: async () => {
+      console.log("Fetching product by slug:", slug);
       const { data, error } = await supabase
         .from("products")
         .select(`
           *,
-          vendor_profiles (*)
+          vendor_profiles (
+            id,
+            store_name,
+            store_logo_url,
+            is_approved
+          )
         `)
         .eq("slug", slug)
         .eq("status", "published")
         .limit(1);
 
-      if (error) throw new Error(error.message);
+      if (error) {
+        console.error("Supabase error fetching product:", error);
+        throw new Error(error.message);
+      }
+      
+      if (!data || data.length === 0) {
+        console.warn("No product found for slug:", slug);
+        return [];
+      }
       
       // Filter for approved vendors
-      const filtered = (data || []).filter((p: any) => p.vendor_profiles?.is_approved);
+      const filtered = data.filter((p: any) => p.vendor_profiles?.is_approved);
+      
+      if (filtered.length === 0) {
+        console.warn("Product found but vendor not approved or profile missing for slug:", slug);
+      }
       
       return filtered;
     },
