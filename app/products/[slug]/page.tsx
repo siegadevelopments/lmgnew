@@ -160,7 +160,7 @@ function ProductContent() {
     queryFn: async () => {
       let query = supabase
         .from("products")
-        .select("*, vendor_profiles(store_name)")
+        .select("*, vendor_profiles(store_name, store_logo_url, is_approved)")
         .eq("status", "published")
         .neq("id", product.id)
         .limit(6);

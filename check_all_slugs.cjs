@@ -17,13 +17,14 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 async function check() {
   const { data: products, error } = await supabase
     .from('products')
-    .select('id, title, slug, status, vendor_id')
-    .eq('slug', 'himalayan-salt-fine');
+    .select('slug, status')
+    .eq('status', 'published');
   
   if (error) {
     console.error('Error:', error);
   } else {
-    console.log(JSON.stringify(products, null, 2));
+    console.log('Count:', products.length);
+    console.log('Found himalayan-salt-fine?', products.some(p => p.slug === 'himalayan-salt-fine'));
   }
 }
 check();

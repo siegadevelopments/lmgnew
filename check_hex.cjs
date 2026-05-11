@@ -15,15 +15,18 @@ for (const line of lines) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function check() {
-  const { data: products, error } = await supabase
+  const { data: product, error } = await supabase
     .from('products')
-    .select('id, title, slug, status, vendor_id')
-    .eq('slug', 'himalayan-salt-fine');
+    .select('id, slug')
+    .ilike('slug', '%himalayan-salt-fine%');
   
   if (error) {
     console.error('Error:', error);
   } else {
-    console.log(JSON.stringify(products, null, 2));
+    product.forEach(p => {
+      console.log(`Slug: "${p.slug}"`);
+      console.log(`Hex:  ${Buffer.from(p.slug).toString('hex')}`);
+    });
   }
 }
 check();

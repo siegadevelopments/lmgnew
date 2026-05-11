@@ -11,7 +11,7 @@ export const productsQueryOptions = () =>
         .from("products")
         .select(`
           *,
-          vendor_profiles (store_name, is_approved)
+          vendor_profiles (store_name, store_logo_url, is_approved)
         `)
         .eq("status", "published");
         
@@ -90,7 +90,7 @@ export const featuredProductsQueryOptions = () =>
         .from("products")
         .select(`
           *,
-          vendor_profiles!inner(store_name, is_approved)
+          vendor_profiles!inner(store_name, store_logo_url, is_approved)
         `)
         .eq("status", "published")
         .eq("vendor_profiles.is_approved", true)

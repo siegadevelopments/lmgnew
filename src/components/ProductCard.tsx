@@ -172,9 +172,26 @@ export function ProductCard({ product, className }: ProductCardProps) {
             </div>
 
             <div className="mt-2 pt-2 border-t border-border/50 flex items-center justify-between text-[10px] text-muted-foreground">
-              <span className="truncate max-w-[80px]">
-                {(product as any).vendor_profiles?.store_name || "LMG Store"}
-              </span>
+              <div className="flex items-center gap-1.5 truncate max-w-[100px]">
+                {(product as any).vendor_profiles?.store_logo_url ? (
+                  <div className="relative h-3.5 w-3.5 overflow-hidden rounded-full border border-border/50 shrink-0">
+                    <Image
+                      src={(product as any).vendor_profiles.store_logo_url}
+                      alt={(product as any).vendor_profiles.store_name}
+                      fill
+                      className="object-cover"
+                      sizes="14px"
+                    />
+                  </div>
+                ) : (
+                  <div className="h-3.5 w-3.5 rounded-full bg-primary/10 flex items-center justify-center text-[8px] font-bold text-primary shrink-0">
+                    {((product as any).vendor_profiles?.store_name || "L").charAt(0)}
+                  </div>
+                )}
+                <span className="truncate">
+                  {(product as any).vendor_profiles?.store_name || "LMG Store"}
+                </span>
+              </div>
               <span className="shrink-0">Australia</span>
             </div>
           </div>

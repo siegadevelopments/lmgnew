@@ -15,15 +15,15 @@ for (const line of lines) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function check() {
-  const { data: products, error } = await supabase
-    .from('products')
-    .select('id, title, slug, status, vendor_id')
-    .eq('slug', 'himalayan-salt-fine');
+  const { data: vendor, error } = await supabase
+    .from('vendor_profiles')
+    .select('*')
+    .eq('id', 'cf2123af-eeb6-42eb-b1e4-737796f9c356');
   
   if (error) {
     console.error('Error:', error);
   } else {
-    console.log(JSON.stringify(products, null, 2));
+    console.log(JSON.stringify(vendor, null, 2));
   }
 }
 check();

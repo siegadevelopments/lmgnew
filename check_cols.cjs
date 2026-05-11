@@ -15,15 +15,13 @@ for (const line of lines) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function check() {
-  const { data: products, error } = await supabase
-    .from('products')
-    .select('id, title, slug, status, vendor_id')
-    .eq('slug', 'himalayan-salt-fine');
-  
+  const { data, error } = await supabase.from('products').select('*').limit(1);
   if (error) {
-    console.error('Error:', error);
+    console.error('Error fetching with *:');
+    console.error(error);
   } else {
-    console.log(JSON.stringify(products, null, 2));
+    console.log('Columns in products:');
+    console.log(Object.keys(data[0]));
   }
 }
 check();
