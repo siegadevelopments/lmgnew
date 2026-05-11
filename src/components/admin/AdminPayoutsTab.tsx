@@ -20,14 +20,14 @@ export function AdminPayoutsTab() {
       setLoading(true);
       setError(null);
       // Fetch all vendors
-      const { data: vendorsData, error: vendorsError } = await supabase
+      const { data: vendorsData, error: vendorsError } = await (supabase as any)
         .from("vendor_profiles")
         .select("id, store_name, representative_name");
         
       if (vendorsError) throw vendorsError;
 
       // Fetch pending earnings grouped by vendor
-      const { data: earningsData, error: earningsError } = await supabase
+      const { data: earningsData, error: earningsError } = await (supabase as any)
         .from("vendor_earnings")
         .select("vendor_id, amount")
         .eq("status", "pending");
@@ -42,9 +42,9 @@ export function AdminPayoutsTab() {
         throw earningsError;
       }
 
-      const vendorsWithBalances = vendorsData.map((vendor) => {
-        const vendorEarnings = earningsData.filter((e) => e.vendor_id === vendor.id);
-        const totalPending = vendorEarnings.reduce((sum, e) => sum + Number(e.amount), 0);
+      const vendorsWithBalances = (vendorsData || []).map((vendor: any) => {
+        const vendorEarnings = (earningsData || []).filter((e: any) => e.vendor_id === vendor.id);
+        const totalPending = vendorEarnings.reduce((sum: number, e: any) => sum + Number(e.amount), 0);
         return {
           ...vendor,
           pendingBalance: totalPending,
@@ -67,7 +67,7 @@ export function AdminPayoutsTab() {
     
     setProcessingId(vendorId);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("vendor_earnings")
         .update({ status: 'paid' })
         .eq("vendor_id", vendorId)
