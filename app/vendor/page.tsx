@@ -21,6 +21,7 @@ import { VendorLiveStream } from "@/components/vendor/VendorLiveStream";
 import { ChatTab } from "@/components/vendor/ChatTab";
 import { BulkImportTab } from "@/components/vendor/BulkImportTab";
 import { OrdersTab } from "@/components/vendor/OrdersTab";
+import { BookingsTab } from "@/components/vendor/BookingsTab";
 import {
   LayoutDashboard,
   Package,
@@ -36,6 +37,7 @@ import {
   Store,
   Upload,
   MessageCircle,
+  CalendarCheck,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -298,6 +300,10 @@ function VendorDashboardContent() {
       label: profile.vendor_type === "both" ? "Products & Services" : profile.vendor_type === "services" ? "My Services" : "My Products",
       icon: Package,
     },
+    // Bookings tab — only for service vendors
+    ...(profile.vendor_type === "services" || profile.vendor_type === "both"
+      ? [{ id: "bookings", label: "Bookings", icon: CalendarCheck }]
+      : []),
     { id: "live", label: "Live Stream", icon: Radio },
     { id: "videos", label: "Video Content", icon: Video },
     { id: "orders", label: `Orders (${orderItems.length})`, icon: ShoppingBag },
@@ -430,6 +436,17 @@ function VendorDashboardContent() {
               </div>
               <VideosTab videos={videos} setVideos={setVideos} userId={user!.id} />
             </TabsContent>
+
+            {/* Bookings Tab — service vendors only */}
+            {(profile.vendor_type === "services" || profile.vendor_type === "both") && (
+              <TabsContent value="bookings" className="mt-0 border-0 p-0">
+                <div className="mb-6 flex flex-col gap-1">
+                  <h1 className="text-2xl font-bold tracking-tight">Appointments & Bookings</h1>
+                  <p className="text-muted-foreground">View and manage all customer bookings for your services.</p>
+                </div>
+                <BookingsTab vendorId={profile.id} />
+              </TabsContent>
+            )}
 
             <TabsContent value="orders" className="mt-0 border-0 p-0">
               <div className="mb-6 flex flex-col gap-1">
