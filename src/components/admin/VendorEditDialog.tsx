@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Mail, Upload } from "lucide-react";
 import { uploadMedia } from "@/lib/upload";
+import { sendBrandedResetEmail } from "@/lib/admin-actions";
 
 interface VendorEditDialogProps {
   vendor: any;
@@ -81,17 +82,9 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
       return;
     }
     setResetLoading(true);
-    const resetUrl = window.location.origin.includes("localhost")
-      ? "https://lifestylemedicinegateway.com/login?type=recovery"
-      : `${window.location.origin}/login?type=recovery`;
-
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: resetUrl,
-      });
-
-      if (error) throw error;
-      toast.success(`Password reset email sent to ${email}`);
+      await sendBrandedResetEmail(email, vendor?.representative_name || vendor?.store_name);
+      toast.success(`Branded reset email sent to ${email}`);
     } catch (error: any) {
       console.error("Error sending reset:", error);
       toast.error(error.message || "Failed to send reset email");
