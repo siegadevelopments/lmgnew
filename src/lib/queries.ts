@@ -11,14 +11,14 @@ export const productsQueryOptions = () =>
         .from("products")
         .select(`
           *,
-          vendor_profiles (store_name, store_logo_url, is_approved)
+          vendor_profiles (store_name, store_logo_url, is_approved, is_live)
         `)
         .eq("status", "published");
         
       if (error) throw new Error(error.message);
       
-      // Filter for approved vendors manually for maximum compatibility
-      const filtered = (data || []).filter((p: any) => p.vendor_profiles?.is_approved);
+      // Filter for approved and live vendors manually for maximum compatibility
+      const filtered = (data || []).filter((p: any) => p.vendor_profiles?.is_approved && p.vendor_profiles?.is_live);
       
       // Shuffle the results for the "randomized" shop feel
       const shuffled = filtered.sort(() => Math.random() - 0.5);
@@ -40,7 +40,8 @@ export const productBySlugQueryOptionsV2 = (slug: string) =>
             id,
             store_name,
             store_logo_url,
-            is_approved
+            is_approved,
+            is_live
           )
         `)
         .eq("slug", slug)
@@ -57,11 +58,11 @@ export const productBySlugQueryOptionsV2 = (slug: string) =>
         return [];
       }
       
-      // Filter for approved vendors
-      const filtered = data.filter((p: any) => p.vendor_profiles?.is_approved);
+      // Filter for approved and live vendors
+      const filtered = data.filter((p: any) => p.vendor_profiles?.is_approved && p.vendor_profiles?.is_live);
       
       if (filtered.length === 0) {
-        console.warn("Product found but vendor not approved or profile missing for slug:", slug);
+        console.warn("Product found but vendor not approved/live or profile missing for slug:", slug);
       }
       
       return filtered;
@@ -90,10 +91,11 @@ export const featuredProductsQueryOptions = () =>
         .from("products")
         .select(`
           *,
-          vendor_profiles!inner(store_name, store_logo_url, is_approved)
+          vendor_profiles!inner(store_name, store_logo_url, is_approved, is_live)
         `)
         .eq("status", "published")
         .eq("vendor_profiles.is_approved", true)
+        .eq("vendor_profiles.is_live", true)
         .limit(4)
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
