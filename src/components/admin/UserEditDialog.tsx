@@ -58,7 +58,11 @@ export function UserEditDialog({ user, isOpen, onClose, onSuccess }: UserEditDia
     }
     setResetLoading(true);
     try {
-      await sendBrandedResetEmail(email, user?.full_name);
+      const resetUrl = `${window.location.origin}/login?type=recovery`;
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: resetUrl,
+      });
+      if (error) throw error;
       toast.success(`Branded reset email sent to ${email}`);
     } catch (error: any) {
       console.error("Error sending reset:", error);

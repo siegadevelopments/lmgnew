@@ -83,7 +83,11 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
     }
     setResetLoading(true);
     try {
-      await sendBrandedResetEmail(email, vendor?.representative_name || vendor?.store_name);
+      const resetUrl = `${window.location.origin}/login?type=recovery`;
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: resetUrl,
+      });
+      if (error) throw error;
       toast.success(`Branded reset email sent to ${email}`);
     } catch (error: any) {
       console.error("Error sending reset:", error);

@@ -320,34 +320,36 @@ export default function AdminPage() {
 
   const handleBulkResetPasswords = async () => {
     if (!users || users.length === 0) return;
-    if (
-      !window.confirm(
-        `Are you sure you want to send password reset links to ALL ${users.length} users? This will send custom emails from info@lifestylemedicinegateway.com.`,
-      )
-    )
+    if (!confirm(`Are you sure you want to send password reset links to ALL ${users.length} users? This will allow them to access the new platform.`)) {
       return;
+    }
 
     setBulkResetProgress({ total: users.length, current: 0, active: true });
 
     let successCount = 0;
     let failCount = 0;
+    let current = 0;
 
-    for (const u of users) {
-      if (!u.email) {
+    const resetUrl = `${window.location.origin}/login?type=recovery`;
+    
+    for (const user of users) {
+      if (!user.email) {
         failCount++;
-        setBulkResetProgress((prev) => ({ ...prev, current: prev.current + 1 }));
-        continue;
+      } else {
+        try {
+          const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+            redirectTo: resetUrl,
+          });
+          if (error) throw error;
+          successCount++;
+        } catch (err) {
+          console.error(`Failed to send reset to ${user.email}:`, err);
+          failCount++;
+        }
       }
-
-      try {
-        await sendBrandedResetEmail(u.email, u.full_name);
-        successCount++;
-      } catch (err) {
-        console.error(`Failed to reset for ${u.email}:`, err);
-        failCount++;
-      }
-
-      setBulkResetProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+      
+      current++;
+      setBulkResetProgress(prev => ({ ...prev, current }));
     }
 
     setBulkResetProgress((prev) => ({ ...prev, active: false }));
