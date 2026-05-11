@@ -12,11 +12,15 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const CLICKSEND_USERNAME = Deno.env.get("CLICKSEND_USERNAME");
 const CLICKSEND_API_KEY = Deno.env.get("CLICKSEND_API_KEY");
 const ADMIN_EMAIL = "info@lifestylemedicinegateway.com";
-const FROM_EMAIL = "Lifestyle Medicine Gateway <orders@lifestylemedicinegateway.com>";
+// Use the same verified sender as notify-admin to avoid Resend domain issues
+const FROM_EMAIL = "LMG Notifications <notifications@lifestylemedicinegateway.com>";
 
-/** Sends a single email via Resend. Silently logs errors so one failure doesn't break others. */
+/** Sends a single email via Resend. Logs full response details for debugging. */
 async function sendEmail(to: string[], subject: string, html: string) {
-  if (!RESEND_API_KEY) return;
+  if (!RESEND_API_KEY) {
+    console.error("RESEND_API_KEY is not set — email NOT sent to:", to.join(", "));
+    return;
+  }
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -26,10 +30,14 @@ async function sendEmail(to: string[], subject: string, html: string) {
       },
       body: JSON.stringify({ from: FROM_EMAIL, to, subject, html }),
     });
-    if (!res.ok) console.error(`Failed to send email to ${to.join(", ")}:`, await res.text());
-    else console.log(`Email sent to ${to.join(", ")}`);
+    const responseText = await res.text();
+    if (!res.ok) {
+      console.error(`[Resend] FAILED to send email to ${to.join(", ")} (HTTP ${res.status}):`, responseText);
+    } else {
+      console.log(`[Resend] Email sent successfully to ${to.join(", ")}. Response:`, responseText);
+    }
   } catch (e) {
-    console.error("Email fetch error:", e);
+    console.error("[Resend] Fetch error when sending email:", e);
   }
 }
 
