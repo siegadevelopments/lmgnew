@@ -1,10 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { format, addMinutes, parseISO, startOfToday } from "date-fns";
+import { format, addMinutes, parseISO, startOfToday, addDays } from "date-fns";
 import { Loader2, Calendar as CalendarIcon, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -16,8 +16,29 @@ interface Props {
   onSelect: (booking: { start_time: string; end_time: string } | null) => void;
 }
 
+/**
+ * Find the next calendar date that has configured availability AND has future slots.
+ * Searches up to 60 days ahead to avoid an infinite loop.
+ */
+function findNextAvailableDate(availability: any[]): Date {
+  const now = new Date();
+  for (let i = 0; i < 60; i++) {
+    const candidate = addDays(startOfToday(), i);
+    const dayOfWeek = candidate.getDay();
+    const dayAvail = availability.find((a) => a.day_of_week === dayOfWeek);
+    if (!dayAvail) continue;
+
+    // Check if at least one slot in this day is in the future
+    const [endH, endM] = dayAvail.end_time.split(":").map(Number);
+    const dayEnd = new Date(candidate);
+    dayEnd.setHours(endH, endM, 0, 0);
+    if (dayEnd > now) return candidate;
+  }
+  return startOfToday(); // fallback
+}
+
 export function BookingCalendar({ productId, vendorId, onSelect }: Props) {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(startOfToday());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
 
   // 1. Fetch Availability for this product
@@ -33,6 +54,13 @@ export function BookingCalendar({ productId, vendorId, onSelect }: Props) {
       return (data || []) as any[];
     },
   });
+
+  // Auto-select the next available date once we know the vendor's availability schedule
+  useEffect(() => {
+    if (availability && availability.length > 0 && selectedDate === undefined) {
+      setSelectedDate(findNextAvailableDate(availability));
+    }
+  }, [availability, selectedDate]);
 
   // 2. Fetch existing bookings for the selected date
   const { data: existingBookings, isLoading: loadingBookings } = useQuery({
