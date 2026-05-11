@@ -62,7 +62,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, s) => {
+    } = supabase.auth.onAuthStateChange((event, s) => {
+      console.log("Auth event:", event, !!s);
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {

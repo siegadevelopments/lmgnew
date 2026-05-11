@@ -24,8 +24,11 @@ function LoginContent() {
 
   useEffect(() => {
     const type = searchParams.get("type");
+    const code = searchParams.get("code");
     const hash = window.location.hash;
-    if (type === "recovery" || hash.includes("type=recovery")) {
+    
+    // Explicitly set recovery if type=recovery is present in search or hash
+    if (type === "recovery" || hash.includes("type=recovery") || code) {
       setIsRecovery(true);
     }
   }, [searchParams]);
@@ -76,6 +79,15 @@ function LoginContent() {
     }
 
     setIsLoading(true);
+    
+    // Ensure we have a session before trying to update
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      setError("Auth session missing! Please ensure you clicked the link from your email and haven't closed this window.");
+      setIsLoading(false);
+      return;
+    }
+
     const { error: authError } = await updatePassword(newPassword);
 
     if (authError) {
