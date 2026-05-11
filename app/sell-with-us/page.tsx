@@ -11,6 +11,12 @@ import {
   Heart,
   ArrowRight,
 } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 
 export const metadata = {
@@ -273,6 +279,67 @@ export default function SellWithUsPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* FAQ Section */}
+        <section className="py-32 bg-white relative overflow-hidden">
+          <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl font-black tracking-tight text-foreground sm:text-5xl">
+                Frequently Asked Questions
+              </h2>
+              <p className="mt-4 text-lg text-muted-foreground">
+                Everything you need to know about selling on Lifestyle Medicine Gateway.
+              </p>
+            </div>
+            
+            <Accordion type="single" collapsible className="w-full space-y-4">
+              <AccordionItem value="item-1" className="border rounded-2xl px-6 bg-[#F8FAF8] hover:bg-wellness/5 transition-colors border-border/50">
+                <AccordionTrigger className="text-left font-bold text-lg hover:no-underline py-6">
+                  How do returns and refunds work for my products?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground text-base leading-relaxed pb-6">
+                  Our platform has a standard 30-day return policy. Customers will initiate returns through our support team, and you (the distributing business) will be responsible for providing instructions on how and where to send the package. Once you receive and inspect the returned item, the refund will be processed to the customer's original payment method within 10 business days.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-2" className="border rounded-2xl px-6 bg-[#F8FAF8] hover:bg-wellness/5 transition-colors border-border/50">
+                <AccordionTrigger className="text-left font-bold text-lg hover:no-underline py-6">
+                  Are there any items that cannot be returned?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground text-base leading-relaxed pb-6">
+                  Yes. To protect our vendors, certain types of items are exempt from returns, including perishable goods (food, flowers), custom products (personalized items), and personal care goods (beauty products).
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-3" className="border rounded-2xl px-6 bg-[#F8FAF8] hover:bg-wellness/5 transition-colors border-border/50">
+                <AccordionTrigger className="text-left font-bold text-lg hover:no-underline py-6">
+                  What if I ship products internationally to the European Union?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground text-base leading-relaxed pb-6">
+                  If you choose to ship merchandise into the European Union, please note that EU customers are legally entitled to a 3-Day Cooling Off Period, allowing them to cancel or return their order within 3 days without justification.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-4" className="border rounded-2xl px-6 bg-[#F8FAF8] hover:bg-wellness/5 transition-colors border-border/50">
+                <AccordionTrigger className="text-left font-bold text-lg hover:no-underline py-6">
+                  How is customer privacy and data handled?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground text-base leading-relaxed pb-6">
+                  We take privacy seriously. We securely collect payment and shipping information to process orders. As a vendor, you will receive the necessary shipping details to fulfill your orders. You are required to handle this personal data strictly for fulfillment purposes in accordance with our Privacy Policy.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-5" className="border rounded-2xl px-6 bg-[#F8FAF8] hover:bg-wellness/5 transition-colors border-border/50">
+                <AccordionTrigger className="text-left font-bold text-lg hover:no-underline py-6">
+                  Are there any upfront fees to join?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground text-base leading-relaxed pb-6">
+                  No! There are zero monthly subscriptions or hidden charges. You only pay a small commission when you make a successful sale.
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </div>
         </section>
 
