@@ -116,6 +116,11 @@ export default function AdminPage() {
     contactMessages: 0,
     subscribers: 0,
   });
+  const [bulkResetProgress, setBulkResetProgress] = useState({
+    total: 0,
+    current: 0,
+    active: false,
+  });
   const [editingVendor, setEditingVendor] = useState<any>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
@@ -309,6 +314,92 @@ export default function AdminPage() {
     if (error) return alert("Failed: " + error.message);
     setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, status: newStatus } : p)));
     toast.success(`Product ${newStatus}`);
+  };
+
+  const handleBulkResetPasswords = async () => {
+    if (!users || users.length === 0) return;
+    if (
+      !window.confirm(
+        `Are you sure you want to send password reset links to ALL ${users.length} users? This will send custom emails from info@lifestylemedicinegateway.com.`,
+      )
+    )
+      return;
+
+    setBulkResetProgress({ total: users.length, current: 0, active: true });
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const u of users) {
+      if (!u.email) {
+        failCount++;
+        setBulkResetProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+        continue;
+      }
+
+      try {
+        // 1. Generate Link via admin-api
+        const { data: linkData, error: linkError } = await supabase.functions.invoke("admin-api", {
+          body: { action: "reset-password", params: { email: u.email } },
+        });
+
+        if (linkError) throw linkError;
+        if (!linkData?.link) throw new Error("No reset link generated");
+
+        // 2. Send Custom Email via send-email
+        const htmlContent = `
+          <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #0f172a; font-size: 24px; font-weight: 800; margin: 0; letter-spacing: -0.025em;">Lifestyle Medicine Gateway</h1>
+              <p style="color: #64748b; font-size: 14px; margin-top: 8px;">Experience our new and improved platform</p>
+            </div>
+            
+            <div style="color: #334155; line-height: 1.6; font-size: 16px;">
+              <p>Hi <strong>${u.full_name || "Valued Member"}</strong>,</p>
+              <p>We're excited to announce that we have moved to a <strong>better, faster, and more secure system</strong> to enhance your wellness journey.</p>
+              <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #0f172a; margin: 25px 0;">
+                <p style="margin: 0; font-weight: 600; color: #0f172a;">Action Required:</p>
+                <p style="margin: 5px 0 0 0;">Please reset your password to experience the full functionality of the new Lifestyle Medicine Gateway.</p>
+              </div>
+            </div>
+
+            <div style="text-align: center; margin: 40px 0;">
+              <a href="${linkData.link}" style="background-color: #0f172a; color: #ffffff; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">Reset My Password</a>
+            </div>
+
+            <div style="color: #64748b; font-size: 12px; line-height: 1.5; border-top: 1px solid #f1f5f9; padding-top: 25px; margin-top: 40px; text-align: center;">
+              <p>If you have any questions, simply reply to this email — we're here to help!</p>
+              <p style="margin-top: 10px;">&copy; ${new Date().getFullYear()} Lifestyle Medicine Gateway. All rights reserved.</p>
+            </div>
+          </div>
+        `;
+
+        const { error: emailError } = await supabase.functions.invoke("send-email", {
+          body: {
+            to: u.email,
+            subject: "Important: Access the new Lifestyle Medicine Gateway",
+            html: htmlContent,
+            fromName: "Lifestyle Medicine Gateway",
+            fromEmail: "info@lifestylemedicinegateway.com",
+          },
+        });
+
+        if (emailError) throw emailError;
+
+        successCount++;
+      } catch (err) {
+        console.error(`Failed to reset for ${u.email}:`, err);
+        failCount++;
+      }
+
+      setBulkResetProgress((prev) => ({ ...prev, current: prev.current + 1 }));
+    }
+
+    setBulkResetProgress((prev) => ({ ...prev, active: false }));
+    toast.success(`Bulk reset complete!`, {
+      description: `Successfully sent ${successCount} emails. ${failCount > 0 ? `${failCount} failed.` : ""}`,
+      duration: 6000,
+    });
   };
 
   if (authLoading || loading || !role) {
@@ -905,9 +996,41 @@ export default function AdminPage() {
 
             {/* USERS */}
             <TabsContent value="users" className="mt-0 border-0 p-0">
-              <div className="mb-6 flex flex-col gap-1">
-                <h1 className="text-2xl font-bold tracking-tight">User Directory</h1>
-                <p className="text-muted-foreground">Monitor all registered platform users.</p>
+              <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex flex-col gap-1">
+                  <h1 className="text-2xl font-bold tracking-tight">User Directory</h1>
+                  <p className="text-muted-foreground">Monitor all registered platform users.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {bulkResetProgress.active && (
+                    <div className="flex items-center gap-2 mr-4">
+                      <div className="h-2 w-32 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary transition-all duration-300"
+                          style={{
+                            width: `${(bulkResetProgress.current / bulkResetProgress.total) * 100}%`,
+                          }}
+                        />
+                      </div>
+                      <span className="text-xs font-medium">
+                        {bulkResetProgress.current}/{bulkResetProgress.total}
+                      </span>
+                    </div>
+                  )}
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    onClick={handleBulkResetPasswords}
+                    disabled={bulkResetProgress.active || users.length === 0}
+                  >
+                    {bulkResetProgress.active ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Mail className="h-4 w-4" />
+                    )}
+                    Bulk Password Reset
+                  </Button>
+                </div>
               </div>
               <Card>
                 <CardContent className="pt-6">
