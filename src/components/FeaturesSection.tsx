@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const features = [
   {
     icon: (
@@ -18,6 +20,7 @@ const features = [
     ),
     title: "Shop Products",
     description: "Browse curated wellness products from supplements to organic skincare.",
+    href: "/products",
   },
   {
     icon: (
@@ -39,6 +42,7 @@ const features = [
     ),
     title: "Book Services",
     description: "Schedule consultations, sessions, and appointments with practitioners.",
+    href: "/services",
   },
   {
     icon: (
@@ -60,6 +64,7 @@ const features = [
     ),
     title: "Read & Learn",
     description: "Access expert articles, recipes, and wellness guides from professionals.",
+    href: "/articles",
   },
   {
     icon: (
@@ -79,6 +84,7 @@ const features = [
     ),
     title: "Watch & Stream",
     description: "Enjoy video content and live sessions from wellness experts.",
+    href: "/videos",
   },
 ];
 
@@ -97,21 +103,25 @@ export function FeaturesSection() {
 
         <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {features.map((feature) => (
-            <div
+            <Link
               key={feature.title}
-              className="flex flex-col items-center text-center rounded-xl border border-border bg-card p-8 shadow-soft transition-all duration-300 hover:shadow-card"
+              href={feature.href}
+              className="flex flex-col items-center text-center rounded-xl border border-border bg-card p-8 shadow-soft transition-all duration-300 hover:shadow-card hover:border-primary/20 group"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-wellness-muted text-primary">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-wellness-muted text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                 {feature.icon}
               </div>
-              <h3 className="mt-5 text-base font-semibold text-card-foreground">{feature.title}</h3>
+              <h3 className="mt-5 text-base font-semibold text-card-foreground group-hover:text-primary transition-colors">
+                {feature.title}
+              </h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 {feature.description}
               </p>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
     </section>
   );
 }
+
