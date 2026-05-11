@@ -64,6 +64,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
       image: product.image_url || undefined,
       slug: product.slug,
       vendor_id: (product as any).vendor_id,
+      product_type: (product as any).product_type,
     });
 
     toast.success(`${product.title} added to cart`, {

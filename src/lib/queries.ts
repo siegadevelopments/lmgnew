@@ -9,7 +9,10 @@ export const productsQueryOptions = () =>
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*, vendor_profiles(store_name, is_approved)")
+        .select(`
+          id, vendor_id, title, slug, excerpt, content, price, image_url, stock, status, created_at, updated_at,
+          vendor_profiles (store_name, is_approved)
+        `)
         .eq("status", "published");
         
       if (error) throw new Error(error.message);
@@ -30,7 +33,10 @@ export const productBySlugQueryOptionsV2 = (slug: string) =>
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("*, vendor_profiles(*)")
+        .select(`
+          id, vendor_id, title, slug, excerpt, content, price, image_url, stock, status, created_at, updated_at,
+          vendor_profiles (*)
+        `)
         .eq("slug", slug)
         .eq("status", "published")
         .limit(1);

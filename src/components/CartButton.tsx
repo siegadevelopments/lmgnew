@@ -102,7 +102,7 @@ export function CartButton() {
                     )}
                     <div className="flex-1">
                       <Link
-                        href={`/products/${item.slug}`}
+                        href={`/${item.product_type === "service" ? "services" : "products"}/${item.slug}`}
                         className="font-medium hover:text-primary"
                         onClick={() => setOpen(false)}
                       >

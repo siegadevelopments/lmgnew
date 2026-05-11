@@ -16,8 +16,10 @@ import { AdminEmailMarketingTab } from "@/components/admin/AdminEmailMarketingTa
 import { AdminSubscribersTab } from "@/components/admin/AdminSubscribersTab";
 import { AdminPopupsTab } from "@/components/admin/AdminPopupsTab";
 import { AffiliatesTab } from "@/components/admin/AffiliatesTab";
+import { UsersTable } from "@/components/admin/UsersTable";
 import { VendorEditDialog } from "@/components/admin/VendorEditDialog";
 import { UserEditDialog } from "@/components/admin/UserEditDialog";
+import { sendBrandedResetEmail } from "@/lib/admin-actions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ProductsTab } from "@/components/vendor/ProductsTab";
 import { toast } from "sonner";
@@ -338,54 +340,7 @@ export default function AdminPage() {
       }
 
       try {
-        // 1. Generate Link via admin-api
-        const { data: linkData, error: linkError } = await supabase.functions.invoke("admin-api", {
-          body: { action: "reset-password", params: { email: u.email } },
-        });
-
-        if (linkError) throw linkError;
-        if (!linkData?.link) throw new Error("No reset link generated");
-
-        // 2. Send Custom Email via send-email
-        const htmlContent = `
-          <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-            <div style="text-align: center; margin-bottom: 30px;">
-              <h1 style="color: #0f172a; font-size: 24px; font-weight: 800; margin: 0; letter-spacing: -0.025em;">Lifestyle Medicine Gateway</h1>
-              <p style="color: #64748b; font-size: 14px; margin-top: 8px;">Experience our new and improved platform</p>
-            </div>
-            
-            <div style="color: #334155; line-height: 1.6; font-size: 16px;">
-              <p>Hi <strong>${u.full_name || "Valued Member"}</strong>,</p>
-              <p>We're excited to announce that we have moved to a <strong>better, faster, and more secure system</strong> to enhance your wellness journey.</p>
-              <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; border-left: 4px solid #0f172a; margin: 25px 0;">
-                <p style="margin: 0; font-weight: 600; color: #0f172a;">Action Required:</p>
-                <p style="margin: 5px 0 0 0;">Please reset your password to experience the full functionality of the new Lifestyle Medicine Gateway.</p>
-              </div>
-            </div>
-
-            <div style="text-align: center; margin: 40px 0;">
-              <a href="${linkData.link}" style="background-color: #0f172a; color: #ffffff; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">Reset My Password</a>
-            </div>
-
-            <div style="color: #64748b; font-size: 12px; line-height: 1.5; border-top: 1px solid #f1f5f9; padding-top: 25px; margin-top: 40px; text-align: center;">
-              <p>If you have any questions, simply reply to this email — we're here to help!</p>
-              <p style="margin-top: 10px;">&copy; ${new Date().getFullYear()} Lifestyle Medicine Gateway. All rights reserved.</p>
-            </div>
-          </div>
-        `;
-
-        const { error: emailError } = await supabase.functions.invoke("send-email", {
-          body: {
-            to: u.email,
-            subject: "Important: Access the new Lifestyle Medicine Gateway",
-            html: htmlContent,
-            fromName: "Lifestyle Medicine Gateway",
-            fromEmail: "info@lifestylemedicinegateway.com",
-          },
-        });
-
-        if (emailError) throw emailError;
-
+        await sendBrandedResetEmail(u.email, u.full_name);
         successCount++;
       } catch (err) {
         console.error(`Failed to reset for ${u.email}:`, err);

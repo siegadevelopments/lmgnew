@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Mail } from "lucide-react";
+import { sendBrandedResetEmail } from "@/lib/admin-actions";
 
 interface UserEditDialogProps {
   user: any;
@@ -56,18 +57,9 @@ export function UserEditDialog({ user, isOpen, onClose, onSuccess }: UserEditDia
       return;
     }
     setResetLoading(true);
-    const resetUrl = window.location.origin.includes("localhost")
-      ? "https://lifestylemedicinegateway.com/login?type=recovery"
-      : `${window.location.origin}/login?type=recovery`;
-
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: resetUrl,
-      });
-
-      if (error) throw error;
-
-      toast.success(`Password reset email sent to ${email}`);
+      await sendBrandedResetEmail(email, user?.full_name);
+      toast.success(`Branded reset email sent to ${email}`);
     } catch (error: any) {
       console.error("Error sending reset:", error);
       toast.error(error.message || "Failed to send reset email");

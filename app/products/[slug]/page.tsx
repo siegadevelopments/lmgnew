@@ -87,6 +87,7 @@ function ProductContent() {
       image: product.image_url || undefined,
       slug: product.slug,
       vendor_id: product.vendor_id,
+      product_type: product.product_type,
       booking: booking || undefined,
     });
     setAdded(true);
@@ -106,6 +107,7 @@ function ProductContent() {
       image: product.image_url || undefined,
       slug: product.slug,
       vendor_id: product.vendor_id,
+      product_type: product.product_type,
       booking: booking || undefined,
     });
     router.push("/checkout");
