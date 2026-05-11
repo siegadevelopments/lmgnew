@@ -10,7 +10,7 @@ export const productsQueryOptions = () =>
       const { data, error } = await supabase
         .from("products")
         .select(`
-          id, vendor_id, title, slug, excerpt, content, price, image_url, stock, status, created_at, updated_at,
+          *,
           vendor_profiles (store_name, is_approved)
         `)
         .eq("status", "published");
@@ -34,7 +34,7 @@ export const productBySlugQueryOptionsV2 = (slug: string) =>
       const { data, error } = await supabase
         .from("products")
         .select(`
-          id, vendor_id, title, slug, excerpt, content, price, image_url, stock, status, created_at, updated_at,
+          *,
           vendor_profiles (*)
         `)
         .eq("slug", slug)
@@ -71,7 +71,7 @@ export const featuredProductsQueryOptions = () =>
       const { data, error } = await supabase
         .from("products")
         .select(`
-          id, vendor_id, title, slug, excerpt, content, price, image_url, stock, status, created_at, updated_at,
+          *,
           vendor_profiles!inner(store_name, is_approved)
         `)
         .eq("status", "published")

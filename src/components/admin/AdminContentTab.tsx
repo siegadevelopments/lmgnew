@@ -136,7 +136,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
           }
         } else {
           query = (supabase.from(activeType) as any)
-            .select(activeType === "products" ? "id, vendor_id, title, slug, excerpt, content, price, image_url, stock, status, created_at, updated_at" : "*")
+            .select("*")
             .order("created_at", { ascending: false })
             .limit(50);
         }
@@ -190,7 +190,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         }
       } else {
         query = (supabase.from(activeType) as any)
-          .select(activeType === "products" ? "id, vendor_id, title, slug, excerpt, content, price, image_url, stock, status, created_at, updated_at" : "*")
+          .select("*")
           .order("created_at", { ascending: false })
           .limit(50);
       }
