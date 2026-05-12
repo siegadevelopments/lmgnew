@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const productsQueryOptions = () =>
   queryOptions({
-    queryKey: ["products", "list", "v2"],
+    queryKey: ["products", "list", "v3"],
     staleTime: 10 * 1000, // 10 seconds
     gcTime: 2 * 60 * 1000, // 2 minutes
     queryFn: async () => {
@@ -31,7 +31,7 @@ export const productsQueryOptions = () =>
 
 export const productBySlugQueryOptionsV2 = (slug: string) =>
   queryOptions({
-    queryKey: ["products", "bySlug", "v2", slug],
+    queryKey: ["products", "bySlug", "v3", slug],
     staleTime: 5 * 1000, // Only cache for 5 seconds to ensure freshness on navigation
     gcTime: 60 * 1000, // Keep in memory for 1 minute
     queryFn: async () => {
@@ -79,7 +79,7 @@ export const productBySlugQueryOptionsV2 = (slug: string) =>
 
 export const categoriesQueryOptions = () =>
   queryOptions({
-    queryKey: ["categories"],
+    queryKey: ["categories", "v3"],
     queryFn: async () => {
       const { data, error } = await supabase.from("categories").select("*").eq("type", "product");
       if (error) throw new Error(error.message);
@@ -91,7 +91,7 @@ export const categoriesQueryOptions = () =>
 
 export const featuredProductsQueryOptions = () =>
   queryOptions({
-    queryKey: ["products", "featured"],
+    queryKey: ["products", "featured", "v3"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
@@ -111,7 +111,7 @@ export const featuredProductsQueryOptions = () =>
 
 export const recipesQueryOptions = () =>
   queryOptions({
-    queryKey: ["recipes", "list"],
+    queryKey: ["recipes", "list", "v3"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("recipes")
@@ -124,7 +124,7 @@ export const recipesQueryOptions = () =>
 
 export const recipeBySlugQueryOptions = (slug: string) =>
   queryOptions({
-    queryKey: ["recipes", "bySlug", slug],
+    queryKey: ["recipes", "bySlug", "v3", slug],
     queryFn: async () => {
       const { data, error } = await supabase.from("recipes").select("*").eq("slug", slug).limit(1);
       if (error) throw new Error(error.message);
@@ -134,7 +134,7 @@ export const recipeBySlugQueryOptions = (slug: string) =>
 
 export const articlesQueryOptions = (category?: string) =>
   queryOptions({
-    queryKey: ["articles", "list", category || "all"],
+    queryKey: ["articles", "list", "v3", category || "all"],
     queryFn: async () => {
       let query = supabase.from("articles").select("*");
       if (category) {
@@ -148,7 +148,7 @@ export const articlesQueryOptions = (category?: string) =>
 
 export const articleBySlugQueryOptions = (slug: string) =>
   queryOptions({
-    queryKey: ["articles", "bySlug", slug],
+    queryKey: ["articles", "bySlug", "v3", slug],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("articles")
@@ -162,7 +162,7 @@ export const articleBySlugQueryOptions = (slug: string) =>
 
 export const videosQueryOptions = () =>
   queryOptions({
-    queryKey: ["videos", "list"],
+    queryKey: ["videos", "list", "v3"],
     queryFn: async () => {
       try {
         // We show videos where the author is an admin OR the video is explicitly featured
@@ -197,7 +197,7 @@ export const videosQueryOptions = () =>
 
 export const brandsQueryOptions = () =>
   queryOptions({
-    queryKey: ["brands"],
+    queryKey: ["brands", "v3"],
     queryFn: async () => {
       // Vendors are now queried from vendor_profiles!
       const { data, error } = await supabase

@@ -1,4 +1,4 @@
-// Triggering fresh build - 2026-05-11
+// Triggering fresh build - 2026-05-12 v1.0.6
 import { Providers } from "./Providers";
 import "./globals.css";
 import { Header } from "@/components/Header";
@@ -8,6 +8,7 @@ import { MarketingScripts } from "@/components/MarketingScripts";
 import { MessengerBubble } from "@/components/chat/GlobalChat";
 import { GlobalPopup } from "@/components/GlobalPopup";
 import { AppInstallPopup } from "@/components/AppInstallPopup";
+import { CacheBuster } from "@/components/CacheBuster";
 import { Inter } from 'next/font/google';
 import type { Metadata, Viewport } from 'next';
 
@@ -90,13 +91,14 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  console.log("LMG RootLayout v1.0.5 Loaded");
+  console.log("LMG RootLayout v1.0.6 Loaded");
   return (
     <html lang="en" className={inter.className}>
       <head>
       </head>
       <body>
         <Providers>
+          <CacheBuster />
           <div className="flex flex-col min-h-screen bg-background text-foreground">
             <MarketingScripts />
 
