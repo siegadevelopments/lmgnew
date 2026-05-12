@@ -148,15 +148,33 @@ export const articlesQueryOptions = (category?: string) =>
 
 export const articleBySlugQueryOptions = (slug: string) =>
   queryOptions({
-    queryKey: ["articles", "bySlug", "v3", slug],
+    queryKey: ["articles", "bySlug", "v4", slug],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const decodedSlug = decodeURIComponent(slug);
+      
+      // Try exact match first
+      const { data: exactMatch } = await supabase
         .from("articles")
         .select("*, vendor_profiles(representative_name, store_name)")
-        .eq("slug", slug)
+        .eq("slug", decodedSlug)
+        .maybeSingle();
+
+      if (exactMatch) return [exactMatch];
+
+      // Fallback: search for slugs that look similar (handling em-dash and other variants)
+      const sanitizedSlug = decodedSlug.replace(/[—–-]/g, '%');
+      const { data: fallbackMatch, error } = await supabase
+        .from("articles")
+        .select("*, vendor_profiles(representative_name, store_name)")
+        .ilike("slug", sanitizedSlug)
         .limit(1);
-      if (error) throw new Error(error.message);
-      return (data || []) as any[];
+
+      if (error) {
+        console.error("Article fetch error:", error);
+        throw new Error(error.message);
+      }
+      
+      return (fallbackMatch || []) as any[];
     },
   });
 
