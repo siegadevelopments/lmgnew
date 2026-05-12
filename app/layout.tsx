@@ -99,9 +99,7 @@ export default function RootLayout({
         <Providers>
           <div className="flex flex-col min-h-screen bg-background text-foreground">
             <MarketingScripts />
-            <div className="bg-amber-100 text-amber-900 px-4 py-2 text-center text-sm font-medium z-[100] relative">
-              ⚠️ We are currently doing some updates to the website. You may experience some temporary glitches and bugs. Thank you for your patience!
-            </div>
+
             <Header />
             <main className="flex-grow relative">
               {children}
