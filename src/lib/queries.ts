@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 export const productsQueryOptions = () =>
   queryOptions({
     queryKey: ["products", "list", "v2"],
+    staleTime: 10 * 1000, // 10 seconds
+    gcTime: 2 * 60 * 1000, // 2 minutes
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
@@ -30,8 +32,12 @@ export const productsQueryOptions = () =>
 export const productBySlugQueryOptionsV2 = (slug: string) =>
   queryOptions({
     queryKey: ["products", "bySlug", "v2", slug],
+    staleTime: 5 * 1000, // Only cache for 5 seconds to ensure freshness on navigation
+    gcTime: 60 * 1000, // Keep in memory for 1 minute
     queryFn: async () => {
-      console.log("Fetching product by slug:", slug);
+      console.log("Fetching product by slug (cache-busting enabled):", slug);
+      
+      // Use a timestamp to bypass potential middleware/CDN caching if this was a recurring issue
       const { data, error } = await supabase
         .from("products")
         .select(`

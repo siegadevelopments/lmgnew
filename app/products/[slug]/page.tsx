@@ -24,7 +24,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Loader2, CreditCard, Store } from "lucide-react";
+import { Loader2, CreditCard, Store, RefreshCcw } from "lucide-react";
 import Link from "next/link";
 
 function ProductContent() {
@@ -48,7 +48,28 @@ function ProductContent() {
   const [isBookingLoading, setIsBookingLoading] = useState(false);
   const [customerPhone, setCustomerPhone] = useState("");
 
-  if (!product) return <div className="p-20 text-center">Product not found</div>;
+  if (!product) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center p-4 text-center">
+        <div className="mb-6 rounded-full bg-wellness-muted p-4 text-primary">
+          <Store className="h-10 w-10" />
+        </div>
+        <h2 className="text-2xl font-bold tracking-tight">Product not found</h2>
+        <p className="mt-2 mb-8 max-w-md text-muted-foreground">
+          This product may have been moved, or the page is temporarily unavailable. 
+          If you believe this is an error, please try refreshing the page.
+        </p>
+        <Button 
+          onClick={() => window.location.reload()}
+          size="lg"
+          className="font-bold"
+        >
+          <RefreshCcw className="mr-2 h-4 w-4" />
+          Refresh Page
+        </Button>
+      </div>
+    );
+  }
 
   const currentPrice = selectedVariant ? selectedVariant.price : product.price;
   const currentStock = selectedVariant
