@@ -937,6 +937,9 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Live Preview: {title || "Untitled"}</DialogTitle>
+            <DialogDescription>
+              Preview how your {activeType.slice(0, -1)} will appear on the website once published.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-6 py-4">
             {activeType === "videos" && embedUrl ? (

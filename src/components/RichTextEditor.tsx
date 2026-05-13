@@ -67,31 +67,27 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           opacity: 0.6;
         }
         .rich-text-editor .ql-snow .ql-stroke {
-          stroke: hsl(var(--foreground)) !important;
+          stroke: #2d3748 !important; /* Dark slate */
           stroke-width: 2px;
         }
         .rich-text-editor .ql-snow .ql-fill {
-          fill: hsl(var(--foreground)) !important;
+          fill: #2d3748 !important;
         }
         .rich-text-editor .ql-snow .ql-picker {
-          color: hsl(var(--foreground)) !important;
+          color: #2d3748 !important;
         }
         .rich-text-editor .ql-snow .ql-picker-options {
-          background-color: hsl(var(--popover)) !important;
-          color: hsl(var(--popover-foreground)) !important;
-          border-color: hsl(var(--border)) !important;
+          background-color: #ffffff !important;
+          color: #2d3748 !important;
+          border-color: #e2e8f0 !important;
         }
-        .rich-text-editor .ql-toolbar button:hover .ql-stroke {
-          stroke: hsl(var(--primary)) !important;
-        }
-        .rich-text-editor .ql-toolbar button:hover .ql-fill {
-          fill: hsl(var(--primary)) !important;
-        }
+        .rich-text-editor .ql-toolbar button:hover .ql-stroke,
         .rich-text-editor .ql-toolbar button.ql-active .ql-stroke {
-          stroke: hsl(var(--primary)) !important;
+          stroke: #10b981 !important; /* emerald-500 */
         }
+        .rich-text-editor .ql-toolbar button:hover .ql-fill,
         .rich-text-editor .ql-toolbar button.ql-active .ql-fill {
-          fill: hsl(var(--primary)) !important;
+          fill: #10b981 !important;
         }
       `}</style>
     </div>
