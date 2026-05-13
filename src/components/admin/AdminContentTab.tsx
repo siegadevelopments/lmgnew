@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { uploadMedia, deleteMediaWithSafety } from "@/lib/upload";
 import { Badge } from "@/components/ui/badge";
 import { useQueryClient } from "@tanstack/react-query";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [activeType, setActiveType] = useState<"articles" | "videos" | "recipes" | "products" | "media">(
@@ -845,12 +846,20 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
               <label className="text-sm font-medium">
                 {activeType === "videos" ? "Description" : "Content"}
               </label>
-              <Textarea
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Enter content/description"
-                rows={5}
-              />
+              {(activeType === "articles" || activeType === "recipes") ? (
+                <RichTextEditor
+                  value={content}
+                  onChange={setContent}
+                  placeholder="Enter content here (formatting supported)"
+                />
+              ) : (
+                <Textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Enter description"
+                  rows={5}
+                />
+              )}
             </div>
 
             <div className="flex gap-2">
@@ -926,11 +935,18 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
               </div>
               <div className="prose prose-slate max-w-none dark:prose-invert">
                 {content ? (
-                  content.split('\n').map((para, i) => (
-                    <p key={i} className="mb-4 text-lg leading-relaxed text-slate-700 dark:text-slate-300">
-                      {para}
-                    </p>
-                  ))
+                  (activeType === "articles" || activeType === "recipes") ? (
+                    <div 
+                      className="rich-content"
+                      dangerouslySetInnerHTML={{ __html: content }} 
+                    />
+                  ) : (
+                    content.split('\n').map((para, i) => (
+                      <p key={i} className="mb-4 text-lg leading-relaxed text-slate-700 dark:text-slate-300">
+                        {para}
+                      </p>
+                    ))
+                  )
                 ) : (
                   <p className="text-muted-foreground italic">No content written yet...</p>
                 )}
