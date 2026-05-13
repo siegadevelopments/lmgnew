@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { uploadMedia } from "@/lib/upload";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import Image from "next/image";
 
 export default function MemesPage() {
   const [selectedGalleryId, setSelectedGalleryId] = useState<string | null>(null);
@@ -156,12 +157,14 @@ export default function MemesPage() {
                   className="break-inside-avoid overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all hover:shadow-md cursor-pointer group"
                   onClick={() => setSelectedImage(item.image_url)}
                 >
-                  <div className="relative overflow-hidden bg-muted">
-                    <img
+                  <div className="relative aspect-[3/4] overflow-hidden bg-muted">
+                    <Image
                       src={item.image_url}
                       alt="Meme"
+                      fill
                       loading="lazy"
-                      className="w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                     />
                     {isAdmin && (
                       <Button
@@ -205,10 +208,12 @@ export default function MemesPage() {
                 >
                   <div className="aspect-[4/3] relative overflow-hidden bg-muted">
                     {coverImage ? (
-                      <img
+                      <Image
                         src={coverImage}
                         alt={gallery.title}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-110"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center">

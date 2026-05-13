@@ -12,6 +12,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { uploadMedia } from "@/lib/upload";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import Image from "next/image";
 
 export default function ChartsPage() {
   const [selectedGalleryId, setSelectedGalleryId] = useState<string | null>(null);
@@ -156,12 +157,14 @@ export default function ChartsPage() {
                   className="overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all hover:shadow-md cursor-pointer group"
                   onClick={() => setSelectedImage(item.image_url)}
                 >
-                  <div className="relative aspect-auto bg-muted">
-                    <img
+                  <div className="relative aspect-[3/4] bg-muted">
+                    <Image
                       src={item.image_url}
                       alt="Chart"
+                      fill
                       loading="lazy"
-                      className="w-full object-contain transition-transform duration-300 group-hover:scale-[1.02]"
+                      className="object-contain transition-transform duration-300 group-hover:scale-[1.02]"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     />
                     {isAdmin && (
                       <Button
@@ -205,10 +208,12 @@ export default function ChartsPage() {
                 >
                   <div className="aspect-[4/3] relative overflow-hidden bg-muted">
                     {coverImage ? (
-                      <img
+                      <Image
                         src={coverImage}
                         alt={gallery.title}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-110"
+                        sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center">
