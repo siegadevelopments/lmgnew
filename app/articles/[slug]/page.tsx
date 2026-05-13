@@ -6,6 +6,7 @@ import { articleBySlugQueryOptions } from "@/lib/queries";
 import { decodeEntities } from "@/lib/utils";
 import { useState, Suspense } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
+import { sanitizeHtml } from "@/lib/security";
 import Link from "next/link";
 
 function ArticleContent() {
@@ -63,7 +64,7 @@ function ArticleContent() {
           <div
             className="wp-content prose prose-green mt-12 max-w-none text-foreground prose-headings:text-foreground prose-a:text-primary prose-img:rounded-xl leading-relaxed text-lg"
             dangerouslySetInnerHTML={{ 
-              __html: (() => {
+              __html: sanitizeHtml((() => {
                 let html = article.content;
                 
                 // If it's already HTML (contains <p> or <h tags), return as is
@@ -163,7 +164,7 @@ function ArticleContent() {
 
                 closeList();
                 return result;
-              })()
+              })())
             }}
           />
         )}

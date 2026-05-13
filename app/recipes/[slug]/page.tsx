@@ -6,6 +6,7 @@ import { recipeBySlugQueryOptions } from "@/lib/queries";
 import { decodeEntities } from "@/lib/utils";
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
+import { sanitizeHtml } from "@/lib/security";
 import Link from "next/link";
 
 function RecipeContent() {
@@ -43,7 +44,7 @@ function RecipeContent() {
         {recipe.content && (
           <div
             className="wp-content prose prose-green mt-10 max-w-none text-foreground prose-headings:text-foreground prose-a:text-primary prose-img:rounded-xl"
-            dangerouslySetInnerHTML={{ __html: recipe.content }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(recipe.content) }}
           />
         )}
       </div>

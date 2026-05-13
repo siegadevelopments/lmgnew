@@ -33,6 +33,7 @@ import { uploadMedia, deleteMediaWithSafety } from "@/lib/upload";
 import { Badge } from "@/components/ui/badge";
 import { useQueryClient } from "@tanstack/react-query";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { sanitizeHtml } from "@/lib/security";
 
 export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [activeType, setActiveType] = useState<"articles" | "videos" | "recipes" | "products" | "media">(
@@ -938,7 +939,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                   (activeType === "articles" || activeType === "recipes") ? (
                     <div 
                       className="rich-content"
-                      dangerouslySetInnerHTML={{ __html: content }} 
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }} 
                     />
                   ) : (
                     content.split('\n').map((para, i) => (
