@@ -434,13 +434,27 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         },
       });
       if (error) throw error;
+      
+      // Handle the case where the function returns a 200 but contains an error object
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
       if (data?.url) {
         setImageUrl(data.url);
         toast.success("AI Thumbnail generated!", { id: toastId });
+      } else {
+        throw new Error("No image URL returned from AI service");
       }
     } catch (err: any) {
       console.error("AI Generation Error details:", err);
+      // Try to parse error message if it's a stringified JSON from Supabase
       let message = err.message || "AI Generation failed";
+      
+      if (message.includes("GEMINI_API_KEY") || message.includes("OPENAI_API_KEY")) {
+        message = "AI Keys missing or invalid in Supabase settings.";
+      }
+      
       toast.error(message, { id: toastId });
     } finally {
       setGeneratingImage(false);
