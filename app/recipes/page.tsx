@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { decodeEntities } from "@/lib/utils";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function RecipesPage() {
   const { data: recipes } = useSuspenseQuery(recipesQueryOptions());
@@ -61,10 +62,12 @@ export default function RecipesPage() {
               >
                 <div className="aspect-video overflow-hidden bg-muted relative">
                   {recipe.image_url ? (
-                    <img
+                    <Image
                       src={recipe.image_url}
                       alt={recipe.title}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center text-muted-foreground/30">

@@ -8,6 +8,7 @@ import { useState, Suspense } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { sanitizeHtml } from "@/lib/security";
 import Link from "next/link";
+import Image from "next/image";
 
 function ArticleContent() {
   const params = useParams();
@@ -50,10 +51,12 @@ function ArticleContent() {
                 </div>
               </div>
             ) : (
-              <img
+              <Image
                 src={article.image_url}
                 alt={decodeEntities(article.title || "")}
-                className="w-full object-cover aspect-[16/9]"
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 896px"
                 onError={() => setImageError(true)}
               />
             )}

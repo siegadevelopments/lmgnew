@@ -8,6 +8,7 @@ import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import { sanitizeHtml } from "@/lib/security";
 import Link from "next/link";
+import Image from "next/image";
 
 function RecipeContent() {
   const params = useParams();
@@ -36,8 +37,14 @@ function RecipeContent() {
         </div>
 
         {recipe.image_url && (
-          <div className="mt-8 overflow-hidden rounded-2xl border border-border shadow-sm">
-            <img src={recipe.image_url} alt={recipe.title} className="w-full object-cover" />
+          <div className="mt-8 overflow-hidden rounded-2xl border border-border shadow-sm relative aspect-video">
+            <Image
+              src={recipe.image_url}
+              alt={recipe.title}
+              fill
+              className="object-cover"
+              sizes="(max-width: 1024px) 100vw, 896px"
+            />
           </div>
         )}
 

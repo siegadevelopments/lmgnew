@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { brandsQueryOptions } from "@/lib/queries";
+import Image from "next/image";
 
 export default function VendorsPage() {
   const { data: vendors } = useSuspenseQuery(brandsQueryOptions());
@@ -29,7 +30,15 @@ export default function VendorsPage() {
               className="group flex flex-col items-center rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:shadow-card hover:-translate-y-1"
             >
               {vendor.store_logo_url ? (
-                <img src={vendor.store_logo_url} className="h-24 w-24 rounded-full object-cover" />
+                <div className="relative h-24 w-24 overflow-hidden rounded-full border border-border">
+                  <Image
+                    src={vendor.store_logo_url}
+                    alt={vendor.store_name}
+                    fill
+                    className="object-cover"
+                    sizes="96px"
+                  />
+                </div>
               ) : (
                 <div className="flex h-24 w-24 items-center justify-center rounded-full bg-wellness-muted text-3xl font-bold text-primary">
                   {vendor.store_name.charAt(0)}

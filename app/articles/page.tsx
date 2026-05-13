@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { decodeEntities, stripHtml } from "@/lib/utils";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function ArticlesPage() {
   const { data: articles } = useSuspenseQuery(articlesQueryOptions());
@@ -59,10 +60,12 @@ export default function ArticlesPage() {
               >
                 <div className="aspect-[16/10] overflow-hidden bg-muted">
                   {article.image_url ? (
-                    <img
+                    <Image
                       src={article.image_url}
                       alt={article.title}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center bg-muted/50 text-muted-foreground/40">

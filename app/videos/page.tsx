@@ -10,6 +10,7 @@ import MuxPlayer from "@mux/mux-player-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { decodeEntities } from "@/lib/utils";
+import Image from "next/image";
 
 /** Extract YouTube video ID from any known URL format */
 function extractYouTubeId(url: string): string | null {
@@ -168,10 +169,15 @@ function VideosContent() {
                     <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
                       <div className="flex items-center gap-3">
                         {stream.vendor_profiles?.store_logo_url && (
-                          <img
-                            src={stream.vendor_profiles.store_logo_url}
-                            className="h-8 w-8 rounded-full border border-white/20"
-                          />
+                          <div className="relative h-8 w-8 overflow-hidden rounded-full border border-white/20">
+                            <Image
+                              src={stream.vendor_profiles.store_logo_url}
+                              alt="Vendor Logo"
+                              fill
+                              className="object-cover"
+                              sizes="32px"
+                            />
+                          </div>
                         )}
                         <div>
                           <p className="text-white font-bold">
@@ -212,11 +218,13 @@ function VideosContent() {
                     {/* Video area */}
                     <div className="relative aspect-video overflow-hidden bg-black">
                       {thumbnail ? (
-                        <img
+                        <Image
                           src={thumbnail}
                           alt={title}
+                          fill
                           loading="lazy"
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                           onError={(e) => {
                             (e.currentTarget as HTMLImageElement).style.display = "none";
                           }}
