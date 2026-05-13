@@ -425,9 +425,11 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     setGeneratingImage(true);
     const toastId = toast.loading("AI is painting a thumbnail...");
     try {
+      // Strip HTML tags for the AI prompt to keep it clean and within size limits
+      const cleanContent = content.replace(/<[^>]*>/g, ' ').substring(0, 1000);
       const { data, error } = await supabase.functions.invoke("generate-ai-image", {
         body: { 
-          prompt: `${title} ${content || ""}`.trim(),
+          prompt: `${title} ${cleanContent}`.trim(),
           author_id: selectedVendorId
         },
       });
