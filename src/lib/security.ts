@@ -3,6 +3,8 @@ import DOMPurify from 'dompurify';
 /**
  * Sanitizes HTML strings to prevent XSS attacks.
  * Uses DOMPurify to strip dangerous tags and attributes.
+ * Note: 'style' is intentionally excluded to prevent Quill's inline
+ * color/background overrides from conflicting with the site theme.
  */
 export function sanitizeHtml(html: string): string {
   if (typeof window === 'undefined') return html; // Return as is on server-side (simple fallback)
@@ -13,9 +15,9 @@ export function sanitizeHtml(html: string): string {
       'ul', 'ol', 'li', 'blockquote', 'a', 'img', 'span', 'div', 'hr',
       'b', 'i', 's', 'strike'
     ],
-    ALLOWED_ATTR: ['href', 'src', 'alt', 'target', 'rel', 'class', 'style', 'width', 'height'],
+    ALLOWED_ATTR: ['href', 'src', 'alt', 'target', 'rel', 'class', 'width', 'height'],
     ADD_ATTR: ['target'],
     FORBID_TAGS: ['script', 'style', 'iframe', 'frame', 'object'],
-    FORBID_ATTR: ['onerror', 'onclick', 'onload'],
+    FORBID_ATTR: ['onerror', 'onclick', 'onload', 'style'],
   });
 }
