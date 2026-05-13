@@ -67,18 +67,31 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
           opacity: 0.6;
         }
         .rich-text-editor .ql-snow .ql-stroke {
-          stroke: hsl(var(--foreground));
+          stroke: hsl(var(--foreground)) !important;
+          stroke-width: 2px;
         }
         .rich-text-editor .ql-snow .ql-fill {
-          fill: hsl(var(--foreground));
+          fill: hsl(var(--foreground)) !important;
         }
         .rich-text-editor .ql-snow .ql-picker {
-          color: hsl(var(--foreground));
+          color: hsl(var(--foreground)) !important;
         }
         .rich-text-editor .ql-snow .ql-picker-options {
-          background-color: hsl(var(--popover));
-          color: hsl(var(--popover-foreground));
-          border-color: hsl(var(--border));
+          background-color: hsl(var(--popover)) !important;
+          color: hsl(var(--popover-foreground)) !important;
+          border-color: hsl(var(--border)) !important;
+        }
+        .rich-text-editor .ql-toolbar button:hover .ql-stroke {
+          stroke: hsl(var(--primary)) !important;
+        }
+        .rich-text-editor .ql-toolbar button:hover .ql-fill {
+          fill: hsl(var(--primary)) !important;
+        }
+        .rich-text-editor .ql-toolbar button.ql-active .ql-stroke {
+          stroke: hsl(var(--primary)) !important;
+        }
+        .rich-text-editor .ql-toolbar button.ql-active .ql-fill {
+          fill: hsl(var(--primary)) !important;
         }
       `}</style>
     </div>
