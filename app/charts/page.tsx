@@ -6,13 +6,21 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useState, useMemo } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Search, ChevronLeft, BarChart3 } from "lucide-react";
+import { Search, ChevronLeft, BarChart3, Plus, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
+import { uploadMedia } from "@/lib/upload";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function ChartsPage() {
   const [selectedGalleryId, setSelectedGalleryId] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const { role } = useAuth();
+  const isAdmin = role === "admin";
+  const queryClient = useQueryClient();
 
   const { data: galleries, isLoading } = useQuery({
     queryKey: ["galleries", "charts"],
@@ -85,11 +93,60 @@ export default function ChartsPage() {
               <ChevronLeft className="h-4 w-4" /> Back to Categories
             </Button>
 
-            <div>
-              <h2 className="text-3xl font-bold text-foreground">{selectedGallery?.title}</h2>
-              <p className="mt-2 text-muted-foreground">
-                {selectedGallery?.gallery_items.length} charts found in this category
-              </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-3xl font-bold text-foreground">{selectedGallery?.title}</h2>
+                <p className="mt-2 text-muted-foreground">
+                  {selectedGallery?.gallery_items.length} charts found in this category
+                </p>
+              </div>
+              {isAdmin && (
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="relative"
+                    disabled={uploadingImage}
+                  >
+                    {uploadingImage ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Plus className="mr-2 h-4 w-4" />
+                    )}
+                    {uploadingImage ? "Uploading..." : "Add Image"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="absolute inset-0 cursor-pointer opacity-0"
+                      disabled={uploadingImage}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file || !selectedGalleryId) return;
+                        setUploadingImage(true);
+                        const toastId = toast.loading("Uploading chart...");
+                        try {
+                          const url = await uploadMedia(file, "admin_uploads");
+                          if (url) {
+                            const { error } = await supabase
+                              .from("gallery_items")
+                              .insert({
+                                gallery_id: selectedGalleryId,
+                                image_url: url
+                              });
+                            if (error) throw error;
+                            toast.success("Chart added successfully!", { id: toastId });
+                            queryClient.invalidateQueries({ queryKey: ["galleries", "charts"] });
+                          }
+                        } catch (err: any) {
+                          toast.error(err.message || "Failed to upload", { id: toastId });
+                        } finally {
+                          setUploadingImage(false);
+                          e.target.value = "";
+                        }
+                      }}
+                    />
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -106,6 +163,30 @@ export default function ChartsPage() {
                       loading="lazy"
                       className="w-full object-contain transition-transform duration-300 group-hover:scale-[1.02]"
                     />
+                    {isAdmin && (
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!confirm("Are you sure you want to delete this chart?")) return;
+                          supabase
+                            .from("gallery_items")
+                            .delete()
+                            .eq("id", item.id)
+                            .then(({ error }) => {
+                              if (error) toast.error("Failed to delete");
+                              else {
+                                toast.success("Chart deleted");
+                                queryClient.invalidateQueries({ queryKey: ["galleries", "charts"] });
+                              }
+                            });
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
