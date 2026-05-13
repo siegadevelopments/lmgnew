@@ -14,16 +14,28 @@ import {
 import { Mail, Sparkles, User } from "lucide-react";
 import { toast } from "sonner";
 
+import { useBotProtection } from "@/hooks/use-bot-protection";
+import { HoneypotField } from "@/components/HoneypotField";
+
 export function NewsletterSection() {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const { honeypot, setHoneypot, validateSubmission } = useBotProtection();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) return;
+
+    // Bot protection check
+    if (!validateSubmission()) {
+      setSubmitted(true);
+      setOpen(false);
+      return;
+    }
+
     setIsLoading(true);
 
     const { error } = await supabase

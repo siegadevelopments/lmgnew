@@ -299,6 +299,29 @@ export default function AdminPage() {
     toast.success("Message marked as read");
   };
 
+  const deleteMessage = async (msgId: string) => {
+    try {
+      const { error } = await (supabase.from("contact_messages") as any).delete().eq("id", msgId);
+
+      if (error) throw error;
+
+      const deletedMsg = messages.find((m) => m.id === msgId);
+      setMessages((prev) => prev.filter((m) => m.id !== msgId));
+
+      if (deletedMsg && !deletedMsg.read) {
+        setStats((prev) => ({
+          ...prev,
+          contactMessages: prev.contactMessages - 1,
+        }));
+      }
+
+      toast.success("Message deleted successfully");
+    } catch (error: any) {
+      console.error("Delete message error:", error);
+      toast.error("Failed to delete message: " + error.message);
+    }
+  };
+
   const toggleVendorApproval = async (vendorId: string, currentStatus: boolean) => {
     const { error } = await (supabase.from("vendor_profiles") as any)
       .update({ is_approved: !currentStatus })
@@ -942,16 +965,47 @@ export default function AdminPage() {
                             {new Date(msg.created_at).toLocaleString()}
                           </p>
                         </div>
-                        {!msg.read && (
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => markMessageRead(msg.id)}
-                            className="shadow-lg"
-                          >
-                            Mark Read
-                          </Button>
-                        )}
+                        <div className="flex flex-row sm:flex-col gap-2 shrink-0">
+                          {!msg.read && (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => markMessageRead(msg.id)}
+                              className="shadow-lg h-9"
+                            >
+                              Mark Read
+                            </Button>
+                          )}
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-destructive hover:bg-destructive/10 h-9"
+                              >
+                                <Trash2 className="h-4 w-4 mr-1" /> Delete
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete message?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently remove the message from {msg.name}. This
+                                  action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteMessage(msg.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

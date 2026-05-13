@@ -8,14 +8,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 
+import { useBotProtection } from "@/hooks/use-bot-protection";
+import { HoneypotField } from "@/components/HoneypotField";
+
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const { honeypot, setHoneypot, validateSubmission } = useBotProtection();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
+
+    // Bot protection check
+    if (!validateSubmission()) {
+      // We don't show an error to bots, just pretend it worked or do nothing
+      setSubmitted(true);
+      return;
+    }
+
     setIsLoading(true);
 
     const form = new FormData(e.currentTarget);
@@ -75,6 +87,9 @@ export default function ContactPage() {
               </div>
             )}
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Bot protection field */}
+              <HoneypotField value={honeypot} onChange={setHoneypot} />
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="contact-name">Name</Label>
