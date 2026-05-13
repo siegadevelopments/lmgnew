@@ -46,6 +46,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [generatingRecipe, setGeneratingRecipe] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [videoUploadProgress, setVideoUploadProgress] = useState<string>("");
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
@@ -474,6 +475,33 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     }
   };
 
+  const generateAIRecipe = async () => {
+    if (!title) {
+      toast.error("Enter a recipe title first");
+      return;
+    }
+    setGeneratingRecipe(true);
+    const toastId = toast.loading("Health chef is writing your recipe...");
+    try {
+      // 1. Generate Content
+      const { data: contentData, error: contentError } = await supabase.functions.invoke("generate-ai-content", {
+        body: { title, type: "recipe" },
+      });
+      if (contentError) throw contentError;
+      if (contentData?.content) {
+        setContent(contentData.content);
+        toast.success("Recipe content generated!", { id: toastId });
+        
+        // 2. Generate Image sequentially
+        await generateAIThumbnail();
+      }
+    } catch (err: any) {
+      toast.error(err.message || "AI Chef failed", { id: toastId });
+    } finally {
+      setGeneratingRecipe(false);
+    }
+  };
+
   async function deleteItem(id: string) {
     const itemToDelete = items.find(i => i.id === id);
     if (!itemToDelete) return;
@@ -621,6 +649,21 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                   : "Enter title"}
                 required
               />
+              {activeType === "recipes" && (
+                <Button
+                  type="button"
+                  onClick={generateAIRecipe}
+                  disabled={generatingRecipe}
+                  className="mt-2 w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700"
+                >
+                  {generatingRecipe ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="mr-2 h-4 w-4" />
+                  )}
+                  Generate Full Recipe with AI Chef
+                </Button>
+              )}
             </div>
 
             {activeType === "articles" && (
