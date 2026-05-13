@@ -13,10 +13,19 @@ export function decodeEntities(str: string): string {
     return el.value;
   }
   return str
+    .replace(/&nbsp;/g, " ")
     .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#039;/g, "'");
+}
+
+/** Strip HTML tags and decode entities for plain text display */
+export function stripHtml(html: string): string {
+  if (!html) return '';
+  // First strip tags, then decode entities
+  const stripped = html.replace(/<[^>]*>/g, ' ');
+  return decodeEntities(stripped).replace(/\s+/g, ' ').trim();
 }

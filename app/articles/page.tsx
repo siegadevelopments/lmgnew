@@ -5,7 +5,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { articlesQueryOptions } from "@/lib/queries";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import { decodeEntities } from "@/lib/utils";
+import { decodeEntities, stripHtml } from "@/lib/utils";
 import Link from "next/link";
 
 export default function ArticlesPage() {
@@ -78,20 +78,13 @@ export default function ArticlesPage() {
                     {decodeEntities(article.title || "")}
                   </h3>
                   {(() => {
-                    const rawExcerpt = article.excerpt || article.content || "";
-                    const excerptText = rawExcerpt
-                      .replace(/<[^>]*>?/gm, "") // Strip HTML tags
-                      .replace(/##\s+/g, "")     // Strip markdown headers
-                      .replace(/\*\*/g, "")      // Strip bold
-                      .trim();
+                    const raw = article.excerpt || article.content || "";
+                    const plain = stripHtml(raw);
+                    const truncated = plain.length > 160 ? plain.slice(0, 160) + "..." : plain;
                     
-                    const truncatedExcerpt = excerptText.length > 160 
-                      ? excerptText.slice(0, 160) + "..." 
-                      : excerptText;
-                    
-                    return truncatedExcerpt ? (
+                    return truncated ? (
                       <p className="mt-3 text-sm leading-relaxed text-muted-foreground line-clamp-3">
-                        {truncatedExcerpt}
+                        {truncated}
                       </p>
                     ) : null;
                   })()}

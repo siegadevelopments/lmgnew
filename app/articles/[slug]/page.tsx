@@ -65,7 +65,7 @@ function ArticleContent() {
             className="wp-content rich-content prose prose-green mt-12 max-w-none text-foreground prose-headings:text-foreground prose-a:text-primary prose-img:rounded-xl leading-relaxed text-lg"
             dangerouslySetInnerHTML={{ 
               __html: sanitizeHtml((() => {
-                let html = article.content;
+                let html = article.content || '';
                 
                 // If it's already HTML (contains <p> or <h tags), return as is
                 if (html.includes('<p>') || html.includes('<h')) return html;
