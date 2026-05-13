@@ -63,6 +63,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [prepTime, setPrepTime] = useState("");
   const [cookTime, setCookTime] = useState("");
   const [excerpt, setExcerpt] = useState("");
+  const [galleryCategory, setGalleryCategory] = useState<"vendor_gallery" | "charts" | "memes">("vendor_gallery");
 
   // --- Auto-Save Draft Logic ---
   useEffect(() => {
@@ -80,6 +81,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         if (parsed.prepTime) setPrepTime(parsed.prepTime);
         if (parsed.cookTime) setCookTime(parsed.cookTime);
         if (parsed.excerpt) setExcerpt(parsed.excerpt);
+        if (parsed.galleryCategory) setGalleryCategory(parsed.galleryCategory);
       } catch (e) {
         console.error("Failed to parse draft", e);
       }
@@ -93,6 +95,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       setCookTime("");
       setExcerpt("");
       setCategory("General");
+      setGalleryCategory("vendor_gallery");
     }
   }, [activeType]);
 
@@ -101,10 +104,11 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     if (editingId) return; // Don't save drafts while editing existing items
     
     const draft = { 
-      title, content, imageUrl, embedUrl, selectedVendorId, category, prepTime, cookTime, excerpt 
+      title, content, imageUrl, embedUrl, selectedVendorId, category, prepTime, cookTime, excerpt,
+      galleryCategory,
     };
     localStorage.setItem(`admin_content_draft_${activeType}`, JSON.stringify(draft));
-  }, [title, content, imageUrl, embedUrl, activeType, selectedVendorId, category, prepTime, cookTime, excerpt, editingId]);
+  }, [title, content, imageUrl, embedUrl, activeType, selectedVendorId, category, prepTime, cookTime, excerpt, galleryCategory, editingId]);
 
   // Prevent accidental navigation during uploads
   useEffect(() => {
@@ -189,7 +193,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       if (activeType === "media") {
         query = (supabase.from("gallery_items") as any)
           .select("*, galleries!inner(*)")
-          .eq("galleries.category", "vendor_gallery");
+          .in("galleries.category", ["vendor_gallery", "charts", "memes"]);
         
         if (selectedVendorId) {
           query = query.eq("galleries.vendor_id", selectedVendorId);
@@ -255,6 +259,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     setCookTime("");
     setExcerpt("");
     setCategory("General");
+    setGalleryCategory("vendor_gallery");
     setEditingId(null);
     clearDraft();
   };
@@ -283,18 +288,25 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     setLoading(true);
     try {
       if (activeType === "media") {
-        let { data: gallery } = await (supabase.from("galleries") as any)
+        let query = (supabase.from("galleries") as any)
           .select("id")
-          .eq("vendor_id", selectedVendorId)
-          .eq("category", "vendor_gallery")
-          .maybeSingle();
+          .eq("category", galleryCategory);
+        
+        if (galleryCategory === "vendor_gallery") {
+          query = query.eq("vendor_id", selectedVendorId);
+        } else {
+          // For charts/memes, check if title already exists (case-insensitive)
+          query = query.ilike("title", title);
+        }
+
+        let { data: gallery } = await query.maybeSingle();
 
         if (!gallery) {
           const { data: newGallery, error: galleryError } = await (supabase.from("galleries") as any)
             .insert({
-              title: "Vendor Gallery",
-              category: "vendor_gallery",
-              vendor_id: selectedVendorId
+              title: galleryCategory === "vendor_gallery" ? "Vendor Gallery" : title,
+              category: galleryCategory,
+              vendor_id: selectedVendorId || null
             })
             .select()
             .single();
@@ -578,16 +590,35 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                   ))}
                 </select>
               </div>
+
+              {activeType === "media" && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Gallery Category</label>
+                  <select
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={galleryCategory}
+                    onChange={(e) => setGalleryCategory(e.target.value as any)}
+                  >
+                    <option value="vendor_gallery">Vendor Profile Gallery</option>
+                    <option value="charts">Charts & References</option>
+                    <option value="memes">Memes & Inspiration</option>
+                  </select>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium">
-                {activeType === "media" ? "Image Title (Internal)" : "Title"}
+                {activeType === "media" 
+                  ? (galleryCategory === "vendor_gallery" ? "Image Title (Internal)" : "Gallery Title (e.g. Parasites)") 
+                  : "Title"}
               </label>
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder={activeType === "media" ? "e.g. Clinic Interior 1" : "Enter title"}
+                placeholder={activeType === "media" 
+                  ? (galleryCategory === "vendor_gallery" ? "e.g. Clinic Interior 1" : "e.g. Smoothie Protocols") 
+                  : "Enter title"}
                 required
               />
             </div>
@@ -1062,6 +1093,11 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                           <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider">
                             {activeType.slice(0, -1)}
                           </Badge>
+                          {activeType === "media" && item.galleries?.category && (
+                            <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider text-primary border-primary/20 bg-primary/5">
+                              {item.galleries.category.replace("_", " ")}
+                            </Badge>
+                          )}
                           {item.status === 'draft' && (
                             <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200 text-[10px] font-bold uppercase">
                               Draft
