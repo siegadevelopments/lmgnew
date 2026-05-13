@@ -490,6 +490,9 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       if (contentError) throw contentError;
       if (contentData?.content) {
         setContent(contentData.content);
+        if (contentData.prep_time) setPrepTime(contentData.prep_time.toString());
+        if (contentData.cook_time) setCookTime(contentData.cook_time.toString());
+        
         toast.success("Recipe content generated!", { id: toastId });
         
         // 2. Generate Image sequentially
