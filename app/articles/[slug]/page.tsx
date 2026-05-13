@@ -21,23 +21,23 @@ function ArticleContent() {
   const authorName = article.vendor_profiles?.representative_name || article.vendor_profiles?.store_name || "Georgia Erevnidis from E-training group";
 
   return (
-    <article className="py-12 sm:py-16">
-      <div className="mx-auto max-w-3xl px-4 sm:px-6">
-        <Link href="/articles" className="text-sm font-medium text-primary hover:underline">
+    <article className="py-12 sm:py-16 w-full">
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 w-full">
+        <Link href="/articles" className="inline-flex items-center text-sm font-medium text-primary hover:underline transition-colors">
           ← Back to articles
         </Link>
-        <h1 className="mt-6 text-3xl font-bold text-foreground sm:text-4xl lg:text-5xl leading-tight">
+        <h1 className="mt-6 text-3xl font-bold text-foreground sm:text-4xl lg:text-5xl leading-tight tracking-tight">
           {decodeEntities(article.title || "")}
         </h1>
 
-        <div className="mt-6 flex items-center gap-4 text-sm text-muted-foreground font-medium uppercase tracking-wider">
-          <span>{new Date(article.created_at).toLocaleDateString()}</span>
-          <span className="opacity-30">•</span>
+        <div className="mt-6 flex flex-wrap items-center gap-y-2 gap-x-4 text-xs sm:text-sm text-muted-foreground font-medium uppercase tracking-wider">
+          <span className="whitespace-nowrap">{new Date(article.created_at).toLocaleDateString()}</span>
+          <span className="opacity-30 hidden sm:inline">•</span>
           <span className="text-primary font-bold">By {authorName}</span>
         </div>
 
         {article.image_url && (
-          <div className="mt-8 overflow-hidden rounded-2xl border border-border shadow-sm bg-muted relative min-h-[200px] flex items-center justify-center">
+          <div className="mt-8 w-full overflow-hidden rounded-2xl border border-border shadow-sm bg-muted relative min-h-[200px] flex items-center justify-center">
             {imageError ? (
               <div className="flex flex-col items-center gap-3 p-8 text-center">
                 <AlertCircle className="h-8 w-8 text-amber-500" />
