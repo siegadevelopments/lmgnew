@@ -61,6 +61,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [category, setCategory] = useState("General");
   const [prepTime, setPrepTime] = useState("");
   const [cookTime, setCookTime] = useState("");
+  const [excerpt, setExcerpt] = useState("");
 
   // --- Auto-Save Draft Logic ---
   useEffect(() => {
@@ -77,6 +78,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         if (parsed.category) setCategory(parsed.category);
         if (parsed.prepTime) setPrepTime(parsed.prepTime);
         if (parsed.cookTime) setCookTime(parsed.cookTime);
+        if (parsed.excerpt) setExcerpt(parsed.excerpt);
       } catch (e) {
         console.error("Failed to parse draft", e);
       }
@@ -88,6 +90,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       setEmbedUrl("");
       setPrepTime("");
       setCookTime("");
+      setExcerpt("");
       setCategory("General");
     }
   }, [activeType]);
@@ -97,10 +100,10 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     if (editingId) return; // Don't save drafts while editing existing items
     
     const draft = { 
-      title, content, imageUrl, embedUrl, selectedVendorId, category, prepTime, cookTime 
+      title, content, imageUrl, embedUrl, selectedVendorId, category, prepTime, cookTime, excerpt 
     };
     localStorage.setItem(`admin_content_draft_${activeType}`, JSON.stringify(draft));
-  }, [title, content, imageUrl, embedUrl, activeType, selectedVendorId, category, prepTime, cookTime, editingId]);
+  }, [title, content, imageUrl, embedUrl, activeType, selectedVendorId, category, prepTime, cookTime, excerpt, editingId]);
 
   // Prevent accidental navigation during uploads
   useEffect(() => {
@@ -249,6 +252,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     setEmbedUrl("");
     setPrepTime("");
     setCookTime("");
+    setExcerpt("");
     setCategory("General");
     setEditingId(null);
     clearDraft();
@@ -263,6 +267,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     setCategory(item.category_name || "General");
     setPrepTime(item.prep_time || "");
     setCookTime(item.cook_time || "");
+    setExcerpt(item.excerpt || "");
     setSelectedVendorId(item.author_id || item.vendor_id || "");
     formRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -322,6 +327,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
               ...commonData,
               content,
               image_url: imageUrl,
+              excerpt,
               category_name: category,
               slug: title.toLowerCase().replace(/ /g, "-"),
             })
@@ -365,6 +371,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
             ...commonData,
             content,
             image_url: imageUrl,
+            excerpt,
             slug: title.toLowerCase().replace(/ /g, "-"),
             category_name: category,
           });
@@ -567,6 +574,18 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                 required
               />
             </div>
+
+            {activeType === "articles" && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Excerpt (Short summary for Anecdotes page)</label>
+                <Textarea
+                  value={excerpt}
+                  onChange={(e) => setExcerpt(e.target.value)}
+                  placeholder="Enter a short summary or quote..."
+                  rows={2}
+                />
+              </div>
+            )}
 
             {activeType === "videos" ? (
               <div className="space-y-3">

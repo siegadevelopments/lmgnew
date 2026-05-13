@@ -3,21 +3,40 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { articlesQueryOptions } from "@/lib/queries";
 import { decodeEntities } from "@/lib/utils";
-import { Quote, Loader2 } from "lucide-react";
+import { Quote, Loader2, Search } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Suspense } from "react";
+import { Suspense, useState, useMemo } from "react";
+import { Input } from "@/components/ui/input";
 
 function AnecdotesContent() {
   const { data: articles } = useSuspenseQuery(articlesQueryOptions());
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // Filter articles that have an excerpt (anecdote)
-  const anecdotes = (articles || []).filter((a) => a.excerpt && a.excerpt.trim().length > 0);
+  // Filter articles that have an excerpt (anecdote) OR are in the 'Anecdotes' category
+  const allAnecdotes = useMemo(() => {
+    return (articles || []).filter((a) => 
+      (a.excerpt && a.excerpt.trim().length > 0) || 
+      (a.category_name?.toLowerCase() === 'anecdotes')
+    );
+  }, [articles]);
+
+  // Apply search filtering
+  const filteredAnecdotes = useMemo(() => {
+    if (!searchQuery.trim()) return allAnecdotes;
+    
+    const query = searchQuery.toLowerCase();
+    return allAnecdotes.filter(a => 
+      a.title?.toLowerCase().includes(query) || 
+      a.excerpt?.toLowerCase().includes(query) ||
+      a.content?.toLowerCase().includes(query)
+    );
+  }, [allAnecdotes, searchQuery]);
 
   return (
     <div className="bg-background min-h-screen">
       {/* Hero Header */}
-      <div className="relative overflow-hidden bg-wellness-muted py-20 sm:py-24">
+      <div className="relative overflow-hidden bg-wellness-muted py-16 sm:py-20">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute -left-10 -top-10 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
           <div className="absolute -right-10 -bottom-10 h-64 w-64 rounded-full bg-wellness-green/20 blur-3xl" />
@@ -35,19 +54,43 @@ function AnecdotesContent() {
             <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground leading-relaxed">
               A curated collection of wisdom, research snippets, and inspiring moments from our wellness community.
             </p>
+
+            {/* Search Bar */}
+            <div className="mt-10 max-w-md mx-auto relative group">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+              </div>
+              <Input
+                type="text"
+                placeholder="Search anecdotes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-12 bg-background/80 backdrop-blur-sm border-border/50 rounded-full focus:ring-primary shadow-sm"
+              />
+            </div>
           </motion.div>
         </div>
       </div>
 
       {/* Grid Content */}
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        {anecdotes.length === 0 ? (
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        {filteredAnecdotes.length === 0 ? (
           <div className="text-center py-20 bg-muted/20 rounded-2xl border border-border">
-            <p className="text-muted-foreground text-lg">No anecdotes found. Start publishing articles with excerpts!</p>
+            <p className="text-muted-foreground text-lg">
+              {searchQuery ? `No anecdotes matching "${searchQuery}"` : "No anecdotes found. Start publishing articles with excerpts or categorize them as 'Anecdotes'!"}
+            </p>
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery("")}
+                className="mt-4 text-primary font-bold hover:underline"
+              >
+                Clear search
+              </button>
+            )}
           </div>
         ) : (
           <div className="columns-1 gap-6 sm:columns-2 lg:columns-3 space-y-6">
-            {anecdotes.map((article, idx) => (
+            {filteredAnecdotes.map((article, idx) => (
               <motion.div
                 key={article.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -67,7 +110,7 @@ function AnecdotesContent() {
                   <div className="relative z-10">
                     <p 
                       className="text-lg font-medium leading-relaxed text-foreground italic mb-6"
-                      dangerouslySetInnerHTML={{ __html: article.excerpt || "" }}
+                      dangerouslySetInnerHTML={{ __html: article.excerpt || article.content?.substring(0, 150) + "..." }}
                     />
                     
                     <div className="flex items-center gap-3 pt-6 border-t border-border/50">
