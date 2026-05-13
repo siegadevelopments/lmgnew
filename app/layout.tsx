@@ -1,4 +1,4 @@
-// Triggering fresh build - 2026-05-12 v1.0.6
+// Triggering fresh build - 2026-05-13 v1.0.7
 import { Providers } from "./Providers";
 import "./globals.css";
 import { Header } from "@/components/Header";
@@ -91,10 +91,22 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  console.log("LMG RootLayout v1.0.6 Loaded");
+  console.log("LMG RootLayout v1.0.7 Loaded");
   return (
     <html lang="en" className={inter.className}>
       <head>
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(let registration of registrations) {
+                  registration.unregister();
+                  console.log('Unregistered stale service worker');
+                }
+              });
+            }
+          `
+        }} />
       </head>
       <body>
         <Providers>
