@@ -32,7 +32,7 @@ import { toast } from "sonner";
 import { uploadMedia, deleteMediaWithSafety } from "@/lib/upload";
 import { Badge } from "@/components/ui/badge";
 import { useQueryClient } from "@tanstack/react-query";
-import { RichTextEditor } from "@/components/RichTextEditor";
+import { RichTextEditor } from "../RichTextEditor";
 import { sanitizeHtml } from "@/lib/security";
 
 export function AdminContentTab({ vendors }: { vendors: any[] }) {

@@ -1,8 +1,14 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import dynamic from 'next/dynamic';
 import 'react-quill-new/dist/quill.snow.css';
+
+// Move dynamic import to module level for better performance and stability
+const ReactQuill = dynamic(() => import('react-quill-new'), { 
+  ssr: false,
+  loading: () => <div className="h-[250px] w-full bg-muted animate-pulse rounded-md border border-border" />
+});
 
 interface RichTextEditorProps {
   value: string;
@@ -12,12 +18,6 @@ interface RichTextEditorProps {
 }
 
 export function RichTextEditor({ value, onChange, placeholder, className }: RichTextEditorProps) {
-  // Use dynamic import for ReactQuill to avoid SSR issues in Next.js
-  const ReactQuill = useMemo(() => dynamic(() => import('react-quill-new'), { 
-    ssr: false,
-    loading: () => <div className="h-[250px] w-full bg-muted animate-pulse rounded-md border border-border" />
-  }), []);
-
   const modules = {
     toolbar: [
       [{ 'header': [1, 2, 3, false] }],
@@ -26,13 +26,10 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
       ['link', 'clean']
     ],
     clipboard: {
-      // Toggle to true to allow pasting HTML instead of just text
       matchVisual: false,
     }
   };
 
-  // We omit 'formats' to allow Quill to handle all default formats it supports
-  
   return (
     <div className={`rich-text-editor ${className}`}>
       <ReactQuill
@@ -42,7 +39,7 @@ export function RichTextEditor({ value, onChange, placeholder, className }: Rich
         modules={modules}
         placeholder={placeholder}
       />
-      <style jsx global>{`
+      <style>{`
         .rich-text-editor .ql-container {
           min-height: 250px;
           font-size: 16px;

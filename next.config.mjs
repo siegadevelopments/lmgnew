@@ -28,6 +28,7 @@ const nextConfig = {
   },
   poweredByHeader: false,
   compress: true,
+  transpilePackages: ['react-quill-new', 'dompurify'],
   headers: async () => [
     {
       source: '/(.*)',
