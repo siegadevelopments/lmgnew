@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, Plus, Image as ImageIcon, Loader2 } from "lucide-react";
+import { Trash2, Plus, Image as ImageIcon, Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
-import { deleteMediaWithSafety } from "@/lib/upload";
+import { deleteMediaWithSafety, uploadMedia } from "@/lib/upload";
 
 export function AdminGalleriesTab() {
   const [galleries, setGalleries] = useState<any[]>([]);
@@ -15,6 +15,7 @@ export function AdminGalleriesTab() {
   const [newGalleryCategory, setNewGalleryCategory] = useState<"memes" | "charts" | "vendor_gallery">("memes");
   const [selectedVendorId, setSelectedVendorId] = useState<string>("");
   const [vendors, setVendors] = useState<any[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     loadGalleries();
@@ -159,9 +160,81 @@ export function AdminGalleriesTab() {
               </select>
             )}
 
-            <Button onClick={createGallery}>
-              <Plus className="mr-2 h-4 w-4" /> Create
-            </Button>
+            <div className="relative">
+              <Button onClick={createGallery} disabled={isUploading}>
+                {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+                Create
+              </Button>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-px bg-border mx-2 hidden sm:block" />
+              <Button
+                variant="outline"
+                className="relative overflow-hidden"
+                disabled={isUploading}
+              >
+                {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                Upload & Group
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="absolute inset-0 cursor-pointer opacity-0"
+                  disabled={isUploading}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file || !newGalleryTitle.trim()) {
+                      if (!newGalleryTitle.trim()) toast.error("Enter a title first");
+                      return;
+                    }
+                    
+                    setIsUploading(true);
+                    const toastId = toast.loading("Processing upload...");
+                    try {
+                      // 1. Check if gallery exists
+                      let gallery = galleries.find(g => 
+                        g.title.toLowerCase() === newGalleryTitle.toLowerCase() && 
+                        g.category === newGalleryCategory
+                      );
+                      
+                      let galleryId = gallery?.id;
+                      
+                      // 2. Create if not exists
+                      if (!galleryId) {
+                        const { data: newG, error: gError } = await (supabase.from("galleries") as any)
+                          .insert({ 
+                            title: newGalleryTitle, 
+                            category: newGalleryCategory,
+                            vendor_id: newGalleryCategory === "vendor_gallery" ? selectedVendorId || null : null
+                          })
+                          .select()
+                          .single();
+                        if (gError) throw gError;
+                        galleryId = newG.id;
+                      }
+                      
+                      // 3. Upload and save
+                      const url = await uploadMedia(file, "admin_uploads");
+                      if (url) {
+                        const { error: itemError } = await (supabase.from("gallery_items") as any).insert({
+                          gallery_id: galleryId,
+                          image_url: url
+                        });
+                        if (itemError) throw itemError;
+                        toast.success("Image added to gallery!", { id: toastId });
+                        setNewGalleryTitle("");
+                        loadGalleries();
+                      }
+                    } catch (err: any) {
+                      toast.error(err.message || "Failed to upload", { id: toastId });
+                    } finally {
+                      setIsUploading(false);
+                      e.target.value = "";
+                    }
+                  }}
+                />
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -199,12 +272,41 @@ export function AdminGalleriesTab() {
                     size="sm"
                     variant="secondary"
                     onClick={(e) => {
-                      const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                      const input = e.currentTarget.parentElement?.querySelector('input') as HTMLInputElement;
                       addImageToGallery(gallery.id, input.value);
                       input.value = "";
                     }}
                   >
-                    Add Image
+                    Add URL
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="relative overflow-hidden"
+                    disabled={isUploading}
+                  >
+                    {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                    Upload
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="absolute inset-0 cursor-pointer opacity-0"
+                      disabled={isUploading}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setIsUploading(true);
+                        try {
+                          const url = await uploadMedia(file, "admin_uploads");
+                          if (url) {
+                            await addImageToGallery(gallery.id, url);
+                          }
+                        } finally {
+                          setIsUploading(false);
+                          e.target.value = "";
+                        }
+                      }}
+                    />
                   </Button>
                 </div>
 
