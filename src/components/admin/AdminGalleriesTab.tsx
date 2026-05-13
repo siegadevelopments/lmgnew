@@ -19,6 +19,11 @@ export function AdminGalleriesTab() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editCategory, setEditCategory] = useState<any>("memes");
+  
+  // Search & Pagination states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [pageSize, setPageSize] = useState(20);
+  const [visibleCount, setVisibleCount] = useState(20);
 
   useEffect(() => {
     loadGalleries();
@@ -139,6 +144,13 @@ export function AdminGalleriesTab() {
       loadGalleries();
     }
   }
+
+  const filteredGalleries = galleries.filter(g => 
+    g.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    g.category.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const displayedGalleries = filteredGalleries.slice(0, visibleCount);
 
   return (
     <div className="space-y-6">
@@ -262,13 +274,25 @@ export function AdminGalleriesTab() {
         </CardContent>
       </Card>
 
+      <div className="relative">
+        <Input
+          placeholder="Search galleries by title or category..."
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setVisibleCount(pageSize); // Reset pagination on search
+          }}
+          className="max-w-md"
+        />
+      </div>
+
       {loading ? (
         <div className="flex py-20 justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : (
         <div className="grid gap-6">
-          {galleries.map((gallery) => (
+          {displayedGalleries.map((gallery) => (
             <Card key={gallery.id}>
               <CardHeader className="flex flex-row items-center justify-between py-4">
                 {editingId === gallery.id ? (
@@ -400,6 +424,18 @@ export function AdminGalleriesTab() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {!loading && filteredGalleries.length > visibleCount && (
+        <div className="flex justify-center py-8">
+          <Button 
+            variant="outline" 
+            onClick={() => setVisibleCount(prev => prev + pageSize)}
+            className="w-full max-w-xs"
+          >
+            Load More Galleries ({filteredGalleries.length - visibleCount} remaining)
+          </Button>
         </div>
       )}
     </div>

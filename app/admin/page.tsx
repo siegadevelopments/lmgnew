@@ -833,7 +833,7 @@ export default function AdminPage() {
 
             {/* PAYOUTS */}
             <TabsContent value="payouts" className="mt-0 border-0 p-0">
-              <AdminPayoutsTab />
+              {activeTab === "payouts" && <AdminPayoutsTab />}
             </TabsContent>
 
             {/* PRODUCTS */}
@@ -904,7 +904,7 @@ export default function AdminPage() {
                 <h1 className="text-2xl font-bold tracking-tight">Gallery Manager</h1>
                 <p className="text-muted-foreground">Manage Memes and Charts collections.</p>
               </div>
-              <AdminGalleriesTab />
+              {activeTab === "galleries" && <AdminGalleriesTab />}
             </TabsContent>
 
             {/* CONTENT MANAGER */}
@@ -913,7 +913,7 @@ export default function AdminPage() {
                 <h1 className="text-2xl font-bold tracking-tight">Content Manager</h1>
                 <p className="text-muted-foreground">Approve articles, recipes, and videos.</p>
               </div>
-              <AdminContentTab vendors={vendors} />
+              {activeTab === "content" && <AdminContentTab vendors={vendors} />}
             </TabsContent>
 
             {/* MESSAGES */}
@@ -1196,7 +1196,7 @@ export default function AdminPage() {
 
             {/* MARKETING AUTOMATION */}
             <TabsContent value="affiliates" className="mt-0 border-0 p-0">
-              <AffiliatesTab />
+              {activeTab === "affiliates" && <AffiliatesTab />}
             </TabsContent>
 
             {/* MARKETING */}
@@ -1222,23 +1222,23 @@ export default function AdminPage() {
                 </div>
 
                 <TabsContent value="social" className="mt-0 focus-visible:ring-0">
-                  <AdminMarketingTab />
+                  {activeTab === "marketing" && <AdminMarketingTab />}
                 </TabsContent>
 
                 <TabsContent value="email" className="mt-0 focus-visible:ring-0">
-                  <AdminEmailMarketingTab />
+                  {activeTab === "marketing" && <AdminEmailMarketingTab />}
                 </TabsContent>
               </Tabs>
             </TabsContent>
 
             {/* SUBSCRIBERS */}
             <TabsContent value="subscribers" className="space-y-6 mt-0 border-0 p-0">
-              <AdminSubscribersTab />
+              {activeTab === "subscribers" && <AdminSubscribersTab />}
             </TabsContent>
 
             {/* POPUPS */}
             <TabsContent value="popups" className="space-y-6 mt-0 border-0 p-0">
-              <AdminPopupsTab />
+              {activeTab === "popups" && <AdminPopupsTab />}
             </TabsContent>
           </Tabs>
         </div>
