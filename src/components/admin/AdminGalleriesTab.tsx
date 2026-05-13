@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, Plus, Image as ImageIcon, Loader2, Upload } from "lucide-react";
+import { Trash2, Plus, Image as ImageIcon, Loader2, Upload, Pencil, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { deleteMediaWithSafety, uploadMedia } from "@/lib/upload";
 
@@ -16,6 +16,9 @@ export function AdminGalleriesTab() {
   const [selectedVendorId, setSelectedVendorId] = useState<string>("");
   const [vendors, setVendors] = useState<any[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editCategory, setEditCategory] = useState<any>("memes");
 
   useEffect(() => {
     loadGalleries();
@@ -118,6 +121,22 @@ export function AdminGalleriesTab() {
       if (imageUrl) {
         deleteMediaWithSafety(imageUrl);
       }
+    }
+  }
+
+  async function updateGallery() {
+    if (!editingId || !editTitle.trim()) return;
+
+    const { error } = await (supabase.from("galleries") as any)
+      .update({ title: editTitle, category: editCategory })
+      .eq("id", editingId);
+
+    if (error) {
+      toast.error("Failed to update gallery");
+    } else {
+      toast.success("Gallery updated!");
+      setEditingId(null);
+      loadGalleries();
     }
   }
 
@@ -248,13 +267,61 @@ export function AdminGalleriesTab() {
           {galleries.map((gallery) => (
             <Card key={gallery.id}>
               <CardHeader className="flex flex-row items-center justify-between py-4">
-                <div>
-                  <CardTitle className="text-lg">{gallery.title}</CardTitle>
-                  <p className="text-xs text-muted-foreground uppercase">{gallery.category}</p>
+                {editingId === gallery.id ? (
+                  <div className="flex-1 flex flex-col sm:flex-row gap-2 mr-4">
+                    <Input
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className="flex-1 h-8"
+                      autoFocus
+                    />
+                    <select
+                      className="h-8 rounded-md border border-input bg-background px-2 py-1 text-xs"
+                      value={editCategory}
+                      onChange={(e) => setEditCategory(e.target.value as any)}
+                    >
+                      <option value="memes">Memes</option>
+                      <option value="charts">Charts</option>
+                      <option value="vendor_gallery">Vendor Gallery</option>
+                    </select>
+                  </div>
+                ) : (
+                  <div>
+                    <CardTitle className="text-lg">{gallery.title}</CardTitle>
+                    <p className="text-xs text-muted-foreground uppercase">{gallery.category}</p>
+                  </div>
+                )}
+                
+                <div className="flex items-center gap-1">
+                  {editingId === gallery.id ? (
+                    <>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600" onClick={updateGallery}>
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => setEditingId(null)}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                        onClick={() => {
+                          setEditingId(gallery.id);
+                          setEditTitle(gallery.title);
+                          setEditCategory(gallery.category);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => deleteGallery(gallery.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => deleteGallery(gallery.id)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex gap-2">
