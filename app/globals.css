@@ -315,7 +315,16 @@ html.dark main {
 }
 
 .wp-content u, .rich-content u {
-  text-decoration: underline;
+  text-decoration: underline !important;
+}
+
+.wp-content strong, .wp-content b, .rich-content strong, .rich-content b {
+  font-weight: 700 !important;
+  color: inherit;
+}
+
+.wp-content em, .wp-content i, .rich-content em, .rich-content i {
+  font-style: italic !important;
 }
 
 .rich-content p {
@@ -328,11 +337,11 @@ html.dark main {
 }
 
 .rich-content ul {
-  list-style-type: disc;
+  list-style-type: disc !important;
 }
 
 .rich-content ol {
-  list-style-type: decimal;
+  list-style-type: decimal !important;
 }
 
 .wp-content table {

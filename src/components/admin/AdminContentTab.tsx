@@ -844,9 +844,16 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">
-                {activeType === "videos" ? "Description" : "Content"}
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">
+                  {activeType === "videos" ? "Description" : "Content"}
+                </label>
+                {(activeType === "articles" || activeType === "recipes") && (
+                  <Badge variant="outline" className="text-[10px] bg-primary/5 text-primary border-primary/20">
+                    Rich Text Editor Active
+                  </Badge>
+                )}
+              </div>
               {(activeType === "articles" || activeType === "recipes") ? (
                 <RichTextEditor
                   value={content}
