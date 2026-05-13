@@ -19,11 +19,6 @@ function createSupabaseClient() {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
-      // Disable the locking mechanism as it causes issues in React development environments
-      lock: {
-        acquire: async () => {},
-        release: async () => {},
-      } as any,
     },
   });
 }
