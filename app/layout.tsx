@@ -1,4 +1,4 @@
-// Triggering fresh build - 2026-05-13 v1.0.9
+// Triggering fresh build - 2026-05-13 v1.1.0
 import { Providers } from "./Providers";
 import "./globals.css";
 import { Header } from "@/components/Header";

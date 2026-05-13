@@ -67,6 +67,9 @@ function ArticleContent() {
               __html: sanitizeHtml((() => {
                 let html = article.content || '';
                 
+                // Replace non-breaking spaces with regular spaces to allow wrapping
+                html = html.replace(/&nbsp;/g, ' ');
+                
                 // If it's already HTML (contains <p> or <h tags), return as is
                 if (html.includes('<p>') || html.includes('<h')) return html;
                 

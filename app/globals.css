@@ -234,8 +234,10 @@ html.dark main {
 }
 
 /* WordPress rendered content */
-.wp-content {
+.wp-content, .rich-content {
   line-height: 1.75;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .wp-content h2,
