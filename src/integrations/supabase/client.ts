@@ -14,11 +14,16 @@ function createSupabaseClient() {
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     auth: {
+      storageKey: "sb-auth-token-lmg",
       storage: typeof window !== "undefined" ? localStorage : undefined,
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
-      lock: typeof window !== "undefined" ? undefined : undefined, // Explicitly handle potential lock issues
+      // Disable the locking mechanism as it causes issues in React development environments
+      lock: {
+        acquire: async () => {},
+        release: async () => {},
+      } as any,
     },
   });
 }
