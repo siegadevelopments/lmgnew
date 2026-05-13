@@ -71,23 +71,24 @@ export function AppInstallPopup() {
   return (
     <AnimatePresence>
       {isVisible && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="relative w-full max-w-lg bg-card rounded-[2rem] overflow-hidden shadow-2xl border border-border/50"
+            className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto bg-card rounded-[1.5rem] sm:rounded-[2rem] shadow-2xl border border-border/50"
           >
             <button
               onClick={handleDismiss}
-              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/10 hover:bg-black/20 transition-colors text-muted-foreground"
+              className="absolute top-2 right-2 sm:top-4 sm:right-4 z-[20] p-2 rounded-full bg-background/90 shadow-md border border-border hover:bg-accent transition-colors text-foreground"
+              aria-label="Close"
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
 
             <div className="flex flex-col md:flex-row h-full">
               {/* Preview Image Section */}
-              <div className="relative w-full md:w-1/2 aspect-square md:aspect-auto bg-muted p-6 flex items-center justify-center overflow-hidden">
+              <div className="relative w-full md:w-1/2 aspect-square md:aspect-auto bg-muted p-4 sm:p-6 flex items-center justify-center overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent" />
                 <motion.img
                   initial={{ y: 40, opacity: 0 }}
@@ -117,12 +118,12 @@ export function AppInstallPopup() {
               </div>
 
               {/* Content Section */}
-              <div className="flex-1 p-8 flex flex-col justify-center">
+              <div className="flex-1 p-6 sm:p-8 flex flex-col justify-center">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest mb-4">
                   <Zap className="h-3 w-3 fill-primary" /> Premium Experience
                 </div>
 
-                <h3 className="text-2xl font-black tracking-tight mb-2 leading-tight">
+                <h3 className="text-xl sm:text-2xl font-black tracking-tight mb-2 leading-tight">
                   Take LMG with you anywhere.
                 </h3>
 
