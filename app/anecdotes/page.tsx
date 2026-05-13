@@ -9,6 +9,21 @@ import Link from "next/link";
 import { Suspense, useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 
+// Strip HTML tags and decode entities for plain text display
+function stripHtml(html: string): string {
+  if (!html) return '';
+  return html
+    .replace(/<[^>]*>/g, ' ')        // Remove HTML tags
+    .replace(/&nbsp;/g, ' ')         // Decode &nbsp;
+    .replace(/&amp;/g, '&')          // Decode &amp;
+    .replace(/&lt;/g, '<')           // Decode &lt;
+    .replace(/&gt;/g, '>')           // Decode &gt;
+    .replace(/&quot;/g, '"')         // Decode &quot;
+    .replace(/&#39;/g, "'")          // Decode &#39;
+    .replace(/\s+/g, ' ')            // Collapse whitespace
+    .trim();
+}
+
 function AnecdotesContent() {
   const { data: articles } = useSuspenseQuery(articlesQueryOptions());
   const [searchQuery, setSearchQuery] = useState("");
@@ -108,10 +123,13 @@ function AnecdotesContent() {
                   </div>
                   
                   <div className="relative z-10">
-                    <p 
-                      className="text-lg font-medium leading-relaxed text-foreground italic mb-6"
-                      dangerouslySetInnerHTML={{ __html: article.excerpt || article.content?.substring(0, 150) + "..." }}
-                    />
+                    <p className="text-lg font-medium leading-relaxed text-foreground italic mb-6">
+                      {(() => {
+                        const raw = article.excerpt || article.content || '';
+                        const plain = stripHtml(raw);
+                        return plain.length > 180 ? plain.slice(0, 180) + '…' : plain || 'Read more →';
+                      })()}
+                    </p>
                     
                     <div className="flex items-center gap-3 pt-6 border-t border-border/50">
                       <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">
