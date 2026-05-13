@@ -62,7 +62,7 @@ function ArticleContent() {
 
         {article.content && (
           <div
-            className="wp-content prose prose-green mt-12 max-w-none text-foreground prose-headings:text-foreground prose-a:text-primary prose-img:rounded-xl leading-relaxed text-lg"
+            className="wp-content rich-content prose prose-green mt-12 max-w-none text-foreground prose-headings:text-foreground prose-a:text-primary prose-img:rounded-xl leading-relaxed text-lg"
             dangerouslySetInnerHTML={{ 
               __html: sanitizeHtml((() => {
                 let html = article.content;
@@ -90,26 +90,26 @@ function ArticleContent() {
                   // Handle Headings (Explicit ## or ###)
                   if (trimmed.startsWith('## ')) {
                     closeList();
-                    result += `<h2 class="text-2xl font-bold mt-10 mb-4">${trimmed.replace('## ', '')}</h2>\n`;
+                    result += `<h2>${trimmed.replace('## ', '')}</h2>\n`;
                     return;
                   }
                   if (trimmed.startsWith('### ')) {
                     closeList();
-                    result += `<h3 class="text-xl font-bold mt-8 mb-3">${trimmed.replace('### ', '')}</h3>\n`;
+                    result += `<h3>${trimmed.replace('### ', '')}</h3>\n`;
                     return;
                   }
 
                   // Handle Numbered Headings (e.g. "1. Title")
                   if (/^\d+\.\s+[A-Z]/.test(trimmed) && trimmed.length < 100) {
                     closeList();
-                    result += `<h2 class="text-2xl font-bold mt-10 mb-4">${trimmed}</h2>\n`;
+                    result += `<h2>${trimmed}</h2>\n`;
                     return;
                   }
 
                   // Handle Sub-headings (e.g. "Ingredients:")
                   if (trimmed.endsWith(':') && trimmed.length < 40) {
                     closeList();
-                    result += `<h3 class="text-lg font-bold mt-6 mb-3 text-slate-800">${trimmed}</h3>\n`;
+                    result += `<h3>${trimmed}</h3>\n`;
                     return;
                   }
 
@@ -117,12 +117,12 @@ function ArticleContent() {
                   if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
                     if (!inList || listType !== 'ul') {
                       closeList();
-                      result += '<ul class="my-6 space-y-2 list-disc ml-6">\n';
+                      result += '<ul>\n';
                       inList = true;
                       listType = 'ul';
                     }
                     const item = trimmed.replace(/^[-*]\s+/, '');
-                    result += `<li class="text-slate-700">${item}</li>\n`;
+                    result += `<li>${item}</li>\n`;
                     return;
                   }
 
@@ -130,12 +130,12 @@ function ArticleContent() {
                   if (/^\d+\.\s+/.test(trimmed)) {
                     if (!inList || listType !== 'ol') {
                       closeList();
-                      result += '<ol class="my-6 space-y-2 list-decimal ml-6">\n';
+                      result += '<ol>\n';
                       inList = true;
                       listType = 'ol';
                     }
                     const item = trimmed.replace(/^\d+\.\s+/, '');
-                    result += `<li class="text-slate-700">${item}</li>\n`;
+                    result += `<li>${item}</li>\n`;
                     return;
                   }
 
@@ -148,7 +148,7 @@ function ArticleContent() {
                   
                   if (looksLikeHeading) {
                     closeList();
-                    result += `<h2 class="text-2xl font-bold mt-10 mb-4">${trimmed}</h2>\n`;
+                    result += `<h2>${trimmed}</h2>\n`;
                     return;
                   }
 
@@ -159,7 +159,7 @@ function ArticleContent() {
                     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                     .replace(/\*(.*?)\*/g, '<em>$1</em>');
                   
-                  result += `<p class="mb-6 leading-relaxed text-slate-700">${formatted}</p>\n`;
+                  result += `<p>${formatted}</p>\n`;
                 });
 
                 closeList();

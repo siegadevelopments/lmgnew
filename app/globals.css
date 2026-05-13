@@ -238,39 +238,41 @@ html.dark main {
   line-height: 1.75;
 }
 
-.wp-content h1,
 .wp-content h2,
 .wp-content h3,
-.wp-content h4 {
-  color: var(--foreground);
-  margin-top: 1.5em;
-  margin-bottom: 0.5em;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.wp-content h2,
-.wp-content h3 {
+.rich-content h2,
+.rich-content h3 {
   background: linear-gradient(to right, var(--wellness-light) 0%, transparent 100%);
   padding: 0.2em 0.5em;
   border-radius: 0.2em;
   display: inline-block;
   margin-left: -0.5em;
+  color: var(--foreground) !important;
 }
 
-.wp-content h2 {
+.wp-content h2, .rich-content h2 {
   font-size: 1.5rem;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
 }
-.wp-content h3 {
+.wp-content h3, .rich-content h3 {
   font-size: 1.25rem;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
 }
-.wp-content h4 {
+.wp-content h4, .rich-content h4 {
   font-size: 1.125rem;
+  font-weight: 700;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
 }
 
-.wp-content p {
-  margin-bottom: 1.5em;
+.wp-content p, .rich-content p {
+  margin-bottom: 1.5rem;
   font-size: 1.125rem;
+  line-height: 1.8;
+  color: var(--foreground);
+  opacity: 0.9;
 }
 
 .wp-content strong {
@@ -296,22 +298,27 @@ html.dark main {
 }
 
 .wp-content ul,
-.wp-content ol {
-  margin: 1em 0;
-  padding-left: 1.5em;
+.wp-content ol,
+.rich-content ul,
+.rich-content ol {
+  margin: 1.5rem 0;
+  padding-left: 1.5rem;
 }
 
-.wp-content li {
-  margin-bottom: 0.5em;
+.wp-content li, .rich-content li {
+  margin-bottom: 0.75rem;
+  font-size: 1.125rem;
+  line-height: 1.6;
 }
 
-.wp-content blockquote {
-  border-left: 3px solid var(--primary);
-  padding: 0.75em 1.25em;
-  margin: 1.5em 0;
+.wp-content blockquote, .rich-content blockquote {
+  border-left: 4px solid var(--primary);
+  padding: 1rem 1.5rem;
+  margin: 2rem 0;
   background: var(--muted);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
   font-style: italic;
+  color: var(--foreground);
 }
 
 .wp-content u, .rich-content u {
@@ -320,20 +327,11 @@ html.dark main {
 
 .wp-content strong, .wp-content b, .rich-content strong, .rich-content b {
   font-weight: 700 !important;
-  color: inherit;
+  color: var(--foreground);
 }
 
 .wp-content em, .wp-content i, .rich-content em, .rich-content i {
   font-style: italic !important;
-}
-
-.rich-content p {
-  margin-bottom: 1rem;
-}
-
-.rich-content ul, .rich-content ol {
-  margin-left: 1.5rem;
-  margin-bottom: 1rem;
 }
 
 .rich-content ul {
