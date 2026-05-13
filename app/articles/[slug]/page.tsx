@@ -22,7 +22,7 @@ function ArticleContent() {
 
   return (
     <article className="py-12 sm:py-16 w-full flex flex-col items-center">
-      <div className="max-w-3xl px-4 sm:px-6 lg:px-8 w-full">
+      <div className="max-w-4xl px-4 sm:px-6 lg:px-8 w-full">
         <Link href="/articles" className="inline-flex items-center text-sm font-medium text-primary hover:underline transition-colors">
           ← Back to articles
         </Link>
