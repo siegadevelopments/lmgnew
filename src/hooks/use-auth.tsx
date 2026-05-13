@@ -48,8 +48,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
+
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
+    const getInitialSession = async () => {
+      const { data: { session: s } } = await supabase.auth.getSession();
+      if (!isMounted) return;
+      
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
@@ -58,7 +63,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setRole(null);
         setLoading(false);
       }
-    });
+    };
+
+    getInitialSession();
 
     // Listen for auth changes
     const {
@@ -76,7 +83,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, [fetchRole]);
 
   const signIn = useCallback(async (email: string, password: string) => {
