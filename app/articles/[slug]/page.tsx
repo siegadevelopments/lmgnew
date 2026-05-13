@@ -21,8 +21,8 @@ function ArticleContent() {
   const authorName = article.vendor_profiles?.representative_name || article.vendor_profiles?.store_name || "Georgia Erevnidis from E-training group";
 
   return (
-    <article className="py-12 sm:py-16 w-full">
-      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 w-full">
+    <article className="py-12 sm:py-16 w-full flex flex-col items-center">
+      <div className="max-w-3xl px-4 sm:px-6 lg:px-8 w-full">
         <Link href="/articles" className="inline-flex items-center text-sm font-medium text-primary hover:underline transition-colors">
           ← Back to articles
         </Link>
