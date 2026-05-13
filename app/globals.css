@@ -389,3 +389,38 @@ html.dark main {
 .animate-marquee:hover {
   animation-play-state: paused;
 }
+
+/* Quill Editor Fixes */
+.ql-toolbar .ql-stroke {
+  stroke: #222 !important;
+  stroke-width: 2px !important;
+  display: block !important;
+}
+
+.ql-toolbar .ql-fill {
+  fill: #222 !important;
+  display: block !important;
+}
+
+.ql-toolbar button svg {
+  width: 18px !important;
+  height: 18px !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+}
+
+.ql-toolbar button:hover .ql-stroke {
+  stroke: var(--primary) !important;
+}
+
+.ql-toolbar button:hover .ql-fill {
+  fill: var(--primary) !important;
+}
+
+.ql-toolbar button.ql-active .ql-stroke {
+  stroke: var(--primary) !important;
+}
+
+.ql-toolbar button.ql-active .ql-fill {
+  fill: var(--primary) !important;
+}
