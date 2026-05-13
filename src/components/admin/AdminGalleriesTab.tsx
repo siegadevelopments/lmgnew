@@ -202,19 +202,31 @@ export function AdminGalleriesTab() {
                     setIsUploading(true);
                     const toastId = toast.loading("Processing upload...");
                     try {
-                      // 1. Check if gallery exists
+                      const trimmedTitle = newGalleryTitle.trim();
+                      
+                      // 1. Check if gallery exists in local state first
                       let gallery = galleries.find(g => 
-                        g.title.toLowerCase() === newGalleryTitle.toLowerCase() && 
+                        g.title.trim().toLowerCase() === trimmedTitle.toLowerCase() && 
                         g.category === newGalleryCategory
                       );
                       
                       let galleryId = gallery?.id;
                       
+                      // 1b. Double check DB if not in state (prevent race conditions)
+                      if (!galleryId) {
+                        const { data: dbG } = await (supabase.from("galleries") as any)
+                          .select("id")
+                          .ilike("title", trimmedTitle)
+                          .eq("category", newGalleryCategory)
+                          .maybeSingle();
+                        if (dbG) galleryId = dbG.id;
+                      }
+                      
                       // 2. Create if not exists
                       if (!galleryId) {
                         const { data: newG, error: gError } = await (supabase.from("galleries") as any)
                           .insert({ 
-                            title: newGalleryTitle, 
+                            title: trimmedTitle, 
                             category: newGalleryCategory,
                             vendor_id: newGalleryCategory === "vendor_gallery" ? selectedVendorId || null : null
                           })
