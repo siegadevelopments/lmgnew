@@ -179,15 +179,7 @@ export function AdminGalleriesTab() {
               </select>
             )}
 
-            <div className="relative">
-              <Button onClick={createGallery} disabled={isUploading}>
-                {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
-                Create
-              </Button>
-            </div>
-            
             <div className="flex items-center gap-2">
-              <div className="h-8 w-px bg-border mx-2 hidden sm:block" />
               <Button
                 variant="outline"
                 className="relative overflow-hidden"
@@ -252,6 +244,14 @@ export function AdminGalleriesTab() {
                     }
                   }}
                 />
+              </Button>
+              <div className="h-8 w-px bg-border mx-2 hidden sm:block" />
+            </div>
+
+            <div className="relative">
+              <Button onClick={createGallery} disabled={isUploading}>
+                {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plus className="mr-2 h-4 w-4" />}
+                Create
               </Button>
             </div>
           </div>
