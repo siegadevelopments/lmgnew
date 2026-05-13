@@ -824,6 +824,92 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                         }}
                       />
                     </Button>
+                    {activeType === "media" && (
+                      <label
+                        htmlFor="admin-media-bulk"
+                        className={`flex items-center gap-2 cursor-pointer rounded-md border border-input bg-background px-3 py-2 text-sm font-medium transition-colors hover:bg-accent ${
+                          uploadingImage ? "pointer-events-none opacity-50" : ""
+                        }`}
+                        title="Upload multiple images at once"
+                      >
+                        {uploadingImage ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Plus className="h-4 w-4" />
+                        )}
+                        Bulk
+                      </label>
+                    )}
+                    {activeType === "media" && (
+                      <input
+                        id="admin-media-bulk"
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="sr-only"
+                        disabled={uploadingImage}
+                        onChange={async (e) => {
+                          const files = Array.from(e.target.files || []);
+                          if (files.length === 0) return;
+                          if (galleryCategory !== "vendor_gallery" && !title) {
+                            toast.error("Enter a gallery title first");
+                            return;
+                          }
+                          setUploadingImage(true);
+                          const toastId = toast.loading(`Uploading ${files.length} images...`);
+                          let successCount = 0;
+                          
+                          try {
+                            // Find or create gallery first (same logic as handleSubmit)
+                            let galleryId;
+                            let query = (supabase.from("galleries") as any)
+                              .select("id")
+                              .eq("category", galleryCategory);
+                            
+                            if (galleryCategory === "vendor_gallery") {
+                              query = query.eq("vendor_id", selectedVendorId);
+                            } else {
+                              query = query.ilike("title", title);
+                            }
+
+                            const { data: existing } = await query.maybeSingle();
+                            if (existing) {
+                              galleryId = existing.id;
+                            } else {
+                              const { data: created, error: createError } = await (supabase.from("galleries") as any)
+                                .insert({
+                                  title: galleryCategory === "vendor_gallery" ? "Vendor Gallery" : title,
+                                  category: galleryCategory,
+                                  vendor_id: selectedVendorId || null
+                                })
+                                .select()
+                                .single();
+                              if (createError) throw createError;
+                              galleryId = created.id;
+                            }
+
+                            // Upload and insert items
+                            for (const file of files) {
+                              const url = await uploadMedia(file, "admin_uploads");
+                              if (url) {
+                                await (supabase.from("gallery_items") as any).insert({
+                                  gallery_id: galleryId,
+                                  image_url: url
+                                });
+                                successCount++;
+                              }
+                            }
+                            toast.success(`Successfully uploaded ${successCount} images!`, { id: toastId });
+                            loadItems();
+                          } catch (err: any) {
+                            toast.error(err.message, { id: toastId });
+                          } finally {
+                            setUploadingImage(false);
+                            e.target.value = "";
+                          }
+                        }}
+                      />
+                    )}
                   </div>
                 )}
               </div>
@@ -1118,6 +1204,23 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
+                      {activeType === "media" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-primary hover:bg-primary/5"
+                          onClick={() => {
+                            setGalleryCategory(item.galleries?.category || "vendor_gallery");
+                            setTitle(item.galleries?.title || "");
+                            setSelectedVendorId(item.galleries?.vendor_id || "");
+                            formRef.current?.scrollIntoView({ behavior: "smooth" });
+                            toast.info(`Ready to add more to "${item.galleries?.title}"`);
+                          }}
+                          title="Add more to this gallery"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      )}
                       {activeType === "videos" && (
                         <Button
                           variant="ghost"
