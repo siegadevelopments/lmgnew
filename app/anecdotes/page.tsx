@@ -12,16 +12,9 @@ import { Input } from "@/components/ui/input";
 // Strip HTML tags and decode entities for plain text display
 function stripHtml(html: string): string {
   if (!html) return '';
-  return html
-    .replace(/<[^>]*>/g, ' ')        // Remove HTML tags
-    .replace(/&nbsp;/g, ' ')         // Decode &nbsp;
-    .replace(/&amp;/g, '&')          // Decode &amp;
-    .replace(/&lt;/g, '<')           // Decode &lt;
-    .replace(/&gt;/g, '>')           // Decode &gt;
-    .replace(/&quot;/g, '"')         // Decode &quot;
-    .replace(/&#39;/g, "'")          // Decode &#39;
-    .replace(/\s+/g, ' ')            // Collapse whitespace
-    .trim();
+  // First strip tags, then decode entities
+  const stripped = html.replace(/<[^>]*>/g, ' ');
+  return decodeEntities(stripped).replace(/\s+/g, ' ').trim();
 }
 
 function AnecdotesContent() {
