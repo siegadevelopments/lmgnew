@@ -253,13 +253,6 @@ function VideosContent() {
                         )}
                       </div>
                       
-                      {/* Small processing badge if it's both processing AND playable */}
-                      {video.status === "uploading" && embeddable && (
-                        <div className="absolute top-3 right-3 rounded-full bg-black/60 px-2 py-1 text-[8px] font-bold text-white/90 backdrop-blur-sm flex items-center gap-1.5 border border-white/10">
-                          <Loader2 className="h-2.5 w-2.5 animate-spin" />
-                          PROCESSING
-                        </div>
-                      )}
                       {/* "External" badge for non-embeddable URLs */}
                       {!embeddable && video.embed_url && (
                         <div className="absolute bottom-3 right-3 rounded-md bg-black/70 px-2 py-0.5 text-xs text-white/80 backdrop-blur-sm">
