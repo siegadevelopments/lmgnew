@@ -50,11 +50,14 @@ function extractYouTubeId(url: string): string | null {
 /** Returns true if URL points to a raw video file or Supabase storage */
 function isDirectVideoUrl(url: string): boolean {
   if (!url) return false;
+  const lowerUrl = url.toLowerCase();
   return (
-    /\.(mp4|webm|ogg|mov|m4v|mts|m4a|avi|wmv|flv)(\?|$)/i.test(url) ||
-    url.includes("supabase.co/storage") ||
-    url.includes("r2.dev") ||
-    url.includes("media.lifestylemedicinegateway.com")
+    /\.(mp4|webm|ogg|mov|m4v|mts|m4a|avi|wmv|flv|m3u8)(\?|$)/i.test(url) ||
+    lowerUrl.includes("supabase.co/storage") ||
+    lowerUrl.includes("r2.dev") ||
+    lowerUrl.includes("cloudflarestorage.com") ||
+    lowerUrl.includes("lifestylemedicinegateway.com") ||
+    lowerUrl.includes("blob:")
   );
 }
 
@@ -594,7 +597,7 @@ export default function VendorPage() {
                             sizes="(max-width: 768px) 100vw, 33vw"
                           />
                           <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-                            {video.status === "uploading" ? (
+                            {video.status === "uploading" && !isDirectVideoUrl(video.embed_url) ? (
                               <div className="flex flex-col items-center gap-2 text-white">
                                 <Loader2 className="h-8 w-8 animate-spin" />
                                 <span className="text-[10px] font-bold uppercase tracking-widest">Processing</span>
