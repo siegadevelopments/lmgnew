@@ -36,7 +36,7 @@ function isDirectVideoUrl(url: string): boolean {
     /\.(mp4|webm|ogg|mov|m4v|mts|m4a|avi|wmv|flv)(\?|$)/i.test(url) ||
     url.includes("supabase.co/storage") ||
     url.includes("r2.dev") ||
-    url.includes("lifestylemedicinegateway.com")
+    url.includes("media.lifestylemedicinegateway.com")
   );
 }
 
@@ -300,9 +300,11 @@ function VideosContent() {
               {isDirectVideoUrl(fullscreenVideo) ? (
                 <>
                   <video
+                    key={fullscreenVideo}
                     src={fullscreenVideo}
                     controls
                     autoPlay
+                    muted
                     playsInline
                     className="w-full h-full object-contain bg-black"
                   />
