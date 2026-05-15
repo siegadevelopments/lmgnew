@@ -239,9 +239,9 @@ function VideosContent() {
                       )}
                       {/* Dark overlay */}
                       <div className="absolute inset-0 bg-black/20 transition-colors group-hover:bg-black/35" />
-                      {/* Play circle */}
+                      {/* Play circle / Status indicator */}
                       <div className="absolute inset-0 flex items-center justify-center">
-                        {video.status === "uploading" ? (
+                        {video.status === "uploading" && !embeddable ? (
                           <div className="rounded-full bg-primary/20 p-4 text-white shadow-xl backdrop-blur-sm flex flex-col items-center gap-2">
                             <Loader2 className="h-8 w-8 animate-spin" />
                             <span className="text-[10px] font-bold uppercase tracking-widest">Processing</span>
@@ -252,6 +252,14 @@ function VideosContent() {
                           </div>
                         )}
                       </div>
+                      
+                      {/* Small processing badge if it's both processing AND playable */}
+                      {video.status === "uploading" && embeddable && (
+                        <div className="absolute top-3 right-3 rounded-full bg-black/60 px-2 py-1 text-[8px] font-bold text-white/90 backdrop-blur-sm flex items-center gap-1.5 border border-white/10">
+                          <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                          PROCESSING
+                        </div>
+                      )}
                       {/* "External" badge for non-embeddable URLs */}
                       {!embeddable && video.embed_url && (
                         <div className="absolute bottom-3 right-3 rounded-md bg-black/70 px-2 py-0.5 text-xs text-white/80 backdrop-blur-sm">
