@@ -22,6 +22,7 @@ import {
   Search,
   Play,
   Maximize2,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
@@ -593,9 +594,16 @@ export default function VendorPage() {
                             sizes="(max-width: 768px) 100vw, 33vw"
                           />
                           <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-                            <div className="h-12 w-12 rounded-full bg-white/90 text-primary flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
-                              <Play className="h-6 w-6 fill-current" />
-                            </div>
+                            {video.status === "uploading" ? (
+                              <div className="flex flex-col items-center gap-2 text-white">
+                                <Loader2 className="h-8 w-8 animate-spin" />
+                                <span className="text-[10px] font-bold uppercase tracking-widest">Processing</span>
+                              </div>
+                            ) : (
+                              <div className="h-12 w-12 rounded-full bg-white/90 text-primary flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
+                                <Play className="h-6 w-6 fill-current" />
+                              </div>
+                            )}
                           </div>
                         </div>
                         <div className="p-4">
