@@ -33,7 +33,10 @@ function extractYouTubeId(url: string): string | null {
 function isDirectVideoUrl(url: string): boolean {
   if (!url) return false;
   return (
-    /\.(mp4|webm|ogg|mov|m4v|mts)(\?|$)/i.test(url) || url.includes("supabase.co/storage")
+    /\.(mp4|webm|ogg|mov|m4v|mts|m4a|avi|wmv|flv)(\?|$)/i.test(url) ||
+    url.includes("supabase.co/storage") ||
+    url.includes("r2.dev") ||
+    url.includes("lifestylemedicinegateway.com")
   );
 }
 
@@ -97,7 +100,6 @@ function VideosContent() {
   const filteredVideos = useMemo(() => {
     return (videos || []).filter(
       (video) =>
-        video.status !== "uploading" &&
         ((video.title?.toLowerCase() || "").includes(search.toLowerCase()) ||
           (video.description?.toLowerCase() || "").includes(search.toLowerCase())),
     );
@@ -236,9 +238,16 @@ function VideosContent() {
                       <div className="absolute inset-0 bg-black/20 transition-colors group-hover:bg-black/35" />
                       {/* Play circle */}
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="rounded-full bg-primary/90 p-4 text-white shadow-xl ring-4 ring-white/20 transition-all group-hover:scale-110 group-hover:bg-primary group-hover:ring-white/40">
-                          <Play className="h-8 w-8 ml-0.5" fill="currentColor" />
-                        </div>
+                        {video.status === "uploading" ? (
+                          <div className="rounded-full bg-primary/20 p-4 text-white shadow-xl backdrop-blur-sm flex flex-col items-center gap-2">
+                            <Loader2 className="h-8 w-8 animate-spin" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest">Processing</span>
+                          </div>
+                        ) : (
+                          <div className="rounded-full bg-primary/90 p-4 text-white shadow-xl ring-4 ring-white/20 transition-all group-hover:scale-110 group-hover:bg-primary group-hover:ring-white/40">
+                            <Play className="h-8 w-8 ml-0.5" fill="currentColor" />
+                          </div>
+                        )}
                       </div>
                       {/* "External" badge for non-embeddable URLs */}
                       {!embeddable && video.embed_url && (
@@ -295,7 +304,6 @@ function VideosContent() {
                     controls
                     autoPlay
                     playsInline
-                    crossOrigin="anonymous"
                     className="w-full h-full object-contain bg-black"
                   />
                   {/\.(mts)(\?|$)/i.test(fullscreenVideo) && (

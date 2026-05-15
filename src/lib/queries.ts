@@ -192,7 +192,7 @@ export const videosQueryOptions = () =>
             profiles(role)
           `,
           )
-          .eq("status", "ready")
+          .in("status", ["ready", "uploading"])
           .order("created_at", { ascending: false });
 
         if (error) {

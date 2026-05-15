@@ -49,7 +49,12 @@ function extractYouTubeId(url: string): string | null {
 /** Returns true if URL points to a raw video file or Supabase storage */
 function isDirectVideoUrl(url: string): boolean {
   if (!url) return false;
-  return /\.(mp4|webm|ogg|mov|m4v|mts)(\?|$)/i.test(url) || url.includes("supabase.co/storage");
+  return (
+    /\.(mp4|webm|ogg|mov|m4v|mts|m4a|avi|wmv|flv)(\?|$)/i.test(url) ||
+    url.includes("supabase.co/storage") ||
+    url.includes("r2.dev") ||
+    url.includes("lifestylemedicinegateway.com")
+  );
 }
 
 /** Build a clean YouTube embed URL */
@@ -718,7 +723,6 @@ export default function VendorPage() {
                     controls
                     autoPlay
                     playsInline
-                    crossOrigin="anonymous"
                     className="w-full h-full object-contain bg-black"
                   />
                 </>

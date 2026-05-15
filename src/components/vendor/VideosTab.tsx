@@ -77,7 +77,7 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
       let initialStatus = "ready";
 
       if (uploadMode === "file" && selectedFile && !form.id && !finalEmbedUrl) {
-        initialStatus = "uploading";
+        initialStatus = "ready";
         const url = await uploadMedia(selectedFile, `videos/${userId}`, "video-uploads");
         if (!url) throw new Error("Failed to upload video file.");
         finalEmbedUrl = url;
