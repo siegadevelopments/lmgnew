@@ -32,11 +32,14 @@ function extractYouTubeId(url: string): string | null {
 /** Returns true if URL points to a raw video file or Supabase storage */
 function isDirectVideoUrl(url: string): boolean {
   if (!url) return false;
+  const lowerUrl = url.toLowerCase();
   return (
-    /\.(mp4|webm|ogg|mov|m4v|mts|m4a|avi|wmv|flv)(\?|$)/i.test(url) ||
-    url.includes("supabase.co/storage") ||
-    url.includes("r2.dev") ||
-    url.includes("media.lifestylemedicinegateway.com")
+    /\.(mp4|webm|ogg|mov|m4v|mts|m4a|avi|wmv|flv|m3u8)(\?|$)/i.test(url) ||
+    lowerUrl.includes("supabase.co/storage") ||
+    lowerUrl.includes("r2.dev") ||
+    lowerUrl.includes("cloudflarestorage.com") ||
+    lowerUrl.includes("lifestylemedicinegateway.com") ||
+    lowerUrl.includes("blob:")
   );
 }
 
@@ -307,6 +310,13 @@ function VideosContent() {
                     muted
                     playsInline
                     className="w-full h-full object-contain bg-black"
+                    onError={(e) => {
+                      console.error("Video play error:", e);
+                      // Fallback or show error message
+                      const target = e.target as HTMLVideoElement;
+                      const errorMsg = target.error ? ` (Error: ${target.error.code} - ${target.error.message})` : "";
+                      alert(`The video could not be played.${errorMsg} Please check your connection or try another browser.`);
+                    }}
                   />
                   {/\.(mts)(\?|$)/i.test(fullscreenVideo) && (
                     <div className="absolute top-4 inset-x-0 mx-auto max-w-xs bg-black/60 backdrop-blur-md p-3 rounded-lg text-[10px] text-white/80 text-center border border-white/10">
