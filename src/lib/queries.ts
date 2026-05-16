@@ -229,28 +229,42 @@ export const brandsQueryOptions = () =>
     },
   });
 
-export const randomMemeQueryOptions = () =>
-  queryOptions({
-    queryKey: ["galleries", "random-meme"],
+export const randomMemeQueryOptions = () => {
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  
+  return queryOptions({
+    queryKey: ["galleries", "random-meme", todayStr],
+    staleTime: 24 * 60 * 60 * 1000, // Cache for 24 hours
     queryFn: async () => {
-      // 1. Get the 'memes' gallery ID
-      const { data: gallery } = await (supabase
+      // 1. Get all 'memes' gallery IDs
+      const { data: galleries } = await (supabase
         .from("galleries")
         .select("id")
-        .eq("category", "memes")
-        .limit(1)
-        .single() as any);
+        .eq("category", "memes") as any);
 
-      if (!gallery) return null;
+      if (!galleries || galleries.length === 0) return null;
+      const galleryIds = galleries.map((g: any) => g.id);
 
-      // 2. Get a random item from that gallery
+      // 2. Get all items from those galleries
       const { data: items } = await supabase
         .from("gallery_items")
         .select("*")
-        .eq("gallery_id", gallery.id);
+        .in("gallery_id", galleryIds);
 
       if (!items || items.length === 0) return null;
 
-      return items[Math.floor(Math.random() * items.length)] as any;
+      // 3. Deterministically pick an item based on the date
+      // Use YYYYMMDD as a seed
+      const dateNum = parseInt(todayStr.replace(/-/g, ''));
+      const seededRandom = (s: number) => {
+        const x = Math.sin(s) * 10000;
+        return x - Math.floor(x);
+      };
+      
+      const index = Math.floor(seededRandom(dateNum) * items.length);
+      return items[index] as any;
     },
   });
+};
+
