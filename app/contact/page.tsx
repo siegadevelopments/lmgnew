@@ -15,7 +15,8 @@ export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const { honeypot, setHoneypot, validateSubmission } = useBotProtection();
+  const { honeypot, setHoneypot, onInteraction, validateSubmission } = useBotProtection();
+
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -86,9 +87,10 @@ export default function ContactPage() {
                 {error}
               </div>
             )}
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} onFocus={onInteraction} onClick={onInteraction} onKeyDown={onInteraction} className="space-y-4">
               {/* Bot protection field */}
               <HoneypotField value={honeypot} onChange={setHoneypot} />
+
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">

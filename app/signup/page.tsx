@@ -15,6 +15,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
+import { useBotProtection } from "@/hooks/use-bot-protection";
+import { HoneypotField } from "@/components/HoneypotField";
+
+
 
 function SignupForm() {
   const router = useRouter();
@@ -22,7 +26,9 @@ function SignupForm() {
   const redirectTo = searchParams?.get("redirect");
 
   const { signUp } = useAuth();
+  const { honeypot, setHoneypot, onInteraction, validateSubmission } = useBotProtection();
   const [name, setName] = useState("");
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -33,6 +39,13 @@ function SignupForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!validateSubmission()) {
+      // Silently reject or show a generic error to not tip off the bot
+      setError("An error occurred. Please try again in a few seconds.");
+      return;
+    }
+
 
     if (password !== confirmPassword) {
       setError("Passwords do not match");
@@ -78,14 +91,21 @@ function SignupForm() {
               <CardTitle className="text-2xl">Create an account</CardTitle>
               <CardDescription>Join Lifestyle Medicine Gateway</CardDescription>
             </CardHeader>
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} onFocus={onInteraction} onClick={onInteraction} onKeyDown={onInteraction}>
               <CardContent className="space-y-4">
+
                 {error && (
                   <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
                     {error}
                   </div>
                 )}
+                
+                {/* Bot protection field */}
+                <HoneypotField value={honeypot} onChange={setHoneypot} />
+
                 <div className="space-y-2">
+
+
                   <Label htmlFor="signup-name">Full Name</Label>
                   <Input
                     id="signup-name"

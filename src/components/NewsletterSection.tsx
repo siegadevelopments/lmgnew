@@ -23,7 +23,8 @@ export function NewsletterSection() {
   const [submitted, setSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const { honeypot, setHoneypot, validateSubmission } = useBotProtection();
+  const { honeypot, setHoneypot, onInteraction, validateSubmission } = useBotProtection();
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,8 +110,11 @@ export function NewsletterSection() {
                     Get the latest wellness tips and exclusive deals delivered to your inbox.
                   </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4 py-4">
+                <form onSubmit={handleSubmit} onFocus={onInteraction} onClick={onInteraction} onKeyDown={onInteraction} className="space-y-4 py-4">
+                  <HoneypotField value={honeypot} onChange={setHoneypot} />
+
                   <div className="space-y-2">
+
                     <Label
                       htmlFor="name"
                       className="text-xs font-bold uppercase tracking-widest text-muted-foreground"
