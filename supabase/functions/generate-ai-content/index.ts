@@ -37,6 +37,7 @@ serve(async (req: Request) => {
     }
 
     let generatedContent = "";
+    let errorDetails = "";
 
     // 1. Try Gemini
     if (GEMINI_API_KEY) {
@@ -66,10 +67,16 @@ serve(async (req: Request) => {
           generatedContent = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
           // Clean up markdown code blocks if any
           generatedContent = generatedContent.replace(/```json/g, "").replace(/```html/g, "").replace(/```/g, "").trim();
+        } else {
+          const errText = await response.text();
+          errorDetails += `Gemini Error (${response.status}): ${errText.substring(0, 150)}... | `;
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error("Gemini failed:", e);
+        errorDetails += `Gemini Exception: ${e.message} | `;
       }
+    } else {
+      errorDetails += "GEMINI_API_KEY not set | ";
     }
 
     // 2. Try OpenAI Fallback
@@ -95,14 +102,20 @@ serve(async (req: Request) => {
           const data = await response.json();
           generatedContent = data.choices?.[0]?.message?.content || "";
           generatedContent = generatedContent.replace(/```json/g, "").replace(/```html/g, "").replace(/```/g, "").trim();
+        } else {
+          const errText = await response.text();
+          errorDetails += `OpenAI Error (${response.status}): ${errText.substring(0, 150)}... | `;
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error("OpenAI failed:", e);
+        errorDetails += `OpenAI Exception: ${e.message} | `;
       }
+    } else {
+      errorDetails += "OPENAI_API_KEY not set | ";
     }
 
     if (!generatedContent) {
-      throw new Error("AI Content generation failed. Check API keys.");
+      throw new Error(`AI Content generation failed. Details: ${errorDetails}`);
     }
 
     let result = { content: generatedContent, prep_time: 15, cook_time: 15 };

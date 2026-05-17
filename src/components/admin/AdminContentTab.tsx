@@ -50,6 +50,57 @@ const parseTimeString = (val: any): number | null => {
   return null;
 };
 
+const CURATED_FOOD_IMAGES = [
+  {
+    url: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=800&q=80",
+    description: "Mediterranean Salad Bowl",
+    photographer: "Anna Pelzer",
+    profile: "https://unsplash.com/@annapelzer"
+  },
+  {
+    url: "https://images.unsplash.com/photo-1553530979-7ee52a2670c4?auto=format&fit=crop&w=800&q=80",
+    description: "Berry Smoothie Bowl",
+    photographer: "Alexander Mils",
+    profile: "https://unsplash.com/@alexandermils"
+  },
+  {
+    url: "https://images.unsplash.com/photo-1541795795328-f073b763494e?auto=format&fit=crop&w=800&q=80",
+    description: "Avocado Chocolate Dessert",
+    photographer: "Jocelyn Morales",
+    profile: "https://unsplash.com/@jocelynmorales"
+  },
+  {
+    url: "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80",
+    description: "Rustic Vegetable Soup",
+    photographer: "Caroline Attwood",
+    profile: "https://unsplash.com/@carolineattwood"
+  },
+  {
+    url: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80",
+    description: "Salmon Quinoa Protein Bowl",
+    photographer: "Ella Olsson",
+    profile: "https://unsplash.com/@ellaolsson"
+  },
+  {
+    url: "https://images.unsplash.com/photo-1517093157656-b9ec691cc72e?auto=format&fit=crop&w=800&q=80",
+    description: "Oatmeal Berry Bowl",
+    photographer: "Dilyara Garifullina",
+    profile: "https://unsplash.com/@dilyaragarifullina"
+  },
+  {
+    url: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=800&q=80",
+    description: "Cold-Pressed Green Juice",
+    photographer: "Charlotte shares",
+    profile: "https://unsplash.com/@charlottesharestravels"
+  },
+  {
+    url: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=800&q=80",
+    description: "Healthy Fruit Assortment",
+    photographer: "Brooke Lark",
+    profile: "https://unsplash.com/@brookelark"
+  }
+];
+
 export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [activeType, setActiveType] = useState<"articles" | "videos" | "recipes" | "products" | "media">(
     "articles",
@@ -92,6 +143,69 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [cookTime, setCookTime] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [galleryCategory, setGalleryCategory] = useState<"vendor_gallery" | "charts" | "memes">("vendor_gallery");
+
+  // Unsplash Stock Image Search states
+  const [stockSearchOpen, setStockSearchOpen] = useState(false);
+  const [stockSearchQuery, setStockSearchQuery] = useState("");
+  const [stockImages, setStockImages] = useState<any[]>(CURATED_FOOD_IMAGES);
+  const [searchingStock, setSearchingStock] = useState(false);
+  const [unsplashKey, setUnsplashKey] = useState("");
+
+  useEffect(() => {
+    const key = localStorage.getItem("unsplash_access_key") || "";
+    setUnsplashKey(key);
+  }, []);
+
+  const searchStockPhotos = async (queryStr: string) => {
+    if (!queryStr.trim()) {
+      setStockImages(CURATED_FOOD_IMAGES);
+      return;
+    }
+    
+    setSearchingStock(true);
+    let accessKey = localStorage.getItem("unsplash_access_key") || "";
+    
+    if (!accessKey) {
+      // Curated/Filter Mode
+      const filtered = CURATED_FOOD_IMAGES.filter(img => 
+        img.description.toLowerCase().includes(queryStr.toLowerCase())
+      );
+      setStockImages(filtered.length > 0 ? filtered : CURATED_FOOD_IMAGES);
+      setSearchingStock(false);
+      return;
+    }
+    
+    try {
+      const res = await fetch(
+        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(queryStr)}&per_page=12&client_id=${accessKey}`
+      );
+      if (!res.ok) throw new Error("Failed to search Unsplash");
+      const data = await res.json();
+      
+      const formatted = (data.results || []).map((photo: any) => ({
+        url: photo.urls.regular,
+        description: photo.alt_description || photo.description || "Food photography",
+        photographer: photo.user.name,
+        profile: photo.user.links.html
+      }));
+      
+      setStockImages(formatted);
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Could not fetch Unsplash results. Verify your access key.");
+    } finally {
+      setSearchingStock(false);
+    }
+  };
+
+  useEffect(() => {
+    console.log("stockSearchOpen useEffect triggered! Open state:", stockSearchOpen);
+    if (stockSearchOpen) {
+      const activeKey = localStorage.getItem("unsplash_access_key") || "";
+      setUnsplashKey(activeKey);
+      searchStockPhotos(stockSearchQuery || title || "");
+    }
+  }, [stockSearchOpen]);
 
   // --- Auto-Save Draft Logic ---
   useEffect(() => {
@@ -749,17 +863,18 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         },
       });
       if (error) {
-        if (error.context) {
-          try {
+        let errMsg = "AI image generation failed";
+        try {
+          if (error.context && typeof error.context.json === 'function') {
             const body = await error.context.json();
             if (body?.error) {
-              throw new Error(body.error);
+              errMsg = body.error;
             }
-          } catch (e) {
-            // Ignore JSON parsing errors
+          } else if (error.message) {
+            errMsg = error.message;
           }
-        }
-        throw error;
+        } catch (_) {}
+        throw new Error(errMsg);
       }
       
       // Handle the case where the function returns a 200 but contains an error object
@@ -1172,6 +1287,20 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                       type="button"
                       variant="outline"
                       size="icon"
+                      onClick={() => {
+                        console.log("Stock search button clicked! Title:", title);
+                        setStockSearchQuery(title || "");
+                        setStockSearchOpen(true);
+                      }}
+                      className="h-10 w-10 text-violet-600 border-violet-200 hover:bg-violet-50/50"
+                      title="Search Stock Photos"
+                    >
+                      <ImageIcon className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
                       className="relative h-10 w-10 overflow-hidden"
                       disabled={uploadingImage}
                     >
@@ -1421,6 +1550,125 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
           </form>
         </CardContent>
       </Card>
+
+      {/* Unsplash Stock Photo Search Dialog */}
+      <Dialog open={stockSearchOpen} onOpenChange={setStockSearchOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col p-6 overflow-hidden bg-white/95 backdrop-blur-md border border-slate-100 rounded-3xl shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent flex items-center gap-2">
+              <ImageIcon className="h-6 w-6 text-violet-600" />
+              Stock Photo Library
+            </DialogTitle>
+            <DialogDescription className="text-slate-500">
+              Search and select a stunning cover photo from Unsplash. Pre-filled with active categories for free, keyless use, or connect your developer account for live search.
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Search Inputs */}
+          <div className="flex flex-col gap-4 mt-2">
+            <div className="flex gap-2">
+              <Input
+                value={stockSearchQuery}
+                onChange={(e) => setStockSearchQuery(e.target.value)}
+                placeholder="Search premium food, salads, bowls..."
+                className="h-11 rounded-xl border-slate-200"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") searchStockPhotos(stockSearchQuery);
+                }}
+              />
+              <Button
+                onClick={() => searchStockPhotos(stockSearchQuery)}
+                disabled={searchingStock}
+                className="bg-violet-600 hover:bg-violet-700 h-11 px-6 rounded-xl font-semibold transition-all shadow-md shadow-violet-100"
+              >
+                {searchingStock ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "Search"
+                )}
+              </Button>
+            </div>
+
+            {/* API Key Setup */}
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col gap-2">
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-semibold text-slate-700">
+                  {unsplashKey ? "✓ Live Unsplash Search Connected" : "ℹ️ Using Curated Fallbacks (Search Limited)"}
+                </span>
+                <Button
+                  variant="link"
+                  className="text-xs text-violet-600 h-auto p-0 font-bold hover:underline"
+                  onClick={() => {
+                    const key = prompt("Enter your Unsplash Access Key:", unsplashKey);
+                    if (key !== null) {
+                      localStorage.setItem("unsplash_access_key", key.trim());
+                      setUnsplashKey(key.trim());
+                      toast.success(key ? "Unsplash Access Key saved!" : "Using fallback mode.");
+                      searchStockPhotos(stockSearchQuery);
+                    }
+                  }}
+                >
+                  {unsplashKey ? "Change Key" : "Connect Unsplash Key (Free)"}
+                </Button>
+              </div>
+              {!unsplashKey && (
+                <p className="text-[10px] text-slate-500 leading-normal">
+                  To search millions of live photos, click the link above and paste a free Access Key from <a href="https://unsplash.com/developers" target="_blank" rel="noreferrer" className="text-violet-600 underline">unsplash.com/developers</a>. Otherwise, we filter from our gourmet curated collection.
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Grid display */}
+          <div className="flex-1 overflow-y-auto mt-4 pr-1 min-h-[300px]">
+            {searchingStock ? (
+              <div className="h-full flex flex-col items-center justify-center py-20 text-slate-400 gap-2">
+                <Loader2 className="h-8 w-8 animate-spin text-violet-600" />
+                <span className="text-sm font-medium">Sourcing high-resolution stock photos...</span>
+              </div>
+            ) : stockImages.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center py-20 text-slate-400">
+                <span className="text-sm">No photos found matching your search. Try "salad", "oats", or "soup".</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {stockImages.map((img, i) => (
+                  <div
+                    key={i}
+                    onClick={() => {
+                      setImageUrl(img.url);
+                      setStockSearchOpen(false);
+                      toast.success("Cover image selected successfully!");
+                    }}
+                    className="group relative cursor-pointer overflow-hidden rounded-2xl border border-slate-100 shadow-sm transition-all hover:scale-[1.02] hover:shadow-md"
+                  >
+                    <div className="aspect-[4/3] w-full bg-slate-100 overflow-hidden">
+                      <img
+                        src={img.url}
+                        alt={img.description}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 pt-8 text-white transition-opacity duration-300">
+                      <p className="text-[11px] font-semibold truncate">{img.description}</p>
+                      <p className="text-[9px] text-slate-300 mt-0.5 truncate">
+                        By <a href={img.profile} target="_blank" rel="noreferrer" className="underline hover:text-white" onClick={(e) => e.stopPropagation()}>{img.photographer}</a> on Unsplash
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="mt-4 pt-4 border-t border-slate-100">
+            <Button variant="ghost" onClick={() => setStockSearchOpen(false)} className="rounded-xl font-medium">
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
