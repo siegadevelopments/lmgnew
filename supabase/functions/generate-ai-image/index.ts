@@ -72,7 +72,7 @@ serve(async (req: Request) => {
             const mimeType = prediction.mimeType || "image/png";
             const binaryData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
             const watermarkedBlob = await watermarkImage(new Blob([binaryData], { type: mimeType }), author_id);
-            return await uploadToSupabase(watermarkedBlob, folder, "image/png");
+            return await uploadToSupabase(watermarkedBlob, folder, "image/jpeg");
           }
         } else {
           const errText = await response.text();
@@ -109,7 +109,7 @@ serve(async (req: Request) => {
           const imageRes = await fetch(imageUrl);
           const blob = await imageRes.blob();
           const watermarkedBlob = await watermarkImage(blob, author_id);
-          return await uploadToSupabase(watermarkedBlob, folder, "image/png");
+          return await uploadToSupabase(watermarkedBlob, folder, "image/jpeg");
         } else {
           const errText = await response.text();
           errorDetails += `OpenAI Error (${response.status}): ${errText.substring(0, 100)}... | `;
@@ -196,8 +196,8 @@ async function watermarkImage(imageBlob: Blob, authorId: string | null) {
     }
     
     mainImg.composite(bg, mainImg.width - bg.width - 50, mainImg.height - bg.height - 50);
-    const finalBuffer = await mainImg.encode();
-    return new Blob([finalBuffer], { type: 'image/png' });
+    const finalBuffer = await mainImg.encodeJPEG(80);
+    return new Blob([finalBuffer], { type: 'image/jpeg' });
   } catch (e) {
     console.error("Watermarking failed:", e);
     return imageBlob;
@@ -210,7 +210,7 @@ async function uploadToSupabase(blob: Blob, folder: string, contentType: string)
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
   );
 
-  const fileName = `${Date.now()}.png`;
+  const fileName = `${Date.now()}.jpeg`;
   const filePath = `${folder}/${fileName}`;
 
   const { error: uploadError } = await supabaseAdmin.storage

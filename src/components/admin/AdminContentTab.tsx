@@ -28,6 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { uploadMedia, deleteMediaWithSafety } from "@/lib/upload";
@@ -63,6 +64,12 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [videoUploadProgress, setVideoUploadProgress] = useState<string>("");
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
+  const [bulkRecipes, setBulkRecipes] = useState<any[]>([]);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [currentBulkIndex, setCurrentBulkIndex] = useState(-1);
+  const [bulkStatus, setBulkStatus] = useState<string>("");
+  const [enhancedCount, setEnhancedCount] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
@@ -236,6 +243,124 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    if (bulkDialogOpen && activeType === "recipes") {
+      fetchRecipesForBulk();
+    }
+  }, [bulkDialogOpen, activeType]);
+
+  const fetchRecipesForBulk = async () => {
+    setBulkLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("recipes")
+        .select("*")
+        .order("title", { ascending: true });
+        
+      if (error) throw error;
+      
+      const filtered = (data || []).map((recipe: any) => {
+        const needsContent = !recipe.content || recipe.content.length < 200 || !recipe.prep_time || !recipe.cook_time;
+        const needsImage = !recipe.image_url || recipe.image_url.includes("recipes/") || recipe.image_url.includes("placeholder");
+        return {
+          ...recipe,
+          needsContent,
+          needsImage,
+          status: "pending"
+        };
+      }).filter(r => r.needsContent || r.needsImage);
+      
+      setBulkRecipes(filtered);
+    } catch (e: any) {
+      toast.error("Failed to load recipes: " + e.message);
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const startBulkEnhancement = async () => {
+    setBulkLoading(true);
+    setEnhancedCount(0);
+    
+    for (let i = 0; i < bulkRecipes.length; i++) {
+      const recipe = bulkRecipes[i];
+      setCurrentBulkIndex(i);
+      
+      setBulkRecipes(prev => prev.map((r, idx) => idx === i ? { ...r, status: "processing" } : r));
+      
+      try {
+        let updatedFields: any = {};
+        
+        if (recipe.needsContent) {
+          setBulkStatus(`Chef AI: Generating gourmet healthy recipe details...`);
+          const { data: contentData, error: contentError } = await supabase.functions.invoke("generate-ai-content", {
+            body: { title: recipe.title, type: "recipe" },
+          });
+          
+          if (contentError) {
+            if (contentError.context) {
+              const body = await contentError.context.json().catch(() => null);
+              if (body?.error) throw new Error(body.error);
+            }
+            throw contentError;
+          }
+          
+          if (contentData?.content) {
+            updatedFields.content = contentData.content;
+            updatedFields.prep_time = parseInt(contentData.prep_time) || 15;
+            updatedFields.cook_time = parseInt(contentData.cook_time) || 15;
+          }
+        }
+        
+        if (recipe.needsImage) {
+          setBulkStatus(`Artist AI: Painting gorgeous premium wellness photo...`);
+          const promptContent = updatedFields.content || recipe.content || "";
+          const cleanPromptContent = promptContent.replace(/<[^>]*>/g, ' ').substring(0, 1000);
+          
+          const { data: imageData, error: imageError } = await supabase.functions.invoke("generate-ai-image", {
+            body: { 
+              prompt: `${recipe.title} ${cleanPromptContent}`.trim(),
+              author_id: recipe.author_id
+            },
+          });
+          
+          if (imageError) {
+            if (imageError.context) {
+              const body = await imageError.context.json().catch(() => null);
+              if (body?.error) throw new Error(body.error);
+            }
+            throw imageError;
+          }
+          
+          if (imageData?.url) {
+            updatedFields.image_url = imageData.url;
+          }
+        }
+        
+        if (Object.keys(updatedFields).length > 0) {
+          setBulkStatus(`Saving enhanced recipe to database...`);
+          const { error: dbError } = await (supabase.from("recipes") as any)
+            .update(updatedFields)
+            .eq("id", recipe.id);
+            
+          if (dbError) throw dbError;
+        }
+        
+        setBulkRecipes(prev => prev.map((r, idx) => idx === i ? { ...r, status: "completed" } : r));
+        setEnhancedCount(prev => prev + 1);
+        
+      } catch (err: any) {
+        console.error(`Failed to enhance recipe "${recipe.title}":`, err);
+        setBulkRecipes(prev => prev.map((r, idx) => idx === i ? { ...r, status: "failed", errorMsg: err.message } : r));
+      }
+    }
+    
+    setCurrentBulkIndex(-1);
+    setBulkStatus("Enhancement process completed!");
+    setBulkLoading(false);
+    loadItems();
   };
 
   const handlePublish = async (id: any) => {
@@ -1216,11 +1341,196 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={bulkDialogOpen} onOpenChange={(open) => {
+        if (!bulkLoading) setBulkDialogOpen(open);
+      }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-6 rounded-2xl border bg-background/95 backdrop-blur-md shadow-2xl">
+          <DialogHeader className="pb-4 border-b border-border">
+            <DialogTitle className="text-2xl font-bold flex items-center gap-2 text-foreground">
+              <Sparkles className="h-6 w-6 text-primary animate-pulse" />
+              Gourmet Recipe Enhancer
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground text-sm">
+              Automatically generate healthy recipe details (ingredients, instructions, wellness tips) and high-quality cover photos for all recipes.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto py-4 space-y-4 pr-1">
+            {bulkLoading && currentBulkIndex !== -1 ? (
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 space-y-4 animate-in fade-in duration-300">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-bold text-primary">Processing Recipes...</span>
+                  <span className="text-muted-foreground font-medium">
+                    {currentBulkIndex + 1} of {bulkRecipes.length}
+                  </span>
+                </div>
+                
+                <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
+                  <div 
+                    className="bg-primary h-full transition-all duration-500 rounded-full"
+                    style={{ width: `${((currentBulkIndex) / bulkRecipes.length) * 100}%` }}
+                  />
+                </div>
+                
+                <div className="flex items-start gap-4">
+                  <div className="mt-1 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="font-bold text-base text-foreground line-clamp-1">
+                      {bulkRecipes[currentBulkIndex]?.title}
+                    </h4>
+                    <p className="text-xs text-muted-foreground font-medium italic animate-pulse">
+                      {bulkStatus}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : bulkRecipes.length === 0 ? (
+              <div className="text-center py-12 bg-muted/20 border border-dashed rounded-xl space-y-3">
+                <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-950/30 flex items-center justify-center mx-auto">
+                  <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-lg">All Recipes Are Gourmet!</h4>
+                  <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
+                    Every recipe in your library already has robust content and high-quality AI images.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm pb-2">
+                  <span className="font-bold text-foreground">
+                    Recipes needing enhancement ({bulkRecipes.length})
+                  </span>
+                  <span className="text-[11px] bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                    Attention Required
+                  </span>
+                </div>
+                
+                <div className="grid gap-2 max-h-[40vh] overflow-y-auto pr-1">
+                  {bulkRecipes.map((recipe, idx) => (
+                    <div 
+                      key={recipe.id}
+                      className={`flex items-center justify-between p-3 rounded-xl border transition-all duration-300 ${
+                        idx === currentBulkIndex 
+                          ? "bg-primary/5 border-primary ring-1 ring-primary" 
+                          : recipe.status === "completed"
+                          ? "bg-emerald-50/50 dark:bg-emerald-950/10 border-emerald-200 dark:border-emerald-900/30"
+                          : recipe.status === "failed"
+                          ? "bg-destructive/5 border-destructive/20"
+                          : "bg-card border-border hover:border-muted-foreground/30"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-10 w-10 rounded overflow-hidden bg-muted shrink-0 flex items-center justify-center">
+                          {recipe.image_url && !recipe.needsImage ? (
+                            <img src={recipe.image_url} className="h-full w-full object-cover" />
+                          ) : (
+                            <Utensils className="h-5 w-5 text-muted-foreground/50" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <h4 className="font-bold text-sm truncate text-foreground">{recipe.title}</h4>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            {recipe.needsContent && (
+                              <span className="text-[9px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400 px-1.5 py-0.5 rounded">
+                                Needs Recipe Content
+                              </span>
+                            )}
+                            {recipe.needsImage && (
+                              <span className="text-[9px] font-bold bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400 px-1.5 py-0.5 rounded">
+                                Blurry / Legacy Image
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0 ml-2">
+                        {recipe.status === "pending" && (
+                          <span className="text-xs text-muted-foreground font-semibold">Pending</span>
+                        )}
+                        {recipe.status === "processing" && (
+                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                        )}
+                        {recipe.status === "completed" && (
+                          <CheckCircle2 className="h-5 w-5 text-emerald-500 fill-emerald-50 dark:fill-none" />
+                        )}
+                        {recipe.status === "failed" && (
+                          <span 
+                            className="text-xs text-destructive font-bold cursor-help underline decoration-dotted" 
+                            title={recipe.errorMsg || "Unknown error"}
+                          >
+                            Failed
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="pt-4 border-t border-border flex items-center justify-between gap-4 mt-auto">
+            {!bulkLoading && bulkRecipes.length > 0 && (
+              <div className="text-xs text-muted-foreground font-medium hidden sm:block">
+                Will execute sequentially using Gemini & Imagen 3.
+              </div>
+            )}
+            <div className="flex items-center gap-2 ml-auto w-full sm:w-auto">
+              <Button
+                variant="outline"
+                onClick={() => setBulkDialogOpen(false)}
+                disabled={bulkLoading}
+                className="w-full sm:w-auto"
+              >
+                {enhancedCount > 0 ? "Close & Refresh" : "Cancel"}
+              </Button>
+              {bulkRecipes.length > 0 && (
+                <Button
+                  onClick={startBulkEnhancement}
+                  disabled={bulkLoading}
+                  className="w-full sm:w-auto bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90 text-white font-bold shadow-lg shadow-primary/25 flex items-center justify-center gap-2"
+                >
+                  {bulkLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Enhancing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      Start Enhancing ({bulkRecipes.length})
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div ref={listRef} className="grid gap-4 scroll-mt-6">
-        <h3 className="text-lg font-bold flex items-center gap-2 capitalize">
-          Recent {activeType}
-          {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-        </h3>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
+          <h3 className="text-lg font-bold flex items-center gap-2 capitalize">
+            Recent {activeType}
+            {loading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+          </h3>
+          {activeType === "recipes" && items.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setBulkDialogOpen(true)}
+              className="bg-primary/5 hover:bg-primary/10 border-primary/20 text-primary font-bold flex items-center gap-2 transition-all duration-300 shadow-sm self-start sm:self-auto"
+            >
+              <Sparkles className="h-4 w-4 text-primary animate-pulse" />
+              Bulk Enhance Recipes
+            </Button>
+          )}
+        </div>
         {loading && items.length === 0 ? (
           <div className="flex py-10 justify-center">
             <Loader2 className="h-6 w-6 animate-spin" />
