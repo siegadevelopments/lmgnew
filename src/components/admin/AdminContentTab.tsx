@@ -71,9 +71,14 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [bulkStatus, setBulkStatus] = useState<string>("");
   const [enhancedCount, setEnhancedCount] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [assigningAuthor, setAssigningAuthor] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+
+  const eTrainingVendor = vendors?.find((v: any) => 
+    v.store_name?.toLowerCase().replace(/[^a-z0-9]/g, "").includes("etraining")
+  );
 
   // Form states
   const [title, setTitle] = useState("");
@@ -361,6 +366,33 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     setBulkStatus("Enhancement process completed!");
     setBulkLoading(false);
     loadItems();
+  };
+
+  const assignAllToETraining = async () => {
+    if (!eTrainingVendor) {
+      toast.error("E-Training Group vendor profile not found.");
+      return;
+    }
+    
+    setAssigningAuthor(true);
+    const toastId = toast.loading("Assigning all recipes to E-Training Group...");
+    
+    try {
+      const { error } = await (supabase.from("recipes") as any)
+        .update({ author_id: eTrainingVendor.id })
+        .gt("id", 0);
+        
+      if (error) throw error;
+      
+      toast.success("Successfully assigned all recipes to E-Training Group!", { id: toastId });
+      loadItems();
+      fetchRecipesForBulk();
+    } catch (err: any) {
+      console.error("Failed to assign author:", err);
+      toast.error("Failed to assign author: " + err.message, { id: toastId });
+    } finally {
+      setAssigningAuthor(false);
+    }
   };
 
   const handlePublish = async (id: any) => {
@@ -1356,6 +1388,35 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto py-4 space-y-4 pr-1">
+            {!bulkLoading && eTrainingVendor && (
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in duration-300">
+                <div className="space-y-1 min-w-0">
+                  <h4 className="font-bold text-sm text-foreground flex items-center gap-1.5">
+                    <User className="h-4 w-4 text-primary" />
+                    Assign Author: E-Training Group
+                  </h4>
+                  <p className="text-xs text-muted-foreground line-clamp-2">
+                    Bulk update the author of all recipes in the database to "E-Training Group".
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={assignAllToETraining}
+                  disabled={assigningAuthor}
+                  className="bg-primary hover:bg-primary/90 text-white font-bold transition-all duration-300 shadow-sm shrink-0"
+                >
+                  {assigningAuthor ? (
+                    <>
+                      <Loader2 className="h-3 w-3 animate-spin mr-1.5" />
+                      Assigning...
+                    </>
+                  ) : (
+                    "Assign Author"
+                  )}
+                </Button>
+              </div>
+            )}
+
             {bulkLoading && currentBulkIndex !== -1 ? (
               <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 space-y-4 animate-in fade-in duration-300">
                 <div className="flex items-center justify-between text-sm">
