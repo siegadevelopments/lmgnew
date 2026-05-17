@@ -4,6 +4,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // @ts-ignore
 import { Image } from "https://deno.land/x/imagescript@1.2.15/mod.ts";
+// @ts-ignore
+import { S3Client, PutObjectCommand } from "https://esm.sh/@aws-sdk/client-s3@3.568.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -43,6 +45,22 @@ serve(async (req: Request) => {
     
     let errorDetails = "";
 
+    const saveImage = async (blob: Blob, folder: string): Promise<string> => {
+      const R2_ACCESS_KEY_ID = Deno.env.get("R2_ACCESS_KEY_ID");
+      if (R2_ACCESS_KEY_ID) {
+        try {
+          console.log("Uploading to Cloudflare R2...");
+          return await uploadToR2(blob, folder);
+        } catch (r2Err: any) {
+          console.error("R2 Upload failed, falling back to Supabase:", r2Err.message);
+          return await uploadToSupabase(blob, folder, "image/jpeg");
+        }
+      } else {
+        console.log("R2 not configured, uploading to Supabase...");
+        return await uploadToSupabase(blob, folder, "image/jpeg");
+      }
+    };
+
     // 1. Try Gemini (Imagen 3)
     if (GEMINI_API_KEY) {
       try {
@@ -72,7 +90,11 @@ serve(async (req: Request) => {
             const mimeType = prediction.mimeType || "image/png";
             const binaryData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
             const watermarkedBlob = await watermarkImage(new Blob([binaryData], { type: mimeType }), author_id);
-            return await uploadToSupabase(watermarkedBlob, folder, "image/jpeg");
+            const publicUrl = await saveImage(watermarkedBlob, folder);
+            return new Response(JSON.stringify({ url: publicUrl }), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              status: 200,
+            });
           }
         } else {
           const errText = await response.text();
@@ -109,7 +131,11 @@ serve(async (req: Request) => {
           const imageRes = await fetch(imageUrl);
           const blob = await imageRes.blob();
           const watermarkedBlob = await watermarkImage(blob, author_id);
-          return await uploadToSupabase(watermarkedBlob, folder, "image/jpeg");
+          const publicUrl = await saveImage(watermarkedBlob, folder);
+          return new Response(JSON.stringify({ url: publicUrl }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          });
         } else {
           const errText = await response.text();
           errorDetails += `OpenAI Error (${response.status}): ${errText.substring(0, 100)}... | `;
@@ -204,7 +230,7 @@ async function watermarkImage(imageBlob: Blob, authorId: string | null) {
   }
 }
 
-async function uploadToSupabase(blob: Blob, folder: string, contentType: string) {
+async function uploadToSupabase(blob: Blob, folder: string, contentType: string): Promise<string> {
   const supabaseAdmin = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -224,8 +250,44 @@ async function uploadToSupabase(blob: Blob, folder: string, contentType: string)
   if (uploadError) throw uploadError;
 
   const { data: publicUrlData } = supabaseAdmin.storage.from("media").getPublicUrl(filePath);
-  return new Response(JSON.stringify({ url: publicUrlData.publicUrl }), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-    status: 200,
+  return publicUrlData.publicUrl;
+}
+
+async function uploadToR2(blob: Blob, folder: string): Promise<string> {
+  const R2_ACCESS_KEY_ID = Deno.env.get("R2_ACCESS_KEY_ID");
+  const R2_SECRET_ACCESS_KEY = Deno.env.get("R2_SECRET_ACCESS_KEY");
+  const R2_ENDPOINT = Deno.env.get("R2_ENDPOINT");
+  const R2_BUCKET_NAME = Deno.env.get("R2_BUCKET_NAME");
+  const R2_CUSTOM_DOMAIN = Deno.env.get("R2_CUSTOM_DOMAIN");
+
+  if (!R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_ENDPOINT || !R2_BUCKET_NAME) {
+    throw new Error("Missing R2 configuration secrets");
+  }
+
+  const fileName = `${folder}/${Date.now()}.jpeg`;
+  const arrayBuffer = await blob.arrayBuffer();
+
+  const s3Client = new S3Client({
+    region: "auto",
+    endpoint: R2_ENDPOINT,
+    credentials: {
+      accessKeyId: R2_ACCESS_KEY_ID,
+      secretAccessKey: R2_SECRET_ACCESS_KEY,
+    },
   });
+
+  const command = new PutObjectCommand({
+    Bucket: R2_BUCKET_NAME,
+    Key: fileName,
+    Body: new Uint8Array(arrayBuffer),
+    ContentType: "image/jpeg",
+  });
+
+  await s3Client.send(command);
+
+  const publicUrl = R2_CUSTOM_DOMAIN
+    ? `https://${R2_CUSTOM_DOMAIN}/${fileName}`
+    : `${R2_ENDPOINT}/${R2_BUCKET_NAME}/${fileName}`;
+
+  return publicUrl;
 }
