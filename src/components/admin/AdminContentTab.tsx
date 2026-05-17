@@ -35,6 +35,19 @@ import { Badge } from "@/components/ui/badge";
 import { useQueryClient } from "@tanstack/react-query";
 import { RichTextEditor } from "../RichTextEditor";
 import { sanitizeHtml } from "@/lib/security";
+import { decodeEntities } from "@/lib/utils";
+
+const parseTimeString = (val: any): number | null => {
+  if (val === undefined || val === null) return null;
+  const strVal = String(val).trim();
+  if (!strVal) return null;
+  const match = strVal.match(/\d+/);
+  if (match) {
+    const num = parseInt(match[0], 10);
+    return isNaN(num) ? null : num;
+  }
+  return null;
+};
 
 export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [activeType, setActiveType] = useState<"articles" | "videos" | "recipes" | "products" | "media">(
@@ -272,11 +285,24 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     setImageUrl(item.image_url || item.thumbnail_url || (activeType === "products" ? item.price?.toString() : ""));
     setEmbedUrl(item.embed_url || (activeType === "products" ? item.image_url : ""));
     setCategory(item.category_name || "General");
-    setPrepTime(item.prep_time || "");
-    setCookTime(item.cook_time || "");
+    setPrepTime(item.prep_time !== null && item.prep_time !== undefined ? item.prep_time.toString() : "");
+    setCookTime(item.cook_time !== null && item.cook_time !== undefined ? item.cook_time.toString() : "");
     setExcerpt(item.excerpt || "");
     setSelectedVendorId(item.author_id || item.vendor_id || "");
     formRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const handlePreviewItem = (item: any) => {
+    setTitle(item.title || "");
+    setContent(item.content || item.description || "");
+    setImageUrl(item.image_url || item.thumbnail_url || (activeType === "products" ? item.price?.toString() : ""));
+    setEmbedUrl(item.embed_url || (activeType === "products" ? item.image_url : ""));
+    setCategory(item.category_name || "General");
+    setPrepTime(item.prep_time !== null && item.prep_time !== undefined ? item.prep_time.toString() : "");
+    setCookTime(item.cook_time !== null && item.cook_time !== undefined ? item.cook_time.toString() : "");
+    setExcerpt(item.excerpt || "");
+    setSelectedVendorId(item.author_id || item.vendor_id || "");
+    setPreviewOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -352,8 +378,8 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
               ...commonData,
               content,
               image_url: imageUrl,
-              prep_time: prepTime,
-              cook_time: cookTime,
+              prep_time: parseTimeString(prepTime),
+              cook_time: parseTimeString(cookTime),
               slug: title.toLowerCase().replace(/ /g, "-"),
             })
             .eq("id", editingId);
@@ -395,8 +421,8 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
             content,
             image_url: imageUrl,
             slug: title.toLowerCase().replace(/ /g, "-"),
-            prep_time: prepTime,
-            cook_time: cookTime,
+            prep_time: parseTimeString(prepTime),
+            cook_time: parseTimeString(cookTime),
           });
         } else if (activeType === "videos") {
           result = await (supabase.from("videos") as any).insert({
@@ -1100,7 +1126,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Live Preview: {title || "Untitled"}</DialogTitle>
+            <DialogTitle>Live Preview: {decodeEntities(title) || "Untitled"}</DialogTitle>
             <DialogDescription>
               Preview how your {activeType.slice(0, -1)} will appear on the website once published.
             </DialogDescription>
@@ -1134,7 +1160,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
               </div>
             )}
             <div className="space-y-4">
-              <h1 className="text-3xl font-bold">{title || "Your Title Here"}</h1>
+              <h1 className="text-3xl font-bold">{decodeEntities(title) || "Your Title Here"}</h1>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
                   <User className="h-4 w-4" />
@@ -1214,7 +1240,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="font-medium text-sm truncate max-w-xs">{item.title}</p>
+                          <p className="font-medium text-sm truncate max-w-xs">{decodeEntities(item.title || "")}</p>
                           {isNew && (
                             <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400 shrink-0">
                               <CheckCircle2 className="h-3 w-3" /> New
@@ -1297,9 +1323,9 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                           <CheckCircle2 className="h-4 w-4" />
                         </Button>
                       )}
-                      {item.slug && activeType === "articles" && (
+                      {item.slug && (activeType === "articles" || activeType === "recipes") && (
                         <a 
-                          href={`/articles/${item.slug}`} 
+                          href={`/${activeType}/${item.slug}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="p-2 hover:bg-muted rounded-md text-muted-foreground transition-colors"
@@ -1308,6 +1334,15 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                           <ExternalLink className="h-4 w-4" />
                         </a>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                        onClick={() => handlePreviewItem(item)}
+                        title="Live Preview"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"

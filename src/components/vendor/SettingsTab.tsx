@@ -10,7 +10,7 @@ import { Instagram, Facebook, Twitter, Globe, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-import { VendorProfile } from "@/routes/vendor";
+import type { VendorProfile } from "../../../app/vendor/page";
 
 interface Props {
   profile: VendorProfile;
@@ -215,7 +215,7 @@ export function SettingsTab({ profile, setProfile, userId }: Props) {
                 Add custom categories that will appear as tabs on your store profile page.
               </CardDescription>
               <div className="flex flex-wrap gap-2 mb-2">
-                {(profile.store_categories || []).map((cat, idx) => (
+                {(profile.store_categories || []).map((cat: string, idx: number) => (
                   <div
                     key={idx}
                     className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold flex items-center gap-2 group border border-primary/20"
