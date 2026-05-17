@@ -1500,37 +1500,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
               </div>
             )}
 
-            {bulkLoading && currentBulkIndex !== -1 ? (
-              <div className="bg-primary/5 border border-primary/20 rounded-xl p-5 space-y-4 animate-in fade-in duration-300">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-bold text-primary">Processing Recipes...</span>
-                  <span className="text-muted-foreground font-medium">
-                    {currentBulkIndex + 1} of {bulkRecipes.length}
-                  </span>
-                </div>
-                
-                <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
-                  <div 
-                    className="bg-primary h-full transition-all duration-500 rounded-full"
-                    style={{ width: `${((currentBulkIndex) / bulkRecipes.length) * 100}%` }}
-                  />
-                </div>
-                
-                <div className="flex items-start gap-4">
-                  <div className="mt-1 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <Loader2 className="h-4 w-4 text-primary animate-spin" />
-                  </div>
-                  <div className="space-y-1">
-                    <h4 className="font-bold text-base text-foreground line-clamp-1">
-                      {bulkRecipes[currentBulkIndex]?.title}
-                    </h4>
-                    <p className="text-xs text-muted-foreground font-medium italic animate-pulse">
-                      {bulkStatus}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : bulkRecipes.length === 0 ? (
+            {bulkRecipes.length === 0 ? (
               <div className="text-center py-12 bg-muted/20 border border-dashed rounded-xl space-y-3">
                 <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-950/30 flex items-center justify-center mx-auto">
                   <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
@@ -1543,76 +1513,107 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                 </div>
               </div>
             ) : (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm pb-2">
-                  <span className="font-bold text-foreground">
-                    Recipes needing enhancement ({bulkRecipes.length})
-                  </span>
-                  <span className="text-[11px] bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                    Attention Required
-                  </span>
-                </div>
-                
-                <div className="grid gap-2 max-h-[40vh] overflow-y-auto pr-1">
-                  {bulkRecipes.map((recipe, idx) => (
-                    <div 
-                      key={recipe.id}
-                      className={`flex items-center justify-between p-3 rounded-xl border transition-all duration-300 ${
-                        idx === currentBulkIndex 
-                          ? "bg-primary/5 border-primary ring-1 ring-primary" 
-                          : recipe.status === "completed"
-                          ? "bg-emerald-50/50 dark:bg-emerald-950/10 border-emerald-200 dark:border-emerald-900/30"
-                          : recipe.status === "failed"
-                          ? "bg-destructive/5 border-destructive/20"
-                          : "bg-card border-border hover:border-muted-foreground/30"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="h-10 w-10 rounded overflow-hidden bg-muted shrink-0 flex items-center justify-center">
-                          {recipe.image_url && !recipe.needsImage ? (
-                            <img src={recipe.image_url} className="h-full w-full object-cover" />
-                          ) : (
-                            <Utensils className="h-5 w-5 text-muted-foreground/50" />
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <h4 className="font-bold text-sm truncate text-foreground">{recipe.title}</h4>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            {recipe.needsContent && (
-                              <span className="text-[9px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400 px-1.5 py-0.5 rounded">
-                                Needs Recipe Content
-                              </span>
-                            )}
-                            {recipe.needsImage && (
-                              <span className="text-[9px] font-bold bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400 px-1.5 py-0.5 rounded">
-                                Blurry / Legacy Image
-                              </span>
+              <div className="space-y-4">
+                {bulkLoading && currentBulkIndex !== -1 && (
+                  <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 space-y-2 animate-in fade-in duration-300">
+                    <div className="flex items-center justify-between text-xs font-bold text-primary">
+                      <span>Overall Progress</span>
+                      <span>
+                        {currentBulkIndex + 1} of {bulkRecipes.length}
+                      </span>
+                    </div>
+                    <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden">
+                      <div 
+                        className="bg-primary h-full transition-all duration-500 rounded-full"
+                        style={{ width: `${((currentBulkIndex) / bulkRecipes.length) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm pb-2 border-b border-border">
+                    <span className="font-bold text-foreground">
+                      {bulkLoading ? "Enhancing Recipes..." : `Recipes needing enhancement (${bulkRecipes.length})`}
+                    </span>
+                    <span className="text-[11px] bg-amber-100 text-amber-800 dark:bg-amber-950/30 dark:text-amber-400 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                      {bulkLoading ? "Processing" : "Attention Required"}
+                    </span>
+                  </div>
+                  
+                  <div className="grid gap-2 max-h-[45vh] overflow-y-auto pr-1">
+                    {bulkRecipes.map((recipe, idx) => (
+                      <div 
+                        key={recipe.id}
+                        ref={(el) => {
+                          if (idx === currentBulkIndex && el) {
+                            el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                          }
+                        }}
+                        className={`flex items-center justify-between p-3 rounded-xl border transition-all duration-300 ${
+                          idx === currentBulkIndex 
+                            ? "bg-primary/5 border-primary ring-1 ring-primary" 
+                            : recipe.status === "completed"
+                            ? "bg-emerald-50/50 dark:bg-emerald-950/10 border-emerald-200 dark:border-emerald-900/30"
+                            : recipe.status === "failed"
+                            ? "bg-destructive/5 border-destructive/20"
+                            : "bg-card border-border hover:border-muted-foreground/30"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="h-10 w-10 rounded overflow-hidden bg-muted shrink-0 flex items-center justify-center">
+                            {recipe.image_url && !recipe.needsImage ? (
+                              <img src={recipe.image_url} className="h-full w-full object-cover" />
+                            ) : (
+                              <Utensils className="h-5 w-5 text-muted-foreground/50" />
                             )}
                           </div>
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-sm truncate text-foreground">
+                              {decodeEntities(recipe.title || "")}
+                            </h4>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              {recipe.needsContent && (
+                                <span className="text-[9px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400 px-1.5 py-0.5 rounded">
+                                  Needs Recipe Content
+                                </span>
+                              )}
+                              {recipe.needsImage && (
+                                <span className="text-[9px] font-bold bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400 px-1.5 py-0.5 rounded">
+                                  Blurry / Legacy Image
+                                </span>
+                              )}
+                              {idx === currentBulkIndex && (
+                                <span className="text-[9px] font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded animate-pulse">
+                                  {bulkStatus}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="shrink-0 ml-2">
+                          {recipe.status === "pending" && (
+                            <span className="text-xs text-muted-foreground font-semibold">Pending</span>
+                          )}
+                          {recipe.status === "processing" && (
+                            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                          )}
+                          {recipe.status === "completed" && (
+                            <CheckCircle2 className="h-5 w-5 text-emerald-500 fill-emerald-50 dark:fill-none" />
+                          )}
+                          {recipe.status === "failed" && (
+                            <span 
+                              className="text-xs text-destructive font-bold cursor-help underline decoration-dotted" 
+                              title={recipe.errorMsg || "Unknown error"}
+                            >
+                              Failed
+                            </span>
+                          )}
                         </div>
                       </div>
-
-                      <div className="shrink-0 ml-2">
-                        {recipe.status === "pending" && (
-                          <span className="text-xs text-muted-foreground font-semibold">Pending</span>
-                        )}
-                        {recipe.status === "processing" && (
-                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                        )}
-                        {recipe.status === "completed" && (
-                          <CheckCircle2 className="h-5 w-5 text-emerald-500 fill-emerald-50 dark:fill-none" />
-                        )}
-                        {recipe.status === "failed" && (
-                          <span 
-                            className="text-xs text-destructive font-bold cursor-help underline decoration-dotted" 
-                            title={recipe.errorMsg || "Unknown error"}
-                          >
-                            Failed
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
