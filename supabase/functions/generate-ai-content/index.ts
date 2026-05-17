@@ -6,6 +6,44 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function cleanRawJsonContent(str: string): string {
+  let clean = str.trim();
+  
+  // Remove leading/trailing markdown code blocks
+  clean = clean.replace(/^```(json|html)?\s*/i, "").replace(/\s*```$/, "");
+  
+  // If it starts with { or contains "content" key, try to parse/extract
+  if (clean.startsWith("{") || clean.includes('"content"')) {
+    try {
+      const jsonMatch = clean.match(/\{[\s\S]*\}/);
+      const toParse = jsonMatch ? jsonMatch[0] : clean;
+      const parsed = JSON.parse(toParse);
+      if (parsed.content) return parsed.content;
+    } catch (_) {
+      // Regex match content key with subsequent fields
+      const contentMatch = clean.match(/"content"\s*:\s*"([\s\S]*?)"\s*,\s*"(?:prep_time|cook_time|instructions)"/i);
+      if (contentMatch && contentMatch[1]) {
+        return contentMatch[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+      }
+
+      const contentMatchSimple = clean.match(/"content"\s*:\s*"([\s\S]*?)"\s*(?:,\s*"|})/i);
+      if (contentMatchSimple && contentMatchSimple[1]) {
+        return contentMatchSimple[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+      }
+      
+      // Fallback: manually strip the {"content": " and trailing ,"prep_time"... }
+      let stripped = clean;
+      stripped = stripped.replace(/^\{?\s*"content"\s*:\s*"/i, "");
+      stripped = stripped.replace(/"\s*,\s*"(?:prep_time|cook_time)"[\s\S]*?\}?$/i, "");
+      stripped = stripped.replace(/\s*\}?$/, "");
+      
+      return stripped.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+    }
+  }
+  
+  return clean;
+}
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -118,7 +156,7 @@ serve(async (req: Request) => {
       throw new Error(`AI Content generation failed. Details: ${errorDetails}`);
     }
 
-    let result = { content: generatedContent.replace(/\\n/g, "\n"), prep_time: 15, cook_time: 15 };
+    let result = { content: cleanRawJsonContent(generatedContent), prep_time: 15, cook_time: 15 };
     if (type === "recipe") {
       try {
         // Try to find JSON in the content if AI included extra text
@@ -126,19 +164,18 @@ serve(async (req: Request) => {
         const toParse = jsonMatch ? jsonMatch[0] : generatedContent;
         const parsed = JSON.parse(toParse);
         
-        let contentClean = parsed.content || "";
-        // Replace literal \n sequences with actual newlines
-        contentClean = contentClean.replace(/\\n/g, "\n");
-        
         result = {
-          content: contentClean,
+          content: cleanRawJsonContent(parsed.content || toParse),
           prep_time: parseInt(parsed.prep_time) || 15,
           cook_time: parseInt(parsed.cook_time) || 15
         };
       } catch (e) {
-        console.warn("Failed to parse JSON, returning raw as content:", e);
-        const rawContentClean = generatedContent.replace(/\\n/g, "\n");
-        result = { content: rawContentClean, prep_time: 15, cook_time: 15 };
+        console.warn("Failed to parse JSON, cleaning raw as content:", e);
+        result = { 
+          content: cleanRawJsonContent(generatedContent), 
+          prep_time: 15, 
+          cook_time: 15 
+        };
       }
     }
 
