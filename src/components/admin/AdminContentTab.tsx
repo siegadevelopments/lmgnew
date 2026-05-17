@@ -1376,7 +1376,12 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       <Dialog open={bulkDialogOpen} onOpenChange={(open) => {
         if (!bulkLoading) setBulkDialogOpen(open);
       }}>
-        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-6 rounded-2xl border bg-background/95 backdrop-blur-md shadow-2xl">
+        <DialogContent 
+          className={`max-w-2xl max-h-[85vh] flex flex-col p-6 rounded-2xl border bg-background/95 backdrop-blur-md shadow-2xl ${bulkLoading ? "[&>button]:hidden" : ""}`}
+          onPointerDownOutside={(e) => { if (bulkLoading) e.preventDefault(); }}
+          onInteractOutside={(e) => { if (bulkLoading) e.preventDefault(); }}
+          onEscapeKeyDown={(e) => { if (bulkLoading) e.preventDefault(); }}
+        >
           <DialogHeader className="pb-4 border-b border-border">
             <DialogTitle className="text-2xl font-bold flex items-center gap-2 text-foreground">
               <Sparkles className="h-6 w-6 text-primary animate-pulse" />
