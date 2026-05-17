@@ -453,17 +453,31 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
 
   const startBulkEnhancement = async () => {
     bulkCancelledRef.current = false;
-    const startIndex = currentBulkIndex > 0 ? currentBulkIndex : 0;
-    const initialCount = enhancedCount > 0 ? enhancedCount : 0;
+    
+    // Reset all failed recipes back to pending so they can be retried!
+    const resetFailedRecipes = bulkRecipes.map(r => 
+      r.status === "failed" ? { ...r, status: "pending", errorMsg: undefined } : r
+    );
+    
+    // Find the first non-completed recipe index to start from
+    const firstNonCompletedIndex = resetFailedRecipes.findIndex(r => r.status !== "completed");
+    const startIndex = firstNonCompletedIndex >= 0 ? firstNonCompletedIndex : 0;
+    
+    // Count how many are completed so far
+    const completedCount = resetFailedRecipes.filter(r => r.status === "completed").length;
+    
+    setBulkRecipes(resetFailedRecipes);
+    setCurrentBulkIndex(startIndex);
+    setEnhancedCount(completedCount);
 
     localStorage.setItem("gourmet_enhancer_bulk_state", JSON.stringify({
-      bulkRecipes,
+      bulkRecipes: resetFailedRecipes,
       bulkLoading: true,
       currentBulkIndex: startIndex,
       bulkStatus: startIndex > 0 ? "Resuming..." : "Starting...",
-      enhancedCount: initialCount
+      enhancedCount: completedCount
     }));
-    await resumeBulkEnhancement(bulkRecipes, startIndex, initialCount);
+    await resumeBulkEnhancement(resetFailedRecipes, startIndex, completedCount);
   };
 
   const assignAllToETraining = async () => {
