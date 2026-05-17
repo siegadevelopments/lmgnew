@@ -1,24 +1,28 @@
 'use client'
 
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { recipesQueryOptions } from "@/lib/queries";
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { decodeEntities } from "@/lib/utils";
 import Link from "next/link";
 import Image from "next/image";
 
 export default function RecipesPage() {
-  const { data: recipes } = useSuspenseQuery(recipesQueryOptions());
+  const { data: recipes, isLoading, isError } = useQuery(recipesQueryOptions());
   const [search, setSearch] = useState("");
 
   const filteredRecipes = useMemo(() => {
-    return (recipes || []).filter(
+    const list = recipes || [];
+    if (!search.trim()) return list;
+    
+    const query = search.toLowerCase();
+    return list.filter(
       (recipe) =>
-        (recipe.title?.toLowerCase() || "").includes(search.toLowerCase()) ||
-        (decodeEntities(recipe.title || "").toLowerCase()).includes(search.toLowerCase()) ||
-        (recipe.excerpt?.toLowerCase() || "").includes(search.toLowerCase()),
+        (recipe.title?.toLowerCase() || "").includes(query) ||
+        (decodeEntities(recipe.title || "").toLowerCase()).includes(query) ||
+        (recipe.excerpt?.toLowerCase() || "").includes(query),
     );
   }, [recipes, search]);
 
@@ -40,7 +44,7 @@ export default function RecipesPage() {
                 placeholder="Search recipes..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-11 rounded-xl shadow-sm focus:ring-primary/20"
               />
             </div>
           </div>
@@ -48,7 +52,19 @@ export default function RecipesPage() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        {filteredRecipes.length === 0 ? (
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-24 space-y-4">
+            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+            <p className="text-sm text-muted-foreground animate-pulse">Loading recipes...</p>
+          </div>
+        ) : isError ? (
+          <div className="text-center py-20 bg-destructive/5 rounded-2xl border border-destructive/20 max-w-md mx-auto p-6 space-y-4">
+            <p className="text-destructive font-bold">Failed to load recipes</p>
+            <p className="text-muted-foreground text-xs leading-relaxed">
+              We encountered a temporary database or connection issue. Please check back in a few moments.
+            </p>
+          </div>
+        ) : filteredRecipes.length === 0 ? (
           <div className="text-center py-20 bg-muted/20 rounded-2xl border border-border">
             <p className="text-muted-foreground text-lg">No recipes matched your search.</p>
           </div>
