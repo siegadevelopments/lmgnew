@@ -75,6 +75,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const listRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const resumingRef = useRef(false);
 
   const eTrainingVendor = vendors?.find((v: any) => 
     v.store_name?.toLowerCase().replace(/[^a-z0-9]/g, "").includes("etraining")
@@ -135,6 +136,32 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     };
     localStorage.setItem(`admin_content_draft_${activeType}`, JSON.stringify(draft));
   }, [title, content, imageUrl, embedUrl, activeType, selectedVendorId, category, prepTime, cookTime, excerpt, galleryCategory, editingId]);
+
+  // Resume Bulk Recipe Enhancement on mount if interrupted
+  useEffect(() => {
+    const saved = localStorage.getItem("gourmet_enhancer_bulk_state");
+    if (saved && !resumingRef.current) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.bulkLoading && parsed.bulkRecipes?.length > 0) {
+          resumingRef.current = true;
+          setBulkRecipes(parsed.bulkRecipes);
+          setCurrentBulkIndex(parsed.currentBulkIndex);
+          setEnhancedCount(parsed.enhancedCount);
+          setBulkStatus(parsed.bulkStatus || "");
+          setBulkDialogOpen(true);
+          setBulkLoading(true);
+          setActiveType("recipes");
+          
+          setTimeout(() => {
+            resumeBulkEnhancement(parsed.bulkRecipes, parsed.currentBulkIndex, parsed.enhancedCount);
+          }, 1000);
+        }
+      } catch (e) {
+        console.error("Failed to restore bulk enhancer state:", e);
+      }
+    }
+  }, []);
 
   // Prevent accidental navigation during uploads
   useEffect(() => {
@@ -285,14 +312,24 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     }
   };
 
-  const startBulkEnhancement = async () => {
+  const resumeBulkEnhancement = async (recipesList: any[], startIndex: number, initialCount: number) => {
     setBulkLoading(true);
-    setEnhancedCount(0);
+    setEnhancedCount(initialCount);
+    setCurrentBulkIndex(startIndex);
     
-    for (let i = 0; i < bulkRecipes.length; i++) {
-      const recipe = bulkRecipes[i];
+    for (let i = startIndex; i < recipesList.length; i++) {
+      const recipe = recipesList[i];
       setCurrentBulkIndex(i);
       
+      // Update local storage on every step!
+      localStorage.setItem("gourmet_enhancer_bulk_state", JSON.stringify({
+        bulkRecipes: recipesList.map((r, idx) => idx === i ? { ...r, status: "processing" } : r),
+        bulkLoading: true,
+        currentBulkIndex: i,
+        bulkStatus: `Processing recipe ${i + 1} of ${recipesList.length}...`,
+        enhancedCount: initialCount + (i - startIndex)
+      }));
+
       setBulkRecipes(prev => prev.map((r, idx) => idx === i ? { ...r, status: "processing" } : r));
       
       try {
@@ -353,19 +390,54 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
           if (dbError) throw dbError;
         }
         
-        setBulkRecipes(prev => prev.map((r, idx) => idx === i ? { ...r, status: "completed" } : r));
+        const updatedRecipes = recipesList.map((r, idx) => {
+          if (idx === i) return { ...r, status: "completed" };
+          if (idx < i) return { ...r, status: r.status === "processing" ? "completed" : r.status };
+          return r;
+        });
+        
+        setBulkRecipes(updatedRecipes);
         setEnhancedCount(prev => prev + 1);
+        
+        localStorage.setItem("gourmet_enhancer_bulk_state", JSON.stringify({
+          bulkRecipes: updatedRecipes,
+          bulkLoading: true,
+          currentBulkIndex: i + 1,
+          bulkStatus: "Saving...",
+          enhancedCount: initialCount + (i - startIndex) + 1
+        }));
         
       } catch (err: any) {
         console.error(`Failed to enhance recipe "${recipe.title}":`, err);
-        setBulkRecipes(prev => prev.map((r, idx) => idx === i ? { ...r, status: "failed", errorMsg: err.message } : r));
+        const updatedRecipes = recipesList.map((r, idx) => idx === i ? { ...r, status: "failed", errorMsg: err.message } : r);
+        setBulkRecipes(updatedRecipes);
+        
+        localStorage.setItem("gourmet_enhancer_bulk_state", JSON.stringify({
+          bulkRecipes: updatedRecipes,
+          bulkLoading: true,
+          currentBulkIndex: i + 1,
+          bulkStatus: `Failed: ${err.message}`,
+          enhancedCount: initialCount + (i - startIndex)
+        }));
       }
     }
     
+    localStorage.removeItem("gourmet_enhancer_bulk_state");
     setCurrentBulkIndex(-1);
     setBulkStatus("Enhancement process completed!");
     setBulkLoading(false);
     loadItems();
+  };
+
+  const startBulkEnhancement = async () => {
+    localStorage.setItem("gourmet_enhancer_bulk_state", JSON.stringify({
+      bulkRecipes,
+      bulkLoading: true,
+      currentBulkIndex: 0,
+      bulkStatus: "Starting...",
+      enhancedCount: 0
+    }));
+    await resumeBulkEnhancement(bulkRecipes, 0, 0);
   };
 
   const assignAllToETraining = async () => {
