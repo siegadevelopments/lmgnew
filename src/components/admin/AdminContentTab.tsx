@@ -76,6 +76,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const formRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const resumingRef = useRef(false);
+  const bulkCancelledRef = useRef(false);
 
   const eTrainingVendor = vendors?.find((v: any) => 
     v.store_name?.toLowerCase().replace(/[^a-z0-9]/g, "").includes("etraining")
@@ -318,6 +319,21 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     setCurrentBulkIndex(startIndex);
     
     for (let i = startIndex; i < recipesList.length; i++) {
+      if (bulkCancelledRef.current) {
+        setBulkLoading(false);
+        setBulkStatus("Enhancement process stopped.");
+        localStorage.setItem("gourmet_enhancer_bulk_state", JSON.stringify({
+          bulkRecipes: recipesList.map((r, idx) => idx === i ? { ...r, status: "pending" } : r),
+          bulkLoading: false,
+          currentBulkIndex: i,
+          bulkStatus: "Stopped.",
+          enhancedCount: initialCount + (i - startIndex)
+        }));
+        setBulkRecipes(prev => prev.map((r, idx) => idx === i ? { ...r, status: "pending" } : r));
+        toast.info("Gourmet enhancement stopped.");
+        return;
+      }
+
       const recipe = recipesList[i];
       setCurrentBulkIndex(i);
       
@@ -436,14 +452,18 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   };
 
   const startBulkEnhancement = async () => {
+    bulkCancelledRef.current = false;
+    const startIndex = currentBulkIndex > 0 ? currentBulkIndex : 0;
+    const initialCount = enhancedCount > 0 ? enhancedCount : 0;
+
     localStorage.setItem("gourmet_enhancer_bulk_state", JSON.stringify({
       bulkRecipes,
       bulkLoading: true,
-      currentBulkIndex: 0,
-      bulkStatus: "Starting...",
-      enhancedCount: 0
+      currentBulkIndex: startIndex,
+      bulkStatus: startIndex > 0 ? "Resuming..." : "Starting...",
+      enhancedCount: initialCount
     }));
-    await resumeBulkEnhancement(bulkRecipes, 0, 0);
+    await resumeBulkEnhancement(bulkRecipes, startIndex, initialCount);
   };
 
   const assignAllToETraining = async () => {
@@ -1625,7 +1645,20 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                 Will execute sequentially using Gemini & Imagen 3.
               </div>
             )}
-            <div className="flex items-center gap-2 ml-auto w-full sm:w-auto">
+            <div className="flex items-center gap-2 ml-auto w-full sm:w-auto flex-wrap justify-end">
+              {bulkLoading && (
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    bulkCancelledRef.current = true;
+                    setBulkStatus("Stopping process... please wait");
+                  }}
+                  className="w-full sm:w-auto font-bold flex items-center justify-center gap-2"
+                >
+                  <X className="h-4 w-4" />
+                  Stop
+                </Button>
+              )}
               <Button
                 variant="outline"
                 onClick={() => setBulkDialogOpen(false)}
@@ -1648,7 +1681,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                   ) : (
                     <>
                       <Sparkles className="h-4 w-4" />
-                      Start Enhancing ({bulkRecipes.length})
+                      {currentBulkIndex > 0 ? `Resume Enhancing (${bulkRecipes.length - currentBulkIndex} left)` : `Start Enhancing (${bulkRecipes.length})`}
                     </>
                   )}
                 </Button>
