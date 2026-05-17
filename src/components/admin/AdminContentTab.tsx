@@ -1608,6 +1608,11 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                                   {bulkStatus}
                                 </span>
                               )}
+                              {recipe.status === "failed" && recipe.errorMsg && (
+                                <span className="text-[9px] font-bold bg-destructive/10 text-destructive border border-destructive/20 px-1.5 py-0.5 rounded block mt-1 w-fit max-w-[320px] truncate" title={recipe.errorMsg}>
+                                  Error: {recipe.errorMsg}
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
