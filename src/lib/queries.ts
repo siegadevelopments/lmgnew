@@ -115,7 +115,7 @@ export const recipesQueryOptions = () =>
     queryFn: async () => {
       const { data, error } = await supabase
         .from("recipes")
-        .select("*")
+        .select("id, title, slug, image_url, prep_time, cook_time, excerpt, created_at")
         .order("created_at", { ascending: false });
       if (error) throw new Error(error.message);
       return (data || []) as any[];
@@ -136,7 +136,7 @@ export const articlesQueryOptions = (category?: string) =>
   queryOptions({
     queryKey: ["articles", "list", "v3", category || "all"],
     queryFn: async () => {
-      let query = supabase.from("articles").select("*");
+      let query = supabase.from("articles").select("id, title, slug, image_url, excerpt, created_at, category_name");
       if (category) {
         query = query.eq("category_name", category);
       }
