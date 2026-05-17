@@ -147,6 +147,31 @@ serve(async (req: Request) => {
       errorDetails += "OPENAI_API_KEY not set | ";
     }
 
+    // 3. Try Pollinations AI (100% Free & Keyless Fallback)
+    try {
+      console.log(`Attempting keyless fallback image generation with Pollinations AI...`);
+      const response = await fetch(
+        `https://image.pollinations.ai/p/${encodeURIComponent(
+          `A stunning high-quality cinematic lifestyle food photo representing ${truncatedPrompt.substring(0, 150)}, premium wellness aesthetic, no text`
+        )}?width=1024&height=576&nologo=true&private=true`
+      );
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const watermarkedBlob = await watermarkImage(blob, author_id);
+        const publicUrl = await saveImage(watermarkedBlob, folder);
+        console.log("Successfully generated image with Pollinations AI fallback!");
+        return new Response(JSON.stringify({ url: publicUrl }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      } else {
+        errorDetails += `Pollinations AI Error (${response.status}) | `;
+      }
+    } catch (e: any) {
+      errorDetails += `Pollinations AI Exception: ${e.message} | `;
+    }
+
     throw new Error(`AI generation failed. Details: ${errorDetails}`);
   } catch (error: any) {
     console.error("AI Generation Error:", error.message);

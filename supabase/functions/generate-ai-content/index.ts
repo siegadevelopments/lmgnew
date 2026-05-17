@@ -118,21 +118,27 @@ serve(async (req: Request) => {
       throw new Error(`AI Content generation failed. Details: ${errorDetails}`);
     }
 
-    let result = { content: generatedContent, prep_time: 15, cook_time: 15 };
+    let result = { content: generatedContent.replace(/\\n/g, "\n"), prep_time: 15, cook_time: 15 };
     if (type === "recipe") {
       try {
         // Try to find JSON in the content if AI included extra text
         const jsonMatch = generatedContent.match(/\{[\s\S]*\}/);
         const toParse = jsonMatch ? jsonMatch[0] : generatedContent;
         const parsed = JSON.parse(toParse);
+        
+        let contentClean = parsed.content || "";
+        // Replace literal \n sequences with actual newlines
+        contentClean = contentClean.replace(/\\n/g, "\n");
+        
         result = {
-          content: parsed.content || "",
+          content: contentClean,
           prep_time: parseInt(parsed.prep_time) || 15,
           cook_time: parseInt(parsed.cook_time) || 15
         };
       } catch (e) {
         console.warn("Failed to parse JSON, returning raw as content:", e);
-        result = { content: generatedContent, prep_time: 15, cook_time: 15 };
+        const rawContentClean = generatedContent.replace(/\\n/g, "\n");
+        result = { content: rawContentClean, prep_time: 15, cook_time: 15 };
       }
     }
 
