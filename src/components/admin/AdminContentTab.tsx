@@ -383,11 +383,17 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         
         if (Object.keys(updatedFields).length > 0) {
           setBulkStatus(`Saving enhanced recipe to database...`);
-          const { error: dbError } = await (supabase.from("recipes") as any)
-            .update(updatedFields)
-            .eq("id", recipe.id);
+          const { data: dbData, error: dbError } = await supabase.functions.invoke("save-enhanced-recipe", {
+            body: { id: recipe.id, updatedFields }
+          });
             
-          if (dbError) throw dbError;
+          if (dbError) {
+            if (dbError.context) {
+              const body = await dbError.context.json().catch(() => null);
+              if (body?.error) throw new Error(body.error);
+            }
+            throw dbError;
+          }
         }
         
         const updatedRecipes = recipesList.map((r, idx) => {
