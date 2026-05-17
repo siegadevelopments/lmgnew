@@ -377,23 +377,29 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
           const promptContent = updatedFields.content || recipe.content || "";
           const cleanPromptContent = promptContent.replace(/<[^>]*>/g, ' ').substring(0, 1000);
           
-          const { data: imageData, error: imageError } = await supabase.functions.invoke("generate-ai-image", {
-            body: { 
-              prompt: `${recipe.title} ${cleanPromptContent}`.trim(),
-              author_id: recipe.author_id
-            },
-          });
-          
-          if (imageError) {
-            if (imageError.context) {
-              const body = await imageError.context.json().catch(() => null);
-              if (body?.error) throw new Error(body.error);
+          try {
+            const { data: imageData, error: imageError } = await supabase.functions.invoke("generate-ai-image", {
+              body: { 
+                prompt: `${recipe.title} ${cleanPromptContent}`.trim(),
+                author_id: recipe.author_id
+              },
+            });
+            
+            if (imageError) {
+              let errMsg = "Image generation failed";
+              if (imageError.context) {
+                const body = await imageError.context.json().catch(() => null);
+                if (body?.error) errMsg = body.error;
+              }
+              console.warn(`Image generation skipped for "${recipe.title}":`, errMsg);
+              toast.warning(`Could not generate image for "${recipe.title}". Proceeding with content only.`, {
+                description: errMsg.substring(0, 80)
+              });
+            } else if (imageData?.url) {
+              updatedFields.image_url = imageData.url;
             }
-            throw imageError;
-          }
-          
-          if (imageData?.url) {
-            updatedFields.image_url = imageData.url;
+          } catch (imgErr: any) {
+            console.warn(`Image generation exception for "${recipe.title}":`, imgErr.message);
           }
         }
         
