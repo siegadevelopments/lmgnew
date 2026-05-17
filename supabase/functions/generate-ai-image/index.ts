@@ -48,10 +48,13 @@ serve(async (req: Request) => {
       try {
         console.log(`Attempting image generation with Gemini...`);
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${GEMINI_API_KEY}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+              "Content-Type": "application/json",
+              "x-goog-api-key": GEMINI_API_KEY
+            },
             body: JSON.stringify({
               instances: [{ 
                 prompt: `A stunning, high-quality cinematic lifestyle photograph representing: ${truncatedPrompt.substring(0, 500)}. Style: Modern, minimalist, premium wellness aesthetic. CRITICAL: No text, no labels, no anatomical diagrams.` 

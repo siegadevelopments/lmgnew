@@ -473,7 +473,19 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
           author_id: selectedVendorId
         },
       });
-      if (error) throw error;
+      if (error) {
+        if (error.context) {
+          try {
+            const body = await error.context.json();
+            if (body?.error) {
+              throw new Error(body.error);
+            }
+          } catch (e) {
+            // Ignore JSON parsing errors
+          }
+        }
+        throw error;
+      }
       
       // Handle the case where the function returns a 200 but contains an error object
       if (data?.error) {
@@ -513,7 +525,19 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       const { data: contentData, error: contentError } = await supabase.functions.invoke("generate-ai-content", {
         body: { title, type: "recipe" },
       });
-      if (contentError) throw contentError;
+      if (contentError) {
+        if (contentError.context) {
+          try {
+            const body = await contentError.context.json();
+            if (body?.error) {
+              throw new Error(body.error);
+            }
+          } catch (e) {
+            // Ignore JSON parsing errors
+          }
+        }
+        throw contentError;
+      }
       if (contentData?.content) {
         setContent(contentData.content);
         if (contentData.prep_time) setPrepTime(contentData.prep_time.toString());
