@@ -20,24 +20,33 @@ function cleanRawJsonContent(str: string): string {
       const parsed = JSON.parse(toParse);
       if (parsed.content) return parsed.content;
     } catch (_) {
-      // Regex match content key with subsequent fields
-      const contentMatch = clean.match(/"content"\s*:\s*"([\s\S]*?)"\s*,\s*"(?:prep_time|cook_time|instructions)"/i);
+      // Regex match content key anywhere in the string
+      const contentMatch = clean.match(/"content"\s*:\s*"([\s\S]*?)"\s*(?:,\s*"(?:prep_time|cook_time|instructions)"|\})/i);
       if (contentMatch && contentMatch[1]) {
-        return contentMatch[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+        return contentMatch[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\n/g, '\n');
       }
 
-      const contentMatchSimple = clean.match(/"content"\s*:\s*"([\s\S]*?)"\s*(?:,\s*"|})/i);
+      const contentMatchSimple = clean.match(/"content"\s*:\s*"([\s\S]*?)"/i);
       if (contentMatchSimple && contentMatchSimple[1]) {
-        return contentMatchSimple[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+        return contentMatchSimple[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\n/g, '\n');
       }
       
-      // Fallback: manually strip the {"content": " and trailing ,"prep_time"... }
+      // Fallback: manually strip everything before {"content": " and trailing ,"prep_time"... }
       let stripped = clean;
-      stripped = stripped.replace(/^\{?\s*"content"\s*:\s*"/i, "");
-      stripped = stripped.replace(/"\s*,\s*"(?:prep_time|cook_time)"[\s\S]*?\}?$/i, "");
-      stripped = stripped.replace(/\s*\}?$/, "");
+      const contentIndex = stripped.indexOf('"content"');
+      if (contentIndex !== -1) {
+        const colonIndex = stripped.indexOf(':', contentIndex);
+        if (colonIndex !== -1) {
+          const quoteIndex = stripped.indexOf('"', colonIndex);
+          if (quoteIndex !== -1) {
+            stripped = stripped.substring(quoteIndex + 1);
+          }
+        }
+      }
+      stripped = stripped.replace(/"\s*,\s*"(?:prep_time|cook_time|reasoning|role)"[\s\S]*$/i, "");
+      stripped = stripped.replace(/"\s*\}?\s*$/i, "");
       
-      return stripped.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+      return stripped.replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\n/g, '\n');
     }
   }
   
@@ -62,12 +71,12 @@ serve(async (req: Request) => {
     if (type === "recipe") {
       systemPrompt = "You are a world-class health conscious chef specializing in lifestyle medicine. Your recipes are nutritious, balanced, and delicious.";
       userPrompt = `Generate a complete, healthy recipe titled "${title}". 
-      Return the result as a JSON object with these exact keys:
+      Return the result as a STRICT JSON object with these exact keys:
       - "content": Clean HTML (ingredients as <ul>, instructions as <ol>, and a health tip). Use h2, p, ul, ol, li, strong, em.
       - "prep_time": Estimated prep time in minutes (integer).
       - "cook_time": Estimated cook time in minutes (integer).
       
-      Return ONLY the JSON object. Do not include markdown code blocks.`;
+      CRITICAL: Return ONLY the JSON object. Do not include markdown code blocks. Do not include a "role" key. Do not include a "reasoning" key. Start your response directly with { and end with }.`;
     } else {
       systemPrompt = "You are a professional health and wellness journalist.";
       userPrompt = `Write a professional, evidence-based article about "${title}". 
@@ -164,7 +173,8 @@ serve(async (req: Request) => {
               { role: "system", content: systemPrompt },
               { role: "user", content: userPrompt }
             ],
-            private: true
+            private: true,
+            jsonMode: true
           })
         });
 
