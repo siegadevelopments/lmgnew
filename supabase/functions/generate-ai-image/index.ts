@@ -153,7 +153,7 @@ serve(async (req: Request) => {
       const response = await fetch(
         `https://image.pollinations.ai/p/${encodeURIComponent(
           `A stunning high-quality cinematic lifestyle food photo representing ${truncatedPrompt.substring(0, 150)}, premium wellness aesthetic, no text`
-        )}?width=1024&height=576&nologo=true&private=true`
+        )}?width=1024&height=1024&nologo=true&private=true`
       );
 
       if (response.ok) {

@@ -152,6 +152,35 @@ serve(async (req: Request) => {
       errorDetails += "OPENAI_API_KEY not set | ";
     }
 
+    // 3. Try Pollinations AI (100% Free & Keyless Fallback)
+    if (!generatedContent) {
+      try {
+        console.log("Attempting keyless fallback text generation with Pollinations AI...");
+        const response = await fetch("https://text.pollinations.ai/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userPrompt }
+            ],
+            private: true
+          })
+        });
+
+        if (response.ok) {
+          generatedContent = await response.text();
+          generatedContent = generatedContent.replace(/```json/g, "").replace(/```html/g, "").replace(/```/g, "").trim();
+          console.log("Successfully generated text with Pollinations AI fallback!");
+        } else {
+          errorDetails += `Pollinations AI Error (${response.status}) | `;
+        }
+      } catch (e: any) {
+        console.error("Pollinations AI failed:", e);
+        errorDetails += `Pollinations AI Exception: ${e.message} | `;
+      }
+    }
+
     if (!generatedContent) {
       throw new Error(`AI Content generation failed. Details: ${errorDetails}`);
     }
