@@ -59,7 +59,9 @@ serve(async (req: Request) => {
         "prep_time": "e.g. 15 mins",
         "cook_time": "e.g. 30 mins"
       }
-    }`;
+    }
+    
+    CRITICAL: Output ONLY the JSON object. Do NOT include any chain of thought, reasoning, conversational text, or markdown code blocks. The response must be exactly the raw JSON object.`;
 
     console.log("Calling Gemini for content extraction...");
     const geminiRes = await fetch(
