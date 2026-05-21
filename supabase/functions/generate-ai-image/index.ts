@@ -66,7 +66,7 @@ serve(async (req: Request) => {
       try {
         console.log(`Attempting image generation with Gemini...`);
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict`,
+          `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict`,
           {
             method: "POST",
             headers: { 
@@ -151,7 +151,7 @@ serve(async (req: Request) => {
     try {
       console.log(`Attempting keyless fallback image generation with Pollinations AI...`);
       const response = await fetch(
-        `https://image.pollinations.ai/p/${encodeURIComponent(
+        `https://image.pollinations.ai/prompt/${encodeURIComponent(
           `A stunning high-quality cinematic lifestyle food photo representing ${truncatedPrompt.substring(0, 150)}, premium wellness aesthetic, no text`
         )}?width=1024&height=1024&nologo=true&private=true`
       );
