@@ -409,7 +409,8 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       if (error) throw error;
       
       const filtered = (data || []).map((recipe: any) => {
-        const needsContent = !recipe.content || recipe.content.length < 200 || !recipe.prep_time || !recipe.cook_time;
+        // Force needsContent = true for ALL recipes to clean up any HTML/JSON artifacts
+        const needsContent = true; 
         const needsImage = !recipe.image_url || recipe.image_url.includes("recipes/") || recipe.image_url.includes("placeholder");
         return {
           ...recipe,
@@ -417,7 +418,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
           needsImage,
           status: "pending"
         };
-      }).filter(r => r.needsContent || r.needsImage);
+      });
       
       setBulkRecipes(filtered);
     } catch (e: any) {
