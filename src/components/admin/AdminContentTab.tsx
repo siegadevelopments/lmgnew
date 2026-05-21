@@ -448,6 +448,12 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         return;
       }
 
+      // Add delay between iterations to prevent AI rate limiting
+      if (i > startIndex) {
+        setBulkStatus("Resting AI to prevent rate limits...");
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
+
       const recipe = recipesList[i];
       setCurrentBulkIndex(i);
       
@@ -509,6 +515,11 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
               toast.warning(`Could not generate image for "${recipe.title}". Proceeding with content only.`, {
                 description: errMsg.substring(0, 80)
               });
+            } else if (imageData?.error) {
+              console.warn(`Image generation skipped for "${recipe.title}":`, imageData.error);
+              toast.warning(`Could not generate image for "${recipe.title}". Proceeding with content only.`, {
+                description: String(imageData.error).substring(0, 80)
+              });
             } else if (imageData?.url) {
               updatedFields.image_url = imageData.url;
             }
@@ -534,9 +545,12 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         
         const updatedRecipes = recipesList.map((r, idx) => {
           if (idx === i) return { ...r, status: "completed" };
-          if (idx < i) return { ...r, status: r.status === "processing" ? "completed" : r.status };
+          if (idx < i) return { ...r, status: r.status === "processing" || r.status === "completed" ? "completed" : r.status };
           return r;
         });
+        
+        // Update recipesList so the next iteration uses the accumulated state!
+        recipesList = updatedRecipes;
         
         setBulkRecipes(updatedRecipes);
         setEnhancedCount(prev => prev + 1);

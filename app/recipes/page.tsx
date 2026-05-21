@@ -26,6 +26,17 @@ export default function RecipesPage() {
     );
   }, [recipes, search]);
 
+  const quickRecipes = useMemo(() => {
+    return filteredRecipes.filter((recipe) => (recipe.prep_time || 0) + (recipe.cook_time || 0) > 0 && (recipe.prep_time || 0) + (recipe.cook_time || 0) <= 15);
+  }, [filteredRecipes]);
+
+  const otherRecipes = useMemo(() => {
+    return filteredRecipes.filter((recipe) => {
+      const totalTime = (recipe.prep_time || 0) + (recipe.cook_time || 0);
+      return totalTime === 0 || totalTime > 15;
+    });
+  }, [filteredRecipes]);
+
   return (
     <div className="bg-background min-h-screen">
       <div className="bg-wellness-muted py-12 sm:py-16">
@@ -69,49 +80,76 @@ export default function RecipesPage() {
             <p className="text-muted-foreground text-lg">No recipes matched your search.</p>
           </div>
         ) : (
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredRecipes.map((recipe) => (
-              <Link
-                key={recipe.id}
-                href={`/recipes/${recipe.slug}`}
-                className="group flex flex-col overflow-hidden rounded-xl bg-card border border-border transition-all hover:shadow-card hover:-translate-y-1"
-              >
-                <div className="aspect-video overflow-hidden bg-muted relative">
-                  {recipe.image_url ? (
-                    <Image
-                      src={recipe.image_url}
-                      alt={recipe.title}
-                      fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-105"
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-muted-foreground/30">
-                      No Image
-                    </div>
-                  )}
-                  {(recipe.prep_time || recipe.cook_time) && (
-                    <div className="absolute bottom-3 right-3 rounded-full bg-background/90 px-2.5 py-1 text-xs font-semibold backdrop-blur-sm">
-                      {(recipe.prep_time || 0) + (recipe.cook_time || 0)} min
-                    </div>
-                  )}
+          <div className="space-y-16">
+            {quickRecipes.length > 0 && (
+              <section>
+                <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl mb-8">
+                  15-Minute Recipes
+                </h2>
+                <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                  {quickRecipes.map((recipe) => (
+                    <RecipeCard key={recipe.id} recipe={recipe} />
+                  ))}
                 </div>
-                <div className="p-5 flex flex-col flex-1">
-                  <h3 className="text-lg font-bold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
-                    {decodeEntities(recipe.title || "")}
-                  </h3>
-                  {recipe.excerpt && (
-                    <p
-                      className="mt-2 text-sm text-muted-foreground line-clamp-3"
-                      dangerouslySetInnerHTML={{ __html: recipe.excerpt }}
-                    />
-                  )}
+              </section>
+            )}
+
+            {otherRecipes.length > 0 && (
+              <section>
+                <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl mb-8">
+                  {quickRecipes.length > 0 ? "More Recipes" : "All Recipes"}
+                </h2>
+                <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                  {otherRecipes.map((recipe) => (
+                    <RecipeCard key={recipe.id} recipe={recipe} />
+                  ))}
                 </div>
-              </Link>
-            ))}
+              </section>
+            )}
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+function RecipeCard({ recipe }: { recipe: any }) {
+  return (
+    <Link
+      href={`/recipes/${recipe.slug}`}
+      className="group flex flex-col overflow-hidden rounded-xl bg-card border border-border transition-all hover:shadow-card hover:-translate-y-1"
+    >
+      <div className="aspect-video overflow-hidden bg-muted relative">
+        {recipe.image_url ? (
+          <Image
+            src={recipe.image_url}
+            alt={recipe.title}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-muted-foreground/30">
+            No Image
+          </div>
+        )}
+        {(recipe.prep_time || recipe.cook_time) ? (
+          <div className="absolute bottom-3 right-3 rounded-full bg-background/90 px-2.5 py-1 text-xs font-semibold backdrop-blur-sm">
+            {(recipe.prep_time || 0) + (recipe.cook_time || 0)} min
+          </div>
+        ) : null}
+      </div>
+      <div className="p-5 flex flex-col flex-1">
+        <h3 className="text-lg font-bold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+          {decodeEntities(recipe.title || "")}
+        </h3>
+        {recipe.excerpt && (
+          <p
+            className="mt-2 text-sm text-muted-foreground line-clamp-3"
+            dangerouslySetInnerHTML={{ __html: recipe.excerpt }}
+          />
+        )}
+      </div>
+    </Link>
   );
 }
