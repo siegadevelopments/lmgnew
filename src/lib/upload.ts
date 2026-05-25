@@ -40,14 +40,33 @@ export async function uploadMedia(
       }
 
       // 2. Upload directly to R2
-      const uploadResponse = await fetch(data.uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
+      try {
+        const uploadResponse = await fetch(data.uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": file.type },
+          body: file,
+        });
 
-      if (!uploadResponse.ok) {
-        throw new Error(`R2 upload failed with status: ${uploadResponse.status}`);
+        if (!uploadResponse.ok) {
+          throw new Error(`R2 client upload failed with status: ${uploadResponse.status}`);
+        }
+      } catch (clientErr: any) {
+        console.warn("Client-side R2 upload failed (likely CORS). Attempting proxy fallback...", clientErr);
+        
+        // 3. Fallback to API Proxy if CORS blocks the direct browser upload
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("uploadUrl", data.uploadUrl);
+        
+        const proxyResponse = await fetch("/api/upload-proxy", {
+          method: "POST",
+          body: formData,
+        });
+        
+        if (!proxyResponse.ok) {
+          const proxyError = await proxyResponse.json().catch(() => ({}));
+          throw new Error(proxyError.error || `R2 proxy upload failed with status: ${proxyResponse.status}`);
+        }
       }
 
       return data.publicUrl;
@@ -55,7 +74,7 @@ export async function uploadMedia(
       console.error("R2 Upload Error:", err);
       // Fallback to Supabase if R2 fails and file is small enough
       if (fileMB > 45) throw err;
-      console.warn("R2 failed, falling back to Supabase...");
+      console.warn("R2 failed entirely, falling back to Supabase...");
     }
   }
 
