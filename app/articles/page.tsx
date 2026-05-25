@@ -1,19 +1,20 @@
 'use client'
 
 import { useState } from "react";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { articlesQueryOptions } from "@/lib/queries";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { decodeEntities, stripHtml } from "@/lib/utils";
 import Link from "next/link";
 import Image from "next/image";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ArticlesPage() {
-  const { data: articles } = useSuspenseQuery(articlesQueryOptions());
+  const { data: articles, isLoading, error } = useQuery(articlesQueryOptions());
   const [search, setSearch] = useState("");
 
-  const filteredArticles = articles.filter(
+  const filteredArticles = (articles || []).filter(
     (article) =>
       (article.title?.toLowerCase() || "").includes(search.toLowerCase()) ||
       (decodeEntities(article.title || "").toLowerCase()).includes(search.toLowerCase()) ||
@@ -46,7 +47,24 @@ export default function ArticlesPage() {
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        {filteredArticles.length === 0 ? (
+        {isLoading ? (
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex flex-col overflow-hidden rounded-xl bg-card border border-border">
+                <Skeleton className="aspect-[16/10] w-full" />
+                <div className="p-6 space-y-3">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-5 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : error ? (
+          <div className="text-center py-20 bg-destructive/5 rounded-2xl border border-destructive/20">
+            <p className="text-destructive font-medium">Failed to load articles. Please try refreshing.</p>
+          </div>
+        ) : filteredArticles.length === 0 ? (
           <div className="text-center py-20 bg-muted/20 rounded-2xl border border-border">
             <p className="text-muted-foreground text-lg">No articles matched your search.</p>
           </div>
@@ -58,7 +76,7 @@ export default function ArticlesPage() {
                 href={`/articles/${article.slug}`}
                 className="group flex flex-col overflow-hidden rounded-xl bg-card border border-border transition-all hover:shadow-card hover:-translate-y-1"
               >
-                <div className="aspect-[16/10] overflow-hidden bg-muted">
+                <div className="aspect-[16/10] overflow-hidden bg-muted relative">
                   {article.image_url ? (
                     <Image
                       src={article.image_url}

@@ -1,22 +1,25 @@
 'use client'
 
 import React, { useState, useMemo } from "react";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { productsQueryOptions } from "@/lib/queries";
 import { ProductCard } from "@/components/ProductCard";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProductsPage() {
-  const { data: products } = useSuspenseQuery(productsQueryOptions());
+  const { data, isLoading, error } = useQuery(productsQueryOptions());
+  const products = data as any[] | undefined;
   const [searchInput, setSearchInput] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
 
   const categories = ["All", "Supplements", "Equipment", "Food", "Books", "Digital"];
 
   const filteredProducts = useMemo(() => {
+    if (!products) return [];
     return products.filter((p) => {
       const isProduct = p.product_type !== "service";
       const matchesSearch = p.title.toLowerCase().includes(searchInput.toLowerCase());
@@ -75,34 +78,55 @@ export default function ProductsPage() {
 
       {/* Product Grid */}
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4">
-          {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product as any} />
-          ))}
-        </div>
-
-        {filteredProducts.length === 0 && (
-          <div className="text-center py-20">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-wellness-muted">
-              <svg
-                className="h-10 w-10 text-primary/40"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              >
-                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <path d="M16 10a4 4 0 01-8 0" />
-              </svg>
-            </div>
-            <h2 className="mt-6 text-xl font-semibold text-foreground">No products found</h2>
-            <p className="mt-2 text-muted-foreground">
-              {searchInput
-                ? "Try adjusting your search"
-                : "Products from vendors will appear here once they're published."}
-            </p>
+        {isLoading ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="flex flex-col overflow-hidden bg-card border border-border/50">
+                <Skeleton className="aspect-square w-full" />
+                <div className="p-2.5 space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-5 w-1/2" />
+                </div>
+              </div>
+            ))}
           </div>
+        ) : error ? (
+          <div className="text-center py-20 bg-destructive/5 rounded-2xl border border-destructive/20">
+            <p className="text-destructive font-medium">Failed to load products. Please try refreshing.</p>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4">
+              {filteredProducts.map((product) => (
+                <ProductCard key={product.id} product={product as any} />
+              ))}
+            </div>
+
+            {filteredProducts.length === 0 && (
+              <div className="text-center py-20">
+                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-wellness-muted">
+                  <svg
+                    className="h-10 w-10 text-primary/40"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  >
+                    <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+                    <line x1="3" y1="6" x2="21" y2="6" />
+                    <path d="M16 10a4 4 0 01-8 0" />
+                  </svg>
+                </div>
+                <h2 className="mt-6 text-xl font-semibold text-foreground">No products found</h2>
+                <p className="mt-2 text-muted-foreground">
+                  {searchInput
+                    ? "Try adjusting your search"
+                    : "Products from vendors will appear here once they're published."}
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

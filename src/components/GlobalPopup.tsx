@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { Sparkles, Mail, X, ArrowRight, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Image from "next/image";
 
 interface Popup {
@@ -34,11 +34,12 @@ export function GlobalPopup() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     async function checkPopups() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const isPreview = urlParams.get("preview_popup") === "true";
+      const isPreview = searchParams.get("preview_popup") === "true";
 
       // Check if user has already dismissed a popup in this session
       const lastDismissed = localStorage.getItem("lmg_popup_dismissed");
@@ -72,7 +73,7 @@ export function GlobalPopup() {
     }
 
     checkPopups();
-  }, [typeof window !== 'undefined' ? window.location.pathname : '', typeof window !== 'undefined' ? window.location.search : '']);
+  }, [pathname, searchParams]);
 
   const handleDismiss = () => {
     setIsOpen(false);

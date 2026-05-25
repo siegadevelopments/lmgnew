@@ -1,4 +1,5 @@
 // Triggering fresh build - 2026-05-13 v1.1.0
+import { Suspense } from "react";
 import { Providers } from "./Providers";
 import "./globals.css";
 import { Header } from "@/components/Header";
@@ -121,7 +122,9 @@ export default function RootLayout({
             <Footer />
             <BackToTop />
             <MessengerBubble />
-            <GlobalPopup />
+            <Suspense fallback={null}>
+              <GlobalPopup />
+            </Suspense>
             <AppInstallPopup />
           </div>
         </Providers>
