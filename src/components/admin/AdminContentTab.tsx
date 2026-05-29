@@ -409,16 +409,33 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       if (error) throw error;
       
       const filtered = (data || []).map((recipe: any) => {
-        // Force needsContent = true for ALL recipes to clean up any HTML/JSON artifacts
-        const needsContent = true; 
-        const needsImage = !recipe.image_url || recipe.image_url.includes("recipes/") || recipe.image_url.includes("placeholder");
+        // Only regenerate content if it is completely missing or invalid
+        const needsContent = !recipe.content || recipe.content.length < 100 || recipe.content.includes("```");
+        
+        let needsImage = !recipe.image_url || 
+                         recipe.image_url.includes("recipes/") || 
+                         recipe.image_url.includes("placeholder");
+                         
+        if (recipe.image_url && recipe.image_url.includes("ai-thumbnails/")) {
+          const match = recipe.image_url.match(/ai-thumbnails\/(\d+)\.jpeg/);
+          if (match) {
+            const ts = parseInt(match[1], 10);
+            // Any image generated before May 29, 2026 is legacy/distorted
+            if (ts < 1779926400000) {
+              needsImage = true;
+            }
+          } else {
+            needsImage = true;
+          }
+        }
+        
         return {
           ...recipe,
           needsContent,
           needsImage,
           status: "pending"
         };
-      });
+      }).filter(r => r.needsContent || r.needsImage);
       
       setBulkRecipes(filtered);
     } catch (e: any) {
