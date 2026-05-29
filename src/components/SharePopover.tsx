@@ -128,7 +128,6 @@ export function SharePopover({ video, children }: SharePopoverProps) {
         className="w-80 p-4 border border-border bg-card text-card-foreground shadow-md rounded-xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-200"
         onClick={(e) => {
           e.stopPropagation();
-          e.preventDefault();
         }}
       >
         <div className="space-y-4">
