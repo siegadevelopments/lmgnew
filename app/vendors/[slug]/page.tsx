@@ -30,6 +30,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { ChatDialog } from "@/components/chat/ChatDialog";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { SharePopover } from "@/components/SharePopover";
 
 /** Extract YouTube video ID from any known URL format */
 function extractYouTubeId(url: string): string | null {
@@ -680,16 +681,14 @@ export default function VendorPage() {
                               <Play className="h-3 w-3" /> Watch Now
                             </span>
                             
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleShare(video);
-                              }}
-                              className="text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all p-1.5 rounded-full border border-transparent hover:border-primary/10 flex items-center justify-center"
-                              title="Share Video"
-                            >
-                              <Share2 className="h-3.5 w-3.5" />
-                            </button>
+                            <SharePopover video={video}>
+                              <button
+                                className="text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all p-1.5 rounded-full border border-transparent hover:border-primary/10 flex items-center justify-center"
+                                title="Share Video"
+                              >
+                                <Share2 className="h-3.5 w-3.5" />
+                              </button>
+                            </SharePopover>
                           </div>
                         </div>
                       </div>

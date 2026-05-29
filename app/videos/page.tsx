@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { decodeEntities } from "@/lib/utils";
 import Image from "next/image";
 import { toast } from "sonner";
+import { SharePopover } from "@/components/SharePopover";
 
 /** Extract YouTube video ID from any known URL format */
 function extractYouTubeId(url: string): string | null {
@@ -344,16 +345,14 @@ function VideosContent() {
                           <div />
                         )}
                         
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleShare(video);
-                          }}
-                          className="text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all p-2 rounded-full border border-transparent hover:border-primary/10 flex items-center justify-center"
-                          title="Share Video"
-                        >
-                          <Share2 className="h-4 w-4" />
-                        </button>
+                        <SharePopover video={video}>
+                          <button
+                            className="text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all p-2 rounded-full border border-transparent hover:border-primary/10 flex items-center justify-center"
+                            title="Share Video"
+                          >
+                            <Share2 className="h-4 w-4" />
+                          </button>
+                        </SharePopover>
                       </div>
                     </div>
                   </div>
