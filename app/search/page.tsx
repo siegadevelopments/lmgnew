@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { decodeEntities } from "@/lib/utils";
+import { sanitizeHtml } from "@/lib/security";
 import Link from "next/link";
 import Image from "next/image";
 import { Loader2 } from "lucide-react";
@@ -190,7 +191,7 @@ function SearchContent() {
                   {article.excerpt && (
                     <p
                       className="mt-1 text-xs text-muted-foreground line-clamp-2"
-                      dangerouslySetInnerHTML={{ __html: article.excerpt }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.excerpt) }}
                     />
                   )}
                 </div>
@@ -232,7 +233,7 @@ function SearchContent() {
                   {recipe.excerpt && (
                     <p
                       className="mt-1 text-xs text-muted-foreground line-clamp-2"
-                      dangerouslySetInnerHTML={{ __html: recipe.excerpt }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(recipe.excerpt) }}
                     />
                   )}
                 </div>

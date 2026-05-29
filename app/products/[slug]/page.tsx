@@ -1,6 +1,7 @@
 'use client'
 
 import { useParams, useRouter, usePathname } from "next/navigation";
+import { sanitizeHtml } from "@/lib/security";
 import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { productBySlugQueryOptionsV2 } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
@@ -350,7 +351,7 @@ function ProductContent() {
             {product.excerpt && (
               <p
                 className="mt-6 text-sm text-muted-foreground leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: product.excerpt }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.excerpt) }}
               />
             )}
 
@@ -434,7 +435,7 @@ function ProductContent() {
         {product.content && (
           <div
             className="wp-content prose prose-green mt-12 max-w-none text-foreground prose-headings:text-foreground prose-a:text-primary prose-img:rounded-lg"
-            dangerouslySetInnerHTML={{ __html: product.content }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.content) }}
           />
         )}
 

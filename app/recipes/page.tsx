@@ -6,6 +6,7 @@ import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Search, Loader2 } from "lucide-react";
 import { decodeEntities } from "@/lib/utils";
+import { sanitizeHtml } from "@/lib/security";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -125,7 +126,8 @@ function RecipeCard({ recipe }: { recipe: any }) {
             src={recipe.image_url}
             alt={recipe.title}
             fill
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            style={{ objectFit: 'cover' }}
+            className="transition-transform duration-500 group-hover:scale-105"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
         ) : (
@@ -146,7 +148,7 @@ function RecipeCard({ recipe }: { recipe: any }) {
         {recipe.excerpt && (
           <p
             className="mt-2 text-sm text-muted-foreground line-clamp-3"
-            dangerouslySetInnerHTML={{ __html: recipe.excerpt }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(recipe.excerpt) }}
           />
         )}
       </div>

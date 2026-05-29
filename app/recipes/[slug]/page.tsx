@@ -42,7 +42,7 @@ function RecipeContent() {
               src={recipe.image_url}
               alt={recipe.title}
               fill
-              className="object-cover"
+              style={{ objectFit: 'cover' }}
               sizes="(max-width: 1024px) 100vw, 896px"
             />
           </div>
