@@ -8,7 +8,6 @@ import { useState, Suspense } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { sanitizeHtml } from "@/lib/security";
 import Link from "next/link";
-import Image from "next/image";
 
 function ArticleContent() {
   const params = useParams();
@@ -38,9 +37,9 @@ function ArticleContent() {
         </div>
 
         {article.image_url && (
-          <div className="mt-8 w-full overflow-hidden rounded-2xl border border-border shadow-sm bg-muted relative min-h-[200px] flex items-center justify-center">
+          <div className="mt-8 w-full overflow-hidden rounded-2xl border border-border shadow-sm bg-muted">
             {imageError ? (
-              <div className="flex flex-col items-center gap-3 p-8 text-center">
+              <div className="flex flex-col items-center gap-3 p-8 text-center min-h-[200px] justify-center">
                 <AlertCircle className="h-8 w-8 text-amber-500" />
                 <div>
                   <p className="font-bold text-foreground">Image blocked by external host</p>
@@ -51,12 +50,10 @@ function ArticleContent() {
                 </div>
               </div>
             ) : (
-              <Image
+              <img
                 src={article.image_url}
                 alt={decodeEntities(article.title || "")}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 896px"
+                className="w-full h-auto block"
                 onError={() => setImageError(true)}
               />
             )}
