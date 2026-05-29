@@ -27,3 +27,10 @@ dist/
 Thumbs.db
 .vercel
 .env*.local
+
+# TS Build Info
+*.tsbuildinfo
+
+# Temporary scratch folder
+scratch/
+
