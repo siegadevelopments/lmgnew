@@ -73,12 +73,46 @@ function ArticleContent() {
                 // Replace non-breaking spaces with regular spaces to allow wrapping
                 html = html.replace(/&nbsp;/g, ' ');
 
-                // Map legacy WordPress uploads to Supabase storage bucket URLs
+                // Determine base domain and main image filename/path from the article's main image_url
+                let baseDomain = "https://usrtaxvjwidfxajbjlpj.supabase.co/storage/v1/object/public/media";
+                let mainImageFileName = "";
+                if (article.image_url) {
+                  if (article.image_url.includes("media.lifestylemedicinegateway.com")) {
+                    baseDomain = "https://media.lifestylemedicinegateway.com";
+                  } else if (article.image_url.includes("supabase.co")) {
+                    baseDomain = "https://usrtaxvjwidfxajbjlpj.supabase.co/storage/v1/object/public/media";
+                  }
+                  
+                  // Extract filename from the main image URL
+                  const parts = article.image_url.split('/');
+                  mainImageFileName = parts[parts.length - 1] || "";
+                }
+
+                // Map legacy WordPress uploads to the appropriate storage domain URLs
                 html = html.replace(
                   /(?:https?:\/\/(?:www\.)?lifestylemedicinegateway\.com)?\/wp-content\/uploads\/([^\s"'<>]+)/g,
                   (match, path) => {
-                    const cleanPath = path.replace(/-\d+x\d+(\.[a-zA-Z0-9]+)$/, '$1');
-                    return `https://usrtaxvjwidfxajbjlpj.supabase.co/storage/v1/object/public/media/ (1).uploads/${cleanPath}`;
+                    // Strip widthxheight suffixes (like -1024x559 or -150x150)
+                    let cleanPath = path.replace(/-\d+x\d+(\.[a-zA-Z0-9]+)$/, '$1');
+                    
+                    // If we have a main image filename and the clean path ends with a similar name,
+                    // we check if we need to use the main image filename (e.g. to handle "-scaled" suffix)
+                    if (mainImageFileName) {
+                      const cleanFileName = cleanPath.split('/').pop() || "";
+                      const cleanNameNoExt = cleanFileName.replace(/\.[a-zA-Z0-9]+$/, "");
+                      const mainNameNoExt = mainImageFileName.replace(/\.[a-zA-Z0-9]+$/, "");
+                      
+                      // If main image ends with "-scaled" and matches our clean name prefix, use it
+                      if (mainNameNoExt.endsWith("-scaled") && mainNameNoExt.startsWith(cleanNameNoExt)) {
+                        const pathParts = cleanPath.split('/');
+                        pathParts[pathParts.length - 1] = mainImageFileName;
+                        cleanPath = pathParts.join('/');
+                      }
+                    }
+
+                    // Build full URL and replace spaces with %20 for browser compatibility in src/srcset
+                    const fullUrl = `${baseDomain}/ (1).uploads/${cleanPath}`;
+                    return fullUrl.replace(/ /g, "%20");
                   }
                 );
                 
