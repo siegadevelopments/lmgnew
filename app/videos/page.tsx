@@ -2,8 +2,8 @@
 
 import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { videosQueryOptions } from "@/lib/queries";
-import { useState, useMemo, Suspense } from "react";
-import { Play, Search, Radio, Loader2 } from "lucide-react";
+import { useState, useMemo, Suspense, useEffect } from "react";
+import { Play, Search, Radio, Loader2, Share2 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import MuxPlayer from "@mux/mux-player-react";
@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { decodeEntities } from "@/lib/utils";
 import Image from "next/image";
+import { toast } from "sonner";
 
 /** Extract YouTube video ID from any known URL format */
 function extractYouTubeId(url: string): string | null {
@@ -97,8 +98,60 @@ function canEmbed(url: string): boolean {
 
 function VideosContent() {
   const { data: videos } = useSuspenseQuery(videosQueryOptions());
-  const [fullscreenVideo, setFullscreenVideo] = useState<string | null>(null);
+  const [fullscreenVideo, setFullscreenVideo] = useState<any | null>(null);
   const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && videos && videos.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const videoId = params.get("v") || params.get("video");
+      if (videoId) {
+        const matchedVideo = videos.find((v) => v.id === videoId);
+        if (matchedVideo && canEmbed(matchedVideo.embed_url)) {
+          setFullscreenVideo(matchedVideo);
+        }
+      }
+    }
+  }, [videos]);
+
+  const handleShare = async (video: any) => {
+    const shareData = {
+      title: decodeEntities(video.title || "Educational Video"),
+      text: decodeEntities(video.description || "").replace(/<\/?[^>]+(>|$)/g, ""),
+      url: `${window.location.origin}/videos?v=${video.id}`,
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") {
+          console.error("Share failed:", err);
+        } else {
+          return;
+        }
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareData.url);
+      toast.success("Link copied to clipboard!");
+    } catch (err) {
+      console.error("Failed to copy link:", err);
+      const textArea = document.createElement("textarea");
+      textArea.value = shareData.url;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand("copy");
+        toast.success("Link copied to clipboard!");
+      } catch (e) {
+        toast.error("Failed to copy link");
+      }
+      document.body.removeChild(textArea);
+    }
+  };
 
   const filteredVideos = useMemo(() => {
     return (videos || []).filter(
@@ -218,7 +271,7 @@ function VideosContent() {
                   <div
                     key={video.id}
                     className="flex flex-col overflow-hidden rounded-2xl bg-card shadow-sm border border-border transition-all hover:shadow-md cursor-pointer group"
-                    onClick={() => embeddable && setFullscreenVideo(video.embed_url)}
+                    onClick={() => embeddable && setFullscreenVideo(video)}
                   >
                     {/* Video area */}
                     <div className="relative aspect-video overflow-hidden bg-black">
@@ -267,26 +320,41 @@ function VideosContent() {
                         {title}
                       </h3>
                       {video.description && (
-                        <p className="text-muted-foreground text-sm line-clamp-3">
+                        <p className="text-muted-foreground text-sm line-clamp-3 mb-4">
                           {decodeEntities(video.description.replace(/<\/?[^>]+(>|$)/g, ""))}
                         </p>
                       )}
-                      {embeddable && (
-                        <div className="mt-auto pt-4 text-sm font-medium text-primary flex items-center gap-1.5 self-start">
-                          <Play className="h-4 w-4" /> Watch Now
-                        </div>
-                      )}
-                      {!embeddable && video.embed_url && (
-                        <a
-                          href={video.embed_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="mt-auto pt-4 text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center gap-1.5 self-start"
+                      
+                      <div className="mt-auto pt-4 flex items-center justify-between border-t border-border/50">
+                        {embeddable ? (
+                          <div className="text-sm font-medium text-primary flex items-center gap-1.5">
+                            <Play className="h-4 w-4" /> Watch Now
+                          </div>
+                        ) : video.embed_url ? (
+                          <a
+                            href={video.embed_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-sm font-medium text-primary hover:text-primary/80 transition-colors flex items-center gap-1.5"
+                          >
+                            <Play className="h-4 w-4" /> Watch on external site →
+                          </a>
+                        ) : (
+                          <div />
+                        )}
+                        
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleShare(video);
+                          }}
+                          className="text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all p-2 rounded-full border border-transparent hover:border-primary/10 flex items-center justify-center"
+                          title="Share Video"
                         >
-                          <Play className="h-4 w-4" /> Watch on external site →
-                        </a>
-                      )}
+                          <Share2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -301,11 +369,11 @@ function VideosContent() {
         <DialogContent className="max-w-5xl p-0 bg-black border-none shadow-2xl overflow-hidden rounded-xl">
           {fullscreenVideo && (
             <div className="relative w-full aspect-video flex flex-col items-center justify-center">
-              {isDirectVideoUrl(fullscreenVideo) ? (
+              {isDirectVideoUrl(fullscreenVideo.embed_url) ? (
                 <>
                   <video
-                    key={fullscreenVideo}
-                    src={fullscreenVideo}
+                    key={fullscreenVideo.embed_url}
+                    src={fullscreenVideo.embed_url}
                     controls
                     autoPlay
                     muted
@@ -319,12 +387,12 @@ function VideosContent() {
                       alert(`The video could not be played.${errorMsg} Please check your connection or try another browser.`);
                     }}
                   />
-                  {/\.(mts)(\?|$)/i.test(fullscreenVideo) && (
+                  {/\.(mts)(\?|$)/i.test(fullscreenVideo.embed_url) && (
                     <div className="absolute top-4 inset-x-0 mx-auto max-w-xs bg-black/60 backdrop-blur-md p-3 rounded-lg text-[10px] text-white/80 text-center border border-white/10">
                       Note: .MTS files may not play in all browsers. <br />
                       If it doesn't load, please use Chrome or convert to MP4.
                       <a 
-                        href={fullscreenVideo} 
+                        href={fullscreenVideo.embed_url} 
                         download 
                         className="block mt-2 text-primary hover:underline font-bold"
                       >
@@ -335,7 +403,7 @@ function VideosContent() {
                 </>
               ) : (
                 <iframe
-                  src={getEmbedUrl(fullscreenVideo, true)}
+                  src={getEmbedUrl(fullscreenVideo.embed_url, true)}
                   className="absolute inset-0 w-full h-full outline-none border-none"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen

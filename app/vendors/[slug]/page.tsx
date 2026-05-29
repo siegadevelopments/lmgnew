@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams } from "next/navigation";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import MuxPlayer from "@mux/mux-player-react";
@@ -23,8 +23,9 @@ import {
   Play,
   Maximize2,
   Loader2,
+  Share2,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, decodeEntities } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { ChatDialog } from "@/components/chat/ChatDialog";
@@ -161,6 +162,59 @@ export default function VendorPage() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [playingId, setPlayingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && vendorVideos && vendorVideos.length > 0) {
+      const params = new URLSearchParams(window.location.search);
+      const vId = params.get("v") || params.get("video");
+      if (vId) {
+        const matched = vendorVideos.find((v) => v.id === vId);
+        if (matched) {
+          setPlayingId(matched.embed_url);
+          setActiveCategory("videos");
+        }
+      }
+    }
+  }, [vendorVideos]);
+
+  const handleShare = async (video: any) => {
+    const shareData = {
+      title: decodeEntities(video.title || "Educational Video"),
+      text: decodeEntities(video.description || "").replace(/<\/?[^>]+(>|$)/g, ""),
+      url: `${window.location.origin}/videos?v=${video.id}`,
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") {
+          console.error("Share failed:", err);
+        } else {
+          return;
+        }
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareData.url);
+      toast.success("Link copied to clipboard!");
+    } catch (err) {
+      console.error("Failed to copy link:", err);
+      const textArea = document.createElement("textarea");
+      textArea.value = shareData.url;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand("copy");
+        toast.success("Link copied to clipboard!");
+      } catch (e) {
+        toast.error("Failed to copy link");
+      }
+      document.body.removeChild(textArea);
+    }
+  };
 
   const { data: isFollowing } = useQuery({
     queryKey: ["vendor_follow", user?.id, slug],
@@ -609,15 +663,34 @@ export default function VendorPage() {
                             )}
                           </div>
                         </div>
-                        <div className="p-4">
-                          <h3 className="font-bold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
-                            {video.title}
-                          </h3>
-                          {video.description && (
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                              {video.description}
-                            </p>
-                          )}
+                        <div className="p-4 flex-1 flex flex-col justify-between">
+                          <div>
+                            <h3 className="font-bold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+                              {decodeEntities(video.title || "")}
+                            </h3>
+                            {video.description && (
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                {decodeEntities(video.description.replace(/<\/?[^>]+(>|$)/g, ""))}
+                              </p>
+                            )}
+                          </div>
+                          
+                          <div className="mt-4 pt-3 flex items-center justify-between border-t border-border/50">
+                            <span className="text-xs font-semibold text-primary flex items-center gap-1">
+                              <Play className="h-3 w-3" /> Watch Now
+                            </span>
+                            
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleShare(video);
+                              }}
+                              className="text-muted-foreground hover:text-primary hover:bg-primary/5 transition-all p-1.5 rounded-full border border-transparent hover:border-primary/10 flex items-center justify-center"
+                              title="Share Video"
+                            >
+                              <Share2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
