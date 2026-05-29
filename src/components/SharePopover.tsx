@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -108,11 +108,21 @@ export function SharePopover({ video, children }: SharePopoverProps) {
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild onClick={(e) => {
-        e.stopPropagation();
-        e.preventDefault();
-      }}>
-        {children}
+      <PopoverTrigger asChild>
+        {React.isValidElement(children) 
+          ? React.cloneElement(children as React.ReactElement<any>, {
+              onClick: (e: React.MouseEvent) => {
+                e.stopPropagation();
+                e.preventDefault();
+                setOpen((prev) => !prev);
+                // Call original onClick if it exists
+                if ((children as any).props.onClick) {
+                  (children as any).props.onClick(e);
+                }
+              }
+            })
+          : children
+        }
       </PopoverTrigger>
       <PopoverContent 
         className="w-80 p-4 border border-border bg-card text-card-foreground shadow-md rounded-xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-200"

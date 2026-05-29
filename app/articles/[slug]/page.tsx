@@ -72,6 +72,15 @@ function ArticleContent() {
                 
                 // Replace non-breaking spaces with regular spaces to allow wrapping
                 html = html.replace(/&nbsp;/g, ' ');
+
+                // Map legacy WordPress uploads to Supabase storage bucket URLs
+                html = html.replace(
+                  /(?:https?:\/\/(?:www\.)?lifestylemedicinegateway\.com)?\/wp-content\/uploads\/([^\s"'<>]+)/g,
+                  (match, path) => {
+                    const cleanPath = path.replace(/-\d+x\d+(\.[a-zA-Z0-9]+)$/, '$1');
+                    return `https://usrtaxvjwidfxajbjlpj.supabase.co/storage/v1/object/public/media/ (1).uploads/${cleanPath}`;
+                  }
+                );
                 
                 // If it's already HTML (contains <p> or <h tags), return as is
                 if (html.includes('<p>') || html.includes('<h')) return html;
