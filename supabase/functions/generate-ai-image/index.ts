@@ -77,7 +77,7 @@ serve(async (req: Request) => {
               instances: [{ 
                 prompt: `A stunning, high-quality cinematic lifestyle photograph representing: ${truncatedPrompt.substring(0, 500)}. Style: Modern, minimalist, premium wellness aesthetic. CRITICAL: No text, no labels, no anatomical diagrams.` 
               }],
-              parameters: { sampleCount: 1, aspectRatio: "16:9" }
+              parameters: { sampleCount: 1, aspectRatio: "1:1" }
             }),
           }
         );
