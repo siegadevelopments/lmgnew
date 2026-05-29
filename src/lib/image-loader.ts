@@ -1,7 +1,9 @@
 export default function weservLoader({ src, width, quality }: { src: string; width: number; quality?: number }) {
   // If it's a relative path (e.g. static assets under public/), SVG, or GIF, bypass the CDN loader
+  // but append the width query parameter to satisfy the Next.js loader contract.
   if (src.startsWith('/') || src.endsWith('.svg') || src.endsWith('.gif')) {
-    return src;
+    const separator = src.includes('?') ? '&' : '?';
+    return `${src}${separator}w=${width}`;
   }
 
   // Ensure absolute protocol for external URLs
