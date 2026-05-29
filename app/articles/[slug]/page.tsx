@@ -73,6 +73,36 @@ function ArticleContent() {
                 // Replace non-breaking spaces with regular spaces to allow wrapping
                 html = html.replace(/&nbsp;/g, ' ');
 
+                // Remove duplicate header image if it is embedded at the very beginning of the content
+                if (article.image_url) {
+                  const featMatch = article.image_url.split('/').pop()?.split(/[?#]/)[0];
+                  if (featMatch) {
+                    const featBase = featMatch.replace(/-\d+x\d+/, '').replace(/-scaled/, '').split('.')[0].toLowerCase();
+                    if (featBase) {
+                      const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/i;
+                      const match = html.match(imgRegex);
+                      if (match) {
+                        const firstImgSrc = match[0].match(/src=["']([^"']+)["']/i)?.[1] || "";
+                        const firstImgMatch = firstImgSrc.split('/').pop()?.split(/[?#]/)[0];
+                        if (firstImgMatch) {
+                          const inlineBase = firstImgMatch.replace(/-\d+x\d+/, '').replace(/-scaled/, '').split('.')[0].toLowerCase();
+                          if (featBase === inlineBase) {
+                            const imgIndex = html.indexOf(match[0]);
+                            if (imgIndex !== -1 && imgIndex < 500) {
+                              const leadingPart = html.substring(0, imgIndex);
+                              const cleanLeading = leadingPart.replace(/<div[^>]*>/gi, '').replace(/<figure[^>]*>/gi, '').replace(/<p[^>]*>/gi, '').trim();
+                              if (cleanLeading === '') {
+                                const wrapperRegex = /^\s*(?:<div[^>]*>\s*(?:<figure[^>]*>\s*)?|<figure[^>]*>\s*|<p[^>]*>\s*)?<img[^>]+?\/?>\s*(?:<\/figure>)?\s*(?:<\/div>)?\s*(?:<\/p>)?/i;
+                                html = html.replace(wrapperRegex, '');
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+
                 // Determine base domain and main image filename/path from the article's main image_url
                 let baseDomain = "https://usrtaxvjwidfxajbjlpj.supabase.co/storage/v1/object/public/media";
                 let mainImageFileName = "";
