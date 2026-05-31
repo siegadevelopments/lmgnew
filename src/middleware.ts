@@ -136,15 +136,6 @@ const MAINTENANCE_HTML = `<!DOCTYPE html>
 </html>`;
 
 export function middleware(request: NextRequest) {
-  if (MAINTENANCE_MODE) {
-    return new NextResponse(MAINTENANCE_HTML, {
-      status: 503,
-      headers: {
-        'content-type': 'text/html; charset=utf-8',
-      },
-    });
-  }
-
   const host = request.headers.get('host');
   
   // If the request is coming from the Vercel default domain
@@ -155,6 +146,15 @@ export function middleware(request: NextRequest) {
     
     // Perform a permanent redirect to the custom domain
     return NextResponse.redirect(url, 301);
+  }
+
+  if (MAINTENANCE_MODE) {
+    return new NextResponse(MAINTENANCE_HTML, {
+      status: 503,
+      headers: {
+        'content-type': 'text/html; charset=utf-8',
+      },
+    });
   }
   
   return NextResponse.next();
