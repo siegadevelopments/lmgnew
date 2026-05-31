@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { uploadMedia } from "@/lib/upload";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -151,17 +152,8 @@ export function AffiliatesTab() {
 
     try {
       setUploading(true);
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
-      const filePath = `affiliates/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage.from("media").upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("media").getPublicUrl(filePath);
+      const publicUrl = await uploadMedia(file, "affiliates");
+      if (!publicUrl) throw new Error("Upload failed");
 
       setForm({ ...form, logo_url: publicUrl });
       toast.success("Logo uploaded successfully");
