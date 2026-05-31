@@ -1,5 +1,31 @@
 import { createClient } from "@supabase/supabase-js";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import fs from "fs";
+import path from "path";
+
+// Load environment variables from .env.local if present
+try {
+  const envPath = path.resolve(process.cwd(), ".env.local");
+  if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, "utf-8");
+    const lines = envContent.split(/\r?\n/);
+    for (const line of lines) {
+      const match = line.match(/^\s*([^#=]+)\s*=\s*(.*)\s*$/);
+      if (match) {
+        const key = match[1].trim();
+        let val = match[2].trim();
+        // Remove quotes if present
+        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+          val = val.substring(1, val.length - 1);
+        }
+        process.env[key] = val;
+      }
+    }
+    console.log("Loaded environment variables from .env.local");
+  }
+} catch (e) {
+  console.log("Could not load .env.local file:", e.message);
+}
 
 // Ensure environment variables are loaded (can be run with dotenv or standard env vars)
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://usrtaxvjwidfxajbjlpj.supabase.co";
