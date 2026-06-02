@@ -191,17 +191,35 @@ export const articleBySlugQueryOptions = (slug: string) =>
 
         if (exactMatch) return [exactMatch];
 
-        // Fallback: search for slugs that look similar (handling em-dash and other variants)
+        // Fallback 1: search for slugs that look similar (handling em-dash and other variants)
         const sanitizedSlug = decodedSlug.replace(/[—–-]/g, '%');
-        const { data: fallbackMatch, error } = await supabase
+        const { data: fallbackMatch } = await supabase
           .from("articles")
           .select("*, vendor_profiles(representative_name, store_name)")
           .ilike("slug", sanitizedSlug)
           .limit(1);
 
-        if (error) throw error;
+        if (fallbackMatch && fallbackMatch.length > 0) return fallbackMatch;
+
+        // Fallback 2: Robust match ignoring punctuation differences and trailing characters
+        const cleanString = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const cleanRequested = cleanString(decodedSlug);
         
-        return (fallbackMatch || []) as any[];
+        const firstWord = decodedSlug.split(/[^a-zA-Z0-9]/)[0] || "";
+        const searchPattern = firstWord.length >= 3 ? `${firstWord}%` : `${decodedSlug.substring(0, 10).replace(/[^a-zA-Z0-9]/g, '%')}%`;
+        
+        const { data: candidates, error } = await supabase
+          .from("articles")
+          .select("*, vendor_profiles(representative_name, store_name)")
+          .ilike("slug", searchPattern)
+          .limit(30);
+
+        if (error) throw error;
+
+        const match = candidates?.find((c: any) => cleanString(c.slug) === cleanRequested);
+        if (match) return [match];
+        
+        return [];
       } catch (err: any) {
         console.error("Error fetching article by slug:", err?.message || err);
         return [];
