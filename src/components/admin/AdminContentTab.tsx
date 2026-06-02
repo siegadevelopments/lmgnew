@@ -789,7 +789,8 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       if (!session) throw new Error("Not authenticated");
 
       const cleanContent = sharingItem.content?.replace(/<[^>]*>/g, ' ').substring(0, 1000) || "";
-      const contextText = `Article Title: ${sharingItem.title}\nExcerpt: ${sharingItem.excerpt || ""}\nContent: ${cleanContent}`;
+      const itemUrl = `https://lifestylemedicinegateway.com.au/${activeType}/${sharingItem.slug}`;
+      const contextText = `Article Title: ${sharingItem.title}\nLink/URL: ${itemUrl}\nExcerpt: ${sharingItem.excerpt || ""}\nContent: ${cleanContent}`;
       
       const response = await fetch("/api/ai-enhance", {
         method: "POST",

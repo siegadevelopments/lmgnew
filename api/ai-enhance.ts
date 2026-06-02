@@ -75,15 +75,17 @@ Return ONLY the improved title text, nothing else.`;
 
 ${
   value
-    ? `Rewrite and improve this social media post caption to be more engaging, with a compelling hook, clear value, and a call-to-action. Keep it 150-250 words. Use line breaks for readability.
+    ? `Rewrite and improve this social media post caption to be more engaging, with a compelling hook, clear value, and a call-to-action (CTA). Keep it 150-250 words. Use line breaks for readability.
+If a Link/URL is provided in the context, integrate it directly as the target of the call-to-action (CTA) at the end of the caption (e.g. 'Read more here: [URL]').
 Current caption: "${value}"
 ${context ? `Context: ${context}` : ""}`
     : `Write a compelling social media post caption for a wellness brand. Include:
 - A strong opening hook
 - Valuable insight or tip
-- A warm call-to-action
+- A warm call-to-action (CTA)
+If a Link/URL is provided in the context, integrate it directly as the target of the call-to-action (CTA) at the end of the caption (e.g. 'Read more here: [URL]').
 Keep it 150-250 words. Use line breaks for readability.
-${context ? `Topic: ${context}` : "Topic: general wellness, menopause support, or natural health"}`
+${context ? `Topic/Context: ${context}` : "Topic: general wellness, menopause support, or natural health"}`
 }
 
 Return ONLY the caption text, nothing else.`;
