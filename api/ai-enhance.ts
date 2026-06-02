@@ -102,6 +102,21 @@ Mix broad reach hashtags with niche ones. Include at least one Australian-specif
 Return ONLY a comma-separated list of hashtags like: #Tag1, #Tag2, #Tag3`;
         break;
 
+      case "excerpt":
+        prompt = `${BRAND_CONTEXT}
+
+${
+  value
+    ? `Improve and refine this short excerpt/summary to be more engaging and concise (max 30 words).
+Current excerpt: "${value}"
+${context ? `Context/Content: ${context}` : ""}`
+    : `Generate a short, engaging summary/excerpt (max 30 words) for this content.
+${context ? `Title/Content: ${context}` : "Topic: general wellness"}`
+}
+
+Return ONLY the plain summary/excerpt text, nothing else.`;
+        break;
+
       case "custom":
         prompt = value;
         break;

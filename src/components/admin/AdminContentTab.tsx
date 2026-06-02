@@ -176,6 +176,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [savingSharePost, setSavingSharePost] = useState(false);
   const [scheduledPosts, setScheduledPosts] = useState<any[]>([]);
   const [loadingScheduled, setLoadingScheduled] = useState(false);
+  const [generatingExcerpt, setGeneratingExcerpt] = useState(false);
 
   useEffect(() => {
     const key = localStorage.getItem("unsplash_access_key") || "";
@@ -238,6 +239,11 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   useEffect(() => {
     // 1. Load drafts on mount and tab switch
     const draft = localStorage.getItem(`admin_content_draft_${activeType}`);
+    
+    // Collapse Add form and exit editing when moving away to another tab
+    setShowAddForm(false);
+    setEditingId(null);
+
     if (draft) {
       try {
         const parsed = JSON.parse(draft);
@@ -913,6 +919,48 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     }
   };
 
+  const generateAIExcerpt = async () => {
+    if (!title) {
+      toast.error("Please enter a title first to guide the AI");
+      return;
+    }
+    setGeneratingExcerpt(true);
+    const toastId = toast.loading("AI is summarizing an excerpt...");
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const cleanContent = content.replace(/<[^>]*>/g, ' ').substring(0, 1500);
+      const contextText = `Title: ${title}\nContent: ${cleanContent}`;
+
+      const response = await fetch("/api/ai-enhance", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          field: "excerpt",
+          value: excerpt,
+          context: contextText,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.details || data.suggestion || data.error || "AI excerpt generation failed");
+
+      setExcerpt(data.result);
+      toast.success("AI Excerpt generated!", { id: toastId });
+    } catch (err: any) {
+      console.error("AI Excerpt Error:", err);
+      toast.error(err.message || "Failed to generate excerpt", { id: toastId });
+    } finally {
+      setGeneratingExcerpt(false);
+    }
+  };
+
   const handleSaveSharePost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!sharingItem) return;
@@ -1447,7 +1495,24 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
 
             {activeType === "articles" && (
               <div className="space-y-2">
-                <label className="text-sm font-medium">Excerpt (Short summary for Anecdotes page)</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium">Excerpt (Short summary for Anecdotes page)</label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={generateAIExcerpt}
+                    disabled={generatingExcerpt}
+                    className="h-7 text-xs bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-700 font-semibold gap-1.5"
+                  >
+                    {generatingExcerpt ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3 w-3" />
+                    )}
+                    Write with AI
+                  </Button>
+                </div>
                 <Textarea
                   value={excerpt}
                   onChange={(e) => setExcerpt(e.target.value)}
