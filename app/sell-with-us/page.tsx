@@ -18,6 +18,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
+import { RoiCalculator } from "@/components/vendor/RoiCalculator";
 
 export const metadata = {
   title: "Sell With Us — Hassle-Free & Profitable | LMG",
@@ -281,6 +282,9 @@ export default function SellWithUsPage() {
             </div>
           </div>
         </section>
+
+        {/* ROI Calculator */}
+        <RoiCalculator />
 
         {/* FAQ Section */}
         <section className="py-32 bg-white relative overflow-hidden">

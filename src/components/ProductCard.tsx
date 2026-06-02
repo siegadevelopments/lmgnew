@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
+import { trackAddToCart } from "@/lib/tracking";
 
 interface ProductCardProps {
   product: {
@@ -65,6 +66,13 @@ export function ProductCard({ product, className }: ProductCardProps) {
       slug: product.slug,
       vendor_id: (product as any).vendor_id,
       product_type: (product as any).product_type,
+    });
+    
+    trackAddToCart({
+      id: product.id,
+      title: product.title,
+      price: baseVariant ? baseVariant.price : product.price,
+      category: (product as any).category,
     });
 
     toast.success(`${product.title} added to cart`, {
@@ -139,11 +147,13 @@ export function ProductCard({ product, className }: ProductCardProps) {
             </div>
           )}
 
-          <div className="absolute top-2 left-0 z-10">
-            <div className="bg-primary px-1.5 py-0.5 text-[9px] font-bold text-white rounded-r-sm shadow-sm uppercase tracking-tighter">
-              Wellness
+          {product.category && (
+            <div className="absolute top-2 left-0 z-10">
+              <div className="bg-primary px-1.5 py-0.5 text-[9px] font-bold text-white rounded-r-sm shadow-sm uppercase tracking-tighter">
+                {product.category}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         <div className="flex flex-1 flex-col p-2.5">
@@ -159,17 +169,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
               </span>
             </div>
 
-            <div className="flex items-center justify-between mt-1">
-              <div className="flex items-center gap-1">
-                <div className="flex text-[10px] text-amber-500">
-                  {"★★★★★".split("").map((s, i) => (
-                    <span key={i}>{s}</span>
-                  ))}
-                </div>
-                <span className="text-[10px] text-muted-foreground">(12)</span>
-              </div>
-              <span className="text-[10px] text-muted-foreground">8.2k sold</span>
-            </div>
+
 
             <div className="mt-2 pt-2 border-t border-border/50 flex items-center justify-between text-[10px] text-muted-foreground">
               <div className="flex items-center gap-1.5 truncate max-w-[100px]">

@@ -4,43 +4,93 @@ import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { productsQueryOptions } from "@/lib/queries";
 import { ProductCard } from "@/components/ProductCard";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { Search, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
+
+type SortOption = "newest" | "price-low" | "price-high" | "name";
+
+const wellnessGoals = [
+  "All",
+  "Menopause",
+  "Gut Health",
+  "Sleep",
+  "Stress",
+  "Weight",
+  "Heart",
+  "Brain",
+  "Women",
+  "Ageing",
+];
 
 export default function ProductsPage() {
   const { data, isLoading, error } = useQuery(productsQueryOptions());
   const products = data as any[] | undefined;
   const [searchInput, setSearchInput] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
 
-  const categories = ["All", "Supplements", "Equipment", "Food", "Books", "Digital"];
+  // Get unique categories from actual products
+  const productCategories = useMemo(() => {
+    if (!products) return [];
+    const cats = new Set<string>();
+    products.forEach((p) => {
+      if (p.category && p.product_type !== "service") cats.add(p.category);
+    });
+    return ["All", ...Array.from(cats).sort()];
+  }, [products]);
 
   const filteredProducts = useMemo(() => {
     if (!products) return [];
-    return products.filter((p) => {
+    let filtered = products.filter((p) => {
       const isProduct = p.product_type !== "service";
       const matchesSearch = p.title.toLowerCase().includes(searchInput.toLowerCase());
-      const matchesCategory = activeCategory === "All" || p.category === activeCategory;
+      const matchesCategory =
+        activeCategory === "All" || p.category === activeCategory;
       return isProduct && matchesSearch && matchesCategory;
     });
-  }, [products, searchInput, activeCategory]);
+
+    // Sorting
+    switch (sortBy) {
+      case "price-low":
+        filtered = [...filtered].sort((a, b) => a.price - b.price);
+        break;
+      case "price-high":
+        filtered = [...filtered].sort((a, b) => b.price - a.price);
+        break;
+      case "name":
+        filtered = [...filtered].sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      case "newest":
+      default:
+        filtered = [...filtered].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        break;
+    }
+
+    return filtered;
+  }, [products, searchInput, activeCategory, sortBy]);
 
   return (
     <div className="bg-background min-h-screen">
-      {/* Shopee-style Hero Search */}
-      <div className="bg-wellness-muted py-12 sm:py-16">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+      {/* Hero Search */}
+      <div className="bg-wellness-muted py-10 sm:py-14 border-b border-border">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <Breadcrumbs items={[{ label: "Products" }]} />
+
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             Wellness Marketplace
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
-            Trusted products for your lifestyle medicine journey.
+          <p className="mt-2 max-w-2xl text-base text-muted-foreground">
+            Trusted products for your lifestyle medicine journey. Shop supplements, skincare, equipment, and more from verified Australian brands.
           </p>
 
-          <div className="mx-auto mt-8 max-w-2xl">
+          <div className="mt-6 max-w-2xl">
             <div className="relative flex items-center gap-2 bg-card p-1 rounded-xl border border-border shadow-md focus-within:ring-2 focus-within:ring-primary/20 transition-all">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -48,7 +98,7 @@ export default function ProductsPage() {
                   type="text"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder="Search for items, brands, or categories..."
+                  placeholder="Search supplements, skincare, gut health..."
                   className="pl-10 border-0 focus-visible:ring-0 shadow-none h-12"
                 />
               </div>
@@ -56,17 +106,17 @@ export default function ProductsPage() {
             </div>
           </div>
 
-          {/* Quick Categories */}
-          <div className="mx-auto mt-8 flex flex-wrap justify-center gap-4">
-            {categories.map((cat) => (
+          {/* Category + Sort */}
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            {productCategories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
                 className={cn(
-                  "px-4 py-2 rounded-full text-xs font-bold transition-all border",
+                  "px-3 py-1.5 rounded-full text-xs font-bold transition-all border",
                   activeCategory === cat
                     ? "bg-primary text-white border-primary shadow-lg shadow-primary/20"
-                    : "bg-background text-muted-foreground border-border hover:border-primary/50",
+                    : "bg-background text-muted-foreground border-border hover:border-primary/50"
                 )}
               >
                 {cat}
@@ -76,10 +126,31 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* Product Grid */}
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      {/* Results + Sort Bar */}
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between mb-6">
+          <p className="text-sm text-muted-foreground">
+            {filteredProducts.length} product{filteredProducts.length !== 1 ? "s" : ""}
+            {activeCategory !== "All" ? ` in ${activeCategory}` : ""}
+            {searchInput ? ` matching "${searchInput}"` : ""}
+          </p>
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortOption)}
+              className="text-sm bg-transparent border border-border rounded-lg px-3 py-1.5 text-foreground focus:ring-1 focus:ring-primary"
+            >
+              <option value="newest">Newest</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+              <option value="name">Name A-Z</option>
+            </select>
+          </div>
+        </div>
+
         {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
             {Array.from({ length: 12 }).map((_, i) => (
               <div key={i} className="flex flex-col overflow-hidden bg-card border border-border/50">
                 <Skeleton className="aspect-square w-full" />
@@ -97,7 +168,7 @@ export default function ProductsPage() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
               {filteredProducts.map((product) => (
                 <ProductCard key={product.id} product={product as any} />
               ))}
@@ -121,9 +192,12 @@ export default function ProductsPage() {
                 <h2 className="mt-6 text-xl font-semibold text-foreground">No products found</h2>
                 <p className="mt-2 text-muted-foreground">
                   {searchInput
-                    ? "Try adjusting your search"
+                    ? "Try adjusting your search or browse by category"
                     : "Products from vendors will appear here once they're published."}
                 </p>
+                <Link href="/categories" className="mt-4 inline-block text-primary hover:underline font-medium">
+                  Browse by wellness goal →
+                </Link>
               </div>
             )}
           </>

@@ -71,33 +71,54 @@ export function HeroSection() {
             variants={itemVariants}
             className="mb-4 inline-block rounded-full bg-primary/20 px-4 py-1.5 text-xs font-semibold tracking-wide text-primary-foreground"
           >
-            Your Wellness Marketplace
+            Australia&apos;s Wellness Marketplace
           </motion.span>
           <motion.h1
             variants={itemVariants}
-            className="text-5xl font-black leading-tight tracking-tighter text-primary-foreground sm:text-6xl lg:text-8xl text-balance"
+            className="text-4xl font-black leading-tight tracking-tighter text-primary-foreground sm:text-5xl lg:text-7xl text-balance"
           >
-            Elevate Your <span className="text-wellness-light drop-shadow-sm">Wellness</span>{" "}
-            Journey
+            Discover Trusted{" "}
+            <span className="text-wellness-light drop-shadow-sm">Wellness Products</span>{" "}
+            for Healthy Ageing
           </motion.h1>
           <motion.p
             variants={itemVariants}
-            className="mt-8 max-w-xl text-lg leading-relaxed text-primary-foreground/90 sm:text-xl font-medium"
+            className="mt-6 max-w-xl text-base leading-relaxed text-primary-foreground/90 sm:text-lg font-medium"
           >
-            The gateway to trusted products, professional services, and expert knowledge in
-            Lifestyle Medicine.
+            Shop evidence-based wellness products recommended by health experts and trusted
+            Australian brands.
           </motion.p>
+
+          <motion.div variants={itemVariants} className="mt-8 flex flex-wrap gap-3">
+            <Button
+              onClick={() => router.push("/products")}
+              variant="wellness"
+              className="rounded-xl px-8 h-12 font-bold text-base shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02]"
+            >
+              Shop Products
+            </Button>
+            <Button
+              onClick={() => {
+                const el = document.getElementById("wellness-categories");
+                el?.scrollIntoView({ behavior: "smooth" });
+              }}
+              variant="outline"
+              className="rounded-xl px-8 h-12 font-bold text-base border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+            >
+              Browse Categories
+            </Button>
+          </motion.div>
 
           <motion.form
             variants={itemVariants}
             onSubmit={handleSearch}
-            className="mt-8 flex items-center max-w-lg rounded-2xl bg-background shadow-elevated border border-border p-1.5"
+            className="mt-6 flex items-center max-w-lg rounded-2xl bg-background shadow-elevated border border-border p-1.5"
           >
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="What are you looking for?"
+              placeholder="Search supplements, skincare, gut health..."
               className="flex-1 bg-transparent px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none min-w-0"
               aria-label="Search catalog"
             />
@@ -106,8 +127,8 @@ export function HeroSection() {
             </Button>
           </motion.form>
 
-          <motion.div variants={itemVariants} className="mt-6 flex flex-wrap gap-2">
-            {["Nutrition", "Yoga", "Mental Health", "Supplements", "Coaching"].map((tag) => (
+          <motion.div variants={itemVariants} className="mt-4 flex flex-wrap gap-2">
+            {["Menopause", "Gut Health", "Sleep", "Weight Management", "Healthy Ageing"].map((tag) => (
               <motion.button
                 key={tag}
                 whileHover={{ scale: 1.05 }}

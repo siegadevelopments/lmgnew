@@ -18,23 +18,33 @@ import { Mail, Sparkles, User } from "lucide-react";
 import { toast } from "sonner";
 
 const footerLinks = {
+  "Shop by Goal": [
+    { label: "Menopause Support", to: "/categories/menopause-support" },
+    { label: "Healthy Ageing", to: "/categories/healthy-ageing" },
+    { label: "Gut Health", to: "/categories/gut-health" },
+    { label: "Sleep & Recovery", to: "/categories/sleep-recovery" },
+    { label: "Stress Management", to: "/categories/stress-management" },
+    { label: "Weight Management", to: "/categories/weight-management" },
+    { label: "Heart Health", to: "/categories/heart-health" },
+    { label: "Brain Health", to: "/categories/brain-health" },
+    { label: "Women's Wellness", to: "/categories/womens-wellness" },
+  ],
   Marketplace: [
     { label: "Browse Products", to: "/products" },
-    { label: "Find Services", to: "/vendors" },
-    { label: "Vendors", to: "/vendors" },
+    { label: "Services", to: "/services" },
+    { label: "Brands", to: "/vendors" },
+    { label: "Buying Guides", to: "/guides" },
     { label: "Recipes", to: "/recipes" },
-    // { label: "Affiliate Stores", to: "/affiliates" },
   ],
-  Explore: [
+  Learn: [
     { label: "Articles", to: "/articles" },
     { label: "Videos", to: "/videos" },
     { label: "Natural Remedies", to: "/natural-remedies" },
     { label: "Studies", to: "/studies" },
-    { label: "Memes", to: "/memes" },
-    { label: "Charts", to: "/charts" },
   ],
   Company: [
     { label: "About Us", to: "/about" },
+    { label: "Sell With Us", to: "/sell-with-us" },
     { label: "Contact", to: "/contact" },
     { label: "FAQ", to: "/faq" },
   ],

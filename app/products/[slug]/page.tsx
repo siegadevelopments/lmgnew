@@ -7,8 +7,9 @@ import { productBySlugQueryOptionsV2 } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCart } from "@/hooks/use-cart";
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { trackAddToCart, trackViewItem } from "@/lib/tracking";
 import { supabase } from "@/integrations/supabase/client";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -24,9 +25,12 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { toast } from "sonner";
 import { Loader2, CreditCard, Store, RefreshCcw } from "lucide-react";
 import Link from "next/link";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 function ProductContent() {
   const params = useParams();
@@ -48,6 +52,17 @@ function ProductContent() {
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [isBookingLoading, setIsBookingLoading] = useState(false);
   const [customerPhone, setCustomerPhone] = useState("");
+
+  useEffect(() => {
+    if (product) {
+      trackViewItem({
+        id: product.id,
+        title: product.title,
+        price: product.price,
+        category: product.category
+      });
+    }
+  }, [product?.id]);
 
   if (!product) {
     return (
@@ -105,13 +120,21 @@ function ProductContent() {
       name: product.title,
       variant_name: selectedVariant?.title,
       price: currentPrice,
-      quantity,
       image: product.image_url || undefined,
       slug: product.slug,
       vendor_id: product.vendor_id,
       product_type: product.product_type,
       booking: booking || undefined,
+      quantity,
     });
+    
+    trackAddToCart({
+      id: product.id,
+      title: product.title,
+      price: currentPrice,
+      category: product.category,
+    });
+
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
@@ -229,18 +252,49 @@ function ProductContent() {
   return (
     <article className="py-10 sm:py-16">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
-        {product.vendor_profiles ? (
-          <Link
-            href={`/vendors/${product.vendor_profiles.id}`}
-            className="text-sm font-medium text-primary hover:underline"
-          >
-            ← Back to {product.vendor_profiles.store_name}
-          </Link>
-        ) : (
-          <Link href={isServiceRoute ? "/services" : "/products"} className="text-sm font-medium text-primary hover:underline">
-            ← Back to {isServiceRoute ? "services" : "products"}
-          </Link>
-        )}
+        {/* Breadcrumbs */}
+        <Breadcrumbs
+          items={[
+            { label: isServiceRoute ? "Services" : "Products", href: isServiceRoute ? "/services" : "/products" },
+            ...(product.category ? [{ label: product.category, href: `/categories/${product.category.toLowerCase().replace(/\s+/g, '-')}` }] : []),
+            { label: product.title },
+          ]}
+        />
+
+        {/* Product Schema JSON-LD */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Product",
+              name: product.title,
+              description: product.excerpt || product.title,
+              image: product.image_url || undefined,
+              brand: {
+                "@type": "Brand",
+                name: product.brand || product.vendor_profiles?.store_name || "Lifestyle Medicine Gateway",
+              },
+              offers: {
+                "@type": "Offer",
+                price: currentPrice,
+                priceCurrency: "AUD",
+                availability: currentStock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+                seller: {
+                  "@type": "Organization",
+                  name: product.vendor_profiles?.store_name || "Lifestyle Medicine Gateway",
+                },
+              },
+              ...(reviews && reviews.length > 0 ? {
+                aggregateRating: {
+                  "@type": "AggregateRating",
+                  ratingValue: averageRating,
+                  reviewCount: reviews.length,
+                },
+              } : {}),
+            }),
+          }}
+        />
 
         <div className="mt-6 grid gap-8 lg:grid-cols-2">
           {product.image_url && (
@@ -355,8 +409,8 @@ function ProductContent() {
               />
             )}
 
-            {/* Add to Cart (Physical Products Only) */}
             {product.product_type !== "service" && (
+              <>
               <div className="mt-6 flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <button
@@ -381,7 +435,39 @@ function ProductContent() {
                 >
                   {added ? "Added to Cart!" : currentStock <= 0 ? "Unavailable" : "Add to Cart"}
                 </Button>
+                <Button
+                  onClick={() => {
+                    handleAddToCart();
+                    setTimeout(() => router.push("/checkout"), 200);
+                  }}
+                  variant="outline"
+                  size="lg"
+                  disabled={currentStock <= 0}
+                  className="border-primary text-primary hover:bg-primary hover:text-primary-foreground font-bold"
+                >
+                  Buy Now
+                </Button>
               </div>
+
+              {/* Trust Signals */}
+              <div className="mt-6 grid grid-cols-3 gap-3">
+                <div className="flex flex-col items-center text-center p-3 rounded-xl bg-wellness-muted">
+                  <span className="text-lg">🚚</span>
+                  <span className="mt-1 text-[10px] font-medium text-muted-foreground">Free Shipping</span>
+                  <span className="text-[10px] text-muted-foreground">Over $100</span>
+                </div>
+                <div className="flex flex-col items-center text-center p-3 rounded-xl bg-wellness-muted">
+                  <span className="text-lg">🔒</span>
+                  <span className="mt-1 text-[10px] font-medium text-muted-foreground">Secure</span>
+                  <span className="text-[10px] text-muted-foreground">Checkout</span>
+                </div>
+                <div className="flex flex-col items-center text-center p-3 rounded-xl bg-wellness-muted">
+                  <span className="text-lg">↩️</span>
+                  <span className="mt-1 text-[10px] font-medium text-muted-foreground">30-Day</span>
+                  <span className="text-[10px] text-muted-foreground">Returns</span>
+                </div>
+              </div>
+              </>
             )}
           </div>
         </div>
@@ -432,113 +518,191 @@ function ProductContent() {
           </div>
         )}
 
-        {product.content && (
-          <div
-            className="wp-content prose prose-green mt-12 max-w-none text-foreground prose-headings:text-foreground prose-a:text-primary prose-img:rounded-lg"
-            dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.content) }}
-          />
-        )}
-
-        <Separator className="my-12" />
-
-        {/* Reviews Section */}
-        <div className="grid gap-12 md:grid-cols-2">
-          {/* List Reviews */}
-          <div>
-            <h2 className="text-2xl font-bold">Customer Reviews</h2>
-            <div className="mt-8 space-y-8">
-              {reviews && reviews.length > 0 ? (
-                reviews.map((r) => (
-                  <div key={r.id}>
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                        {(r.user?.full_name || "?").charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-semibold">{r.user?.full_name || "Anonymous User"}</p>
-                        <div className="flex items-center gap-2">
-                          <div className="flex text-amber-500 text-sm">
-                            {"★".repeat(r.rating)}
-                            {"☆".repeat(5 - r.rating)}
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(r.created_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <h4 className="mt-3 font-semibold text-foreground">{r.title}</h4>
-                    <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
-                      {r.content}
-                    </p>
-                  </div>
-                ))
+        <div className="mt-12">
+          <Tabs defaultValue="description" className="w-full">
+            <TabsList className="w-full justify-start border-b border-border/50 rounded-none bg-transparent p-0 h-auto gap-6 overflow-x-auto overflow-y-hidden no-scrollbar">
+              <TabsTrigger value="description" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 py-3 text-base">Description</TabsTrigger>
+              <TabsTrigger value="benefits" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 py-3 text-base">Benefits</TabsTrigger>
+              <TabsTrigger value="how-to-use" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 py-3 text-base">How to Use</TabsTrigger>
+              <TabsTrigger value="faqs" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 py-3 text-base">FAQs</TabsTrigger>
+              <TabsTrigger value="reviews" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-2 py-3 text-base">Reviews {reviews && reviews.length > 0 ? `(${reviews.length})` : ""}</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="description" className="pt-6">
+              {product.content ? (
+                <div
+                  className="wp-content prose prose-green max-w-none text-foreground prose-headings:text-foreground prose-a:text-primary prose-img:rounded-lg"
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(product.content) }}
+                />
               ) : (
-                <p className="text-muted-foreground">
-                  No reviews yet. Be the first to share your experience!
-                </p>
+                <p className="text-muted-foreground">No description available for this product.</p>
               )}
-            </div>
-          </div>
+            </TabsContent>
 
-          {/* Write Review */}
-          <div>
-            <div className="rounded-xl border border-border bg-card p-6">
-              <h3 className="text-lg font-bold">Write a Review</h3>
-              {user ? (
-                <form onSubmit={handleSubmitReview} className="mt-6 space-y-4">
-                  <div className="space-y-2">
-                    <Label>Rating (1-5)</Label>
-                    <div className="flex gap-2 text-2xl text-amber-500">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <button
-                          type="button"
-                          key={star}
-                          onClick={() => setRating(star)}
-                          className={star <= rating ? "text-amber-500" : "text-muted"}
-                        >
-                          ★
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Review Title</Label>
-                    <Input
-                      required
-                      placeholder="Summary of your experience"
-                      value={reviewTitle}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setReviewTitle(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Your Review</Label>
-                    <Textarea
-                      required
-                      placeholder="What did you like or dislike?"
-                      rows={4}
-                      value={reviewContent}
-                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReviewContent(e.target.value)}
-                    />
-                  </div>
-                  <Button type="submit" disabled={isSubmitting} className="w-full">
-                    {isSubmitting ? "Submitting..." : "Submit Review"}
-                  </Button>
-                </form>
-              ) : (
-                <div className="mt-6 rounded-lg bg-muted/50 p-6 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    You must be logged in to leave a review.
+            <TabsContent value="benefits" className="pt-6">
+              <h3 className="text-xl font-bold mb-4 text-foreground">Why You&apos;ll Love This</h3>
+              <ul className="space-y-3">
+                {product.benefits ? product.benefits.map((b: string, i: number) => (
+                  <li key={i} className="flex items-start gap-3">
+                    <div className="mt-1 h-5 w-5 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">✓</div>
+                    <span className="text-foreground leading-relaxed">{b}</span>
+                  </li>
+                )) : (
+                  <>
+                    <li className="flex items-start gap-3">
+                      <div className="mt-1 h-5 w-5 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold text-xs">✓</div>
+                      <span className="text-foreground leading-relaxed">Evidence-based formulation for optimal results.</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="mt-1 h-5 w-5 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold text-xs">✓</div>
+                      <span className="text-foreground leading-relaxed">Carefully selected ingredients backed by research.</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <div className="mt-1 h-5 w-5 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 font-bold text-xs">✓</div>
+                      <span className="text-foreground leading-relaxed">Quality guaranteed by verified Australian brands.</span>
+                    </li>
+                  </>
+                )}
+              </ul>
+            </TabsContent>
+
+            <TabsContent value="how-to-use" className="pt-6">
+              <h3 className="text-xl font-bold mb-4 text-foreground">How to Use</h3>
+              <div className="bg-surface rounded-xl p-6 border border-border">
+                {product.how_to_use ? (
+                  <p className="text-muted-foreground leading-relaxed">{product.how_to_use}</p>
+                ) : (
+                  <p className="text-muted-foreground leading-relaxed">
+                    Please refer to the product packaging for specific dosage and usage instructions. 
+                    Always read the label and follow the directions for use. If symptoms persist, talk to your health professional.
                   </p>
-                  <Button asChild variant="outline" className="mt-4">
-                    <Link href={`/login?redirect=${isServiceRoute ? '/services' : '/products'}/${product.slug}`}>
-                      Log In
-                    </Link>
-                  </Button>
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="faqs" className="pt-6">
+              <h3 className="text-xl font-bold mb-6 text-foreground">Frequently Asked Questions</h3>
+              {product.faqs && product.faqs.length > 0 ? (
+                <Accordion type="multiple" className="space-y-3">
+                  {product.faqs.map((faq: any, i: number) => (
+                    <AccordionItem key={i} value={`faq-${i}`} className="rounded-xl border border-border bg-card px-5 shadow-soft">
+                      <AccordionTrigger className="text-left text-sm font-semibold hover:text-primary py-4">
+                        {faq.question}
+                      </AccordionTrigger>
+                      <AccordionContent className="text-sm text-muted-foreground leading-relaxed pb-4">
+                        {faq.answer}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              ) : (
+                <div className="text-center py-8 rounded-xl border border-dashed border-border bg-surface">
+                  <p className="text-muted-foreground">No specific FAQs for this product yet. Please contact the vendor if you have questions.</p>
                 </div>
               )}
-            </div>
-          </div>
+            </TabsContent>
+
+            <TabsContent value="reviews" className="pt-8">
+              <div className="grid gap-12 md:grid-cols-2">
+                {/* List Reviews */}
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground">Customer Reviews</h2>
+                  <div className="mt-8 space-y-8">
+                    {reviews && reviews.length > 0 ? (
+                      reviews.map((r) => (
+                        <div key={r.id}>
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                              {(r.user?.full_name || "?").charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-foreground">{r.user?.full_name || "Anonymous User"}</p>
+                              <div className="flex items-center gap-2">
+                                <div className="flex text-amber-500 text-sm">
+                                  {"★".repeat(r.rating)}
+                                  {"☆".repeat(5 - r.rating)}
+                                </div>
+                                <span className="text-xs text-muted-foreground">
+                                  {new Date(r.created_at).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <h4 className="mt-3 font-semibold text-foreground">{r.title}</h4>
+                          <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
+                            {r.content}
+                          </p>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-muted-foreground">
+                        No reviews yet. Be the first to share your experience!
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Write Review */}
+                <div>
+                  <div className="rounded-xl border border-border bg-card p-6 shadow-soft">
+                    <h3 className="text-lg font-bold text-foreground">Write a Review</h3>
+                    {user ? (
+                      <form onSubmit={handleSubmitReview} className="mt-6 space-y-4">
+                        <div className="space-y-2">
+                          <Label>Rating (1-5)</Label>
+                          <div className="flex gap-2 text-2xl text-amber-500">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                type="button"
+                                key={star}
+                                onClick={() => setRating(star)}
+                                className={star <= rating ? "text-amber-500" : "text-muted-foreground/30"}
+                              >
+                                ★
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Review Title</Label>
+                          <Input
+                            required
+                            placeholder="Summary of your experience"
+                            value={reviewTitle}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setReviewTitle(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Your Review</Label>
+                          <Textarea
+                            required
+                            placeholder="What did you like or dislike?"
+                            rows={4}
+                            value={reviewContent}
+                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReviewContent(e.target.value)}
+                          />
+                        </div>
+                        <Button type="submit" disabled={isSubmitting} className="w-full font-bold">
+                          {isSubmitting ? "Submitting..." : "Submit Review"}
+                        </Button>
+                      </form>
+                    ) : (
+                      <div className="mt-6 rounded-lg bg-surface border border-border p-6 text-center">
+                        <p className="text-sm text-muted-foreground">
+                          You must be logged in to leave a review.
+                        </p>
+                        <Button asChild variant="outline" className="mt-4 font-bold border-primary text-primary hover:bg-primary hover:text-primary-foreground">
+                          <Link href={`/login?redirect=${isServiceRoute ? '/services' : '/products'}/${product.slug}`}>
+                            Log In
+                          </Link>
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
 
         {relatedProducts && relatedProducts.length > 0 && (

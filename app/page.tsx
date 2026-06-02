@@ -1,16 +1,15 @@
 'use client'
 
 import { HeroSection } from "@/components/HeroSection";
-import { MantraAndPositivitySection } from "@/components/MantraAndPositivitySection";
-import { WhatIsLifestyleMedicine } from "@/components/WhatIsLifestyleMedicine";
-import { JustForYouSection } from "@/components/JustForYouSection";
+import { TrustBar } from "@/components/TrustBar";
+import { WellnessCategoryGrid } from "@/components/WellnessCategoryGrid";
+import { BestSellersSection } from "@/components/BestSellersSection";
 import { NewArrivalsSection } from "@/components/NewArrivalsSection";
 import { FeaturedVendorsSection } from "@/components/FeaturedVendorsSection";
-import { LatestArticlesSection } from "@/components/LatestArticlesSection";
+import { BuyingGuidesSection } from "@/components/BuyingGuidesSection";
+import { TestimonialsSection } from "@/components/TestimonialsSection";
 import { NewsletterSection } from "@/components/NewsletterSection";
 import { CTASection } from "@/components/CTASection";
-import { FeaturesSection } from "@/components/FeaturesSection";
-import { TestimonialsSection } from "@/components/TestimonialsSection";
 import { SchemaOrg } from "@/components/SchemaOrg";
 
 export default function IndexPage() {
@@ -19,17 +18,18 @@ export default function IndexPage() {
       <SchemaOrg 
         type="WebSite"
         name="Lifestyle Medicine Gateway"
-        description="Wellness Marketplace & Lifestyle Medicine Resources"
+        description="Australia's trusted wellness marketplace. Shop evidence-based wellness products for healthy ageing, menopause support, gut health, and more."
         url="https://www.lifestylemedicinegateway.com"
       />
       <HeroSection />
-      <MantraAndPositivitySection />
-      <WhatIsLifestyleMedicine />
-      <JustForYouSection />
-      <FeaturesSection />
+      <TrustBar />
+      <div id="wellness-categories">
+        <WellnessCategoryGrid />
+      </div>
+      <BestSellersSection />
       <NewArrivalsSection />
       <FeaturedVendorsSection />
-      <LatestArticlesSection />
+      <BuyingGuidesSection />
       <TestimonialsSection />
       <NewsletterSection />
       <CTASection />

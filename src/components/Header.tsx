@@ -17,22 +17,33 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const topNavItems = [
-  { to: "/products" as const, label: "Shop" },
-  { to: "/services" as const, label: "Services" },
-  { to: "/vendors" as const, label: "Vendors" },
-//  { to: "/affiliates" as const, label: "Affiliates" },
+const shopCategories = [
+  { to: "/categories/menopause-support" as const, label: "Menopause Support", icon: "🌸" },
+  { to: "/categories/healthy-ageing" as const, label: "Healthy Ageing", icon: "✨" },
+  { to: "/categories/gut-health" as const, label: "Gut Health", icon: "🦠" },
+  { to: "/categories/sleep-recovery" as const, label: "Sleep & Recovery", icon: "🌙" },
+  { to: "/categories/stress-management" as const, label: "Stress Management", icon: "🧘" },
+  { to: "/categories/weight-management" as const, label: "Weight Management", icon: "⚖️" },
+  { to: "/categories/heart-health" as const, label: "Heart Health", icon: "❤️" },
+  { to: "/categories/brain-health" as const, label: "Brain Health", icon: "🧠" },
+  { to: "/categories/womens-wellness" as const, label: "Women's Wellness", icon: "💜" },
 ];
 
-const exploreItems = [
-  { to: "/memes" as const, label: "Memes" },
-  { to: "/videos" as const, label: "Videos" },
-  { to: "/charts" as const, label: "Charts" },
+const topNavItems = [
+  { to: "/products" as const, label: "Shop All" },
+  { to: "/vendors" as const, label: "Brands" },
+  { to: "/guides" as const, label: "Guides" },
+];
+
+const learnItems = [
   { to: "/articles" as const, label: "Articles & References" },
-  { to: "/anecdotes" as const, label: "Anecdotes" },
   { to: "/recipes" as const, label: "Recipes" },
+  { to: "/videos" as const, label: "Videos" },
   { to: "/natural-remedies" as const, label: "Natural Remedies" },
   { to: "/studies" as const, label: "Studies" },
+  { to: "/anecdotes" as const, label: "Anecdotes" },
+  { to: "/memes" as const, label: "Memes" },
+  { to: "/charts" as const, label: "Charts" },
 ];
 
 export function Header() {
@@ -78,28 +89,42 @@ export function Header() {
 
         {/* Desktop Nav */}
         <nav className="hidden items-center gap-1 md:flex">
+          {/* Shop Categories Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button 
-                className="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                aria-label="Explore categories"
+                className="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-foreground transition-colors hover:text-primary"
+                aria-label="Shop by category"
                 aria-expanded={undefined}
                 aria-haspopup="true"
               >
-                Explore <ChevronDown className="h-4 w-4" />
+                Categories <ChevronDown className="h-4 w-4" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
-              {exploreItems.map((item) => (
+            <DropdownMenuContent align="start" className="w-64">
+              <div className="px-2 py-1.5">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Shop by Wellness Goal</p>
+              </div>
+              {shopCategories.map((item) => (
                 <DropdownMenuItem key={item.label} asChild>
                   <Link
                     href={item.to}
-                    className="w-full cursor-pointer hover:bg-accent focus:bg-accent outline-none block px-3 py-2 rounded-sm outline-none w-full"
+                    className="w-full cursor-pointer hover:bg-accent focus:bg-accent outline-none block px-3 py-2 rounded-sm w-full"
                   >
+                    <span className="mr-2">{item.icon}</span>
                     {item.label}
                   </Link>
                 </DropdownMenuItem>
               ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link
+                  href="/products"
+                  className="w-full cursor-pointer hover:bg-accent focus:bg-accent outline-none block px-3 py-2 rounded-sm w-full font-semibold text-primary"
+                >
+                  View All Products →
+                </Link>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -107,10 +132,6 @@ export function Header() {
             let isActive = false;
             if ((item.to as string) === "/") {
               isActive = pathname === "/";
-            } else if (item.to === "/services") {
-              isActive = pathname.startsWith("/services");
-            } else if (item.to === "/products") {
-              isActive = pathname.startsWith("/products");
             } else {
               isActive = pathname.startsWith(item.to);
             }
@@ -125,6 +146,32 @@ export function Header() {
               </Link>
             );
           })}
+
+          {/* Learn Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button 
+                className="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                aria-label="Learn and explore content"
+                aria-expanded={undefined}
+                aria-haspopup="true"
+              >
+                Learn <ChevronDown className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56">
+              {learnItems.map((item) => (
+                <DropdownMenuItem key={item.label} asChild>
+                  <Link
+                    href={item.to}
+                    className="w-full cursor-pointer hover:bg-accent focus:bg-accent outline-none block px-3 py-2 rounded-sm w-full"
+                  >
+                    {item.label}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </nav>
 
         {/* Actions */}
@@ -142,7 +189,7 @@ export function Header() {
               className="hidden sm:inline-flex"
               onClick={handleBecomeVendor}
             >
-              Become a Vendor
+              Sell With Us
             </Button>
           )}
           <Link href="/search">
@@ -274,9 +321,55 @@ export function Header() {
       >
         <nav className="flex flex-col gap-1 px-4 py-4">
           <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Explore
+            Shop by Goal
           </p>
-          {exploreItems.map((item) => (
+          {shopCategories.map((item) => (
+            <Link
+              key={item.label}
+              href={item.to}
+              className={`rounded-md px-3 py-2.5 text-sm font-medium transition-colors ml-2 ${pathname === item.to ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`}
+              onClick={() => setMobileOpen(false)}
+            >
+              <span className="mr-2">{item.icon}</span>
+              {item.label}
+            </Link>
+          ))}
+          <div className="h-px bg-border/50 my-2"></div>
+
+          <Link
+            href="/products"
+            className={`relative rounded-md px-3 py-2.5 text-sm font-bold transition-colors ${pathname.startsWith("/products") ? "text-primary bg-primary/10" : "text-foreground hover:bg-accent hover:text-foreground"}`}
+            onClick={() => setMobileOpen(false)}
+          >
+            🛍️ Shop All Products
+          </Link>
+          <Link
+            href="/vendors"
+            className={`relative rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${pathname.startsWith("/vendors") ? "text-primary bg-primary/10" : "text-foreground hover:bg-accent hover:text-foreground"}`}
+            onClick={() => setMobileOpen(false)}
+          >
+            Brands
+          </Link>
+          <Link
+            href="/guides"
+            className={`relative rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${pathname.startsWith("/guides") ? "text-primary bg-primary/10" : "text-foreground hover:bg-accent hover:text-foreground"}`}
+            onClick={() => setMobileOpen(false)}
+          >
+            Buying Guides
+          </Link>
+          <Link
+            href="/services"
+            className={`relative rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${pathname.startsWith("/services") ? "text-primary bg-primary/10" : "text-foreground hover:bg-accent hover:text-foreground"}`}
+            onClick={() => setMobileOpen(false)}
+          >
+            Services
+          </Link>
+
+          <div className="h-px bg-border/50 my-2"></div>
+          <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Learn
+          </p>
+          {learnItems.slice(0, 5).map((item) => (
             <Link
               key={item.label}
               href={item.to}
@@ -286,30 +379,7 @@ export function Header() {
               {item.label}
             </Link>
           ))}
-          <div className="h-px bg-border/50 my-2"></div>
-          {topNavItems.map((item) => {
-            let isActive = false;
-            if ((item.to as string) === "/") {
-              isActive = pathname === "/";
-            } else if (item.to === "/services") {
-              isActive = pathname.startsWith("/services");
-            } else if (item.to === "/products") {
-              isActive = pathname.startsWith("/products");
-            } else {
-              isActive = pathname.startsWith(item.to);
-            }
 
-            return (
-              <Link
-                key={item.label}
-                href={item.to}
-                className={`relative rounded-md px-3 py-2.5 text-sm font-medium transition-colors ${isActive ? "text-primary bg-primary/10" : "text-foreground hover:bg-accent hover:text-foreground"}`}
-                onClick={() => setMobileOpen(false)}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
           {(role === "admin" ||
             user?.email === "siegaej@gmail.com" ||
             user?.email === "siegadevelopments@gmail.com" ||
@@ -340,7 +410,7 @@ export function Header() {
               className="mt-4 w-full"
               onClick={handleBecomeVendor}
             >
-              Become a Vendor
+              Sell With Us
             </Button>
           )}
         </nav>

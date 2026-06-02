@@ -2,6 +2,7 @@
 import { Suspense } from "react";
 import { Providers } from "./Providers";
 import "./globals.css";
+import { AnnouncementBar } from "@/components/AnnouncementBar";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { BackToTop } from "@/components/BackToTop";
@@ -20,14 +21,15 @@ const SITE_URL = 'https://www.lifestylemedicinegateway.com';
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'Lifestyle Medicine Gateway — Wellness Marketplace & Health Resources',
+    default: 'Lifestyle Medicine Gateway — Australia\'s Wellness Marketplace',
     template: '%s | Lifestyle Medicine Gateway',
   },
-  description: 'Discover wellness products, professional health services, evidence-based articles, healthy recipes, and natural remedies. Your trusted gateway to lifestyle medicine.',
+  description: 'Shop trusted wellness products for healthy ageing, menopause support, gut health, sleep, and more. Evidence-based products from verified Australian brands.',
   keywords: [
-    'lifestyle medicine', 'wellness marketplace', 'health products', 'natural remedies',
-    'healthy recipes', 'wellness services', 'holistic health', 'evidence-based medicine',
-    'supplements', 'organic products', 'health articles', 'wellness tips',
+    'wellness marketplace australia', 'healthy ageing products', 'menopause supplements',
+    'gut health products', 'sleep supplements', 'weight management', 'natural wellness',
+    'lifestyle medicine', 'wellness products', 'health supplements australia',
+    'women wellness products', 'stress management supplements',
   ],
   authors: [{ name: 'Lifestyle Medicine Gateway' }],
   creator: 'Lifestyle Medicine Gateway',
@@ -115,6 +117,7 @@ export default function RootLayout({
           <div className="flex flex-col min-h-screen bg-background text-foreground">
             <MarketingScripts />
 
+            <AnnouncementBar />
             <Header />
             <main className="flex-grow relative">
               {children}
