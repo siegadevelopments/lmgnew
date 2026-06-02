@@ -189,7 +189,13 @@ REQUIREMENTS FOR EACH POST:
 OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdown, no explanation, just the JSON array.`;
 
     // Try with retry and model fallback for rate limiting
-    const MODELS = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
+    const MODELS = [
+      "gemini-2.5-flash",
+      "gemini-2.5-pro",
+      "gemini-2.0-flash",
+      "gemini-1.5-flash",
+      "gemini-1.5-pro"
+    ];
     let posts: any[] | null = null;
     let lastError = "";
 

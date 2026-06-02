@@ -109,7 +109,13 @@ Return ONLY a comma-separated list of hashtags like: #Tag1, #Tag2, #Tag3`;
     }
 
     // Try models with fallback
-    const MODELS = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
+    const MODELS = [
+      "gemini-2.5-flash",
+      "gemini-2.5-pro",
+      "gemini-2.0-flash",
+      "gemini-1.5-flash",
+      "gemini-1.5-pro"
+    ];
     let result = "";
     const modelErrors: Record<string, string> = {};
 
