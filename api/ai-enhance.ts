@@ -135,7 +135,6 @@ Return ONLY a comma-separated list of hashtags like: #Tag1, #Tag2, #Tag3`;
           await new Promise((resolve) => setTimeout(resolve, 3000));
         }
       }
-      }
     }
 
     if (!result) {
