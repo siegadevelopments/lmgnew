@@ -171,10 +171,13 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [generatingShareImage, setGeneratingShareImage] = useState(false);
   const [generatingShareHashtags, setGeneratingShareHashtags] = useState(false);
   const [savingSharePost, setSavingSharePost] = useState(false);
+  const [scheduledPosts, setScheduledPosts] = useState<any[]>([]);
+  const [loadingScheduled, setLoadingScheduled] = useState(false);
 
   useEffect(() => {
     const key = localStorage.getItem("unsplash_access_key") || "";
     setUnsplashKey(key);
+    loadScheduledPosts();
   }, []);
 
   const searchStockPhotos = async (queryStr: string) => {
@@ -936,11 +939,43 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       toast.success("Viral post scheduled successfully!", { id: toastId });
       setShareDialogOpen(false);
       setSharingItem(null);
+      loadScheduledPosts(); // Refresh the list
     } catch (err: any) {
       console.error("Save Share Post Error:", err);
       toast.error(err.message || "Failed to schedule post", { id: toastId });
     } finally {
       setSavingSharePost(false);
+    }
+  };
+
+  const loadScheduledPosts = async () => {
+    setLoadingScheduled(true);
+    try {
+      const { data, error } = await (supabase.from("scheduled_posts") as any)
+        .select("*")
+        .neq("status", "published")
+        .order("scheduled_at", { ascending: true })
+        .limit(20);
+      if (error) throw error;
+      setScheduledPosts(data || []);
+    } catch (err) {
+      console.error("Error loading scheduled posts:", err);
+    } finally {
+      setLoadingScheduled(false);
+    }
+  };
+
+  const handleDeleteScheduledPost = async (postId: string) => {
+    if (!confirm("Are you sure you want to cancel and delete this scheduled post?")) return;
+    try {
+      const { error } = await (supabase.from("scheduled_posts") as any)
+        .delete()
+        .eq("id", postId);
+      if (error) throw error;
+      toast.success("Scheduled post deleted successfully");
+      loadScheduledPosts(); // Refresh list
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete scheduled post");
     }
   };
 
@@ -2680,6 +2715,100 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
           </div>
         )}
       </div>
+
+      {/* Pending Scheduled Posts Section */}
+      <div className="mt-8 pt-6 border-t border-border space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-bold flex items-center gap-2">
+            <Megaphone className="h-5 w-5 text-indigo-500" />
+            Pending Scheduled Social Posts
+            {loadingScheduled && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+          </h3>
+        </div>
+
+        {scheduledPosts.length === 0 ? (
+          <Card className="bg-muted/10 border-dashed border-2">
+            <CardContent className="py-8 text-center text-muted-foreground text-sm">
+              <Calendar className="h-8 w-8 mx-auto mb-2 opacity-40 text-indigo-500" />
+              No pending scheduled posts. Click the share button <Megaphone className="h-3 w-3 inline text-indigo-600 mx-0.5" /> on any article or recipe above to schedule one.
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-3">
+            {scheduledPosts.map((post) => {
+              const scheduledDate = new Date(post.scheduled_at);
+              const isPast = scheduledDate < new Date();
+              return (
+                <Card key={post.id} className="bg-card/50 hover:bg-card transition-colors duration-300 border-border/80">
+                  <CardContent className="py-3 px-4 flex items-center justify-between flex-wrap gap-4">
+                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                      {/* Image Thumbnail */}
+                      <div className="h-10 w-14 rounded bg-muted overflow-hidden shrink-0 border border-border/40">
+                        {post.image_url ? (
+                          <img src={post.image_url} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center bg-muted">
+                            <ImageIcon className="h-4 w-4 text-muted-foreground/60" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Post details */}
+                      <div className="min-w-0">
+                        <p className="font-semibold text-xs text-foreground/90 truncate max-w-md">{post.title}</p>
+                        
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          {/* Platforms */}
+                          <div className="flex gap-1 items-center">
+                            {post.platforms?.includes("facebook") && (
+                              <Facebook className="h-3 w-3 text-blue-600" />
+                            )}
+                            {post.platforms?.includes("instagram") && (
+                              <Instagram className="h-3 w-3 text-pink-600" />
+                            )}
+                          </div>
+                          <span className="text-[10px] text-muted-foreground">•</span>
+                          {/* Scheduled time */}
+                          <span className={`text-[10px] font-medium flex items-center gap-1 ${isPast ? 'text-rose-600 font-bold' : 'text-muted-foreground'}`}>
+                            <Calendar className="h-2.5 w-2.5" />
+                            {scheduledDate.toLocaleString()} {isPast && '(Overdue)'}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">•</span>
+                          {/* Status */}
+                          <Badge variant="outline" className={`text-[9px] font-bold uppercase tracking-wider ${
+                            post.status === 'approved' 
+                              ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400' 
+                              : post.status === 'failed'
+                              ? 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/20 dark:text-rose-400'
+                              : 'bg-slate-50 text-slate-700 border-slate-200'
+                          }`}>
+                            {post.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                        onClick={() => handleDeleteScheduledPost(post.id)}
+                        title="Cancel & Delete Post"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       {uploadingVideo && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="flex flex-col items-center gap-4 p-8 bg-card border border-border shadow-2xl rounded-2xl max-w-sm w-full mx-4">
