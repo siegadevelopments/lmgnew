@@ -11,8 +11,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminGalleriesTab } from "@/components/admin/AdminGalleriesTab";
 import { AdminContentTab } from "@/components/admin/AdminContentTab";
-import { AdminMarketingTab } from "@/components/admin/AdminMarketingTab";
-import { AdminEmailMarketingTab } from "@/components/admin/AdminEmailMarketingTab";
 import { AdminSubscribersTab } from "@/components/admin/AdminSubscribersTab";
 import { AdminPopupsTab } from "@/components/admin/AdminPopupsTab";
 import { AffiliatesTab } from "@/components/admin/AffiliatesTab";
@@ -404,7 +402,6 @@ export default function AdminPage() {
     { id: "content", label: "Content Manager", icon: FileText },
     { id: "galleries", label: "Galleries", icon: ImageIcon },
     { id: "affiliates", label: "Affiliates", icon: LinkIcon },
-    { id: "marketing", label: "Marketing", icon: Megaphone },
     { id: "popups", label: "Popups", icon: Sparkles },
     { id: "subscribers", label: `Subscribers (${stats.subscribers})`, icon: Mail },
     { id: "messages", label: "Messages", icon: MessageSquare, badge: stats.contactMessages },
@@ -1199,37 +1196,6 @@ export default function AdminPage() {
               {activeTab === "affiliates" && <AffiliatesTab />}
             </TabsContent>
 
-            {/* MARKETING */}
-            <TabsContent value="marketing" className="space-y-6 mt-0 border-0 p-0">
-              <Tabs defaultValue="social" className="w-full">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex flex-col gap-1">
-                    <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                      Marketing Center
-                    </h1>
-                    <p className="text-muted-foreground">
-                      Manage your brand presence and campaigns.
-                    </p>
-                  </div>
-                  <TabsList className="bg-muted/50 border border-border/50">
-                    <TabsTrigger value="social" className="gap-2">
-                      <Store className="h-4 w-4" /> Social Media
-                    </TabsTrigger>
-                    <TabsTrigger value="email" className="gap-2">
-                      <Mail className="h-4 w-4" /> Email Campaigns
-                    </TabsTrigger>
-                  </TabsList>
-                </div>
-
-                <TabsContent value="social" className="mt-0 focus-visible:ring-0">
-                  {activeTab === "marketing" && <AdminMarketingTab />}
-                </TabsContent>
-
-                <TabsContent value="email" className="mt-0 focus-visible:ring-0">
-                  {activeTab === "marketing" && <AdminEmailMarketingTab />}
-                </TabsContent>
-              </Tabs>
-            </TabsContent>
 
             {/* SUBSCRIBERS */}
             <TabsContent value="subscribers" className="space-y-6 mt-0 border-0 p-0">

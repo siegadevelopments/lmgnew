@@ -21,6 +21,10 @@ import {
   X,
   Package,
   Image as ImageIcon,
+  Megaphone,
+  Facebook,
+  Instagram,
+  Calendar,
 } from "lucide-react";
 import {
   Dialog,
@@ -150,6 +154,23 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [stockImages, setStockImages] = useState<any[]>(CURATED_FOOD_IMAGES);
   const [searchingStock, setSearchingStock] = useState(false);
   const [unsplashKey, setUnsplashKey] = useState("");
+
+  // Share Modal States
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [sharingItem, setSharingItem] = useState<any | null>(null);
+  const [shareForm, setShareForm] = useState({
+    title: "",
+    caption: "",
+    hashtags: "",
+    imageUrl: "",
+    scheduledAt: "",
+    status: "approved",
+    platforms: ["facebook", "instagram"] as string[],
+  });
+  const [generatingShareCaption, setGeneratingShareCaption] = useState(false);
+  const [generatingShareImage, setGeneratingShareImage] = useState(false);
+  const [generatingShareHashtags, setGeneratingShareHashtags] = useState(false);
+  const [savingSharePost, setSavingSharePost] = useState(false);
 
   useEffect(() => {
     const key = localStorage.getItem("unsplash_access_key") || "";
@@ -724,6 +745,202 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     setExcerpt(item.excerpt || "");
     setSelectedVendorId(item.author_id || item.vendor_id || "");
     setPreviewOpen(true);
+  };
+
+  const handleOpenShare = (item: any) => {
+    setSharingItem(item);
+    
+    // Set default scheduled time to 24 hours from now
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(9, 0, 0, 0); // Default to 9:00 AM
+    
+    // Formatting for datetime-local input: YYYY-MM-DDThh:mm
+    const year = tomorrow.getFullYear();
+    const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    const day = String(tomorrow.getDate()).padStart(2, '0');
+    const hours = String(tomorrow.getHours()).padStart(2, '0');
+    const minutes = String(tomorrow.getMinutes()).padStart(2, '0');
+    const defaultDatetime = `${year}-${month}-${day}T${hours}:${minutes}`;
+
+    // Clean html tags out of preview caption content
+    const cleanContent = item.content?.replace(/<[^>]*>/g, ' ').substring(0, 200).trim() || "";
+
+    setShareForm({
+      title: item.title || "",
+      caption: item.excerpt || cleanContent,
+      hashtags: "",
+      imageUrl: item.image_url || item.thumbnail_url || "",
+      scheduledAt: defaultDatetime,
+      status: "approved",
+      platforms: ["facebook", "instagram"],
+    });
+    setShareDialogOpen(true);
+  };
+
+  const generateShareCaption = async () => {
+    if (!sharingItem) return;
+    setGeneratingShareCaption(true);
+    const toastId = toast.loading("AI is crafting a viral caption...");
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const cleanContent = sharingItem.content?.replace(/<[^>]*>/g, ' ').substring(0, 1000) || "";
+      const contextText = `Article Title: ${sharingItem.title}\nExcerpt: ${sharingItem.excerpt || ""}\nContent: ${cleanContent}`;
+      
+      const response = await fetch("/api/ai-enhance", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          field: "caption",
+          value: shareForm.caption || sharingItem.title,
+          context: contextText,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.details || data.suggestion || data.error || "AI caption generation failed");
+
+      setShareForm((prev) => ({ ...prev, caption: data.result }));
+      toast.success("AI Caption generated!", { id: toastId });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Failed to generate caption", { id: toastId });
+    } finally {
+      setGeneratingShareCaption(false);
+    }
+  };
+
+  const generateShareImage = async () => {
+    if (!sharingItem) return;
+    setGeneratingShareImage(true);
+    const toastId = toast.loading("AI is painting a viral image...");
+    try {
+      const promptText = `Social media post about: ${shareForm.title || sharingItem.title}. ${shareForm.caption || sharingItem.excerpt || ""}`;
+      const authorId = sharingItem.vendor_id || sharingItem.author_id || eTrainingVendor?.id || null;
+      
+      const { data, error } = await supabase.functions.invoke("generate-ai-image", {
+        body: { 
+          prompt: promptText.substring(0, 1000),
+          author_id: authorId
+        },
+      });
+      
+      if (error) {
+        let errMsg = "AI image generation failed";
+        try {
+          if (error.context && typeof error.context.json === 'function') {
+            const body = await error.context.json();
+            if (body?.error) {
+              errMsg = body.error;
+            }
+          } else if (error.message) {
+            errMsg = error.message;
+          }
+        } catch (_) {}
+        throw new Error(errMsg);
+      }
+      
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      if (data?.url) {
+        setShareForm((prev) => ({ ...prev, imageUrl: data.url }));
+        toast.success("AI Image generated!", { id: toastId });
+      } else {
+        throw new Error("No image URL returned from AI service");
+      }
+    } catch (err: any) {
+      console.error("AI Share Image Generation Error:", err);
+      toast.error(err.message || "Failed to generate image", { id: toastId });
+    } finally {
+      setGeneratingShareImage(false);
+    }
+  };
+
+  const generateShareHashtags = async () => {
+    if (!sharingItem) return;
+    setGeneratingShareHashtags(true);
+    const toastId = toast.loading("AI is brainstorming hashtags...");
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const response = await fetch("/api/ai-enhance", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          field: "hashtags",
+          value: shareForm.hashtags,
+          context: `${shareForm.title || sharingItem.title}\n${shareForm.caption || ""}`,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.details || data.suggestion || data.error || "AI hashtags generation failed");
+
+      setShareForm((prev) => ({ ...prev, hashtags: data.result }));
+      toast.success("AI Hashtags generated!", { id: toastId });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Failed to generate hashtags", { id: toastId });
+    } finally {
+      setGeneratingShareHashtags(false);
+    }
+  };
+
+  const handleSaveSharePost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!sharingItem) return;
+    if (!shareForm.scheduledAt) {
+      toast.error("Please select a scheduled date and time");
+      return;
+    }
+    
+    setSavingSharePost(true);
+    const toastId = toast.loading("Scheduling post...");
+    try {
+      const sourceUrl = `/${activeType}/${sharingItem.slug}`;
+      
+      const { error } = await (supabase.from("scheduled_posts") as any).insert({
+        title: shareForm.title,
+        caption: shareForm.caption,
+        hashtags: shareForm.hashtags
+          .split(",")
+          .map((h: string) => h.trim())
+          .filter(Boolean),
+        image_url: shareForm.imageUrl || null,
+        source_type: activeType === "articles" ? "article" : "recipe",
+        source_id: String(sharingItem.id),
+        source_url: sourceUrl,
+        platforms: shareForm.platforms,
+        scheduled_at: new Date(shareForm.scheduledAt).toISOString(),
+        status: shareForm.status,
+      });
+
+      if (error) throw error;
+      
+      toast.success("Viral post scheduled successfully!", { id: toastId });
+      setShareDialogOpen(false);
+      setSharingItem(null);
+    } catch (err: any) {
+      console.error("Save Share Post Error:", err);
+      toast.error(err.message || "Failed to schedule post", { id: toastId });
+    } finally {
+      setSavingSharePost(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1996,6 +2213,277 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto bg-background/95 backdrop-blur-md border border-border/80 shadow-2xl rounded-2xl p-6">
+          <DialogHeader className="pb-4 border-b border-border">
+            <DialogTitle className="text-xl font-bold flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-violet-600 bg-clip-text text-transparent">
+              <Megaphone className="h-5 w-5 text-indigo-500 animate-bounce" />
+              Create Viral Social Post
+            </DialogTitle>
+            <DialogDescription>
+              Schedule this {activeType.slice(0, -1)} to Facebook and Instagram. Use AI to generate engaging copy and visuals.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveSharePost} className="grid grid-cols-1 lg:grid-cols-12 gap-6 py-4">
+            {/* Form Fields Column */}
+            <div className="lg:col-span-7 space-y-4">
+              {/* Title field */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Post Title</label>
+                <Input
+                  value={shareForm.title}
+                  onChange={(e) => setShareForm((prev) => ({ ...prev, title: e.target.value }))}
+                  placeholder="Enter post title..."
+                  className="bg-muted/30 focus-visible:ring-indigo-500/50"
+                  required
+                />
+              </div>
+
+              {/* Caption field */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Caption</label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={generateShareCaption}
+                    disabled={generatingShareCaption}
+                    className="h-7 text-xs bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-700 font-semibold gap-1.5"
+                  >
+                    {generatingShareCaption ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3 w-3" />
+                    )}
+                    Write with AI
+                  </Button>
+                </div>
+                <Textarea
+                  value={shareForm.caption}
+                  onChange={(e) => setShareForm((prev) => ({ ...prev, caption: e.target.value }))}
+                  placeholder="Draft your caption or let AI write one..."
+                  rows={6}
+                  className="bg-muted/30 focus-visible:ring-indigo-500/50 resize-y"
+                  required
+                />
+              </div>
+
+              {/* Hashtags field */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Hashtags</label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={generateShareHashtags}
+                    disabled={generatingShareHashtags}
+                    className="h-7 text-xs bg-violet-50 hover:bg-violet-100 border-violet-200 text-violet-700 font-semibold gap-1.5"
+                  >
+                    {generatingShareHashtags ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3 w-3" />
+                    )}
+                    Suggest Hashtags
+                  </Button>
+                </div>
+                <Input
+                  value={shareForm.hashtags}
+                  onChange={(e) => setShareForm((prev) => ({ ...prev, hashtags: e.target.value }))}
+                  placeholder="Comma-separated e.g. wellness, menopause, health"
+                  className="bg-muted/30 focus-visible:ring-indigo-500/50"
+                />
+              </div>
+
+              {/* Image URL & AI Generator */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Image URL</label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={generateShareImage}
+                    disabled={generatingShareImage}
+                    className="h-7 text-xs bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-700 font-semibold gap-1.5"
+                  >
+                    {generatingShareImage ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <ImageIcon className="h-3 w-3" />
+                    )}
+                    Paint with AI (Imagen)
+                  </Button>
+                </div>
+                <Input
+                  value={shareForm.imageUrl}
+                  onChange={(e) => setShareForm((prev) => ({ ...prev, imageUrl: e.target.value }))}
+                  placeholder="Paste image URL or generate one..."
+                  className="bg-muted/30 focus-visible:ring-indigo-500/50"
+                />
+              </div>
+
+              {/* Date, Status, Platforms Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Scheduled Date & Time</label>
+                  <Input
+                    type="datetime-local"
+                    value={shareForm.scheduledAt}
+                    onChange={(e) => setShareForm((prev) => ({ ...prev, scheduledAt: e.target.value }))}
+                    className="bg-muted/30 focus-visible:ring-indigo-500/50"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Status</label>
+                  <select
+                    value={shareForm.status}
+                    onChange={(e) => setShareForm((prev) => ({ ...prev, status: e.target.value }))}
+                    className="flex h-10 w-full rounded-md border border-input bg-muted/30 px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-indigo-500/50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <option value="approved">Approved (Queue automatically)</option>
+                    <option value="draft">Draft (Save only)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Target Platforms */}
+              <div className="space-y-2 pt-2">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">Target Platforms</label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={shareForm.platforms.includes("facebook")}
+                      onChange={(e) => {
+                        const platforms = e.target.checked
+                          ? [...shareForm.platforms, "facebook"]
+                          : shareForm.platforms.filter((p) => p !== "facebook");
+                        setShareForm((prev) => ({ ...prev, platforms }));
+                      }}
+                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <Facebook className="h-4 w-4 text-blue-600" /> Facebook
+                  </label>
+                  <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={shareForm.platforms.includes("instagram")}
+                      onChange={(e) => {
+                        const platforms = e.target.checked
+                          ? [...shareForm.platforms, "instagram"]
+                          : shareForm.platforms.filter((p) => p !== "instagram");
+                        setShareForm((prev) => ({ ...prev, platforms }));
+                      }}
+                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <Instagram className="h-4 w-4 text-pink-600" /> Instagram
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Social Feed Preview Column */}
+            <div className="lg:col-span-5 flex flex-col justify-start">
+              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 block">Live Post Preview</label>
+              
+              <div className="rounded-xl border border-border/80 bg-card/60 backdrop-blur-sm shadow-lg overflow-hidden flex-1 flex flex-col min-h-[300px]">
+                {/* Header (Australian Wellness Gateway style) */}
+                <div className="p-3 border-b border-border/60 bg-muted/20 flex items-center gap-2.5">
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-indigo-500 to-violet-600 text-white flex items-center justify-center font-bold text-xs">
+                    LM
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold">Lifestyle Medicine Gateway</h4>
+                    <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      Sponsored • <Megaphone className="h-2.5 w-2.5 inline" />
+                    </p>
+                  </div>
+                </div>
+
+                {/* Text Content */}
+                <div className="p-3 text-xs space-y-1.5 flex-1 overflow-y-auto max-h-[180px]">
+                  <p className="font-bold text-foreground/90">{shareForm.title || "Untitled Post"}</p>
+                  <p className="whitespace-pre-line text-muted-foreground">
+                    {shareForm.caption || "Draft your copy..."}
+                  </p>
+                  {shareForm.hashtags && (
+                    <p className="text-indigo-600 dark:text-indigo-400 font-medium">
+                      {shareForm.hashtags.split(",").map(h => h.trim().startsWith("#") ? h.trim() : `#${h.trim()}`).join(" ")}
+                    </p>
+                  )}
+                </div>
+
+                {/* Media Preview */}
+                <div className="relative aspect-video bg-muted flex items-center justify-center border-t border-border/40 overflow-hidden">
+                  {shareForm.imageUrl ? (
+                    <img
+                      src={shareForm.imageUrl}
+                      alt="Social media share media"
+                      className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                    />
+                  ) : (
+                    <div className="text-center p-4 text-muted-foreground space-y-2">
+                      <ImageIcon className="h-8 w-8 mx-auto opacity-40" />
+                      <p className="text-[10px]">No image selected</p>
+                    </div>
+                  )}
+                  {generatingShareImage && (
+                    <div className="absolute inset-0 bg-background/70 backdrop-blur-sm flex flex-col items-center justify-center gap-2">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      <span className="text-[10px] font-semibold text-primary">Generating AI Masterpiece...</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer Engagement (Fake Likes/Comments) */}
+                <div className="p-2.5 border-t border-border/40 bg-muted/10 flex items-center justify-between text-[10px] text-muted-foreground font-medium">
+                  <div className="flex items-center gap-3">
+                    <span>👍 Like</span>
+                    <span>💬 Comment</span>
+                    <span>🔄 Share</span>
+                  </div>
+                  <span>Preview Only</span>
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="col-span-12 pt-4 border-t border-border flex sm:justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShareDialogOpen(false)}
+                disabled={savingSharePost}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={savingSharePost}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center gap-1.5 shadow-lg shadow-indigo-600/20"
+              >
+                {savingSharePost ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Scheduling...
+                  </>
+                ) : (
+                  <>
+                    <Calendar className="h-4 w-4" />
+                    Schedule Viral Post
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <div ref={listRef} className="grid gap-4 scroll-mt-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
           <h3 className="text-lg font-bold flex items-center gap-2 capitalize">
@@ -2150,6 +2638,17 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                         >
                           <ExternalLink className="h-4 w-4" />
                         </a>
+                      )}
+                      {item.slug && (activeType === "articles" || activeType === "recipes") && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-indigo-600 hover:text-indigo-500 hover:bg-indigo-50"
+                          onClick={() => handleOpenShare(item)}
+                          title="Share / Create Viral Post"
+                        >
+                          <Megaphone className="h-4 w-4" />
+                        </Button>
                       )}
                       <Button
                         variant="ghost"
