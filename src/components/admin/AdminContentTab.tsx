@@ -240,8 +240,8 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     // 1. Load drafts on mount and tab switch
     const draft = localStorage.getItem(`admin_content_draft_${activeType}`);
     
-    // Collapse Add form and exit editing when moving away to another tab
-    setShowAddForm(false);
+    // Exit editing mode when switching tabs to prevent data mismatch,
+    // but keep the form open if they were editing or had it open.
     setEditingId(null);
 
     if (draft) {
