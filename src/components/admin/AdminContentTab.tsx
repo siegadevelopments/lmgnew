@@ -165,7 +165,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     imageUrl: "",
     scheduledAt: "",
     status: "approved",
-    platforms: ["facebook", "instagram"] as string[],
+    platforms: ["facebook"] as string[],
   });
   const [generatingShareCaption, setGeneratingShareCaption] = useState(false);
   const [generatingShareImage, setGeneratingShareImage] = useState(false);
@@ -773,7 +773,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       imageUrl: item.image_url || item.thumbnail_url || "",
       scheduledAt: defaultDatetime,
       status: "approved",
-      platforms: ["facebook", "instagram"],
+      platforms: ["facebook"],
     });
     setShareDialogOpen(true);
   };
