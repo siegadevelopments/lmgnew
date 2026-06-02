@@ -100,6 +100,10 @@ Mix broad reach hashtags with niche ones. Include at least one Australian-specif
 Return ONLY a comma-separated list of hashtags like: #Tag1, #Tag2, #Tag3`;
         break;
 
+      case "custom":
+        prompt = value;
+        break;
+
       default:
         return res.status(400).json({ error: "Unknown field type" });
     }

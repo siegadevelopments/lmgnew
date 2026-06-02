@@ -753,7 +753,25 @@ export function AdminMarketingTab() {
                     <select
                       className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none"
                       value={selectedContentId}
-                      onChange={(e) => setSelectedContentId(e.target.value)}
+                      onChange={(e) => {
+                        const id = e.target.value;
+                        setSelectedContentId(id);
+                        const content = contentList.find(c => c.id === id);
+                        if (content) {
+                          setManualForm(prev => ({
+                            ...prev,
+                            image_url: content.image_url || "",
+                            source_url: `/${content.type.toLowerCase()}s/${content.slug}`,
+                            title: prev.title || content.title,
+                          }));
+                        } else {
+                          setManualForm(prev => ({
+                            ...prev,
+                            image_url: "",
+                            source_url: "",
+                          }));
+                        }
+                      }}
                     >
                       <option value="">-- Choose existing content --</option>
                       {contentList.map((c) => (
