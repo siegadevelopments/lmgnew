@@ -103,7 +103,7 @@ export function HeroSection() {
                 el?.scrollIntoView({ behavior: "smooth" });
               }}
               variant="outline"
-              className="rounded-xl px-8 h-12 font-bold text-base border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+              className="rounded-xl px-8 h-12 font-bold text-base bg-transparent border-white text-white hover:bg-white/10 hover:text-white"
             >
               Browse Categories
             </Button>

@@ -25,11 +25,30 @@ export function BestSellersSection() {
         .eq("vendor_profiles.is_approved", true)
         .eq("vendor_profiles.is_live", true)
         .eq("product_type", "product")
-        .limit(8)
-        .order("created_at", { ascending: false });
+        .limit(50);
 
       if (error) throw error;
-      return (data || []) as any[];
+      
+      const allProducts = (data || []) as any[];
+      
+      // Deterministic shuffle based on current date
+      const today = new Date();
+      const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+      
+      // Simple pseudo-random generator
+      const random = (s: number) => {
+        const x = Math.sin(s) * 10000;
+        return x - Math.floor(x);
+      };
+
+      // Shuffle array using Fisher-Yates with daily seed
+      let currentSeed = seed;
+      for (let i = allProducts.length - 1; i > 0; i--) {
+        const j = Math.floor(random(currentSeed++) * (i + 1));
+        [allProducts[i], allProducts[j]] = [allProducts[j], allProducts[i]];
+      }
+
+      return allProducts.slice(0, 8);
     },
   });
 
