@@ -133,9 +133,8 @@ Return ONLY a comma-separated list of hashtags like: #Tag1, #Tag2, #Tag3`;
           lastError.includes("Too Many Requests")
         ) {
           await new Promise((resolve) => setTimeout(resolve, 3000));
-          continue;
         }
-        break;
+      }
       }
     }
 

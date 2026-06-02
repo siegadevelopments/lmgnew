@@ -828,7 +828,7 @@ export function AdminMarketingTab() {
                           });
 
                           const data = await response.json();
-                          if (!response.ok) throw new Error(data.error || "Generation failed");
+                          if (!response.ok) throw new Error(data.details || data.error || "Generation failed");
 
                           // Parse the result
                           const res = data.result || "";
