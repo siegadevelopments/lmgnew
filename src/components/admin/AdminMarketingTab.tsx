@@ -419,7 +419,7 @@ export function AdminMarketingTab() {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.suggestion || data.error || "AI enhancement failed");
+      if (!response.ok) throw new Error(data.details || data.suggestion || data.error || "AI enhancement failed");
 
       setManualForm((prev) => ({ ...prev, [field]: data.result }));
       toast.success(`${field.charAt(0).toUpperCase() + field.slice(1)} enhanced by AI!`);
