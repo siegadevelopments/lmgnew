@@ -177,6 +177,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [scheduledPosts, setScheduledPosts] = useState<any[]>([]);
   const [loadingScheduled, setLoadingScheduled] = useState(false);
   const [generatingExcerpt, setGeneratingExcerpt] = useState(false);
+  const [generatingArticleContent, setGeneratingArticleContent] = useState(false);
 
   useEffect(() => {
     const key = localStorage.getItem("unsplash_access_key") || "";
@@ -958,6 +959,46 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       toast.error(err.message || "Failed to generate excerpt", { id: toastId });
     } finally {
       setGeneratingExcerpt(false);
+    }
+  };
+
+  const generateAIArticleContent = async () => {
+    if (!title) {
+      toast.error("Please enter a title first to guide the AI");
+      return;
+    }
+    setGeneratingArticleContent(true);
+    const toastId = toast.loading("AI is writing your article...");
+    try {
+      const { data: contentData, error: contentError } = await supabase.functions.invoke("generate-ai-content", {
+        body: { title, type: "article" },
+      });
+      
+      if (contentError) {
+        if (contentError.context) {
+          try {
+            const body = await contentError.context.json();
+            if (body?.error) {
+              throw new Error(body.error);
+            }
+          } catch (e) {
+            // Ignore JSON parsing errors
+          }
+        }
+        throw contentError;
+      }
+      
+      if (contentData?.content) {
+        setContent(contentData.content);
+        toast.success("AI Article content generated!", { id: toastId });
+      } else {
+        throw new Error("No content returned from AI service");
+      }
+    } catch (err: any) {
+      console.error("AI Article Content Error:", err);
+      toast.error(err.message || "Failed to generate article content", { id: toastId });
+    } finally {
+      setGeneratingArticleContent(false);
     }
   };
 
@@ -1899,9 +1940,28 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">
-                  {activeType === "videos" ? "Description" : "Content"}
-                </label>
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-medium">
+                    {activeType === "videos" ? "Description" : "Content"}
+                  </label>
+                  {activeType === "articles" && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={generateAIArticleContent}
+                      disabled={generatingArticleContent}
+                      className="h-7 text-xs bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-700 font-semibold gap-1.5"
+                    >
+                      {generatingArticleContent ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-3 w-3" />
+                      )}
+                      Write with AI
+                    </Button>
+                  )}
+                </div>
                 {(activeType === "articles" || activeType === "recipes") && (
                   <Badge variant="outline" className="text-[10px] bg-primary/5 text-primary border-primary/20">
                     Rich Text Editor Active
