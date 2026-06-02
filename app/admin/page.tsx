@@ -905,7 +905,7 @@ export default function AdminPage() {
             </TabsContent>
 
             {/* CONTENT MANAGER */}
-            <TabsContent value="content" className="mt-0 border-0 p-0">
+            <TabsContent value="content" forceMount className="mt-0 border-0 p-0">
               <div className="mb-6 flex flex-col gap-1">
                 <h1 className="text-2xl font-bold tracking-tight">Content Manager</h1>
                 <p className="text-muted-foreground">Approve articles, recipes, and videos.</p>
