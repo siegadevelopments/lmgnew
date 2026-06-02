@@ -756,7 +756,7 @@ export function AdminMarketingTab() {
                       onChange={(e) => {
                         const id = e.target.value;
                         setSelectedContentId(id);
-                        const content = contentList.find(c => c.id === id);
+                        const content = contentList.find(c => String(c.id) === id);
                         if (content) {
                           setManualForm(prev => ({
                             ...prev,
@@ -787,7 +787,7 @@ export function AdminMarketingTab() {
                       className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-10"
                       disabled={!selectedContentId || enhancingField === "viral"}
                       onClick={async () => {
-                        const content = contentList.find(c => c.id === selectedContentId);
+                        const content = contentList.find(c => String(c.id) === selectedContentId);
                         if (!content) return;
                         
                         setEnhancingField("viral");
