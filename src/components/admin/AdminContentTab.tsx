@@ -155,6 +155,9 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [searchingStock, setSearchingStock] = useState(false);
   const [unsplashKey, setUnsplashKey] = useState("");
 
+  // Show/Hide Add New Content Form State
+  const [showAddForm, setShowAddForm] = useState(false);
+
   // Share Modal States
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [sharingItem, setSharingItem] = useState<any | null>(null);
@@ -720,6 +723,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     setCategory("General");
     setGalleryCategory("vendor_gallery");
     setEditingId(null);
+    setShowAddForm(false);
     clearDraft();
   };
 
@@ -753,17 +757,21 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const handleOpenShare = (item: any) => {
     setSharingItem(item);
     
-    // Set default scheduled time to 24 hours from now
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(9, 0, 0, 0); // Default to 9:00 AM
+    // Get current time in Melbourne
+    const nowMelbourneStr = new Date().toLocaleString("en-US", { timeZone: "Australia/Melbourne" });
+    const nowMelbourne = new Date(nowMelbourneStr);
     
-    // Formatting for datetime-local input: YYYY-MM-DDThh:mm
-    const year = tomorrow.getFullYear();
-    const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
-    const day = String(tomorrow.getDate()).padStart(2, '0');
-    const hours = String(tomorrow.getHours()).padStart(2, '0');
-    const minutes = String(tomorrow.getMinutes()).padStart(2, '0');
+    // Set default scheduled time to tomorrow at 9:00 AM Melbourne time
+    const tomorrowMelbourne = new Date(nowMelbourne);
+    tomorrowMelbourne.setDate(tomorrowMelbourne.getDate() + 1);
+    tomorrowMelbourne.setHours(9, 0, 0, 0); // Default to 9:00 AM
+    
+    // Formatting for datetime-local input: YYYY-MM-DDThh:mm (representing Melbourne time components)
+    const year = tomorrowMelbourne.getFullYear();
+    const month = String(tomorrowMelbourne.getMonth() + 1).padStart(2, '0');
+    const day = String(tomorrowMelbourne.getDate()).padStart(2, '0');
+    const hours = String(tomorrowMelbourne.getHours()).padStart(2, '0');
+    const minutes = String(tomorrowMelbourne.getMinutes()).padStart(2, '0');
     const defaultDatetime = `${year}-${month}-${day}T${hours}:${minutes}`;
 
     // Clean html tags out of preview caption content
@@ -918,6 +926,29 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     try {
       const sourceUrl = `/${activeType}/${sharingItem.slug}`;
       
+      // Convert Melbourne time components (YYYY-MM-DDThh:mm) to UTC ISO string
+      const parseMelbourneTimeToUTC = (datetimeStr: string): string => {
+        const [datePart, timePart] = datetimeStr.split("T");
+        const [yr, mo, dy] = datePart.split("-").map(Number);
+        const [hr, min] = timePart.split(":").map(Number);
+        
+        // Create UTC Date representing these components
+        const utcDate = new Date(Date.UTC(yr, mo - 1, dy, hr, min));
+        
+        // Find what time that UTC date represents in Melbourne
+        const melbourneStr = utcDate.toLocaleString("en-US", { timeZone: "Australia/Melbourne" });
+        const parsedMelbourne = new Date(melbourneStr);
+        
+        // Time difference in ms between Melbourne and UTC for this date
+        const diff = parsedMelbourne.getTime() - utcDate.getTime();
+        
+        // Shift by the difference
+        const finalDate = new Date(utcDate.getTime() - diff);
+        return finalDate.toISOString();
+      };
+
+      const scheduledAtUTC = parseMelbourneTimeToUTC(shareForm.scheduledAt);
+
       const { error } = await (supabase.from("scheduled_posts") as any).insert({
         title: shareForm.title,
         caption: shareForm.caption,
@@ -930,7 +961,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         source_id: String(sharingItem.id),
         source_url: sourceUrl,
         platforms: shareForm.platforms,
-        scheduled_at: new Date(shareForm.scheduledAt).toISOString(),
+        scheduled_at: scheduledAtUTC,
         status: shareForm.status,
       });
 
@@ -1270,17 +1301,37 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
 
   return (
     <div className="space-y-6" ref={formRef}>
-      <Card className={editingId ? "ring-2 ring-primary border-primary/20 bg-primary/5" : ""}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-xl">
-            {editingId ? `Edit ${activeType.slice(0, -1)}` : "Add New Content"}
-          </CardTitle>
-          {editingId && (
-            <Button variant="ghost" size="sm" onClick={resetForm} className="h-8">
-              <X className="mr-2 h-4 w-4" /> Cancel Edit
+      {!showAddForm && !editingId ? (
+        <div className="flex justify-start">
+          <Button 
+            onClick={() => setShowAddForm(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/10"
+          >
+            <Plus className="h-4 w-4" />
+            Add New Content
+          </Button>
+        </div>
+      ) : (
+        <Card className={editingId ? "ring-2 ring-primary border-primary/20 bg-primary/5" : ""}>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-xl">
+              {editingId ? `Edit ${activeType.slice(0, -1)}` : "Add New Content"}
+            </CardTitle>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => {
+                if (editingId) {
+                  resetForm();
+                } else {
+                  setShowAddForm(false);
+                }
+              }} 
+              className="h-8 text-muted-foreground hover:text-foreground"
+            >
+              <X className="mr-2 h-4 w-4" /> Cancel {editingId ? "Edit" : ""}
             </Button>
-          )}
-        </CardHeader>
+          </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="grid gap-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1835,6 +1886,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
           </form>
         </CardContent>
       </Card>
+      )}
 
       {/* Unsplash Stock Photo Search Dialog */}
       <Dialog open={stockSearchOpen} onOpenChange={setStockSearchOpen}>
@@ -2771,7 +2823,11 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                           {/* Scheduled time */}
                           <span className={`text-[10px] font-medium flex items-center gap-1 ${isPast ? 'text-rose-600 font-bold' : 'text-muted-foreground'}`}>
                             <Calendar className="h-2.5 w-2.5" />
-                            {scheduledDate.toLocaleString()} {isPast && '(Overdue)'}
+                            {scheduledDate.toLocaleString("en-AU", {
+                              timeZone: "Australia/Melbourne",
+                              dateStyle: "medium",
+                              timeStyle: "short"
+                            })} AEST/AEDT {isPast && '(Overdue)'}
                           </span>
                           <span className="text-[10px] text-muted-foreground">•</span>
                           {/* Status */}
