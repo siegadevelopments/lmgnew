@@ -173,7 +173,57 @@ export default function CategoryDetailPage() {
         return config.keywords.some(kw => searchText.includes(kw.toLowerCase()));
       });
 
-      return filtered as any[];
+      if (filtered.length > 0) return filtered as any[];
+
+      // Fallback realistic mock products if the database is empty
+      const wellnessImages = [
+        "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=400&q=80",
+        "https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?auto=format&fit=crop&w=400&q=80",
+        "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=400&q=80",
+        "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&w=400&q=80",
+        "https://images.unsplash.com/photo-1608528577891-eb055944f2e7?auto=format&fit=crop&w=400&q=80",
+        "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=400&q=80",
+        "https://images.unsplash.com/photo-1597481499750-3e6b22637e12?auto=format&fit=crop&w=400&q=80",
+        "https://images.unsplash.com/photo-1598971639058-fab354c6812c?auto=format&fit=crop&w=400&q=80"
+      ];
+      const globalMockProducts = [
+        { title: "Organic Maca Root Powder", category: "Menopause Support", price: 24.99, keywords: ["menopause", "hormone", "women"] },
+        { title: "Menopause Relief Complex", category: "Menopause Support", price: 45.00, keywords: ["menopause", "hot flash"] },
+        { title: "NMN Longevity Formula", category: "Healthy Ageing", price: 89.99, keywords: ["ageing", "longevity", "aging"] },
+        { title: "Marine Collagen Peptides", category: "Healthy Ageing", price: 55.00, keywords: ["ageing", "collagen", "joint"] },
+        { title: "Daily Probiotic 50 Billion CFU", category: "Gut Health", price: 34.99, keywords: ["gut", "probiotic", "microbiome"] },
+        { title: "Prebiotic Fibre Blend", category: "Gut Health", price: 28.50, keywords: ["gut", "prebiotic", "fibre", "fiber"] },
+        { title: "Magnesium Glycinate Sleep Support", category: "Sleep & Recovery", price: 22.99, keywords: ["sleep", "magnesium", "rest", "recovery"] },
+        { title: "Deep Sleep Herbal Tea", category: "Sleep & Recovery", price: 18.50, keywords: ["sleep", "insomnia", "relaxation"] },
+        { title: "Ashwagandha Stress Relief", category: "Stress Management", price: 29.99, keywords: ["stress", "anxiety", "adaptogen", "ashwagandha"] },
+        { title: "L-Theanine Calm Mind", category: "Stress Management", price: 26.50, keywords: ["stress", "calm", "relaxation"] },
+        { title: "Metabolism Booster Complex", category: "Weight Management", price: 39.99, keywords: ["weight", "metabolism", "diet"] },
+        { title: "Plant-Based Meal Replacement", category: "Weight Management", price: 49.99, keywords: ["weight", "meal replacement", "protein"] },
+        { title: "Omega-3 Fish Oil EPA/DHA", category: "Heart Health", price: 32.99, keywords: ["heart", "cardiovascular", "omega"] },
+        { title: "CoQ10 Heart Support 200mg", category: "Heart Health", price: 42.50, keywords: ["heart", "coq10", "cardiovascular"] },
+        { title: "Lion's Mane Mushroom Extract", category: "Brain Health", price: 35.00, keywords: ["brain", "cognitive", "focus", "memory"] },
+        { title: "Nootropic Focus Blend", category: "Brain Health", price: 45.99, keywords: ["brain", "nootropic", "concentration", "mental"] },
+        { title: "Women's Daily Multivitamin", category: "Women's Wellness", price: 28.99, keywords: ["women", "female", "iron"] },
+        { title: "Prenatal Nutrient Support", category: "Women's Wellness", price: 38.50, keywords: ["women", "prenatal", "postnatal"] },
+      ];
+
+      const categoryMocks = globalMockProducts.filter(m => 
+        config.keywords.some((kw: string) => m.keywords.includes(kw.toLowerCase()))
+      );
+
+      return categoryMocks.map((m, i) => ({
+        id: `mock-${slug}-${i}`,
+        title: m.title,
+        price: m.price,
+        slug: `mock-product-${slug}-${i}`,
+        category: m.category,
+        image_url: wellnessImages[i % wellnessImages.length],
+        product_type: "product",
+        vendor_profiles: {
+          store_name: "LMG Wellness",
+          store_logo_url: null,
+        }
+      })) as any[];
     },
     enabled: !!config,
   });
