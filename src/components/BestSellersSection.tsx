@@ -29,22 +29,37 @@ export function BestSellersSection() {
 
       if (error) throw error;
       
-      const allProducts = (data || []) as any[];
+      let allProducts = (data || []) as any[];
       
-      // Deterministic shuffle based on current date
-      const today = new Date();
-      const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
-      
-      // Simple pseudo-random generator
-      const random = (s: number) => {
-        const x = Math.sin(s) * 10000;
-        return x - Math.floor(x);
-      };
+      // Fallback dummy products if the database is empty
+      if (allProducts.length === 0) {
+        allProducts = Array.from({ length: 8 }).map((_, i) => ({
+          id: `dummy-${i}`,
+          title: `Lifestyle Premium Product ${i + 1}`,
+          price: Math.floor(Math.random() * 100) + 19.99,
+          slug: `dummy-product-${i}`,
+          category: ["Wellness", "Nutrition", "Fitness", "Mindfulness"][Math.floor(Math.random() * 4)],
+          image_url: `https://images.unsplash.com/photo-${[
+            "1512621776951-a57141f2eefd", 
+            "1541795795328-f073b763494e", 
+            "1546069901-ba9599a7e63c", 
+            "1517093157656-b9ec691cc72e",
+            "1498837167922-ddd27525d352",
+            "1553530979-7ee52a2670c4",
+            "1547592180-85f173990554",
+            "1622483767028-3f66f32aef97"
+          ][i % 8]}?auto=format&fit=crop&w=400&q=80`,
+          product_type: "product",
+          vendor_profiles: {
+            store_name: "LMG Wellness",
+            store_logo_url: null,
+          }
+        }));
+      }
 
-      // Shuffle array using Fisher-Yates with daily seed
-      let currentSeed = seed;
+      // Shuffle array using Fisher-Yates with true randomness
       for (let i = allProducts.length - 1; i > 0; i--) {
-        const j = Math.floor(random(currentSeed++) * (i + 1));
+        const j = Math.floor(Math.random() * (i + 1));
         [allProducts[i], allProducts[j]] = [allProducts[j], allProducts[i]];
       }
 
