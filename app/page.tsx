@@ -3,7 +3,7 @@
 import { HeroSection } from "@/components/HeroSection";
 import { TrustBar } from "@/components/TrustBar";
 import { WellnessCategoryGrid } from "@/components/WellnessCategoryGrid";
-import { BestSellersSection } from "@/components/BestSellersSection";
+
 import { NewArrivalsSection } from "@/components/NewArrivalsSection";
 import { FeaturedVendorsSection } from "@/components/FeaturedVendorsSection";
 import { BuyingGuidesSection } from "@/components/BuyingGuidesSection";
@@ -26,7 +26,7 @@ export default function IndexPage() {
       <div id="wellness-categories">
         <WellnessCategoryGrid />
       </div>
-      <BestSellersSection />
+
       <NewArrivalsSection />
       <FeaturedVendorsSection />
       <BuyingGuidesSection />
