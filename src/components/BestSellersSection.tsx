@@ -31,24 +31,66 @@ export function BestSellersSection() {
       
       let allProducts = (data || []) as any[];
       
-      // Fallback dummy products if the database is empty
+      // Fallback realistic mock products if the database is empty
       if (allProducts.length === 0) {
-        allProducts = Array.from({ length: 8 }).map((_, i) => ({
+        const mockData = [
+          {
+            title: "Organic Superfood Green Blend",
+            category: "Nutrition",
+            price: 45.99,
+            image_url: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=400&q=80"
+          },
+          {
+            title: "Eco-Friendly Cork Yoga Mat",
+            category: "Fitness",
+            price: 65.00,
+            image_url: "https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?auto=format&fit=crop&w=400&q=80"
+          },
+          {
+            title: "Daily Mindfulness Journal",
+            category: "Mindfulness",
+            price: 24.50,
+            image_url: "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=400&q=80"
+          },
+          {
+            title: "Plant-Based Protein Powder",
+            category: "Nutrition",
+            price: 55.00,
+            image_url: "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?auto=format&fit=crop&w=400&q=80"
+          },
+          {
+            title: "Aromatherapy Essential Oil Diffuser",
+            category: "Wellness",
+            price: 38.99,
+            image_url: "https://images.unsplash.com/photo-1608528577891-eb055944f2e7?auto=format&fit=crop&w=400&q=80"
+          },
+          {
+            title: "Deep Tissue Massage Gun",
+            category: "Recovery",
+            price: 129.99,
+            image_url: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=400&q=80"
+          },
+          {
+            title: "Herbal Sleep Tea Blend",
+            category: "Wellness",
+            price: 18.99,
+            image_url: "https://images.unsplash.com/photo-1597481499750-3e6b22637e12?auto=format&fit=crop&w=400&q=80"
+          },
+          {
+            title: "Premium Resistance Band Set",
+            category: "Fitness",
+            price: 32.50,
+            image_url: "https://images.unsplash.com/photo-1598971639058-fab354c6812c?auto=format&fit=crop&w=400&q=80"
+          }
+        ];
+
+        allProducts = mockData.map((item, i) => ({
           id: `dummy-${i}`,
-          title: `Lifestyle Premium Product ${i + 1}`,
-          price: Math.floor(Math.random() * 100) + 19.99,
-          slug: `dummy-product-${i}`,
-          category: ["Wellness", "Nutrition", "Fitness", "Mindfulness"][Math.floor(Math.random() * 4)],
-          image_url: `https://images.unsplash.com/photo-${[
-            "1512621776951-a57141f2eefd", 
-            "1541795795328-f073b763494e", 
-            "1546069901-ba9599a7e63c", 
-            "1517093157656-b9ec691cc72e",
-            "1498837167922-ddd27525d352",
-            "1553530979-7ee52a2670c4",
-            "1547592180-85f173990554",
-            "1622483767028-3f66f32aef97"
-          ][i % 8]}?auto=format&fit=crop&w=400&q=80`,
+          title: item.title,
+          price: item.price,
+          slug: `mock-product-${i}`,
+          category: item.category,
+          image_url: item.image_url,
           product_type: "product",
           vendor_profiles: {
             store_name: "LMG Wellness",
