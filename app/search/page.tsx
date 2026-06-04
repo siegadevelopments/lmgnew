@@ -26,7 +26,8 @@ import {
   Play,
   Calendar,
   Layers,
-  HelpCircle
+  HelpCircle,
+  BookMarked
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProductCard } from "@/components/ProductCard";
