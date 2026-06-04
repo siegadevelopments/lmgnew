@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { BookOpen, ChevronRight } from "lucide-react";
 
-const allGuides = [
+export const allGuides = [
   {
     title: "Best Menopause Products in Australia (2026)",
     description: "Expert-reviewed products to help manage menopause symptoms naturally. Includes supplements, topical relief, and lifestyle products recommended by health professionals.",
