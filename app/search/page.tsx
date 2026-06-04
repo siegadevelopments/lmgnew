@@ -27,7 +27,8 @@ import {
   Calendar,
   Layers,
   HelpCircle,
-  BookMarked
+  BookMarked,
+  Eye
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProductCard } from "@/components/ProductCard";
@@ -173,7 +174,7 @@ function SearchContent() {
         const anecdotesList: any[] = [];
         const generalArticlesList: any[] = [];
 
-        rawArticles.forEach((article) => {
+        rawArticles.forEach((article: any) => {
           const categoryLower = article.category_name?.toLowerCase() || "";
           if (categoryLower === "studies") {
             studiesList.push(article);
@@ -210,7 +211,7 @@ function SearchContent() {
         const memesList: any[] = [];
         const chartsList: any[] = [];
 
-        rawGalleries.forEach((gallery) => {
+        rawGalleries.forEach((gallery: any) => {
           const categoryLower = gallery.category?.toLowerCase() || "";
           if (categoryLower === "memes") {
             memesList.push(gallery);
@@ -324,8 +325,7 @@ function SearchContent() {
             <aside className="w-full lg:w-64 shrink-0">
               <div className="sticky top-20 flex flex-row lg:flex-col gap-1 overflow-x-auto lg:overflow-x-visible no-scrollbar pb-3 lg:pb-0 border-b lg:border-b-0 border-border">
                 {tabs.map((tab) => {
-                  const countKey = tab.id as keyof typeof counts;
-                  const count = countKey === "all" ? totalResults : counts[countKey];
+                  const count = tab.id === "all" ? totalResults : counts[tab.id as keyof typeof counts];
                   const hasResults = count > 0 || tab.id === "all";
 
                   return (
