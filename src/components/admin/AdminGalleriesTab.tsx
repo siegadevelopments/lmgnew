@@ -91,18 +91,21 @@ export function AdminGalleriesTab() {
     }
   }
 
-  async function addImageToGallery(galleryId: string, imageUrl: string) {
-    if (!imageUrl.trim()) return;
+  async function addImagesToGallery(galleryId: string, imageUrls: string[]) {
+    const validUrls = imageUrls.filter(url => url.trim());
+    if (validUrls.length === 0) return;
 
-    const { error } = await (supabase.from("gallery_items") as any).insert({
-      gallery_id: galleryId,
-      image_url: imageUrl,
-    });
+    const { error } = await (supabase.from("gallery_items") as any).insert(
+      validUrls.map(url => ({
+        gallery_id: galleryId,
+        image_url: url,
+      }))
+    );
 
     if (error) {
-      toast.error("Failed to add image");
+      toast.error("Failed to add image(s)");
     } else {
-      toast.success("Image added!");
+      toast.success(validUrls.length === 1 ? "Image added!" : `${validUrls.length} images added!`);
       loadGalleries();
     }
   }
@@ -201,18 +204,19 @@ export function AdminGalleriesTab() {
                 Upload & Group
                 <input
                   type="file"
+                  multiple
                   accept="image/*"
                   className="absolute inset-0 cursor-pointer opacity-0"
                   disabled={isUploading}
                   onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file || !newGalleryTitle.trim()) {
+                    const files = Array.from(e.target.files || []);
+                    if (files.length === 0 || !newGalleryTitle.trim()) {
                       if (!newGalleryTitle.trim()) toast.error("Enter a title first");
                       return;
                     }
                     
                     setIsUploading(true);
-                    const toastId = toast.loading("Processing upload...");
+                    const toastId = toast.loading(`Uploading 1 of ${files.length} images...`);
                     try {
                       const trimmedTitle = newGalleryTitle.trim();
                       
@@ -248,23 +252,41 @@ export function AdminGalleriesTab() {
                         galleryId = newG.id;
                       }
                       
-                      // 3. Upload and save
-                      const url = await uploadMedia(file, "admin_uploads");
-                      if (url) {
-                        const { error: itemError } = await (supabase.from("gallery_items") as any).insert({
-                          gallery_id: galleryId,
-                          image_url: url
-                        });
-                        if (itemError) throw itemError;
-                        toast.success("Image added to gallery!", { id: toastId });
-                        setNewGalleryTitle("");
-                        loadGalleries();
+                      // 3. Upload and save all files
+                      const uploadedUrls: string[] = [];
+                      for (let i = 0; i < files.length; i++) {
+                        toast.loading(`Uploading ${i + 1} of ${files.length} images...`, { id: toastId });
+                        const url = await uploadMedia(files[i], "admin_uploads");
+                        if (url) {
+                          uploadedUrls.push(url);
+                        }
                       }
+
+                      if (uploadedUrls.length > 0) {
+                        const { error: itemsError } = await (supabase.from("gallery_items") as any).insert(
+                          uploadedUrls.map(url => ({
+                            gallery_id: galleryId,
+                            image_url: url
+                          }))
+                        );
+                        if (itemsError) throw itemsError;
+                        toast.success(
+                          uploadedUrls.length === 1 
+                            ? "Image added to gallery!" 
+                            : `${uploadedUrls.length} images added to gallery!`,
+                          { id: toastId }
+                        );
+                      } else {
+                        toast.error("No images were successfully uploaded", { id: toastId });
+                      }
+                      setNewGalleryTitle("");
+                      loadGalleries();
                     } catch (err: any) {
                       toast.error(err.message || "Failed to upload", { id: toastId });
                     } finally {
                       setIsUploading(false);
                       e.target.value = "";
+                      toast.dismiss(toastId);
                     }
                   }}
                 />
@@ -354,11 +376,15 @@ export function AdminGalleriesTab() {
               <CardContent className="space-y-4">
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Image URL"
+                    placeholder="Image URL (separate multiple by commas or spaces)"
                     className="flex-1 text-xs"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
-                        addImageToGallery(gallery.id, e.currentTarget.value);
+                        const urls = e.currentTarget.value
+                          .split(/[,\s]+/)
+                          .map(url => url.trim())
+                          .filter(Boolean);
+                        addImagesToGallery(gallery.id, urls);
                         e.currentTarget.value = "";
                       }
                     }}
@@ -368,8 +394,14 @@ export function AdminGalleriesTab() {
                     variant="secondary"
                     onClick={(e) => {
                       const input = e.currentTarget.parentElement?.querySelector('input') as HTMLInputElement;
-                      addImageToGallery(gallery.id, input.value);
-                      input.value = "";
+                      if (input) {
+                        const urls = input.value
+                          .split(/[,\s]+/)
+                          .map(url => url.trim())
+                          .filter(Boolean);
+                        addImagesToGallery(gallery.id, urls);
+                        input.value = "";
+                      }
                     }}
                   >
                     Add URL
@@ -384,21 +416,36 @@ export function AdminGalleriesTab() {
                     Upload
                     <input
                       type="file"
+                      multiple
                       accept="image/*"
                       className="absolute inset-0 cursor-pointer opacity-0"
                       disabled={isUploading}
                       onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
+                        const files = Array.from(e.target.files || []);
+                        if (files.length === 0) return;
                         setIsUploading(true);
+                        const toastId = toast.loading(`Uploading 1 of ${files.length} images...`);
                         try {
-                          const url = await uploadMedia(file, "admin_uploads");
-                          if (url) {
-                            await addImageToGallery(gallery.id, url);
+                          const uploadedUrls: string[] = [];
+                          for (let i = 0; i < files.length; i++) {
+                            toast.loading(`Uploading ${i + 1} of ${files.length} images...`, { id: toastId });
+                            const url = await uploadMedia(files[i], "admin_uploads");
+                            if (url) {
+                              uploadedUrls.push(url);
+                            }
                           }
+                          if (uploadedUrls.length > 0) {
+                            toast.dismiss(toastId);
+                            await addImagesToGallery(gallery.id, uploadedUrls);
+                          } else {
+                            toast.error("No images were successfully uploaded", { id: toastId });
+                          }
+                        } catch (err: any) {
+                          toast.error(err.message || "Failed to upload images", { id: toastId });
                         } finally {
                           setIsUploading(false);
                           e.target.value = "";
+                          toast.dismiss(toastId);
                         }
                       }}
                     />

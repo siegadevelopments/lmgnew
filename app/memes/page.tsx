@@ -127,8 +127,8 @@ export default function MemesPage() {
                         try {
                           const url = await uploadMedia(file, "admin_uploads");
                           if (url) {
-                            const { error } = await supabase
-                              .from("gallery_items")
+                            const { error } = await (supabase
+                              .from("gallery_items") as any)
                               .insert({
                                 gallery_id: selectedGalleryId,
                                 image_url: url
