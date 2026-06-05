@@ -178,7 +178,7 @@ export default function CategoryDetailPage() {
 
       // Fallback to relevant realistic mock products if no matching products exist in DB
       const categoryMocks = globalMockProductsList.filter(m => 
-        config.keywords.some((kw: string) => (m.keywords || []).includes(kw.toLowerCase()))
+        config.keywords.some((kw: string) => ((m as any).keywords || []).includes(kw.toLowerCase()))
       );
 
       return categoryMocks.map((m, i) => ({
