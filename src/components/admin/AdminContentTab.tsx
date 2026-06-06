@@ -40,7 +40,7 @@ import { Badge } from "@/components/ui/badge";
 import { useQueryClient } from "@tanstack/react-query";
 import { RichTextEditor } from "../RichTextEditor";
 import { sanitizeHtml } from "@/lib/security";
-import { decodeEntities } from "@/lib/utils";
+import { cn, decodeEntities } from "@/lib/utils";
 
 const parseTimeString = (val: any): number | null => {
   if (val === undefined || val === null) return null;
@@ -1394,21 +1394,21 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         <div className="flex justify-start">
           <Button 
             onClick={() => setShowAddForm(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/10"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/10 h-11 px-5 text-base"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-5 w-5" />
             Add New Content
           </Button>
         </div>
       ) : (
         <Card className={editingId ? "ring-2 ring-primary border-primary/20 bg-primary/5" : ""}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-xl">
+            <CardTitle className="text-2xl font-bold">
               {editingId ? `Edit ${activeType.slice(0, -1)}` : "Add New Content"}
             </CardTitle>
             <Button 
               variant="ghost" 
-              size="sm" 
+              size="default" 
               onClick={() => {
                 if (editingId) {
                   resetForm();
@@ -1416,64 +1416,64 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                   setShowAddForm(false);
                 }
               }} 
-              className="h-8 text-muted-foreground hover:text-foreground"
+              className="h-10 text-base text-muted-foreground hover:text-foreground font-semibold"
             >
-              <X className="mr-2 h-4 w-4" /> Cancel {editingId ? "Edit" : ""}
+              <X className="mr-2 h-5 w-5" /> Cancel {editingId ? "Edit" : ""}
             </Button>
           </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="grid gap-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="grid gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Content Type</label>
-                <div className="flex gap-2">
+                <label className="text-base font-semibold">Content Type</label>
+                <div className="flex flex-wrap gap-2">
                   <Button
                     type="button"
                     variant={activeType === "articles" ? "default" : "outline"}
                     onClick={() => setActiveType("articles")}
-                    size="sm"
+                    className="h-10 text-base px-4 font-semibold"
                   >
-                    <FileText className="mr-2 h-4 w-4" /> Article
+                    <FileText className="mr-2 h-5 w-5" /> Article
                   </Button>
                   <Button
                     type="button"
                     variant={activeType === "videos" ? "default" : "outline"}
                     onClick={() => setActiveType("videos")}
-                    size="sm"
+                    className="h-10 text-base px-4 font-semibold"
                   >
-                    <Video className="mr-2 h-4 w-4" /> Video
+                    <Video className="mr-2 h-5 w-5" /> Video
                   </Button>
                   <Button
                     type="button"
                     variant={activeType === "recipes" ? "default" : "outline"}
                     onClick={() => setActiveType("recipes")}
-                    size="sm"
+                    className="h-10 text-base px-4 font-semibold"
                   >
-                    <Utensils className="mr-2 h-4 w-4" /> Recipe
+                    <Utensils className="mr-2 h-5 w-5" /> Recipe
                   </Button>
                   <Button
                     type="button"
                     variant={activeType === "products" ? "default" : "outline"}
                     onClick={() => setActiveType("products")}
-                    size="sm"
+                    className="h-10 text-base px-4 font-semibold"
                   >
-                    <Package className="mr-2 h-4 w-4" /> Product
+                    <Package className="mr-2 h-5 w-5" /> Product
                   </Button>
                   <Button
                     type="button"
                     variant={activeType === "media" ? "default" : "outline"}
                     onClick={() => setActiveType("media")}
-                    size="sm"
+                    className="h-10 text-base px-4 font-semibold"
                   >
-                    <ImageIcon className="mr-2 h-4 w-4" /> Media
+                    <ImageIcon className="mr-2 h-5 w-5" /> Media
                   </Button>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Assign to Vendor</label>
+                <label className="text-base font-semibold">Assign to Vendor</label>
                 <select
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-base h-10"
                   value={selectedVendorId}
                   onChange={(e) => setSelectedVendorId(e.target.value)}
                   required
@@ -1489,9 +1489,9 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
 
               {activeType === "media" && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Gallery Category</label>
+                  <label className="text-base font-semibold">Gallery Category</label>
                   <select
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-base h-10"
                     value={galleryCategory}
                     onChange={(e) => setGalleryCategory(e.target.value as any)}
                   >
@@ -1504,7 +1504,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">
+              <label className="text-base font-semibold">
                 {activeType === "media" 
                   ? (galleryCategory === "vendor_gallery" ? "Image Title (Internal)" : "Gallery Title (e.g. Parasites)") 
                   : "Title"}
@@ -1515,6 +1515,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                 placeholder={activeType === "media" 
                   ? (galleryCategory === "vendor_gallery" ? "e.g. Clinic Interior 1" : "e.g. Smoothie Protocols") 
                   : "Enter title"}
+                className="text-base h-10"
                 required
               />
               {activeType === "recipes" && (
@@ -2747,58 +2748,58 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                 >
                   <CardContent className="py-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="h-12 w-16 rounded bg-muted overflow-hidden shrink-0">
+                      <div className="h-14 w-20 rounded bg-muted overflow-hidden shrink-0 border border-border/40">
                         {thumbnailSrc ? (
                           <img src={thumbnailSrc} className="h-full w-full object-cover" />
                         ) : item.embed_url ? (
                           <div className="h-full w-full flex items-center justify-center bg-muted">
-                            <Video className="h-5 w-5 text-muted-foreground" />
+                            <Video className="h-6 w-6 text-muted-foreground" />
                           </div>
                         ) : null}
                       </div>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-sm truncate max-w-xs">{decodeEntities(item.title || "")}</p>
+                        <div className="flex items-center gap-2.5">
+                          <p className="font-bold text-base md:text-lg text-foreground/90 truncate max-w-xs sm:max-w-md">{decodeEntities(item.title || "")}</p>
                           {isNew && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400 shrink-0">
+                            <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-900/30 dark:text-green-400 shrink-0">
                               <CheckCircle2 className="h-3 w-3" /> New
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider">
+                        <div className="flex items-center gap-2.5 mt-1.5 flex-wrap">
+                          <Badge variant="outline" className="text-xs font-bold uppercase tracking-wider px-2 py-0.5">
                             {activeType.slice(0, -1)}
                           </Badge>
                           {activeType === "media" && item.galleries?.category && (
-                            <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider text-primary border-primary/20 bg-primary/5">
+                            <Badge variant="outline" className="text-xs font-bold uppercase tracking-wider text-primary border-primary/20 bg-primary/5 px-2 py-0.5">
                               {item.galleries.category.replace("_", " ")}
                             </Badge>
                           )}
                           {item.status === 'draft' && (
-                            <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200 text-[10px] font-bold uppercase">
+                            <Badge variant="secondary" className="bg-amber-100 text-amber-700 border-amber-200 text-xs font-bold uppercase px-2 py-0.5">
                               Draft
                             </Badge>
                           )}
-                          <span className="text-[10px] text-muted-foreground font-medium ml-2">
+                          <span className="text-xs text-muted-foreground font-semibold ml-2">
                             {new Date(item.created_at).toLocaleDateString()}
                           </span>
                         </div>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                          <User className="h-3 w-3" /> {vendorName}
+                        <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1.5">
+                          <User className="h-4 w-4" /> {vendorName}
                         </p>
                         {item.embed_url && (
-                          <p className="text-xs text-muted-foreground truncate max-w-xs mt-0.5 opacity-60">
+                          <p className="text-sm text-muted-foreground truncate max-w-xs mt-1 opacity-60">
                             {item.embed_url}
                           </p>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-2.5 shrink-0">
                       {activeType === "media" && (
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-primary hover:bg-primary/5"
+                          className="h-10 w-10 text-primary hover:bg-primary/5"
                           onClick={() => {
                             setGalleryCategory(item.galleries?.category || "vendor_gallery");
                             setTitle(item.galleries?.title || "");
@@ -2808,25 +2809,25 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                           }}
                           title="Add more to this gallery"
                         >
-                          <Plus className="h-4 w-4" />
+                          <Plus className="h-5 w-5" />
                         </Button>
                       )}
                       {activeType === "videos" && (
                         <Button
                           variant="ghost"
-                          size="sm"
                           onClick={() => toggleFeatured(item.id, item.is_featured)}
                           title={
                             item.is_featured ? "Remove from global feed" : "Show on global feed"
                           }
-                          className={
+                          className={cn(
+                            "h-10 w-10 p-0 flex items-center justify-center rounded-md hover:bg-muted/50",
                             item.is_featured
                               ? "text-primary hover:text-primary/80"
                               : "text-muted-foreground"
-                          }
+                          )}
                         >
                           <CheckCircle2
-                            className={`h-4 w-4 ${item.is_featured ? "fill-current" : ""}`}
+                            className={`h-5 w-5 ${item.is_featured ? "fill-current" : ""}`}
                           />
                         </Button>
                       )}
@@ -2834,11 +2835,11 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-emerald-600 hover:text-emerald-500 hover:bg-emerald-50"
+                          className="h-10 w-10 text-emerald-600 hover:text-emerald-500 hover:bg-emerald-50"
                           onClick={() => handlePublish(item.id)}
                           title="Approve & Publish"
                         >
-                          <CheckCircle2 className="h-4 w-4" />
+                          <CheckCircle2 className="h-5 w-5" />
                         </Button>
                       )}
                       {item.slug && (activeType === "articles" || activeType === "recipes") && (
@@ -2846,43 +2847,43 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                           href={`/${activeType}/${item.slug}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="p-2 hover:bg-muted rounded-md text-muted-foreground transition-colors"
+                          className="h-10 w-10 hover:bg-muted rounded-md text-muted-foreground transition-colors flex items-center justify-center shrink-0"
                           title="View Published Page"
                         >
-                          <ExternalLink className="h-4 w-4" />
+                          <ExternalLink className="h-5 w-5" />
                         </a>
                       )}
                       {item.slug && (activeType === "articles" || activeType === "recipes") && (
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-indigo-600 hover:text-indigo-500 hover:bg-indigo-50"
+                          className="h-10 w-10 text-indigo-600 hover:text-indigo-500 hover:bg-indigo-50"
                           onClick={() => handleOpenShare(item)}
                           title="Share / Create Viral Post"
                         >
-                          <Megaphone className="h-4 w-4" />
+                          <Megaphone className="h-5 w-5" />
                         </Button>
                       )}
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                        className="h-10 w-10 text-muted-foreground hover:text-primary"
                         onClick={() => handlePreviewItem(item)}
                         title="Live Preview"
                       >
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-5 w-5" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                        className="h-10 w-10 text-muted-foreground hover:text-primary"
                         onClick={() => handleEdit(item)}
                         title="Edit Item"
                       >
-                        <Pencil className="h-4 w-4" />
+                        <Pencil className="h-5 w-5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive/80" onClick={() => deleteItem(item.id)}>
-                        <Trash2 className="h-4 w-4" />
+                      <Button variant="ghost" size="icon" className="h-10 w-10 text-destructive hover:text-destructive/80" onClick={() => deleteItem(item.id)}>
+                        <Trash2 className="h-5 w-5" />
                       </Button>
                     </div>
                   </CardContent>

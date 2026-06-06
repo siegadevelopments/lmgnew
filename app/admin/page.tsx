@@ -414,8 +414,8 @@ export default function AdminPage() {
       <aside className="hidden w-64 border-r border-border bg-card lg:block shrink-0">
         <div className="sticky top-0 flex h-full flex-col p-6">
           <div className="mb-8 px-2">
-            <h2 className="text-xl font-bold tracking-tight">LMG Admin</h2>
-            <p className="text-xs text-muted-foreground mt-1">Platform Control Center</p>
+            <h2 className="text-2xl font-bold tracking-tight">LMG Admin</h2>
+            <p className="text-sm text-muted-foreground mt-1">Platform Control Center</p>
           </div>
 
           <nav className="flex-1 space-y-1">
@@ -424,18 +424,18 @@ export default function AdminPage() {
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent",
-                  activeTab === item.id ? "bg-primary/10 text-primary" : "text-muted-foreground",
+                  "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base font-semibold transition-all hover:bg-accent",
+                  activeTab === item.id ? "bg-primary/10 text-primary font-bold" : "text-muted-foreground",
                 )}
               >
-                <item.icon className="h-4 w-4" />
+                <item.icon className="h-5 w-5" />
                 <span>{item.label}</span>
                 {item.badge !== undefined && item.badge > 0 && (
-                  <Badge variant="destructive" className="ml-auto h-5 px-1.5 text-[10px]">
+                  <Badge variant="destructive" className="ml-auto h-5 px-1.5 text-xs font-bold">
                     {item.badge}
                   </Badge>
                 )}
-                {activeTab === item.id && <ChevronRight className="ml-auto h-4 w-4" />}
+                {activeTab === item.id && <ChevronRight className="ml-auto h-5 w-5" />}
               </button>
             ))}
           </nav>
@@ -443,10 +443,10 @@ export default function AdminPage() {
           <div className="mt-auto pt-6 border-t border-border">
             <Button
               variant="ghost"
-              className="w-full justify-start text-muted-foreground hover:text-destructive"
+              className="w-full justify-start text-base font-semibold text-muted-foreground hover:text-destructive py-2.5"
               onClick={() => signOut()}
             >
-              <LogOut className="mr-2 h-4 w-4" />
+              <LogOut className="mr-2 h-5 w-5" />
               Sign Out
             </Button>
           </div>
@@ -468,7 +468,7 @@ export default function AdminPage() {
           <div className="fixed inset-0 z-40 bg-background lg:hidden">
             <div className="p-4">
               <div className="flex items-center justify-between mb-8">
-                <h2 className="text-xl font-bold">Admin Menu</h2>
+                <h2 className="text-2xl font-bold">Admin Menu</h2>
                 <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)}>
                   <ChevronRight className="h-5 w-5 rotate-180" />
                 </Button>
@@ -482,13 +482,13 @@ export default function AdminPage() {
                       setMobileMenuOpen(false);
                     }}
                     className={cn(
-                      "flex w-full items-center gap-3 rounded-lg px-4 py-3 text-base font-medium transition-all",
+                      "flex w-full items-center gap-3 rounded-lg px-4 py-3 text-lg font-semibold transition-all",
                       activeTab === item.id
-                        ? "bg-primary/10 text-primary"
+                        ? "bg-primary/10 text-primary font-bold"
                         : "text-muted-foreground",
                     )}
                   >
-                    <item.icon className="h-5 w-5" />
+                    <item.icon className="h-6 w-6" />
                     <span>{item.label}</span>
                   </button>
                 ))}
