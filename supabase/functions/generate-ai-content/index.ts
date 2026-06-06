@@ -77,6 +77,10 @@ serve(async (req: Request) => {
       - "cook_time": Estimated cook time in minutes (integer).
       
       CRITICAL: Return ONLY the JSON object. Do not include markdown code blocks. Do not include a "role" key. Do not include a "reasoning" key. Start your response directly with { and end with }.`;
+    } else if (type === "product" || type === "product_description") {
+      systemPrompt = "You are a creative copywriter specializing in healthy products and lifestyle medicine.";
+      userPrompt = `Write an engaging, persuasive product description for "${title}". 
+      Include key benefits, how to use, and why it's good for wellness. Use clean HTML formatting with p, ul, li, strong.`;
     } else {
       systemPrompt = "You are a professional health and wellness journalist.";
       userPrompt = `Write a professional, evidence-based article about "${title}". 

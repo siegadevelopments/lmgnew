@@ -21,6 +21,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ProductsTab } from "@/components/vendor/ProductsTab";
 import { AdminPayoutsTab } from "@/components/admin/AdminPayoutsTab";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { uploadMedia, deleteMediaWithSafety } from "@/lib/upload";
 import {
   Edit,
   LayoutDashboard,
@@ -44,6 +48,7 @@ import {
   Trash2,
   DollarSign,
   Loader2,
+  Plus,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -128,6 +133,26 @@ export default function AdminPage() {
   const [editingUser, setEditingUser] = useState<any>(null);
   const [isUserEditOpen, setIsUserEditOpen] = useState(false);
   const [editingVendorProducts, setEditingVendorProducts] = useState<any>(null);
+
+  // Product management states inside admin products tab
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<number | null>(null);
+  const [productForm, setProductForm] = useState({
+    title: "",
+    price: "",
+    stock: "50",
+    image_url: "",
+    description: "",
+    status: "published",
+    brand: "",
+    category: "Supplements",
+    product_type: "physical" as "physical" | "service" | "digital",
+    vendor_id: "",
+  });
+  const [generatingProductDesc, setGeneratingProductDesc] = useState(false);
+  const [generatingProductImg, setGeneratingProductImg] = useState(false);
+  const [savingProduct, setSavingProduct] = useState(false);
+  const [uploadingProductImg, setUploadingProductImg] = useState(false);
 
   // Check admin role
   useEffect(() => {
@@ -339,6 +364,242 @@ export default function AdminPage() {
     if (error) return alert("Failed: " + error.message);
     setProducts((prev) => prev.map((p) => (p.id === productId ? { ...p, status: newStatus } : p)));
     toast.success(`Product ${newStatus}`);
+  };
+
+  const generateProductDescriptionAI = async () => {
+    if (!productForm.title) {
+      toast.error("Please enter a product title first to guide the AI");
+      return;
+    }
+    setGeneratingProductDesc(true);
+    const toastId = toast.loading("AI is writing your product description...");
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-ai-content", {
+        body: { title: productForm.title, type: "product" },
+      });
+
+      if (error) {
+        if (error.context) {
+          try {
+            const body = await error.context.json();
+            if (body?.error) {
+              throw new Error(body.error);
+            }
+          } catch (e) {}
+        }
+        throw error;
+      }
+
+      if (data?.content) {
+        setProductForm((prev) => ({ ...prev, description: data.content }));
+        toast.success("AI Product description generated!", { id: toastId });
+      } else {
+        throw new Error("No description returned from AI service");
+      }
+    } catch (err: any) {
+      console.error("AI Description Error:", err);
+      toast.error(err.message || "Failed to generate description", { id: toastId });
+    } finally {
+      setGeneratingProductDesc(false);
+    }
+  };
+
+  const generateProductImageAI = async () => {
+    if (!productForm.title) {
+      toast.error("Please enter a product title first to guide the AI");
+      return;
+    }
+    if (!productForm.vendor_id) {
+      toast.error("Please select a vendor first to associate with the generated image");
+      return;
+    }
+    setGeneratingProductImg(true);
+    const toastId = toast.loading("AI is designing a product image...");
+    try {
+      const cleanDesc = productForm.description.replace(/<[^>]*>/g, ' ').substring(0, 1000);
+      const { data, error } = await supabase.functions.invoke("generate-ai-image", {
+        body: {
+          prompt: `${productForm.title} ${cleanDesc}`.trim(),
+          author_id: productForm.vendor_id
+        },
+      });
+
+      if (error) {
+        let errMsg = "AI image generation failed";
+        try {
+          if (error.context && typeof error.context.json === 'function') {
+            const body = await error.context.json();
+            if (body?.error) {
+              errMsg = body.error;
+            }
+          } else if (error.message) {
+            errMsg = error.message;
+          }
+        } catch (_) {}
+        throw new Error(errMsg);
+      }
+
+      if (data?.error) throw new Error(data.error);
+
+      if (data?.url) {
+        setProductForm((prev) => ({ ...prev, image_url: data.url }));
+        toast.success("AI Product image generated!", { id: toastId });
+      } else {
+        throw new Error("No image URL returned from AI service");
+      }
+    } catch (err: any) {
+      console.error("AI Image Error:", err);
+      toast.error(err.message || "Failed to generate image", { id: toastId });
+    } finally {
+      setGeneratingProductImg(false);
+    }
+  };
+
+  const handleProductUpload = async (file: File) => {
+    if (!productForm.vendor_id) {
+      toast.error("Please select a vendor first to associate with the uploaded image");
+      return;
+    }
+    setUploadingProductImg(true);
+    try {
+      const url = await uploadMedia(file, `products/${productForm.vendor_id}`);
+      if (url) {
+        setProductForm((prev) => ({ ...prev, image_url: url }));
+        toast.success("Product image uploaded successfully!");
+      }
+    } catch (err: any) {
+      toast.error("Upload failed: " + err.message);
+    } finally {
+      setUploadingProductImg(false);
+    }
+  };
+
+  const handleSaveProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!productForm.vendor_id) {
+      toast.error("Please select a vendor");
+      return;
+    }
+    setSavingProduct(true);
+    const toastId = toast.loading("Saving product...");
+
+    try {
+      const payload: any = {
+        title: productForm.title,
+        price: parseFloat(productForm.price) || 0,
+        stock: productForm.product_type === "service" ? 0 : (parseInt(productForm.stock) || 0),
+        image_url: productForm.image_url || null,
+        content: productForm.description,
+        status: productForm.status,
+        brand: productForm.brand || null,
+        category: productForm.category,
+        product_type: productForm.product_type,
+        vendor_id: productForm.vendor_id,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (editingProductId) {
+        const { data, error } = await (supabase.from("products") as any)
+          .update(payload)
+          .eq("id", editingProductId)
+          .select()
+          .single();
+
+        if (error) throw error;
+        const updatedData = data as any;
+        if (updatedData) {
+          const updated = {
+            ...updatedData,
+            vendor: vendors.find((v) => v.id === updatedData.vendor_id),
+          };
+          setProducts((prev) => prev.map((p) => (p.id === editingProductId ? updated : p)));
+          toast.success("Product updated successfully!", { id: toastId });
+        }
+      } else {
+        const slug =
+          productForm.title.toLowerCase().replace(/[\s\W-]+/g, "-") +
+          "-" +
+          Math.floor(Math.random() * 1000);
+        
+        const { data, error } = await supabase
+          .from("products")
+          .insert({ ...payload, slug } as any)
+          .select()
+          .single();
+
+        if (error) throw error;
+        const createdData = data as any;
+        if (createdData) {
+          const created = {
+            ...createdData,
+            vendor: vendors.find((v) => v.id === createdData.vendor_id),
+          };
+          setProducts((prev) => [created, ...prev]);
+          toast.success("Product created successfully!", { id: toastId });
+        }
+      }
+
+      setShowProductForm(false);
+      setEditingProductId(null);
+      setProductForm({
+        title: "",
+        price: "",
+        stock: "50",
+        image_url: "",
+        description: "",
+        status: "published",
+        brand: "",
+        category: "Supplements",
+        product_type: "physical",
+        vendor_id: "",
+      });
+    } catch (err: any) {
+      console.error("Save Product Error:", err);
+      toast.error(err.message || "Failed to save product", { id: toastId });
+    } finally {
+      setSavingProduct(false);
+    }
+  };
+
+  const handleEditProduct = (p: any) => {
+    setProductForm({
+      title: p.title || "",
+      price: (p.price || 0).toString(),
+      stock: (p.stock || 0).toString(),
+      image_url: p.image_url || "",
+      description: p.content || "",
+      status: p.status || "published",
+      brand: p.brand || "",
+      category: p.category || "Supplements",
+      product_type: p.product_type || "physical",
+      vendor_id: p.vendor_id || "",
+    });
+    setEditingProductId(p.id);
+    setShowProductForm(true);
+  };
+
+  const handleDeleteProduct = async (id: number) => {
+    const productToDelete = products.find((p) => p.id === id);
+    if (!productToDelete) return;
+
+    if (!confirm(`Are you sure you want to delete "${productToDelete.title}"?`)) return;
+
+    const toastId = toast.loading("Deleting product...");
+    try {
+      const { error } = await supabase.from("products").delete().eq("id", id);
+      if (error) throw error;
+
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+      
+      if (productToDelete.image_url) {
+        deleteMediaWithSafety(productToDelete.image_url);
+      }
+
+      toast.success("Product deleted successfully!", { id: toastId });
+    } catch (err: any) {
+      console.error("Delete Product Error:", err);
+      toast.error(err.message || "Failed to delete product", { id: toastId });
+    }
   };
 
   const handleBulkResetPasswords = async () => {
@@ -835,64 +1096,335 @@ export default function AdminPage() {
 
             {/* PRODUCTS */}
             <TabsContent value="products" className="mt-0 border-0 p-0">
-              <div className="mb-6 flex flex-col gap-1">
-                <h1 className="text-2xl font-bold tracking-tight">Product Catalog</h1>
-                <p className="text-muted-foreground">Monitor products across all vendors.</p>
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight">Product Catalog</h1>
+                  <p className="text-muted-foreground">Monitor and manage products across all vendors.</p>
+                </div>
+                {!showProductForm && (
+                  <Button
+                    onClick={() => {
+                      setEditingProductId(null);
+                      setProductForm({
+                        title: "",
+                        price: "",
+                        stock: "50",
+                        image_url: "",
+                        description: "",
+                        status: "published",
+                        brand: "",
+                        category: "Supplements",
+                        product_type: "physical",
+                        vendor_id: "",
+                      });
+                      setShowProductForm(true);
+                    }}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center gap-1.5 shadow-md shadow-indigo-600/10"
+                  >
+                    <Plus className="h-4 w-4" /> Add Product
+                  </Button>
+                )}
               </div>
-              <Card>
-                <CardContent className="pt-6">
-                  {products.length === 0 ? (
-                    <p className="py-12 text-center text-sm text-muted-foreground">
-                      No products found.
-                    </p>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-border/50 text-left text-muted-foreground">
-                            <th className="pb-3 font-medium">Product</th>
-                            <th className="pb-3 font-medium">Vendor</th>
-                            <th className="pb-3 font-medium">Price</th>
-                            <th className="pb-3 font-medium">Status</th>
-                            <th className="pb-3 font-medium text-right">Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {products.map((p) => (
-                            <tr
-                              key={p.id}
-                              className="border-b border-border/50 last:border-0 hover:bg-muted/30"
-                            >
-                              <td className="py-4 font-medium">{p.title}</td>
-                              <td className="py-4 text-muted-foreground text-xs">
-                                {p.vendor?.store_name || "Unknown"}
-                              </td>
-                              <td className="py-4 font-bold text-primary">${p.price}</td>
-                              <td className="py-4">
-                                <Badge
-                                  variant={p.status === "published" ? "outline" : "secondary"}
-                                  className="text-[10px] font-bold uppercase tracking-tight"
-                                >
-                                  {p.status}
-                                </Badge>
-                              </td>
-                              <td className="py-4 text-right">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => toggleProductStatus(p.id, p.status)}
-                                >
-                                  {p.status === "published" ? "Take Down" : "Restore"}
-                                </Button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+
+              {showProductForm ? (
+                <Card className="border-border/50 animate-in fade-in slide-in-from-top-2 duration-300 mb-6">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle>
+                        {editingProductId ? "Edit Product" : "Create New Product"}
+                      </CardTitle>
+                      <CardDescription>
+                        Fill in product details and select which vendor sells it.
+                      </CardDescription>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+                    <Button
+                      variant="ghost"
+                      onClick={() => setShowProductForm(false)}
+                      className="text-muted-foreground hover:text-foreground font-semibold"
+                    >
+                      Cancel
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handleSaveProduct} className="grid gap-6 sm:grid-cols-2">
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label>Select Vendor</Label>
+                        <select
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          value={productForm.vendor_id}
+                          onChange={(e) => setProductForm({ ...productForm, vendor_id: e.target.value })}
+                          required
+                        >
+                          <option value="">Select a vendor...</option>
+                          {vendors.map((v) => (
+                            <option key={v.id} value={v.id}>
+                              {v.store_name || "Unknown"}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label>Product Title / Name</Label>
+                        <Input
+                          required
+                          value={productForm.title}
+                          onChange={(e) => setProductForm({ ...productForm, title: e.target.value })}
+                          placeholder="e.g. Organic Hemp Seed Oil"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Marketplace Category</Label>
+                        <select
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          value={productForm.category}
+                          onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
+                        >
+                          {["Supplements", "Equipment", "Food", "Books", "Digital", "Services"].map((c) => (
+                            <option key={c} value={c}>
+                              {c}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Price ($)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          required
+                          value={productForm.price}
+                          onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
+                          placeholder="e.g. 29.99"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Brand</Label>
+                        <Input
+                          value={productForm.brand}
+                          onChange={(e) => setProductForm({ ...productForm, brand: e.target.value })}
+                          placeholder="e.g. Wellness Co."
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Product Type</Label>
+                        <select
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                          value={productForm.product_type}
+                          onChange={(e) => setProductForm({ ...productForm, product_type: e.target.value as any })}
+                        >
+                          <option value="physical">Physical Product</option>
+                          <option value="service">Service / Booking</option>
+                          <option value="digital">Digital Download</option>
+                        </select>
+                      </div>
+
+                      {productForm.product_type !== "service" && (
+                        <div className="space-y-2">
+                          <Label>Inventory Stock</Label>
+                          <Input
+                            type="number"
+                            required
+                            value={productForm.stock}
+                            onChange={(e) => setProductForm({ ...productForm, stock: e.target.value })}
+                          />
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        <Label>Status</Label>
+                        <select
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                          value={productForm.status}
+                          onChange={(e) => setProductForm({ ...productForm, status: e.target.value })}
+                        >
+                          <option value="published">Published</option>
+                          <option value="draft">Draft</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label>Product Cover Image URL</Label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={productForm.image_url}
+                            onChange={(e) => setProductForm({ ...productForm, image_url: e.target.value })}
+                            placeholder="https://..."
+                            className="flex-1"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={generateProductImageAI}
+                            disabled={generatingProductImg}
+                            className="h-10 text-indigo-700 border-indigo-200 hover:bg-indigo-50 font-semibold gap-1.5 shrink-0"
+                            title="Generate Image with AI"
+                          >
+                            {generatingProductImg ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Sparkles className="h-4 w-4" />
+                            )}
+                            Generate Image
+                          </Button>
+                          <label className="shrink-0">
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              className="h-10"
+                              asChild
+                              disabled={uploadingProductImg}
+                            >
+                              <span>
+                                {uploadingProductImg ? "..." : <ImageIcon className="h-4 w-4" />}
+                              </span>
+                            </Button>
+                            <input
+                              type="file"
+                              className="hidden"
+                              accept="image/*"
+                              onChange={(e) =>
+                                e.target.files?.[0] && handleProductUpload(e.target.files[0])
+                              }
+                            />
+                          </label>
+                        </div>
+                        {productForm.image_url && (
+                          <div className="mt-2 h-32 w-32 rounded-lg overflow-hidden border border-border bg-muted">
+                            <img src={productForm.image_url} className="h-full w-full object-cover" />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-2 sm:col-span-2">
+                        <div className="flex items-center justify-between">
+                          <Label>Product Description</Label>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={generateProductDescriptionAI}
+                            disabled={generatingProductDesc}
+                            className="h-7 text-xs bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-700 font-semibold gap-1.5"
+                          >
+                            {generatingProductDesc ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Sparkles className="h-3 w-3" />
+                            )}
+                            Write with AI
+                          </Button>
+                        </div>
+                        <Textarea
+                          rows={6}
+                          value={productForm.description}
+                          onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+                          placeholder="Tell customers about the product..."
+                        />
+                      </div>
+
+                      <div className="flex gap-2 sm:col-span-2 pt-2">
+                        <Button type="submit" disabled={savingProduct} className="min-w-[120px]">
+                          {savingProduct ? "Saving..." : "Save Details"}
+                        </Button>
+                        <Button type="button" variant="outline" onClick={() => setShowProductForm(false)}>
+                          Cancel
+                        </Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardContent className="pt-6">
+                    {products.length === 0 ? (
+                      <p className="py-12 text-center text-sm text-muted-foreground">
+                        No products found.
+                      </p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b border-border/50 text-left text-muted-foreground">
+                              <th className="pb-3 font-medium">Product</th>
+                              <th className="pb-3 font-medium">Vendor</th>
+                              <th className="pb-3 font-medium">Price</th>
+                              <th className="pb-3 font-medium">Status</th>
+                              <th className="pb-3 font-medium text-right">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {products.map((p) => (
+                              <tr
+                                key={p.id}
+                                className="border-b border-border/50 last:border-0 hover:bg-muted/30"
+                              >
+                                <td className="py-4 font-medium flex items-center gap-3">
+                                  <div className="h-10 w-10 rounded overflow-hidden bg-muted flex-shrink-0 border border-border/40">
+                                    {p.image_url ? (
+                                      <img src={p.image_url} className="h-full w-full object-cover" />
+                                    ) : (
+                                      <div className="h-full w-full flex items-center justify-center text-[10px] text-muted-foreground/40 font-bold">
+                                        IMG
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className="font-bold">{p.title}</p>
+                                    {p.brand && <p className="text-[10px] text-muted-foreground">{p.brand}</p>}
+                                  </div>
+                                </td>
+                                <td className="py-4 text-muted-foreground text-xs">
+                                  {p.vendor?.store_name || "Unknown"}
+                                </td>
+                                <td className="py-4 font-bold text-primary">${(p.price || 0).toFixed(2)}</td>
+                                <td className="py-4">
+                                  <Badge
+                                    variant={p.status === "published" ? "outline" : "secondary"}
+                                    className="text-[10px] font-bold uppercase tracking-tight"
+                                  >
+                                    {p.status}
+                                  </Badge>
+                                </td>
+                                <td className="py-4 text-right">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => handleEditProduct(p)}
+                                    >
+                                      Edit
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => toggleProductStatus(p.id, p.status)}
+                                    >
+                                      {p.status === "published" ? "Take Down" : "Restore"}
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="text-destructive hover:bg-destructive/5"
+                                      onClick={() => handleDeleteProduct(p.id)}
+                                    >
+                                      Delete
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             {/* GALLERIES */}

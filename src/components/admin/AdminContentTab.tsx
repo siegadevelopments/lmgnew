@@ -782,7 +782,8 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     const defaultDatetime = `${year}-${month}-${day}T${hours}:${minutes}`;
 
     // Clean html tags out of preview caption content
-    const cleanContent = item.content?.replace(/<[^>]*>/g, ' ').substring(0, 200).trim() || "";
+    const rawContent = item.content || item.description || "";
+    const cleanContent = rawContent.replace(/<[^>]*>/g, ' ').substring(0, 200).trim();
 
     setShareForm({
       title: item.title || "",
@@ -1046,7 +1047,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
           .map((h: string) => h.trim())
           .filter(Boolean),
         image_url: shareForm.imageUrl || null,
-        source_type: activeType === "articles" ? "article" : "recipe",
+        source_type: activeType === "articles" ? "article" : activeType === "recipes" ? "recipe" : activeType === "products" ? "product" : "custom",
         source_id: String(sharingItem.id),
         source_url: sourceUrl,
         platforms: shareForm.platforms,
@@ -1534,14 +1535,6 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                     className="h-10 text-base px-4 font-semibold"
                   >
                     <Utensils className="mr-2 h-5 w-5" /> Recipe
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={activeType === "products" ? "default" : "outline"}
-                    onClick={() => setActiveType("products")}
-                    className="h-10 text-base px-4 font-semibold"
-                  >
-                    <Package className="mr-2 h-5 w-5" /> Product
                   </Button>
                   <Button
                     type="button"
@@ -2937,7 +2930,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                           <ExternalLink className="h-5 w-5" />
                         </a>
                       )}
-                      {item.slug && (activeType === "articles" || activeType === "recipes") && (
+                      {item.slug && (activeType === "articles" || activeType === "recipes" || activeType === "products") && (
                         <Button
                           variant="ghost"
                           size="icon"
@@ -2948,38 +2941,33 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                           <Megaphone className="h-5 w-5" />
                         </Button>
                       )}
-                      {activeType === "products" && (
+                      {activeType !== "products" && (
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-10 w-10 text-indigo-600 hover:text-indigo-500 hover:bg-indigo-50"
-                          onClick={() => handleCreateProductArticle(item)}
-                          title="Create Article with AI"
+                          className="h-10 w-10 text-muted-foreground hover:text-primary"
+                          onClick={() => handlePreviewItem(item)}
+                          title="Live Preview"
                         >
-                          <Sparkles className="h-5 w-5" />
+                          <Eye className="h-5 w-5" />
                         </Button>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-10 w-10 text-muted-foreground hover:text-primary"
-                        onClick={() => handlePreviewItem(item)}
-                        title="Live Preview"
-                      >
-                        <Eye className="h-5 w-5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-10 w-10 text-muted-foreground hover:text-primary"
-                        onClick={() => handleEdit(item)}
-                        title="Edit Item"
-                      >
-                        <Pencil className="h-5 w-5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-10 w-10 text-destructive hover:text-destructive/80" onClick={() => deleteItem(item.id)}>
-                        <Trash2 className="h-5 w-5" />
-                      </Button>
+                      {activeType !== "products" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-10 w-10 text-muted-foreground hover:text-primary"
+                          onClick={() => handleEdit(item)}
+                          title="Edit Item"
+                        >
+                          <Pencil className="h-5 w-5" />
+                        </Button>
+                      )}
+                      {activeType !== "products" && (
+                        <Button variant="ghost" size="icon" className="h-10 w-10 text-destructive hover:text-destructive/80" onClick={() => deleteItem(item.id)}>
+                          <Trash2 className="h-5 w-5" />
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
