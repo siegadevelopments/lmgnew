@@ -1350,6 +1350,90 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     }
   };
 
+  const handleCreateProductArticle = async (product: any) => {
+    setActiveType("articles");
+    setShowAddForm(true);
+    setEditingId(null);
+
+    const articleTitle = `Health Benefits of ${product.title}`;
+    const defaultExcerpt = `Discover the amazing health benefits and nutritional value of ${product.title}.`;
+    const vendorId = product.vendor_id || "";
+    const defaultImage = product.image_url || "";
+
+    setTitle(articleTitle);
+    setSelectedVendorId(vendorId);
+    setImageUrl(defaultImage);
+    setExcerpt(defaultExcerpt);
+    setContent("");
+
+    // Scroll form into view
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+
+    setGeneratingArticleContent(true);
+    const toastId = toast.loading(`AI is writing your article about "${product.title}"...`);
+    try {
+      const { data: contentData, error: contentError } = await supabase.functions.invoke("generate-ai-content", {
+        body: { title: articleTitle, type: "article" },
+      });
+
+      if (contentError) {
+        if (contentError.context) {
+          try {
+            const body = await contentError.context.json();
+            if (body?.error) {
+              throw new Error(body.error);
+            }
+          } catch (e) {
+            // Ignore JSON parsing errors
+          }
+        }
+        throw contentError;
+      }
+
+      if (contentData?.content) {
+        setContent(contentData.content);
+        toast.success("AI Article content generated!", { id: toastId });
+
+        // Trigger AI image generation sequentially
+        setGeneratingImage(true);
+        const imgToastId = toast.loading("AI is designing a cover photo for the article...");
+        try {
+          const cleanContent = contentData.content.replace(/<[^>]*>/g, ' ').substring(0, 1000);
+          const { data: imgData, error: imgError } = await supabase.functions.invoke("generate-ai-image", {
+            body: { 
+              prompt: `${articleTitle} ${cleanContent}`.trim(),
+              author_id: vendorId
+            },
+          });
+
+          if (imgError) throw imgError;
+          if (imgData?.error) throw new Error(imgData.error);
+
+          if (imgData?.url) {
+            setImageUrl(imgData.url);
+            toast.success("AI cover photo generated!", { id: imgToastId });
+          } else {
+            throw new Error("No image URL returned from AI service");
+          }
+        } catch (imgErr: any) {
+          console.error("AI Cover Photo Error:", imgErr);
+          toast.warning(`Could not generate AI image. Kept product image.`, { id: imgToastId });
+        } finally {
+          setGeneratingImage(false);
+        }
+      } else {
+        throw new Error("No content returned from AI service");
+      }
+    } catch (err: any) {
+      console.error("AI Product Article Generation Error:", err);
+      toast.error(err.message || "Failed to generate article content", { id: toastId });
+    } finally {
+      setGeneratingArticleContent(false);
+    }
+  };
+
   async function deleteItem(id: string) {
     const itemToDelete = items.find(i => i.id === id);
     if (!itemToDelete) return;
@@ -2862,6 +2946,17 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                           title="Share / Create Viral Post"
                         >
                           <Megaphone className="h-5 w-5" />
+                        </Button>
+                      )}
+                      {activeType === "products" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-10 w-10 text-indigo-600 hover:text-indigo-500 hover:bg-indigo-50"
+                          onClick={() => handleCreateProductArticle(item)}
+                          title="Create Article with AI"
+                        >
+                          <Sparkles className="h-5 w-5" />
                         </Button>
                       )}
                       <Button
