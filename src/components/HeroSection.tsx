@@ -7,8 +7,6 @@ import Image from "next/image";
 import heroBg from "@/assets/hero-bg.jpg";
 import { motion, Variants } from "framer-motion";
 
-const MotionImage = motion(Image);
-
 export function HeroSection() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
@@ -46,16 +44,13 @@ export function HeroSection() {
 
   return (
     <section className="relative flex min-h-[540px] items-center overflow-hidden sm:min-h-[600px]">
-      <MotionImage
-        initial={{ scale: 1.1 }}
-        animate={{ scale: 1 }}
-        transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
+      <Image
         src={heroBg}
         alt="Wellness pathway through lush greenery - Lifestyle Medicine Gateway Hero"
         fill
         priority
         fetchPriority="high"
-        className="object-cover"
+        className="object-cover animate-hero-zoom"
         quality={90}
       />
       <div className="absolute inset-0 bg-gradient-to-r from-foreground/80 via-foreground/60 to-foreground/30" />

@@ -425,3 +425,16 @@ html.dark main {
 .ql-toolbar button.ql-active .ql-fill {
   fill: var(--primary) !important;
 }
+
+@keyframes hero-zoom-out {
+  from {
+    transform: scale(1.08);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.animate-hero-zoom {
+  animation: hero-zoom-out 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
