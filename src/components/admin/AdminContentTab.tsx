@@ -766,22 +766,35 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     setSharingItem(item);
     setEditingScheduledPost(null);
     
-    // Get current time in Melbourne
-    const nowMelbourneStr = new Date().toLocaleString("en-US", { timeZone: "Australia/Melbourne" });
-    const nowMelbourne = new Date(nowMelbourneStr);
-    
-    // Set default scheduled time to tomorrow at 9:00 AM Melbourne time
-    const tomorrowMelbourne = new Date(nowMelbourne);
-    tomorrowMelbourne.setDate(tomorrowMelbourne.getDate() + 1);
-    tomorrowMelbourne.setHours(9, 0, 0, 0); // Default to 9:00 AM
-    
-    // Formatting for datetime-local input: YYYY-MM-DDThh:mm (representing Melbourne time components)
-    const year = tomorrowMelbourne.getFullYear();
-    const month = String(tomorrowMelbourne.getMonth() + 1).padStart(2, '0');
-    const day = String(tomorrowMelbourne.getDate()).padStart(2, '0');
-    const hours = String(tomorrowMelbourne.getHours()).padStart(2, '0');
-    const minutes = String(tomorrowMelbourne.getMinutes()).padStart(2, '0');
-    const defaultDatetime = `${year}-${month}-${day}T${hours}:${minutes}`;
+    // Get current time in Melbourne and set default to tomorrow at 9:00 AM
+    const getDefaultMelbourneTimeTomorrow = (): string => {
+      const date = new Date();
+      const formatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Australia/Melbourne",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hourCycle: "h23"
+      });
+      const parts = formatter.formatToParts(date);
+      const map = new Map(parts.map(p => [p.type, p.value]));
+      
+      const yr = Number(map.get("year"));
+      const mo = Number(map.get("month"));
+      const dy = Number(map.get("day"));
+      
+      // Create tomorrow date in UTC using Melbourne components
+      const tomorrowUTC = new Date(Date.UTC(yr, mo - 1, dy + 1, 9, 0));
+      
+      const year = tomorrowUTC.getUTCFullYear();
+      const month = String(tomorrowUTC.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(tomorrowUTC.getUTCDate()).padStart(2, '0');
+      const hours = String(tomorrowUTC.getUTCHours()).padStart(2, '0');
+      const minutes = String(tomorrowUTC.getUTCMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+
+    const defaultDatetime = getDefaultMelbourneTimeTomorrow();
 
     // Clean html tags out of preview caption content
     const rawContent = item.content || item.description || "";
@@ -1081,18 +1094,37 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         const [yr, mo, dy] = datePart.split("-").map(Number);
         const [hr, min] = timePart.split(":").map(Number);
         
-        // Create UTC Date representing these components
-        const utcDate = new Date(Date.UTC(yr, mo - 1, dy, hr, min));
+        // 1. Create a UTC timestamp representing the input local time components
+        const inputAsUTC = Date.UTC(yr, mo - 1, dy, hr, min);
         
-        // Find what time that UTC date represents in Melbourne
-        const melbourneStr = utcDate.toLocaleString("en-US", { timeZone: "Australia/Melbourne" });
-        const parsedMelbourne = new Date(melbourneStr);
+        // 2. Find the offset of Melbourne timezone at this UTC moment
+        const formatter = new Intl.DateTimeFormat("en-US", {
+          timeZone: "Australia/Melbourne",
+          year: "numeric",
+          month: "numeric",
+          day: "numeric",
+          hour: "numeric",
+          minute: "numeric",
+          hourCycle: "h23"
+        });
         
-        // Time difference in ms between Melbourne and UTC for this date
-        const diff = parsedMelbourne.getTime() - utcDate.getTime();
+        const parts = formatter.formatToParts(new Date(inputAsUTC));
+        const partMap = new Map(parts.map(p => [p.type, p.value]));
         
-        // Shift by the difference
-        const finalDate = new Date(utcDate.getTime() - diff);
+        const targetYear = Number(partMap.get("year"));
+        const targetMonth = Number(partMap.get("month"));
+        const targetDay = Number(partMap.get("day"));
+        const targetHour = Number(partMap.get("hour"));
+        const targetMinute = Number(partMap.get("minute"));
+        
+        // Construct UTC timestamp from the Melbourne components
+        const melbourneAsUTC = Date.UTC(targetYear, targetMonth - 1, targetDay, targetHour, targetMinute);
+        
+        // The difference is the Melbourne offset in milliseconds
+        const offset = melbourneAsUTC - inputAsUTC;
+        
+        // Subtract the offset from the input to get the correct UTC date
+        const finalDate = new Date(inputAsUTC - offset);
         return finalDate.toISOString();
       };
 
