@@ -61,9 +61,8 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
     setEmailLoading(true);
 
     try {
-      const { error } = await (supabase as any).rpc("admin_update_user_email", {
-        target_user_id: vendor.id,
-        new_email: email,
+      const { data, error } = await supabase.functions.invoke("admin-api", {
+        body: { action: "update-user", params: { id: vendor.id, email: email } }
       });
 
       if (error) throw error;
@@ -545,8 +544,8 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
                 ) {
                   setLoading(true);
                   try {
-                    const { error } = await (supabase as any).rpc("admin_delete_user", {
-                      target_user_id: vendor.id,
+                    const { data, error } = await supabase.functions.invoke("admin-api", {
+                      body: { action: "delete-user", params: { id: vendor.id } }
                     });
                     if (error) throw error;
                     toast.success("Vendor account deleted successfully");

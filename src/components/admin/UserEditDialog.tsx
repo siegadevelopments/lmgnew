@@ -31,9 +31,8 @@ export function UserEditDialog({ user, isOpen, onClose, onSuccess }: UserEditDia
     setLoading(true);
 
     try {
-      const { error } = await (supabase as any).rpc("admin_update_user_email", {
-        target_user_id: user.id,
-        new_email: email,
+      const { data, error } = await supabase.functions.invoke("admin-api", {
+        body: { action: "update-user", params: { id: user.id, email: email } }
       });
 
       if (error) throw error;
@@ -137,8 +136,8 @@ export function UserEditDialog({ user, isOpen, onClose, onSuccess }: UserEditDia
                 ) {
                   setLoading(true);
                   try {
-                    const { error } = await (supabase as any).rpc("admin_delete_user", {
-                      target_user_id: user.id,
+                    const { data, error } = await supabase.functions.invoke("admin-api", {
+                      body: { action: "delete-user", params: { id: user.id } }
                     });
                     if (error) throw error;
                     toast.success("Account deleted successfully");
