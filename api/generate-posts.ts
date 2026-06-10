@@ -31,8 +31,52 @@ BRAND VOICE:
 - Science-backed but relatable — use phrases like "research shows" not "studies indicate"
 - Empathetic — acknowledge the struggle before offering the solution
 - Australian English spelling (colour, centre, organised)
-- Use emojis naturally but not excessively (2-4 per post)
 `;
+
+// Helper to extract year, month, day components from date strings safely
+function getYearMonthDayComponents(dateStr: string): { year: number; month: number; day: number } {
+  const matchIso = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (matchIso) {
+    return {
+      year: parseInt(matchIso[1], 10),
+      month: parseInt(matchIso[2], 10),
+      day: parseInt(matchIso[3], 10)
+    };
+  }
+  const d = new Date(dateStr);
+  return {
+    year: d.getUTCFullYear(),
+    month: d.getUTCMonth() + 1,
+    day: d.getUTCDate()
+  };
+}
+
+// Helper to convert Melbourne local components to UTC ISO string
+function parseMelbourneDateTimeToUTC(year: number, month: number, day: number, hour: number): string {
+  const inputAsUTC = Date.UTC(year, month - 1, day, hour, 0, 0);
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Australia/Melbourne",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    hourCycle: "h23"
+  });
+  
+  const parts = formatter.formatToParts(new Date(inputAsUTC));
+  const partMap = new Map(parts.map(p => [p.type, p.value]));
+  
+  const targetYear = Number(partMap.get("year"));
+  const targetMonth = Number(partMap.get("month"));
+  const targetDay = Number(partMap.get("day"));
+  const targetHour = Number(partMap.get("hour"));
+  const targetMinute = Number(partMap.get("minute"));
+  
+  const melbourneAsUTC = Date.UTC(targetYear, targetMonth - 1, targetDay, targetHour, targetMinute);
+  const offset = melbourneAsUTC - inputAsUTC;
+  return new Date(inputAsUTC - offset).toISOString();
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -256,9 +300,10 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
       posts.forEach((post, index) => {
         const dateStr = specificDates[index];
         if (!dateStr) return;
-        const postDate = new Date(dateStr);
+        
+        const { year, month, day } = getYearMonthDayComponents(dateStr);
         const hour = timeSlots[post.time_slot] || 9;
-        postDate.setHours(hour, 0, 0, 0);
+        const scheduledAtISO = parseMelbourneDateTimeToUTC(year, month, day, hour);
 
         scheduledPosts.push({
           title: post.title || `Post ${index + 1}`,
@@ -269,24 +314,41 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
           source_id: post.source_id ? String(post.source_id) : null,
           source_url: post.source_url || null,
           platforms: ["facebook", "instagram"],
-          scheduled_at: postDate.toISOString(),
+          scheduled_at: scheduledAtISO,
           status: "draft",
         });
       });
     } else {
       // Use weekly pattern logic
       const baseDate = startDate ? new Date(startDate) : new Date();
-      baseDate.setHours(0, 0, 0, 0);
-      let currentDate = new Date(baseDate);
-      currentDate.setDate(currentDate.getDate() + 1); // Start tomorrow
+      const formatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Australia/Melbourne",
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+      });
+      const parts = formatter.formatToParts(baseDate);
+      const map = new Map(parts.map(p => [p.type, p.value]));
+      
+      const startYear = Number(map.get("year"));
+      const startMonth = Number(map.get("month"));
+      const startDay = Number(map.get("day"));
+      
+      const melbourneDate = new Date(Date.UTC(startYear, startMonth - 1, startDay));
+      melbourneDate.setUTCDate(melbourneDate.getUTCDate() + 1); // Start tomorrow
 
       let postIndex = 0;
       while (postIndex < posts.length) {
-        if (selectedDays.includes(currentDate.getDay())) {
+        if (selectedDays.includes(melbourneDate.getUTCDay())) {
           const post = posts[postIndex];
-          const postDate = new Date(currentDate);
           const hour = timeSlots[post.time_slot] || 9;
-          postDate.setHours(hour, 0, 0, 0);
+          
+          const scheduledAtISO = parseMelbourneDateTimeToUTC(
+            melbourneDate.getUTCFullYear(),
+            melbourneDate.getUTCMonth() + 1,
+            melbourneDate.getUTCDate(),
+            hour
+          );
 
           scheduledPosts.push({
             title: post.title || `Post ${postIndex + 1}`,
@@ -297,12 +359,12 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
             source_id: post.source_id ? String(post.source_id) : null,
             source_url: post.source_url || null,
             platforms: ["facebook", "instagram"],
-            scheduled_at: postDate.toISOString(),
+            scheduled_at: scheduledAtISO,
             status: "draft",
           });
           postIndex++;
         }
-        currentDate.setDate(currentDate.getDate() + 1);
+        melbourneDate.setUTCDate(melbourneDate.getUTCDate() + 1);
         if (scheduledPosts.length > 500) break; // Safety
       }
     }

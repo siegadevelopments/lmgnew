@@ -74,6 +74,46 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
   },
 };
 
+// Convert Melbourne time components (YYYY-MM-DDThh:mm) to UTC ISO string
+const parseMelbourneTimeToUTC = (datetimeStr: string): string => {
+  const [datePart, timePart] = datetimeStr.split("T");
+  const [yr, mo, dy] = datePart.split("-").map(Number);
+  const [hr, min] = timePart.split(":").map(Number);
+  
+  // 1. Create a UTC timestamp representing the input local time components
+  const inputAsUTC = Date.UTC(yr, mo - 1, dy, hr, min);
+  
+  // 2. Find the offset of Melbourne timezone at this UTC moment
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Australia/Melbourne",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    hourCycle: "h23"
+  });
+  
+  const parts = formatter.formatToParts(new Date(inputAsUTC));
+  const partMap = new Map(parts.map(p => [p.type, p.value]));
+  
+  const targetYear = Number(partMap.get("year"));
+  const targetMonth = Number(partMap.get("month"));
+  const targetDay = Number(partMap.get("day"));
+  const targetHour = Number(partMap.get("hour"));
+  const targetMinute = Number(partMap.get("minute"));
+  
+  // Construct UTC timestamp from the Melbourne components
+  const melbourneAsUTC = Date.UTC(targetYear, targetMonth - 1, targetDay, targetHour, targetMinute);
+  
+  // The difference is the Melbourne offset in milliseconds
+  const offset = melbourneAsUTC - inputAsUTC;
+  
+  // Subtract the offset from the input to get the correct UTC date
+  const finalDate = new Date(inputAsUTC - offset);
+  return finalDate.toISOString();
+};
+
 export function AdminMarketingTab() {
   const [posts, setPosts] = useState<ScheduledPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -179,10 +219,23 @@ export function AdminMarketingTab() {
   const getPostsForDate = (date: Date) => {
     return posts.filter((p) => {
       const postDate = new Date(p.scheduled_at);
+      const formatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: "Australia/Melbourne",
+        year: "numeric",
+        month: "numeric",
+        day: "numeric"
+      });
+      const parts = formatter.formatToParts(postDate);
+      const map = new Map(parts.map(p => [p.type, p.value]));
+      
+      const targetYear = Number(map.get("year"));
+      const targetMonth = Number(map.get("month"));
+      const targetDay = Number(map.get("day"));
+
       return (
-        postDate.getFullYear() === date.getFullYear() &&
-        postDate.getMonth() === date.getMonth() &&
-        postDate.getDate() === date.getDate()
+        targetYear === date.getFullYear() &&
+        targetMonth === (date.getMonth() + 1) &&
+        targetDay === date.getDate()
       );
     });
   };
@@ -306,7 +359,7 @@ export function AdminMarketingTab() {
             .map((h: string) => h.trim())
             .filter(Boolean),
           image_url: editImageUrl || null,
-          scheduled_at: new Date(editScheduledAt).toISOString(),
+          scheduled_at: parseMelbourneTimeToUTC(editScheduledAt),
           source_url: editSourceUrl || null,
           platforms: editPlatforms,
           status: editStatus,
@@ -397,7 +450,7 @@ export function AdminMarketingTab() {
         source_type: "custom",
         source_url: manualForm.source_url || null,
         platforms: ["facebook", "instagram"],
-        scheduled_at: new Date(manualForm.scheduled_at).toISOString(),
+        scheduled_at: parseMelbourneTimeToUTC(manualForm.scheduled_at),
         status: "draft",
       });
       if (error) throw error;
@@ -466,11 +519,33 @@ export function AdminMarketingTab() {
     setEditSourceUrl(post.source_url || "");
     setEditPlatforms(post.platforms || ["facebook", "instagram"]);
     setEditStatus(post.status);
-    // Format the date for datetime-local input
-    const d = new Date(post.scheduled_at);
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const localStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    setEditScheduledAt(localStr);
+    
+    // Parse scheduled_at UTC ISO string back to Melbourne timezone string YYYY-MM-DDThh:mm
+    const parseUTCToMelbourneTime = (utcStr: string): string => {
+      try {
+        const date = new Date(utcStr);
+        const options = {
+          timeZone: "Australia/Melbourne",
+          year: "numeric" as const,
+          month: "2-digit" as const,
+          day: "2-digit" as const,
+          hour: "2-digit" as const,
+          minute: "2-digit" as const,
+          hourCycle: "h23" as const,
+        };
+        const formatter = new Intl.DateTimeFormat("en-US", options);
+        const parts = formatter.formatToParts(date);
+        const map = new Map(parts.map(p => [p.type, p.value]));
+        return `${map.get("year")}-${map.get("month")}-${map.get("day")}T${map.get("hour")}:${map.get("minute")}`;
+      } catch (err) {
+        console.error("Error formatting timezone:", err);
+        const d = new Date(utcStr);
+        const pad = (n: number) => String(n).padStart(2, "0");
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      }
+    };
+    
+    setEditScheduledAt(parseUTCToMelbourneTime(post.scheduled_at));
   }
 
   // Click on a date to add a post (Buffer-style)
