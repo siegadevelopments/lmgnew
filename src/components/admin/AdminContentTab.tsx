@@ -175,6 +175,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [generatingShareHashtags, setGeneratingShareHashtags] = useState(false);
   const [savingSharePost, setSavingSharePost] = useState(false);
   const [scheduledPosts, setScheduledPosts] = useState<any[]>([]);
+  const [editingScheduledPost, setEditingScheduledPost] = useState<any | null>(null);
   const [loadingScheduled, setLoadingScheduled] = useState(false);
   const [generatingExcerpt, setGeneratingExcerpt] = useState(false);
   const [generatingArticleContent, setGeneratingArticleContent] = useState(false);
@@ -763,6 +764,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
 
   const handleOpenShare = (item: any) => {
     setSharingItem(item);
+    setEditingScheduledPost(null);
     
     // Get current time in Melbourne
     const nowMelbourneStr = new Date().toLocaleString("en-US", { timeZone: "Australia/Melbourne" });
@@ -797,8 +799,53 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     setShareDialogOpen(true);
   };
 
+  const handleOpenEditScheduledPost = (post: any) => {
+    setEditingScheduledPost(post);
+    setSharingItem(null);
+    
+    // Parse scheduled_at UTC ISO string back to Melbourne timezone string YYYY-MM-DDThh:mm
+    const parseUTCToMelbourneTime = (utcStr: string): string => {
+      try {
+        const date = new Date(utcStr);
+        const options = {
+          timeZone: "Australia/Melbourne",
+          year: "numeric" as const,
+          month: "2-digit" as const,
+          day: "2-digit" as const,
+          hour: "2-digit" as const,
+          minute: "2-digit" as const,
+          hourCycle: "h23" as const,
+        };
+        const formatter = new Intl.DateTimeFormat("en-US", options);
+        const parts = formatter.formatToParts(date);
+        const map = new Map(parts.map(p => [p.type, p.value]));
+        return `${map.get("year")}-${map.get("month")}-${map.get("day")}T${map.get("hour")}:${map.get("minute")}`;
+      } catch (err) {
+        console.error("Error formatting timezone:", err);
+        const d = new Date(utcStr);
+        const yr = d.getFullYear();
+        const mo = String(d.getMonth() + 1).padStart(2, '0');
+        const dy = String(d.getDate()).padStart(2, '0');
+        const hr = String(d.getHours()).padStart(2, '0');
+        const min = String(d.getMinutes()).padStart(2, '0');
+        return `${yr}-${mo}-${dy}T${hr}:${min}`;
+      }
+    };
+
+    setShareForm({
+      title: post.title || "",
+      caption: post.caption || "",
+      hashtags: post.hashtags ? post.hashtags.join(", ") : "",
+      imageUrl: post.image_url || "",
+      scheduledAt: parseUTCToMelbourneTime(post.scheduled_at),
+      status: post.status || "approved",
+      platforms: post.platforms || ["facebook"],
+    });
+    setShareDialogOpen(true);
+  };
+
   const generateShareCaption = async () => {
-    if (!sharingItem) return;
+    if (!sharingItem && !editingScheduledPost) return;
     setGeneratingShareCaption(true);
     const toastId = toast.loading("AI is crafting a viral caption...");
     try {
@@ -807,9 +854,16 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
 
-      const cleanContent = sharingItem.content?.replace(/<[^>]*>/g, ' ').substring(0, 1000) || "";
-      const itemUrl = `https://lifestylemedicinegateway.com.au/${activeType}/${sharingItem.slug}`;
-      const contextText = `Article Title: ${sharingItem.title}\nLink/URL: ${itemUrl}\nExcerpt: ${sharingItem.excerpt || ""}\nContent: ${cleanContent}`;
+      const titleVal = sharingItem ? sharingItem.title : editingScheduledPost.title;
+      const captionVal = shareForm.caption || titleVal;
+      let contextText = "";
+      if (sharingItem) {
+        const cleanContent = sharingItem.content?.replace(/<[^>]*>/g, ' ').substring(0, 1000) || "";
+        const itemUrl = `https://lifestylemedicinegateway.com.au/${activeType}/${sharingItem.slug}`;
+        contextText = `Article Title: ${sharingItem.title}\nLink/URL: ${itemUrl}\nExcerpt: ${sharingItem.excerpt || ""}\nContent: ${cleanContent}`;
+      } else {
+        contextText = `Post Title: ${editingScheduledPost.title}\nSource URL: ${editingScheduledPost.source_url || ""}\nExisting Caption: ${editingScheduledPost.caption || ""}`;
+      }
       
       const response = await fetch("/api/ai-enhance", {
         method: "POST",
@@ -819,7 +873,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         },
         body: JSON.stringify({
           field: "caption",
-          value: shareForm.caption || sharingItem.title,
+          value: captionVal,
           context: contextText,
         }),
       });
@@ -838,17 +892,22 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   };
 
   const generateShareImage = async () => {
-    if (!sharingItem) return;
+    if (!sharingItem && !editingScheduledPost) return;
     setGeneratingShareImage(true);
     const toastId = toast.loading("AI is painting a viral image...");
     try {
-      const promptText = `Social media post about: ${shareForm.title || sharingItem.title}. ${shareForm.caption || sharingItem.excerpt || ""}`;
-      const authorId = sharingItem.vendor_id || sharingItem.author_id || eTrainingVendor?.id || null;
+      const titleVal = sharingItem ? sharingItem.title : editingScheduledPost.title;
+      const excerptVal = sharingItem ? (sharingItem.excerpt || "") : "";
+      const promptText = `Social media post about: ${shareForm.title || titleVal}. ${shareForm.caption || excerptVal}`;
+      const authorId = sharingItem 
+        ? (sharingItem.vendor_id || sharingItem.author_id)
+        : (editingScheduledPost.vendor_id || editingScheduledPost.author_id);
+      const finalAuthorId = authorId || eTrainingVendor?.id || null;
       
       const { data, error } = await supabase.functions.invoke("generate-ai-image", {
         body: { 
           prompt: promptText.substring(0, 1000),
-          author_id: authorId
+          author_id: finalAuthorId
         },
       });
       
@@ -886,7 +945,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   };
 
   const generateShareHashtags = async () => {
-    if (!sharingItem) return;
+    if (!sharingItem && !editingScheduledPost) return;
     setGeneratingShareHashtags(true);
     const toastId = toast.loading("AI is brainstorming hashtags...");
     try {
@@ -894,6 +953,8 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         data: { session },
       } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
+
+      const titleVal = sharingItem ? (sharingItem.title || "") : (editingScheduledPost.title || "");
 
       const response = await fetch("/api/ai-enhance", {
         method: "POST",
@@ -904,7 +965,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         body: JSON.stringify({
           field: "hashtags",
           value: shareForm.hashtags,
-          context: `${shareForm.title || sharingItem.title}\n${shareForm.caption || ""}`,
+          context: `${shareForm.title || titleVal}\n${shareForm.caption || ""}`,
         }),
       });
 
@@ -1005,17 +1066,15 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
 
   const handleSaveSharePost = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!sharingItem) return;
+    if (!sharingItem && !editingScheduledPost) return;
     if (!shareForm.scheduledAt) {
       toast.error("Please select a scheduled date and time");
       return;
     }
     
     setSavingSharePost(true);
-    const toastId = toast.loading("Scheduling post...");
+    const toastId = toast.loading(editingScheduledPost ? "Saving changes..." : "Scheduling post...");
     try {
-      const sourceUrl = `/${activeType}/${sharingItem.slug}`;
-      
       // Convert Melbourne time components (YYYY-MM-DDThh:mm) to UTC ISO string
       const parseMelbourneTimeToUTC = (datetimeStr: string): string => {
         const [datePart, timePart] = datetimeStr.split("T");
@@ -1039,31 +1098,53 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
 
       const scheduledAtUTC = parseMelbourneTimeToUTC(shareForm.scheduledAt);
 
-      const { error } = await (supabase.from("scheduled_posts") as any).insert({
-        title: shareForm.title,
-        caption: shareForm.caption,
-        hashtags: shareForm.hashtags
-          .split(",")
-          .map((h: string) => h.trim())
-          .filter(Boolean),
-        image_url: shareForm.imageUrl || null,
-        source_type: activeType === "articles" ? "article" : activeType === "recipes" ? "recipe" : activeType === "products" ? "product" : "custom",
-        source_id: String(sharingItem.id),
-        source_url: sourceUrl,
-        platforms: shareForm.platforms,
-        scheduled_at: scheduledAtUTC,
-        status: shareForm.status,
-      });
+      let error;
+      if (editingScheduledPost) {
+        const { error: updateError } = await (supabase.from("scheduled_posts") as any)
+          .update({
+            title: shareForm.title,
+            caption: shareForm.caption,
+            hashtags: shareForm.hashtags
+              .split(",")
+              .map((h: string) => h.trim())
+              .filter(Boolean),
+            image_url: shareForm.imageUrl || null,
+            platforms: shareForm.platforms,
+            scheduled_at: scheduledAtUTC,
+            status: shareForm.status,
+          })
+          .eq("id", editingScheduledPost.id);
+        error = updateError;
+      } else {
+        const sourceUrl = `/${activeType}/${sharingItem.slug}`;
+        const { error: insertError } = await (supabase.from("scheduled_posts") as any).insert({
+          title: shareForm.title,
+          caption: shareForm.caption,
+          hashtags: shareForm.hashtags
+            .split(",")
+            .map((h: string) => h.trim())
+            .filter(Boolean),
+          image_url: shareForm.imageUrl || null,
+          source_type: activeType === "articles" ? "article" : activeType === "recipes" ? "recipe" : activeType === "products" ? "product" : "custom",
+          source_id: String(sharingItem.id),
+          source_url: sourceUrl,
+          platforms: shareForm.platforms,
+          scheduled_at: scheduledAtUTC,
+          status: shareForm.status,
+        });
+        error = insertError;
+      }
 
       if (error) throw error;
       
-      toast.success("Viral post scheduled successfully!", { id: toastId });
+      toast.success(editingScheduledPost ? "Scheduled post updated successfully!" : "Viral post scheduled successfully!", { id: toastId });
       setShareDialogOpen(false);
       setSharingItem(null);
+      setEditingScheduledPost(null);
       loadScheduledPosts(); // Refresh the list
     } catch (err: any) {
       console.error("Save Share Post Error:", err);
-      toast.error(err.message || "Failed to schedule post", { id: toastId });
+      toast.error(err.message || (editingScheduledPost ? "Failed to update scheduled post" : "Failed to schedule post"), { id: toastId });
     } finally {
       setSavingSharePost(false);
     }
@@ -2504,15 +2585,23 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+      <Dialog open={shareDialogOpen} onOpenChange={(open) => {
+        setShareDialogOpen(open);
+        if (!open) {
+          setSharingItem(null);
+          setEditingScheduledPost(null);
+        }
+      }}>
         <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto bg-background/95 backdrop-blur-md border border-border/80 shadow-2xl rounded-2xl p-6">
           <DialogHeader className="pb-4 border-b border-border">
             <DialogTitle className="text-xl font-bold flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-violet-600 bg-clip-text text-transparent">
               <Megaphone className="h-5 w-5 text-indigo-500 animate-bounce" />
-              Create Viral Social Post
+              {editingScheduledPost ? "Edit Scheduled Social Post" : "Create Viral Social Post"}
             </DialogTitle>
             <DialogDescription>
-              Schedule this {activeType.slice(0, -1)} to Facebook and Instagram. Use AI to generate engaging copy and visuals.
+              {editingScheduledPost 
+                ? "Edit the details, platform, status, or schedule of this pending post."
+                : `Schedule this ${activeType.slice(0, -1)} to Facebook and Instagram. Use AI to generate engaging copy and visuals.`}
             </DialogDescription>
           </DialogHeader>
 
@@ -2748,7 +2837,11 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setShareDialogOpen(false)}
+                onClick={() => {
+                  setShareDialogOpen(false);
+                  setSharingItem(null);
+                  setEditingScheduledPost(null);
+                }}
                 disabled={savingSharePost}
               >
                 Cancel
@@ -2761,12 +2854,12 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                 {savingSharePost ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Scheduling...
+                    {editingScheduledPost ? "Saving..." : "Scheduling..."}
                   </>
                 ) : (
                   <>
                     <Calendar className="h-4 w-4" />
-                    Schedule Viral Post
+                    {editingScheduledPost ? "Save Changes" : "Schedule Viral Post"}
                   </>
                 )}
               </Button>
@@ -3001,46 +3094,46 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
               const isPast = scheduledDate < new Date();
               return (
                 <Card key={post.id} className="bg-card/50 hover:bg-card transition-colors duration-300 border-border/80">
-                  <CardContent className="py-3 px-4 flex items-center justify-between flex-wrap gap-4">
-                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                  <CardContent className="py-4 px-4 flex items-center justify-between flex-wrap gap-4">
+                    <div className="flex items-center gap-4 min-w-0 flex-1">
                       {/* Image Thumbnail */}
-                      <div className="h-10 w-14 rounded bg-muted overflow-hidden shrink-0 border border-border/40">
+                      <div className="h-14 w-20 rounded bg-muted overflow-hidden shrink-0 border border-border/40">
                         {post.image_url ? (
                           <img src={post.image_url} className="h-full w-full object-cover" />
                         ) : (
                           <div className="h-full w-full flex items-center justify-center bg-muted">
-                            <ImageIcon className="h-4 w-4 text-muted-foreground/60" />
+                            <ImageIcon className="h-6 w-6 text-muted-foreground/60" />
                           </div>
                         )}
                       </div>
 
                       {/* Post details */}
                       <div className="min-w-0">
-                        <p className="font-semibold text-xs text-foreground/90 truncate max-w-md">{post.title}</p>
+                        <p className="font-bold text-base md:text-lg text-foreground/90 truncate max-w-xs sm:max-w-md">{post.title}</p>
                         
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <div className="flex items-center gap-2.5 mt-1.5 flex-wrap">
                           {/* Platforms */}
-                          <div className="flex gap-1 items-center">
+                          <div className="flex gap-1.5 items-center">
                             {post.platforms?.includes("facebook") && (
-                              <Facebook className="h-3 w-3 text-blue-600" />
+                              <Facebook className="h-3.5 w-3.5 text-blue-600" />
                             )}
                             {post.platforms?.includes("instagram") && (
-                              <Instagram className="h-3 w-3 text-pink-600" />
+                              <Instagram className="h-3.5 w-3.5 text-pink-600" />
                             )}
                           </div>
-                          <span className="text-[10px] text-muted-foreground">•</span>
+                          <span className="text-xs text-muted-foreground font-semibold">•</span>
                           {/* Scheduled time */}
-                          <span className={`text-[10px] font-medium flex items-center gap-1 ${isPast ? 'text-rose-600 font-bold' : 'text-muted-foreground'}`}>
-                            <Calendar className="h-2.5 w-2.5" />
+                          <span className={`text-xs font-semibold flex items-center gap-1.5 ${isPast ? 'text-rose-600 font-bold' : 'text-muted-foreground'}`}>
+                            <Calendar className="h-3.5 w-3.5" />
                             {scheduledDate.toLocaleString("en-AU", {
                               timeZone: "Australia/Melbourne",
                               dateStyle: "medium",
                               timeStyle: "short"
                             })} AEST/AEDT {isPast && '(Overdue)'}
                           </span>
-                          <span className="text-[10px] text-muted-foreground">•</span>
+                          <span className="text-xs text-muted-foreground font-semibold">•</span>
                           {/* Status */}
-                          <Badge variant="outline" className={`text-[9px] font-bold uppercase tracking-wider ${
+                          <Badge variant="outline" className={`text-xs font-bold uppercase tracking-wider px-2 py-0.5 ${
                             post.status === 'approved' 
                               ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400' 
                               : post.status === 'failed'
@@ -3054,16 +3147,26 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-2.5 shrink-0">
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-destructive hover:text-destructive/90 hover:bg-destructive/10"
+                        className="h-10 w-10 text-muted-foreground hover:text-primary"
+                        onClick={() => handleOpenEditScheduledPost(post)}
+                        title="Edit Scheduled Post"
+                      >
+                        <Pencil className="h-5 w-5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-10 w-10 text-destructive hover:text-destructive/80"
                         onClick={() => handleDeleteScheduledPost(post.id)}
                         title="Cancel & Delete Post"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-5 w-5" />
                       </Button>
                     </div>
                   </CardContent>

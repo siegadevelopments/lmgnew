@@ -84,9 +84,15 @@ export function AdminMarketingTab() {
   const [selectedSpecificDates, setSelectedSpecificDates] = useState<string[]>([]);
   const [publishing, setPublishing] = useState<string | null>(null);
   const [selectedPost, setSelectedPost] = useState<ScheduledPost | null>(null);
+  const [editTitle, setEditTitle] = useState("");
   const [editCaption, setEditCaption] = useState("");
   const [editHashtags, setEditHashtags] = useState("");
   const [editImageUrl, setEditImageUrl] = useState("");
+  const [editScheduledAt, setEditScheduledAt] = useState("");
+  const [editSourceUrl, setEditSourceUrl] = useState("");
+  const [editPlatforms, setEditPlatforms] = useState<string[]>(["facebook", "instagram"]);
+  const [editStatus, setEditStatus] = useState("draft");
+  const [savingEdit, setSavingEdit] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [view, setView] = useState<"calendar" | "list">("calendar");
   const [showManualForm, setShowManualForm] = useState(false);
@@ -277,15 +283,33 @@ export function AdminMarketingTab() {
   // Update post
   async function handleUpdatePost() {
     if (!selectedPost) return;
+    if (!editTitle.trim()) {
+      toast.error("Title is required");
+      return;
+    }
+    if (!editScheduledAt) {
+      toast.error("Scheduled date is required");
+      return;
+    }
+    if (editPlatforms.length === 0) {
+      toast.error("Select at least one platform");
+      return;
+    }
+    setSavingEdit(true);
     try {
       const { error } = await (supabase.from("scheduled_posts") as any)
         .update({
+          title: editTitle.trim(),
           caption: editCaption,
           hashtags: editHashtags
             .split(",")
             .map((h: string) => h.trim())
             .filter(Boolean),
           image_url: editImageUrl || null,
+          scheduled_at: new Date(editScheduledAt).toISOString(),
+          source_url: editSourceUrl || null,
+          platforms: editPlatforms,
+          status: editStatus,
           updated_at: new Date().toISOString(),
         })
         .eq("id", selectedPost.id);
@@ -296,6 +320,8 @@ export function AdminMarketingTab() {
       await loadPosts();
     } catch (err: any) {
       toast.error(err.message);
+    } finally {
+      setSavingEdit(false);
     }
   }
 
@@ -433,9 +459,18 @@ export function AdminMarketingTab() {
   // Open editor
   function openEditor(post: ScheduledPost) {
     setSelectedPost(post);
+    setEditTitle(post.title);
     setEditCaption(post.caption);
     setEditHashtags((post.hashtags || []).join(", "));
     setEditImageUrl(post.image_url || "");
+    setEditSourceUrl(post.source_url || "");
+    setEditPlatforms(post.platforms || ["facebook", "instagram"]);
+    setEditStatus(post.status);
+    // Format the date for datetime-local input
+    const d = new Date(post.scheduled_at);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const localStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    setEditScheduledAt(localStr);
   }
 
   // Click on a date to add a post (Buffer-style)
@@ -1297,13 +1332,13 @@ export function AdminMarketingTab() {
           >
             <div className="flex items-center justify-between p-6 border-b border-border">
               <div>
-                <h3 className="text-lg font-bold">{selectedPost.title}</h3>
+                <h3 className="text-lg font-bold">Edit Scheduled Post</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Scheduled for{" "}
-                  {new Date(selectedPost.scheduled_at).toLocaleDateString("en-AU", {
-                    weekday: "long",
+                  ID: {selectedPost.id.substring(0, 8)}… • Created{" "}
+                  {new Date(selectedPost.created_at).toLocaleDateString("en-AU", {
                     day: "numeric",
-                    month: "long",
+                    month: "short",
+                    year: "numeric",
                   })}
                 </p>
               </div>
@@ -1313,6 +1348,43 @@ export function AdminMarketingTab() {
             </div>
 
             <div className="p-6 space-y-5">
+              {/* Status & Schedule Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <select
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value)}
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="approved">Approved</option>
+                    {selectedPost.status === "published" && <option value="published">Published</option>}
+                    {selectedPost.status === "failed" && <option value="failed">Failed</option>}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Schedule Date & Time</Label>
+                  <Input
+                    type="datetime-local"
+                    value={editScheduledAt}
+                    onChange={(e) => setEditScheduledAt(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Title */}
+              <div className="space-y-2">
+                <Label>Title</Label>
+                <Input
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  placeholder="Post title"
+                  required
+                />
+              </div>
+
               {/* Preview Image */}
               <div className="space-y-2">
                 <Label>Image URL</Label>
@@ -1353,39 +1425,61 @@ export function AdminMarketingTab() {
               </div>
 
               {/* Platforms & Source */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground">Platforms</Label>
-                  <div className="flex gap-2 mt-1">
-                    {selectedPost.platforms?.includes("facebook") && (
-                      <Badge variant="secondary" className="gap-1">
-                        <Facebook className="h-3 w-3" /> Facebook
-                      </Badge>
-                    )}
-                    {selectedPost.platforms?.includes("instagram") && (
-                      <Badge variant="secondary" className="gap-1">
-                        <Instagram className="h-3 w-3" /> Instagram
-                      </Badge>
-                    )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Platforms</Label>
+                  <div className="flex items-center gap-3 mt-1">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editPlatforms.includes("facebook")}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setEditPlatforms((prev) => [...prev, "facebook"]);
+                          } else {
+                            setEditPlatforms((prev) => prev.filter((p) => p !== "facebook"));
+                          }
+                        }}
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <Facebook className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm font-medium">Facebook</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editPlatforms.includes("instagram")}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setEditPlatforms((prev) => [...prev, "instagram"]);
+                          } else {
+                            setEditPlatforms((prev) => prev.filter((p) => p !== "instagram"));
+                          }
+                        }}
+                        className="h-4 w-4 rounded border-gray-300 text-pink-600 focus:ring-pink-500"
+                      />
+                      <Instagram className="h-4 w-4 text-pink-600" />
+                      <span className="text-sm font-medium">Instagram</span>
+                    </label>
                   </div>
                 </div>
-                <div>
-                  <Label className="text-muted-foreground">Source</Label>
-                  <p className="text-sm font-medium mt-1">
-                    {selectedPost.source_type}{" "}
-                    {selectedPost.source_url && (
-                      <a
-                        href={selectedPost.source_url}
-                        className="text-primary underline text-xs ml-1"
-                        target="_blank"
-                        rel="noopener"
-                      >
-                        View →
-                      </a>
-                    )}
-                  </p>
+                <div className="space-y-2">
+                  <Label>Link URL (optional)</Label>
+                  <Input
+                    value={editSourceUrl}
+                    onChange={(e) => setEditSourceUrl(e.target.value)}
+                    placeholder="/articles/my-article-slug"
+                  />
                 </div>
               </div>
+
+              {/* Error message display */}
+              {selectedPost.error_message && (
+                <div className="text-xs text-red-600 bg-red-50 dark:bg-red-900/10 rounded-lg p-3 border border-red-200 dark:border-red-800">
+                  <AlertCircle className="inline h-3.5 w-3.5 mr-1.5" />
+                  <strong>Last error:</strong> {selectedPost.error_message}
+                </div>
+              )}
             </div>
 
             {/* Footer Actions */}
@@ -1398,21 +1492,28 @@ export function AdminMarketingTab() {
                     onClick={() => {
                       handleDelete(selectedPost.id);
                     }}
+                    disabled={savingEdit}
                   >
                     <Trash2 className="mr-2 h-4 w-4" /> Delete
                   </Button>
                 )}
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setSelectedPost(null)}>
+                <Button variant="outline" onClick={() => setSelectedPost(null)} disabled={savingEdit}>
                   Cancel
                 </Button>
-                <Button onClick={handleUpdatePost}>
-                  <FileEdit className="mr-2 h-4 w-4" /> Save Changes
+                <Button onClick={handleUpdatePost} disabled={savingEdit}>
+                  {savingEdit ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileEdit className="mr-2 h-4 w-4" />
+                  )}
+                  Save Changes
                 </Button>
                 {selectedPost.status !== "published" && (
                   <Button
                     className="bg-gradient-to-r from-emerald-500 to-emerald-600"
+                    disabled={savingEdit}
                     onClick={() => {
                       handlePublish(selectedPost.id);
                       setSelectedPost(null);
