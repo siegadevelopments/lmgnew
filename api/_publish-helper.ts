@@ -1,3 +1,5 @@
+const GRAPH_API_VERSION = "v25.0";
+
 export async function publishSocialPost(supabase: any, post: any) {
   const platforms = post.platforms || ["facebook", "instagram"];
   const results: Record<string, any> = {};
@@ -15,29 +17,42 @@ export async function publishSocialPost(supabase: any, post: any) {
 
     if (FB_PAGE_ID && FB_ACCESS_TOKEN) {
       try {
-        const fbBody: any = {
+        // Facebook Graph API requires form-urlencoded or query params, not JSON body
+        const params = new URLSearchParams({
           message: fullCaption,
           link: linkUrl,
           access_token: FB_ACCESS_TOKEN,
-        };
-
-        const fbRes = await fetch(`https://graph.facebook.com/v19.0/${FB_PAGE_ID}/feed`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(fbBody),
         });
 
+        const fbRes = await fetch(
+          `https://graph.facebook.com/${GRAPH_API_VERSION}/${FB_PAGE_ID}/feed`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: params.toString(),
+          },
+        );
+
         const fbData = await fbRes.json();
+        console.log(`Facebook API response for post "${post.title}":`, JSON.stringify(fbData));
+
         if (fbData.id) {
           results.facebook = { success: true, post_id: fbData.id };
         } else {
-          results.facebook = { success: false, error: fbData.error?.message || "Unknown error" };
+          results.facebook = {
+            success: false,
+            error: fbData.error?.message || JSON.stringify(fbData),
+          };
         }
       } catch (fbErr: any) {
+        console.error(`Facebook publish exception for post "${post.title}":`, fbErr);
         results.facebook = { success: false, error: fbErr.message };
       }
     } else {
-      results.facebook = { success: false, error: "Facebook credentials not configured" };
+      results.facebook = {
+        success: false,
+        error: `Facebook credentials not configured (PAGE_ID: ${FB_PAGE_ID ? "set" : "MISSING"}, TOKEN: ${FB_ACCESS_TOKEN ? "set" : "MISSING"})`,
+      };
     }
   }
 
@@ -49,36 +64,43 @@ export async function publishSocialPost(supabase: any, post: any) {
     if (IG_ACCOUNT_ID && IG_ACCESS_TOKEN && post.image_url) {
       try {
         // Step 1: Create media container
+        const containerParams = new URLSearchParams({
+          image_url: post.image_url,
+          caption: fullCaption,
+          access_token: IG_ACCESS_TOKEN,
+        });
+
         const containerRes = await fetch(
-          `https://graph.facebook.com/v19.0/${IG_ACCOUNT_ID}/media`,
+          `https://graph.facebook.com/${GRAPH_API_VERSION}/${IG_ACCOUNT_ID}/media`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              image_url: post.image_url,
-              caption: fullCaption,
-              access_token: IG_ACCESS_TOKEN,
-            }),
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: containerParams.toString(),
           },
         );
 
         const containerData = await containerRes.json();
+        console.log(`Instagram container response for post "${post.title}":`, JSON.stringify(containerData));
 
         if (containerData.id) {
           // Step 2: Publish the container
+          const publishParams = new URLSearchParams({
+            creation_id: containerData.id,
+            access_token: IG_ACCESS_TOKEN,
+          });
+
           const publishRes = await fetch(
-            `https://graph.facebook.com/v19.0/${IG_ACCOUNT_ID}/media_publish`,
+            `https://graph.facebook.com/${GRAPH_API_VERSION}/${IG_ACCOUNT_ID}/media_publish`,
             {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                creation_id: containerData.id,
-                access_token: IG_ACCESS_TOKEN,
-              }),
+              headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              body: publishParams.toString(),
             },
           );
 
           const publishData = await publishRes.json();
+          console.log(`Instagram publish response for post "${post.title}":`, JSON.stringify(publishData));
+
           if (publishData.id) {
             results.instagram = { success: true, post_id: publishData.id };
           } else {
@@ -94,6 +116,7 @@ export async function publishSocialPost(supabase: any, post: any) {
           };
         }
       } catch (igErr: any) {
+        console.error(`Instagram publish exception for post "${post.title}":`, igErr);
         results.instagram = { success: false, error: igErr.message };
       }
     } else if (!post.image_url) {
