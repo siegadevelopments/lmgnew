@@ -1,13 +1,7 @@
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-const supabase = createClient(supabaseUrl || "https://placeholder.supabase.co", supabaseAnonKey || "placeholder");
-
 const fallbackArticles = [
   {
     id: "1",
@@ -39,19 +33,15 @@ export async function DynamicArticles() {
   let articles = [];
   
   try {
-    if (supabaseUrl && supabaseAnonKey) {
-      const { data, error } = await supabase
-        .from("articles") // Adjust table name as needed
-        .select("*")
-        .in("category", ["Healthy Aging", "Menopause", "Lifestyle Medicine", "Nutrition", "Sleep"])
-        .order("created_at", { ascending: false })
-        .limit(3);
-        
-      if (!error && data && data.length > 0) {
-        articles = data;
-      } else {
-        articles = fallbackArticles;
-      }
+    const { data, error } = await supabase
+      .from("articles") // Adjust table name as needed
+      .select("*")
+      .in("category_name", ["Healthy Aging", "Menopause", "Lifestyle Medicine", "Nutrition", "Sleep"])
+      .order("created_at", { ascending: false })
+      .limit(3);
+      
+    if (!error && data && data.length > 0) {
+      articles = data;
     } else {
       articles = fallbackArticles;
     }
@@ -88,7 +78,7 @@ export async function DynamicArticles() {
                 />
               </div>
               <div className="text-sm font-semibold text-teal-600 mb-2 uppercase tracking-wide">
-                {article.category}
+                {article.category_name || article.category}
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-teal-700 transition-colors">
                 <Link href={`/blog/${article.slug}`}>

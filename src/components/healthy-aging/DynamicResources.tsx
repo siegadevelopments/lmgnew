@@ -1,13 +1,7 @@
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
 import Image from "next/image";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
-
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-const supabase = createClient(supabaseUrl || "https://placeholder.supabase.co", supabaseAnonKey || "placeholder");
-
 // Fallback data in case DB is not set up or empty
 const fallbackResources = [
   {
@@ -40,18 +34,14 @@ export async function DynamicResources() {
   let resources = [];
   
   try {
-    // Attempt to fetch from Supabase
-    if (supabaseUrl && supabaseAnonKey) {
-      const { data, error } = await supabase
-        .from("resources") // Adjust table name to match your actual schema
-        .select("*")
-        .limit(3);
-        
-      if (!error && data && data.length > 0) {
-        resources = data;
-      } else {
-        resources = fallbackResources;
-      }
+    const { data, error } = await supabase
+      .from("products") // Changed to match project schema (from queries.ts: products instead of resources)
+      .select("*")
+      .eq("status", "published")
+      .limit(3);
+      
+    if (!error && data && data.length > 0) {
+      resources = data;
     } else {
       resources = fallbackResources;
     }
