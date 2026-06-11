@@ -7,6 +7,7 @@ const fallbackArticles = [
     id: "1",
     title: "How to Build a Morning Routine for Healthy Aging",
     category: "Healthy Aging",
+    category_name: "Healthy Aging",
     excerpt: "Discover the 3 morning habits scientifically proven to regulate circadian rhythm and optimize daytime energy.",
     image_url: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=600",
     slug: "morning-routine-healthy-aging",
@@ -15,6 +16,7 @@ const fallbackArticles = [
     id: "2",
     title: "Navigating Menopause with Lifestyle Medicine",
     category: "Menopause",
+    category_name: "Menopause",
     excerpt: "Evidence-based strategies to manage hot flashes, brain fog, and sleep disruptions naturally.",
     image_url: "https://images.unsplash.com/photo-1512411032398-7c8a666991c2?auto=format&fit=crop&q=80&w=600",
     slug: "navigating-menopause-lifestyle-medicine",
@@ -23,6 +25,7 @@ const fallbackArticles = [
     id: "3",
     title: "The Mediterranean Diet and Cognitive Longevity",
     category: "Nutrition",
+    category_name: "Nutrition",
     excerpt: "How olive oil, leafy greens, and omega-3s protect your brain against cognitive decline.",
     image_url: "https://images.unsplash.com/photo-1498837167922-c779afa0fc11?auto=format&fit=crop&q=80&w=600",
     slug: "mediterranean-diet-cognitive-longevity",
@@ -30,7 +33,7 @@ const fallbackArticles = [
 ];
 
 export async function DynamicArticles() {
-  let articles = [];
+  let articles: any[] = [];
   
   try {
     const { data, error } = await supabase

@@ -31,7 +31,7 @@ const fallbackResources = [
 ];
 
 export async function DynamicResources() {
-  let resources = [];
+  let resources: any[] = [];
   
   try {
     const { data, error } = await supabase
