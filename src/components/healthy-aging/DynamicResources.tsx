@@ -3,12 +3,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 
-// Initialize SSR-safe public Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-const supabase = createClient(supabaseUrl || "https://placeholder.supabase.co", supabaseAnonKey || "placeholder", {
-  auth: { persistSession: false }
-});
 // Fallback data in case DB is not set up or empty
 const fallbackResources = [
   {
@@ -41,6 +35,10 @@ export async function DynamicResources() {
   let resources: any[] = [];
   
   try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder";
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
     const { data, error } = await supabase
       .from("products") // Changed to match project schema (from queries.ts: products instead of resources)
       .select("*")

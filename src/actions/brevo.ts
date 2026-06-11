@@ -31,9 +31,7 @@ export async function subscribeToBrevo(formData: FormData) {
     const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (SUPABASE_URL && SUPABASE_KEY) {
-      const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
-        auth: { persistSession: false },
-      });
+      const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
       
       const { error: dbError } = await supabase
         .from("newsletter_subscribers")
