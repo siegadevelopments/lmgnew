@@ -376,7 +376,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
           } else {
             setItems(data || []);
             if (activeType === "recipes") {
-              const allTags = new Set<string>();
+              const allTags = new Set<string>(["Mains", "Vegan", "Leftovers", "Drinks", "Breakfast", "Lunch", "Dinner", "Snacks", "Desserts", "Gluten-Free", "Dairy-Free"]);
               (data || []).forEach((r: any) => {
                 if (r.tags && Array.isArray(r.tags)) {
                   r.tags.forEach((t: string) => allTags.add(t));
@@ -435,7 +435,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       } else {
         setItems(data || []);
         if (activeType === "recipes") {
-          const allTags = new Set<string>();
+          const allTags = new Set<string>(["Mains", "Vegan", "Leftovers", "Drinks", "Breakfast", "Lunch", "Dinner", "Snacks", "Desserts", "Gluten-Free", "Dairy-Free"]);
           (data || []).forEach((r: any) => {
             if (r.tags && Array.isArray(r.tags)) {
               r.tags.forEach((t: string) => allTags.add(t));
