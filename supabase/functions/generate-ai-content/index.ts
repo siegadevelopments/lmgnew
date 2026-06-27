@@ -149,7 +149,7 @@ serve(async (req: Request) => {
                 temperature: 0.7,
                 topK: 40,
                 topP: 0.95,
-                maxOutputTokens: 2048,
+                maxOutputTokens: 8192,
                 ...( (type === "recipe" || type === "grammar") ? { responseMimeType: "application/json" } : {} )
               }
             }),
