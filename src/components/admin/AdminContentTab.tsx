@@ -1109,6 +1109,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         }
         throw contentError;
       }
+      if (contentData?.error) throw new Error(contentData.error);
       
       if (contentData?.content) {
         setContent(contentData.content);
@@ -1152,6 +1153,8 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         }
         throw error;
       }
+
+      if (data?.error) throw new Error(data.error);
 
       if (data) {
         if (data.title && data.title !== title) setTitle(data.title);
@@ -1550,6 +1553,9 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         }
         throw contentError;
       }
+      
+      if (contentData?.error) throw new Error(contentData.error);
+
       if (contentData?.content) {
         setContent(contentData.content);
         if (contentData.title && !title) setTitle(contentData.title);
