@@ -22,11 +22,10 @@ import {
   Package,
   Image as ImageIcon,
   Megaphone,
-  Facebook,
-  Instagram,
   Calendar,
   FileImage,
   Leaf,
+  Wand2,
 } from "lucide-react";
 import {
   Dialog,
@@ -184,6 +183,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [loadingScheduled, setLoadingScheduled] = useState(false);
   const [generatingExcerpt, setGeneratingExcerpt] = useState(false);
   const [generatingArticleContent, setGeneratingArticleContent] = useState(false);
+  const [checkingGrammar, setCheckingGrammar] = useState(false);
 
   useEffect(() => {
     const key = localStorage.getItem("unsplash_access_key") || "";
@@ -1119,6 +1119,50 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       toast.error(err.message || "Failed to generate article content", { id: toastId });
     } finally {
       setGeneratingArticleContent(false);
+    }
+  };
+
+  const checkGrammar = async () => {
+    if (!title && !excerpt && !content) {
+      toast.error("Nothing to check!");
+      return;
+    }
+    
+    setCheckingGrammar(true);
+    const toastId = toast.loading("Checking spelling and grammar...");
+    
+    try {
+      const textsToCheck: Record<string, string> = {};
+      if (title) textsToCheck.title = title;
+      if (excerpt) textsToCheck.excerpt = excerpt;
+      if (content) textsToCheck.content = content;
+
+      const { data, error } = await supabase.functions.invoke("generate-ai-content", {
+        body: { type: "grammar", textsToCheck },
+      });
+
+      if (error) {
+        if (error.context) {
+          try {
+            const body = await error.context.json();
+            if (body?.error) throw new Error(body.error);
+          } catch (e) {}
+        }
+        throw error;
+      }
+
+      if (data) {
+        if (data.title && data.title !== title) setTitle(data.title);
+        if (data.excerpt && data.excerpt !== excerpt) setExcerpt(data.excerpt);
+        if (data.content && data.content !== content) setContent(data.content);
+        toast.success("Spelling and grammar checked!", { id: toastId });
+      } else {
+        toast.error("Failed to receive corrected text.", { id: toastId });
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Grammar check failed", { id: toastId });
+    } finally {
+      setCheckingGrammar(false);
     }
   };
 
@@ -2334,6 +2378,19 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                   <>
                     <Plus className="mr-2 h-4 w-4" /> Create {activeType.slice(0, -1)}
                   </>
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={checkGrammar}
+                disabled={checkingGrammar || (!title && !excerpt && !content)}
+                className="flex-1 md:flex-none text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700 font-medium"
+              >
+                {checkingGrammar ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Checking...</>
+                ) : (
+                  <><Wand2 className="mr-2 h-4 w-4" /> Fix Spelling & Grammar</>
                 )}
               </Button>
               <Button

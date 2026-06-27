@@ -60,8 +60,8 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { title, type = "recipe", imageUrl } = await req.json();
-    if (!title && !imageUrl) throw new Error("Title or Image is required");
+    const { title, type = "recipe", imageUrl, textsToCheck } = await req.json();
+    if (!title && !imageUrl && !textsToCheck) throw new Error("Title, Image, or Text is required");
 
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
@@ -107,6 +107,15 @@ serve(async (req: Request) => {
       systemPrompt = "You are a creative copywriter specializing in healthy products and lifestyle medicine.";
       userPrompt = `Write an engaging, persuasive product description for "${title}". 
       Include key benefits, how to use, and why it's good for wellness. Use clean HTML formatting with p, ul, li, strong.`;
+    } else if (type === "grammar") {
+      systemPrompt = "You are an expert copyeditor and proofreader.";
+      userPrompt = `Fix all spelling and grammatical errors in the following JSON object's string values without changing the underlying meaning or HTML structure. 
+      Return the result as a STRICT JSON object with the exact same keys you received.
+      
+      Input JSON to correct:
+      ${JSON.stringify(textsToCheck, null, 2)}
+      
+      CRITICAL: Return ONLY the JSON object. Do not include markdown code blocks.`;
     } else {
       systemPrompt = "You are a professional health and wellness journalist.";
       userPrompt = `Write a professional, evidence-based article about "${title}". 
@@ -278,6 +287,17 @@ serve(async (req: Request) => {
             if (rawTags.length > 0) result.tags = rawTags;
           } catch (_) {}
         }
+      }
+    }
+    
+    if (type === "grammar") {
+      try {
+        const jsonMatch = generatedContent.match(/\{[\s\S]*\}/);
+        const toParse = jsonMatch ? jsonMatch[0] : generatedContent;
+        result = JSON.parse(toParse);
+      } catch (e) {
+        console.warn("Failed to parse grammar JSON:", e);
+        throw new Error("Grammar check failed to return valid JSON");
       }
     }
 
