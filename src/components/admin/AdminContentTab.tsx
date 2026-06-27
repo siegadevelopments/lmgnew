@@ -25,6 +25,8 @@ import {
   Facebook,
   Instagram,
   Calendar,
+  FileImage,
+  Leaf,
 } from "lucide-react";
 import {
   Dialog,
@@ -106,7 +108,7 @@ const CURATED_FOOD_IMAGES = [
 ];
 
 export function AdminContentTab({ vendors }: { vendors: any[] }) {
-  const [activeType, setActiveType] = useState<"articles" | "videos" | "recipes" | "products" | "media">(
+  const [activeType, setActiveType] = useState<"articles" | "videos" | "recipes" | "products" | "media" | "natural_remedies">(
     "articles",
   );
   const [items, setItems] = useState<any[]>([]);
@@ -354,10 +356,17 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
             query = query.eq("galleries.vendor_id", selectedVendorId);
           }
         } else {
-          query = (supabase.from(activeType) as any)
+          const targetTable = activeType === "natural_remedies" ? "articles" : activeType;
+          query = (supabase.from(targetTable) as any)
             .select("*")
             .order("created_at", { ascending: false })
             .limit(50);
+            
+          if (activeType === "natural_remedies") {
+            query = query.eq("category_name", "Natural remedies");
+          } else if (activeType === "articles") {
+            query = query.neq("category_name", "Natural remedies");
+          }
         }
 
         const { data, error } = await query;
@@ -417,10 +426,17 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
           query = query.eq("galleries.vendor_id", selectedVendorId);
         }
       } else {
-        query = (supabase.from(activeType) as any)
+        const targetTable = activeType === "natural_remedies" ? "articles" : activeType;
+        query = (supabase.from(targetTable) as any)
           .select("*")
           .order("created_at", { ascending: false })
           .limit(50);
+          
+        if (activeType === "natural_remedies") {
+          query = query.eq("category_name", "Natural remedies");
+        } else if (activeType === "articles") {
+          query = query.neq("category_name", "Natural remedies");
+        }
       }
 
       const { data, error } = await query;
@@ -719,8 +735,9 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   };
 
   const handlePublish = async (id: any) => {
+    const targetTable = activeType === "natural_remedies" ? "articles" : activeType;
     try {
-      const { error } = await (supabase.from(activeType) as any)
+      const { error } = await (supabase.from(targetTable) as any)
         .update({ status: "published" })
         .eq("id", id);
 
@@ -900,7 +917,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       let contextText = "";
       if (sharingItem) {
         const cleanContent = sharingItem.content?.replace(/<[^>]*>/g, ' ').substring(0, 1000) || "";
-        const itemUrl = `https://lifestylemedicinegateway.com.au/${activeType}/${sharingItem.slug}`;
+        const itemUrl = `https://lifestylemedicinegateway.com.au/${activeType === "natural_remedies" ? "articles" : activeType}/${sharingItem.slug}`;
         contextText = `Article Title: ${sharingItem.title}\nLink/URL: ${itemUrl}\nExcerpt: ${sharingItem.excerpt || ""}\nContent: ${cleanContent}`;
       } else {
         contextText = `Post Title: ${editingScheduledPost.title}\nSource URL: ${editingScheduledPost.source_url || ""}\nExisting Caption: ${editingScheduledPost.caption || ""}`;
@@ -1176,7 +1193,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
           .eq("id", editingScheduledPost.id);
         error = updateError;
       } else {
-        const sourceUrl = `/${activeType}/${sharingItem.slug}`;
+        const sourceUrl = `/${activeType === "natural_remedies" ? "articles" : activeType}/${sharingItem.slug}`;
         const { error: insertError } = await (supabase.from("scheduled_posts") as any).insert({
           title: shareForm.title,
           caption: shareForm.caption,
@@ -1185,7 +1202,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
             .map((h: string) => h.trim())
             .filter(Boolean),
           image_url: shareForm.imageUrl || null,
-          source_type: activeType === "articles" ? "article" : activeType === "recipes" ? "recipe" : activeType === "products" ? "product" : "custom",
+          source_type: (activeType === "articles" || activeType === "natural_remedies") ? "article" : activeType === "recipes" ? "recipe" : activeType === "products" ? "product" : "custom",
           source_id: String(sharingItem.id),
           source_url: sourceUrl,
           platforms: shareForm.platforms,
@@ -1297,15 +1314,18 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
 
       let result;
       if (editingId) {
-        if (activeType === "articles") {
-          result = await (supabase.from("articles") as any)
+        const targetTable = activeType === "natural_remedies" ? "articles" : activeType;
+
+        if (activeType === "articles" || activeType === "natural_remedies") {
+          result = await (supabase.from(targetTable) as any)
             .update({
-              ...commonData,
+              title,
               content,
-              image_url: imageUrl,
               excerpt,
-              category_name: category,
+              image_url: imageUrl,
+              category_name: activeType === "natural_remedies" ? "Natural remedies" : category,
               slug: title.toLowerCase().replace(/ /g, "-"),
+              author_id: selectedVendorId || undefined,
             })
             .eq("id", editingId);
         } else if (activeType === "recipes") {
@@ -1343,14 +1363,17 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
             .eq("id", editingId);
         }
       } else {
-        if (activeType === "articles") {
-          result = await (supabase.from("articles") as any).insert({
-            ...commonData,
+        const targetTable = activeType === "natural_remedies" ? "articles" : activeType;
+        
+        if (activeType === "articles" || activeType === "natural_remedies") {
+          result = await (supabase.from(targetTable) as any).insert({
+            title,
             content,
-            image_url: imageUrl,
             excerpt,
+            image_url: imageUrl,
+            category_name: activeType === "natural_remedies" ? "Natural remedies" : category,
             slug: title.toLowerCase().replace(/ /g, "-"),
-            category_name: category,
+            author_id: selectedVendorId || undefined,
           });
         } else if (activeType === "recipes") {
           result = await (supabase.from("recipes") as any).insert({
@@ -1600,7 +1623,8 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     if (itemToDelete.embed_url) urlsToCleanup.push(itemToDelete.embed_url);
     if (itemToDelete.thumbnail_url) urlsToCleanup.push(itemToDelete.thumbnail_url);
 
-    const { error } = await (supabase.from(activeType) as any).delete().eq("id", id);
+    const targetTable = activeType === "natural_remedies" ? "articles" : activeType;
+    const { error } = await (supabase.from(targetTable) as any).delete().eq("id", id);
     if (error) toast.error("Failed to delete");
     else {
       queryClient.invalidateQueries({ queryKey: ["videos", "list"] });
@@ -1664,39 +1688,49 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-base font-semibold">Content Type</label>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    variant={activeType === "articles" ? "default" : "outline"}
-                    onClick={() => setActiveType("articles")}
-                    className="h-10 text-base px-4 font-semibold"
-                  >
-                    <FileText className="mr-2 h-5 w-5" /> Article
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={activeType === "videos" ? "default" : "outline"}
-                    onClick={() => setActiveType("videos")}
-                    className="h-10 text-base px-4 font-semibold"
-                  >
-                    <Video className="mr-2 h-5 w-5" /> Video
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={activeType === "recipes" ? "default" : "outline"}
-                    onClick={() => setActiveType("recipes")}
-                    className="h-10 text-base px-4 font-semibold"
-                  >
-                    <Utensils className="mr-2 h-5 w-5" /> Recipe
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={activeType === "media" ? "default" : "outline"}
-                    onClick={() => setActiveType("media")}
-                    className="h-10 text-base px-4 font-semibold"
-                  >
-                    <ImageIcon className="mr-2 h-5 w-5" /> Media
-                  </Button>
+                <div className="flex flex-col gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant={activeType === "articles" ? "default" : "outline"}
+                      onClick={() => setActiveType("articles")}
+                      className="h-10 text-base px-4 font-semibold"
+                    >
+                      <FileText className="mr-2 h-5 w-5" /> Article
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={activeType === "videos" ? "default" : "outline"}
+                      onClick={() => setActiveType("videos")}
+                      className="h-10 text-base px-4 font-semibold"
+                    >
+                      <Video className="mr-2 h-5 w-5" /> Video
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={activeType === "recipes" ? "default" : "outline"}
+                      onClick={() => setActiveType("recipes")}
+                      className="h-10 text-base px-4 font-semibold"
+                    >
+                      <Utensils className="mr-2 h-5 w-5" /> Recipe
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button 
+                      variant={activeType === "media" ? "default" : "outline"}
+                      onClick={() => setActiveType("media")}
+                      className="h-10 text-base px-4 font-semibold"
+                    >
+                      <FileImage className="mr-2 h-4 w-4" /> Media Library
+                    </Button>
+                    <Button 
+                      variant={activeType === "natural_remedies" ? "default" : "outline"}
+                      onClick={() => setActiveType("natural_remedies")}
+                      className="h-10 text-base px-4 font-semibold bg-emerald-50 text-emerald-800 hover:bg-emerald-100 hover:text-emerald-900 border-emerald-200"
+                    >
+                      <Leaf className="mr-2 h-4 w-4" /> Natural Remedies
+                    </Button>
+                  </div>
                 </div>
               </div>
 
@@ -1765,32 +1799,32 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
               )}
             </div>
 
-            {activeType === "articles" && (
+            {(activeType === "articles" || activeType === "natural_remedies") && (
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Excerpt (Short summary for Anecdotes page)</label>
+                <label className="text-sm font-medium">Excerpt</label>
+                <div className="relative">
+                  <Textarea
+                    value={excerpt}
+                    onChange={(e) => setExcerpt(e.target.value)}
+                    placeholder="Brief description of the article..."
+                    className="min-h-[100px] pr-12"
+                  />
                   <Button
                     type="button"
-                    variant="outline"
-                    size="sm"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute bottom-2 right-2 h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
                     onClick={generateAIExcerpt}
-                    disabled={generatingExcerpt}
-                    className="h-7 text-xs bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-700 font-semibold gap-1.5"
+                    disabled={generatingExcerpt || !title}
+                    title="Generate Excerpt with AI"
                   >
                     {generatingExcerpt ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Sparkles className="h-3 w-3" />
+                      <Sparkles className="h-4 w-4" />
                     )}
-                    Write with AI
                   </Button>
                 </div>
-                <Textarea
-                  value={excerpt}
-                  onChange={(e) => setExcerpt(e.target.value)}
-                  placeholder="Enter a short summary or quote..."
-                  rows={2}
-                />
               </div>
             )}
 
@@ -2243,21 +2277,25 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                   <label className="text-sm font-medium">
                     {activeType === "videos" ? "Description" : "Content"}
                   </label>
-                  {activeType === "articles" && (
+                  {(activeType === "articles" || activeType === "natural_remedies") && (
                     <Button
                       type="button"
                       variant="outline"
-                      size="sm"
                       onClick={generateAIArticleContent}
-                      disabled={generatingArticleContent}
-                      className="h-7 text-xs bg-indigo-50 hover:bg-indigo-100 border-indigo-200 text-indigo-700 font-semibold gap-1.5"
+                      disabled={generatingArticleContent || !title}
+                      className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
                     >
                       {generatingArticleContent ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
                       ) : (
-                        <Sparkles className="h-3 w-3" />
+                        <>
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Auto-write with AI
+                        </>
                       )}
-                      Write with AI
                     </Button>
                   )}
                 </div>
@@ -2267,7 +2305,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                   </Badge>
                 )}
               </div>
-              {(activeType === "articles" || activeType === "recipes") ? (
+              {(activeType === "articles" || activeType === "recipes" || activeType === "natural_remedies") ? (
                 <RichTextEditor
                   value={content}
                   onChange={setContent}
@@ -2479,7 +2517,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
               </div>
               <div className="prose prose-slate max-w-none dark:prose-invert">
                 {content ? (
-                  (activeType === "articles" || activeType === "recipes") ? (
+                  (activeType === "articles" || activeType === "recipes" || activeType === "natural_remedies") ? (
                     <div 
                       className="rich-content"
                       dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }} 
@@ -2515,7 +2553,16 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
               Gourmet Recipe Enhancer
             </DialogTitle>
             <DialogDescription className="text-muted-foreground text-sm">
-              Automatically generate healthy recipe details (ingredients, instructions, wellness tips) and high-quality cover photos for all recipes.
+                {(activeType === "articles" || activeType === "recipes" || activeType === "natural_remedies") && (
+                  <div className="text-xs text-muted-foreground bg-emerald-50 text-emerald-800 p-3 rounded-lg flex items-start gap-2">
+                    <Sparkles className="h-4 w-4 mt-0.5 shrink-0" />
+                    <p>
+                      {activeType === "recipes" 
+                        ? "Automatically generate healthy recipe details (ingredients, instructions, wellness tips) and high-quality cover photos for all recipes."
+                        : "Use AI to automatically write full, well-researched content based on your title. It takes about 10-15 seconds to generate a full article."}
+                    </p>
+                  </div>
+                )}
             </DialogDescription>
           </DialogHeader>
 
@@ -3141,7 +3188,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                           />
                         </Button>
                       )}
-                      {(activeType === "articles" || activeType === "recipes") && item.status === "draft" && (
+                      {(activeType === "articles" || activeType === "recipes" || activeType === "natural_remedies") && item.status === "draft" && (
                         <Button
                           variant="ghost"
                           size="icon"
@@ -3152,18 +3199,18 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
                           <CheckCircle2 className="h-5 w-5" />
                         </Button>
                       )}
-                      {item.slug && (activeType === "articles" || activeType === "recipes") && (
+                      {item.slug && (activeType === "articles" || activeType === "recipes" || activeType === "natural_remedies") && (
                         <a 
-                          href={`/${activeType}/${item.slug}`} 
+                          href={`/${activeType === "natural_remedies" ? "articles" : activeType}/${item.slug}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="h-10 w-10 hover:bg-muted rounded-md text-muted-foreground transition-colors flex items-center justify-center shrink-0"
-                          title="View Published Page"
+                          className="flex h-8 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium hover:bg-slate-100"
                         >
-                          <ExternalLink className="h-5 w-5" />
+                          <ExternalLink className="mr-2 h-4 w-4" />
+                          View
                         </a>
                       )}
-                      {item.slug && (activeType === "articles" || activeType === "recipes" || activeType === "products") && (
+                      {item.slug && (activeType === "articles" || activeType === "recipes" || activeType === "natural_remedies" || activeType === "products") && (
                         <Button
                           variant="ghost"
                           size="icon"
