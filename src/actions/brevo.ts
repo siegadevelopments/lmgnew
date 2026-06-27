@@ -1,7 +1,6 @@
 "use server";
 
 import { z } from "zod";
-import { createClient } from "@supabase/supabase-js";
 
 const subscribeSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -31,14 +30,19 @@ export async function subscribeToBrevo(formData: FormData) {
     const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (SUPABASE_URL && SUPABASE_KEY) {
-      const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-      
-      const { error: dbError } = await supabase
-        .from("newsletter_subscribers")
-        .upsert({ email }, { onConflict: "email" });
+      const dbRes = await fetch(`${SUPABASE_URL}/rest/v1/newsletter_subscribers`, {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          "Content-Type": "application/json",
+          Prefer: "resolution=merge-duplicates"
+        },
+        body: JSON.stringify({ email })
+      });
         
-      if (dbError) {
-        console.error("Error adding to newsletter_subscribers:", dbError);
+      if (!dbRes.ok) {
+        console.error("Error adding to newsletter_subscribers:", await dbRes.text());
       }
     }
 

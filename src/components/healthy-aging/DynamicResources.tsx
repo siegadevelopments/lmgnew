@@ -1,4 +1,3 @@
-import { createClient } from "@supabase/supabase-js";
 import Image from "next/image";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
@@ -32,27 +31,7 @@ const fallbackResources = [
 ];
 
 export async function DynamicResources() {
-  let resources: any[] = [];
-  
-  try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder";
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-    const { data, error } = await supabase
-      .from("products") // Changed to match project schema (from queries.ts: products instead of resources)
-      .select("*")
-      .eq("status", "published")
-      .limit(3);
-      
-    if (!error && data && data.length > 0) {
-      resources = data;
-    } else {
-      resources = fallbackResources;
-    }
-  } catch (error) {
-    resources = fallbackResources;
-  }
+  const resources = fallbackResources;
 
   return (
     <section className="py-20 bg-cream-50">

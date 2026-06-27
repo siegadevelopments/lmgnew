@@ -1,4 +1,3 @@
-import { createClient } from "@supabase/supabase-js";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
@@ -34,28 +33,7 @@ const fallbackArticles = [
 ];
 
 export async function DynamicArticles() {
-  let articles: any[] = [];
-  
-  try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder";
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-    const { data, error } = await supabase
-      .from("articles") // Adjust table name as needed
-      .select("*")
-      .in("category_name", ["Healthy Aging", "Menopause", "Lifestyle Medicine", "Nutrition", "Sleep"])
-      .order("created_at", { ascending: false })
-      .limit(3);
-      
-    if (!error && data && data.length > 0) {
-      articles = data;
-    } else {
-      articles = fallbackArticles;
-    }
-  } catch (error) {
-    articles = fallbackArticles;
-  }
+  const articles = fallbackArticles;
 
   return (
     <section className="py-20 bg-white">

@@ -147,6 +147,9 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   const [cookTime, setCookTime] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [galleryCategory, setGalleryCategory] = useState<"vendor_gallery" | "charts" | "memes">("vendor_gallery");
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
+  const [availableTags, setAvailableTags] = useState<string[]>([]);
 
   // Unsplash Stock Image Search states
   const [stockSearchOpen, setStockSearchOpen] = useState(false);
@@ -259,6 +262,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         if (parsed.cookTime) setCookTime(parsed.cookTime);
         if (parsed.excerpt) setExcerpt(parsed.excerpt);
         if (parsed.galleryCategory) setGalleryCategory(parsed.galleryCategory);
+        if (parsed.tags) setTags(parsed.tags);
       } catch (e) {
         console.error("Failed to parse draft", e);
       }
@@ -273,6 +277,8 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       setExcerpt("");
       setCategory("General");
       setGalleryCategory("vendor_gallery");
+      setTags([]);
+      setTagInput("");
     }
   }, [activeType]);
 
@@ -282,10 +288,10 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     
     const draft = { 
       title, content, imageUrl, embedUrl, selectedVendorId, category, prepTime, cookTime, excerpt,
-      galleryCategory,
+      galleryCategory, tags
     };
     localStorage.setItem(`admin_content_draft_${activeType}`, JSON.stringify(draft));
-  }, [title, content, imageUrl, embedUrl, activeType, selectedVendorId, category, prepTime, cookTime, excerpt, galleryCategory, editingId]);
+  }, [title, content, imageUrl, embedUrl, activeType, selectedVendorId, category, prepTime, cookTime, excerpt, galleryCategory, tags, editingId]);
 
   // Resume Bulk Recipe Enhancement on mount if interrupted
   useEffect(() => {
@@ -369,6 +375,15 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
             })) || []);
           } else {
             setItems(data || []);
+            if (activeType === "recipes") {
+              const allTags = new Set<string>();
+              (data || []).forEach((r: any) => {
+                if (r.tags && Array.isArray(r.tags)) {
+                  r.tags.forEach((t: string) => allTags.add(t));
+                }
+              });
+              setAvailableTags(Array.from(allTags).sort());
+            }
           }
         }
       } catch (err) {
@@ -419,6 +434,15 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         })) || []);
       } else {
         setItems(data || []);
+        if (activeType === "recipes") {
+          const allTags = new Set<string>();
+          (data || []).forEach((r: any) => {
+            if (r.tags && Array.isArray(r.tags)) {
+              r.tags.forEach((t: string) => allTags.add(t));
+            }
+          });
+          setAvailableTags(Array.from(allTags).sort());
+        }
       }
     } catch (err) {
       console.error(`Error reloading ${activeType}:`, err);
@@ -730,6 +754,8 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     setExcerpt("");
     setCategory("General");
     setGalleryCategory("vendor_gallery");
+    setTags([]);
+    setTagInput("");
     setEditingId(null);
     setShowAddForm(false);
     clearDraft();
@@ -745,6 +771,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     setPrepTime(item.prep_time !== null && item.prep_time !== undefined ? item.prep_time.toString() : "");
     setCookTime(item.cook_time !== null && item.cook_time !== undefined ? item.cook_time.toString() : "");
     setExcerpt(item.excerpt || "");
+    setTags(item.tags || []);
     setSelectedVendorId(item.author_id || item.vendor_id || "");
     formRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -758,6 +785,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     setPrepTime(item.prep_time !== null && item.prep_time !== undefined ? item.prep_time.toString() : "");
     setCookTime(item.cook_time !== null && item.cook_time !== undefined ? item.cook_time.toString() : "");
     setExcerpt(item.excerpt || "");
+    setTags(item.tags || []);
     setSelectedVendorId(item.author_id || item.vendor_id || "");
     setPreviewOpen(true);
   };
@@ -1289,6 +1317,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
               prep_time: parseTimeString(prepTime),
               cook_time: parseTimeString(cookTime),
               slug: title.toLowerCase().replace(/ /g, "-"),
+              tags: tags,
             })
             .eq("id", editingId);
         } else if (activeType === "videos") {
@@ -1331,6 +1360,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
             slug: title.toLowerCase().replace(/ /g, "-"),
             prep_time: parseTimeString(prepTime),
             cook_time: parseTimeString(cookTime),
+            tags: tags,
           });
         } else if (activeType === "videos") {
           result = await (supabase.from("videos") as any).insert({
@@ -2109,24 +2139,92 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
             )}
 
             {activeType === "recipes" && (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Prep Time</label>
-                  <Input
-                    value={prepTime}
-                    onChange={(e) => setPrepTime(e.target.value)}
-                    placeholder="e.g. 15 mins"
-                  />
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Prep Time</label>
+                    <Input
+                      value={prepTime}
+                      onChange={(e) => setPrepTime(e.target.value)}
+                      placeholder="e.g. 15 mins"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Cook Time</label>
+                    <Input
+                      value={cookTime}
+                      onChange={(e) => setCookTime(e.target.value)}
+                      placeholder="e.g. 30 mins"
+                    />
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Cook Time</label>
-                  <Input
-                    value={cookTime}
-                    onChange={(e) => setCookTime(e.target.value)}
-                    placeholder="e.g. 30 mins"
-                  />
+                  <label className="text-sm font-medium">Tags</label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      placeholder="e.g. Mains, Vegan, Leftovers..."
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === ",") {
+                          e.preventDefault();
+                          const val = tagInput.trim();
+                          if (val && !tags.includes(val)) {
+                            setTags([...tags, val]);
+                          }
+                          setTagInput("");
+                        }
+                      }}
+                    />
+                    <Button 
+                      type="button" 
+                      variant="secondary"
+                      onClick={() => {
+                        const val = tagInput.trim();
+                        if (val && !tags.includes(val)) {
+                          setTags([...tags, val]);
+                        }
+                        setTagInput("");
+                      }}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                  {tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {tags.map((tag) => (
+                        <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                          {tag}
+                          <button
+                            type="button"
+                            onClick={() => setTags(tags.filter((t) => t !== tag))}
+                            className="hover:bg-slate-200 rounded-full p-0.5 ml-1"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  {availableTags.length > 0 && (
+                    <div className="mt-3">
+                      <p className="text-xs text-muted-foreground mb-2">Suggested tags (click to add):</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {availableTags.filter(t => !tags.includes(t)).map(tag => (
+                          <Badge 
+                            key={tag} 
+                            variant="outline" 
+                            className="cursor-pointer hover:bg-slate-100 text-xs py-0 h-5"
+                            onClick={() => setTags([...tags, tag])}
+                          >
+                            + {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
+              </>
             )}
 
             <div className="space-y-2">

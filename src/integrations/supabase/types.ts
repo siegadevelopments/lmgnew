@@ -281,6 +281,7 @@ export interface Database {
           image_url: string | null;
           prep_time: number | null;
           cook_time: number | null;
+          tags: string[] | null;
           created_at: string;
           updated_at: string;
         };
