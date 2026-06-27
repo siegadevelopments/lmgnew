@@ -22,6 +22,8 @@ import {
   Package,
   Image as ImageIcon,
   Megaphone,
+  Facebook,
+  Instagram,
   Calendar,
   FileImage,
   Leaf,
