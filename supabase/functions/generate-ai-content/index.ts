@@ -141,6 +141,7 @@ serve(async (req: Request) => {
                 topK: 40,
                 topP: 0.95,
                 maxOutputTokens: 2048,
+                responseMimeType: "application/json",
               }
             }),
           }
@@ -191,6 +192,7 @@ serve(async (req: Request) => {
             model: "gpt-4o-mini",
             messages,
             temperature: 0.7,
+            response_format: { type: "json_object" },
           }),
         });
 
@@ -265,6 +267,17 @@ serve(async (req: Request) => {
           prep_time: 15, 
           cook_time: 15 
         };
+        const titleMatch = generatedContent.match(/"title"\s*:\s*"([^"]+)"/i);
+        if (titleMatch && titleMatch[1]) {
+          result.title = titleMatch[1];
+        }
+        const tagsMatch = generatedContent.match(/"tags"\s*:\s*\[([^\]]+)\]/i);
+        if (tagsMatch && tagsMatch[1]) {
+          try {
+            const rawTags = tagsMatch[1].split(',').map(t => t.trim().replace(/"/g, ''));
+            if (rawTags.length > 0) result.tags = rawTags;
+          } catch (_) {}
+        }
       }
     }
 
