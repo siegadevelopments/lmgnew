@@ -1453,16 +1453,20 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   };
 
   const generateAIRecipe = async () => {
-    if (!title) {
-      toast.error("Enter a recipe title first");
+    if (!title && !imageUrl) {
+      toast.error("Enter a recipe title or upload an image first");
       return;
     }
     setGeneratingRecipe(true);
-    const toastId = toast.loading("Health chef is writing your recipe...");
+    const toastId = toast.loading(imageUrl && !title ? "Analyzing image & writing recipe..." : "Health chef is writing your recipe...");
     try {
       // 1. Generate Content
+      const payload: any = { type: "recipe" };
+      if (title) payload.title = title;
+      if (imageUrl) payload.imageUrl = imageUrl;
+      
       const { data: contentData, error: contentError } = await supabase.functions.invoke("generate-ai-content", {
-        body: { title, type: "recipe" },
+        body: payload,
       });
       if (contentError) {
         if (contentError.context) {
@@ -1479,13 +1483,19 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       }
       if (contentData?.content) {
         setContent(contentData.content);
+        if (contentData.title && !title) setTitle(contentData.title);
         if (contentData.prep_time) setPrepTime(contentData.prep_time.toString());
         if (contentData.cook_time) setCookTime(contentData.cook_time.toString());
+        if (contentData.tags && Array.isArray(contentData.tags)) {
+          setTags((prev) => Array.from(new Set([...prev, ...contentData.tags])));
+        }
         
         toast.success("Recipe content generated!", { id: toastId });
         
-        // 2. Generate Image sequentially
-        await generateAIThumbnail();
+        // 2. Generate Image sequentially only if no image was provided
+        if (!imageUrl) {
+          await generateAIThumbnail();
+        }
       }
     } catch (err: any) {
       toast.error(err.message || "AI Chef failed", { id: toastId });
