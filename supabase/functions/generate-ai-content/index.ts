@@ -298,9 +298,20 @@ serve(async (req: Request) => {
       } catch (e) {
         console.warn("Failed to parse grammar JSON:", e);
         // Fallback: If AI completely hallucinated JSON formatting (common with free fallback APIs),
-        // try to extract just the raw text and return it for the 'content' field as a best-effort.
+        // use regex to forcefully extract just the value of the "content" key.
+        let extracted = generatedContent;
+        const contentMatch = generatedContent.match(/"content"\s*:\s*"(.*?)"(?:\s*,\s*"[^"]+"\s*:|\s*\})/s);
+        if (contentMatch && contentMatch[1]) {
+          extracted = contentMatch[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\n/g, '\n');
+        } else {
+           const looseMatch = generatedContent.match(/"content"\s*:\s*"(.*)/s);
+           if (looseMatch && looseMatch[1]) {
+             extracted = looseMatch[1].replace(/"\s*\}\s*$/, "").replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\n/g, '\n');
+           }
+        }
+        
         result = {
-          content: cleanRawJsonContent(generatedContent)
+          content: extracted
         };
         // We will keep other fields unchanged if they existed in textsToCheck.
       }
