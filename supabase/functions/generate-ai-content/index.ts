@@ -297,7 +297,12 @@ serve(async (req: Request) => {
         result = JSON.parse(toParse);
       } catch (e) {
         console.warn("Failed to parse grammar JSON:", e);
-        throw new Error("Grammar check failed to return valid JSON");
+        // Fallback: If AI completely hallucinated JSON formatting (common with free fallback APIs),
+        // try to extract just the raw text and return it for the 'content' field as a best-effort.
+        result = {
+          content: cleanRawJsonContent(generatedContent)
+        };
+        // We will keep other fields unchanged if they existed in textsToCheck.
       }
     }
 
