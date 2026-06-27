@@ -108,14 +108,14 @@ serve(async (req: Request) => {
       userPrompt = `Write an engaging, persuasive product description for "${title}". 
       Include key benefits, how to use, and why it's good for wellness. Use clean HTML formatting with p, ul, li, strong.`;
     } else if (type === "grammar") {
-      systemPrompt = "You are an expert copyeditor and proofreader.";
-      userPrompt = `Fix all spelling and grammatical errors in the following JSON object's string values without changing the underlying meaning or HTML structure. 
-      Return the result as a STRICT JSON object with the exact same keys you received.
+      systemPrompt = "You are an expert copyeditor and proofreader. Your ONLY job is to identify and fix spelling, grammar, and punctuation errors. You MUST correct any mistakes you find.";
+      userPrompt = `Fix ALL spelling, punctuation, and grammatical errors in the following JSON object's string values. 
+      Make the text read naturally and professionally. DO NOT change the HTML tags or structure.
       
       Input JSON to correct:
       ${JSON.stringify(textsToCheck, null, 2)}
       
-      CRITICAL: Return ONLY the JSON object. Do not include markdown code blocks.`;
+      CRITICAL: Return the corrected result as a STRICT JSON object with the exact same keys. Do not include markdown code blocks.`;
     } else {
       systemPrompt = "You are a professional health and wellness journalist.";
       userPrompt = `Write a professional, evidence-based article about "${title}". 
@@ -146,7 +146,7 @@ serve(async (req: Request) => {
             body: JSON.stringify({
               contents: [{ role: "user", parts }],
               generationConfig: {
-                temperature: 0.7,
+                temperature: type === "grammar" ? 0.2 : 0.7,
                 topK: 40,
                 topP: 0.95,
                 maxOutputTokens: 8192,
@@ -200,7 +200,7 @@ serve(async (req: Request) => {
           body: JSON.stringify({
             model: "gpt-4o-mini",
             messages,
-            temperature: 0.7,
+            temperature: type === "grammar" ? 0.2 : 0.7,
             ...( (type === "recipe" || type === "grammar") ? { response_format: { type: "json_object" } } : {} ),
           }),
         });
