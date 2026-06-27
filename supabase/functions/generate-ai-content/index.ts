@@ -150,7 +150,7 @@ serve(async (req: Request) => {
                 topK: 40,
                 topP: 0.95,
                 maxOutputTokens: 2048,
-                responseMimeType: "application/json",
+                ...( (type === "recipe" || type === "grammar") ? { responseMimeType: "application/json" } : {} )
               }
             }),
           }
@@ -201,7 +201,7 @@ serve(async (req: Request) => {
             model: "gpt-4o-mini",
             messages,
             temperature: 0.7,
-            response_format: { type: "json_object" },
+            ...( (type === "recipe" || type === "grammar") ? { response_format: { type: "json_object" } } : {} ),
           }),
         });
 
@@ -234,7 +234,7 @@ serve(async (req: Request) => {
               { role: "user", content: userPrompt }
             ],
             private: true,
-            jsonMode: true
+            ...( (type === "recipe" || type === "grammar") ? { jsonMode: true } : {} )
           })
         });
 
