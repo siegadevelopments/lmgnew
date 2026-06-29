@@ -34,11 +34,11 @@ const footerLinks = {
     { label: "Services", to: "/services" },
     { label: "Brands", to: "/vendors" },
     { label: "Buying Guides", to: "/guides" },
-    { label: "Recipes", to: "/recipes" },
   ],
   Learn: [
     { label: "Articles", to: "/articles" },
     { label: "Videos", to: "/videos" },
+    { label: "Recipes", to: "/recipes" },
     { label: "Natural Remedies", to: "/natural-remedies" },
     { label: "Studies", to: "/studies" },
   ],

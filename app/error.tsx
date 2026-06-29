@@ -21,7 +21,10 @@ export default function GlobalError({
         <AlertTriangle className="h-10 w-10" />
       </div>
       <h2 className="text-2xl font-bold tracking-tight">Something went wrong</h2>
-      <p className="mt-2 mb-8 max-w-md text-muted-foreground">
+      <p className="mt-2 mb-4 max-w-md text-muted-foreground font-mono text-sm break-all text-red-500">
+        Error Details: {error.message}
+      </p>
+      <p className="mb-8 max-w-md text-muted-foreground">
         We encountered an error while loading this page. This is usually due to a stale connection or cache issue.
       </p>
       <div className="flex flex-col sm:flex-row gap-4">
