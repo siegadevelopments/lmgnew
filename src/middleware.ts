@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 // Set to true to enable maintenance mode globally
-const MAINTENANCE_MODE = false;
+const MAINTENANCE_MODE = true;
 
 const MAINTENANCE_HTML = `<!DOCTYPE html>
 <html lang="en">
