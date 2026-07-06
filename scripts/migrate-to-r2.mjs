@@ -75,9 +75,10 @@ async function main() {
     { table: "recipes", columns: ["image_url"] },
     { table: "articles", columns: ["image_url"] },
     { table: "gallery_items", columns: ["image_url"] },
-    { table: "vendor_profiles", columns: ["store_logo_url", "store_banner_url", "banner_url"] },
+    { table: "vendor_profiles", columns: ["store_logo_url", "store_banner_url"] },
     { table: "products", columns: ["image_url"] },
-    { table: "services", columns: ["image_url"] },
+    { table: "profiles", columns: ["avatar_url"] },
+    { table: "videos", columns: ["thumbnail_url"] },
   ];
 
   let migratedCount = 0;
@@ -103,8 +104,9 @@ async function main() {
             const parts = url.split("/storage/v1/object/public/media/");
             if (parts.length < 2) continue;
             
-            const filePath = parts[1];
-            if (!filePath) continue;
+            const rawFilePath = parts[1];
+            if (!rawFilePath) continue;
+            const filePath = decodeURIComponent(rawFilePath);
 
             try {
               console.log(`Found file to migrate: "${filePath}" from table "${target.table}" (row identifier: ${row.id || row.slug})`);
@@ -140,8 +142,8 @@ async function main() {
 
               // 3. Construct new public R2 URL
               const r2Url = R2_CUSTOM_DOMAIN
-                ? `https://${R2_CUSTOM_DOMAIN}/${filePath}`
-                : `${R2_ENDPOINT}/${R2_BUCKET_NAME}/${filePath}`;
+                ? `https://${R2_CUSTOM_DOMAIN}/${rawFilePath}`
+                : `${R2_ENDPOINT}/${R2_BUCKET_NAME}/${rawFilePath}`;
 
               // 4. Update the database record
               console.log(`  Updating database record with R2 URL...`);

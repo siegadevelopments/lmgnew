@@ -1,0 +1,19 @@
+{
+  "generatedAt": "2026-07-05T06:56:33.165Z",
+  "summary": {
+    "dbImageRefsColumns": 0,
+    "dbImageRefsBody": 0,
+    "supabaseStorageFiles": 0,
+    "urlsPointingToSupabase": 0,
+    "urlsPointingToR2": 0,
+    "urlsExternal": 0
+  },
+  "findings": {
+    "potentialDuplicatesInBothStorages": [],
+    "staleSupabaseDbRefs": [],
+    "orphanedSupabaseFiles": [],
+    "bodySupabaseRefs": [],
+    "sharedUrls": []
+  },
+  "allSupabaseStorageFiles": []
+}
