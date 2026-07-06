@@ -475,8 +475,15 @@ const guideMatches: GuideMatch[] = [
       name: "Catchin’ rays",
       slug: "catchin-rays",
     }
-  }
 ];
+
+export const allGuides = guideMatches.map((match) => ({
+  title: match.problem,
+  description: `Solutions: ${match.solutions.map(s => s.name).join(", ")}. Vendor: ${match.vendor.name}`,
+  slug: match.solutions[0]?.slug || "",
+  category: match.category,
+  icon: "🔍",
+}));
 
 export default function GuidesPage() {
   const [searchQuery, setSearchQuery] = useState("");
