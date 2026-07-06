@@ -475,6 +475,7 @@ const guideMatches: GuideMatch[] = [
       name: "Catchin’ rays",
       slug: "catchin-rays",
     }
+  },
 ];
 
 export const allGuides = guideMatches.map((match) => ({
