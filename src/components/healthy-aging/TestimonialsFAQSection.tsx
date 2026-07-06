@@ -30,7 +30,7 @@ const faqs = [
   },
   {
     question: "Who is this guide for?",
-    answer: "This guide is specifically designed for adults aged 45-75 (especially women navigating menopause and men focused on longevity) who want to proactively protect their health, energy, and mobility using proven scientific methods.",
+    answer: "This guide is specifically designed for adults aged 35-70 (especially women navigating menopause and men focused on longevity) who want to proactively protect their health, energy, and mobility using proven scientific methods.",
   },
   {
     question: "Is the guide free?",

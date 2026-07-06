@@ -2,13 +2,13 @@ import { ArrowRight, BookOpen, Utensils, Zap, BedDouble, ShieldAlert, Heart } fr
 
 const topics = [
   {
-    title: "Nutrition",
-    description: "Learn which foods support cellular health and reduce inflammation.",
+    title: "Nutrition & Gut Health",
+    description: "Learn which healthy foods and supplements support your microbiome, reduce inflammation, and aid in weight management.",
     icon: <Utensils className="w-6 h-6 text-teal-600" />,
   },
   {
-    title: "Movement",
-    description: "Discover simple routines to maintain muscle mass and bone density.",
+    title: "Movement & Disease Prevention",
+    description: "Discover simple routines for heart health, diabetes prevention, and maintaining muscle mass.",
     icon: <Zap className="w-6 h-6 text-teal-600" />,
   },
   {
@@ -27,8 +27,8 @@ const topics = [
     icon: <Heart className="w-6 h-6 text-teal-600" />,
   },
   {
-    title: "Long-Term Health",
-    description: "Build a personalized roadmap for your healthy aging journey.",
+    title: "Hormones & Menopause",
+    description: "Navigate natural changes smoothly with targeted lifestyle medicine and healthy ageing practices.",
     icon: <BookOpen className="w-6 h-6 text-teal-600" />,
   },
 ];

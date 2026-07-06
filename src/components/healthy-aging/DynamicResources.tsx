@@ -53,6 +53,7 @@ export async function DynamicResources() {
                   src={resource.image_url}
                   alt={resource.title}
                   fill
+                  unoptimized
                   className="object-cover"
                 />
                 <div className="absolute top-4 left-4 bg-white/90 backdrop-blur text-teal-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
