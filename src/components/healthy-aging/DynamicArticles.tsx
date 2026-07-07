@@ -18,7 +18,7 @@ const fallbackArticles = [
     category: "Menopause",
     category_name: "Menopause",
     excerpt: "Evidence-based strategies to manage hot flashes, brain fog, and sleep disruptions naturally.",
-    image_url: "https://images.unsplash.com/photo-1512411032398-7c8a666991c2?auto=format&fit=crop&q=80&w=600",
+    image_url: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&q=80&w=600",
     slug: "navigating-menopause-lifestyle-medicine",
   },
   {
@@ -27,7 +27,7 @@ const fallbackArticles = [
     category: "Nutrition",
     category_name: "Nutrition",
     excerpt: "How olive oil, leafy greens, and omega-3s protect your brain against cognitive decline.",
-    image_url: "https://images.unsplash.com/photo-1498837167922-c779afa0fc11?auto=format&fit=crop&q=80&w=600",
+    image_url: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&q=80&w=600",
     slug: "mediterranean-diet-cognitive-longevity",
   },
 ];

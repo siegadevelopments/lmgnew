@@ -17,7 +17,7 @@ const fallbackResources = [
     title: "Organic Ashwagandha Extract",
     category: "Stress Management",
     description: "Evidence-based adaptogen that helps modulate cortisol levels and promote a sense of calm.",
-    image_url: "https://images.unsplash.com/photo-1611078485741-2ab0922841e4?auto=format&fit=crop&q=80&w=600",
+    image_url: "https://images.unsplash.com/photo-1550572017-edb9b47da664?auto=format&fit=crop&q=80&w=600",
     affiliate_url: "#",
   },
   {
