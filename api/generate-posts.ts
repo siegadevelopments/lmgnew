@@ -148,6 +148,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       startDate,
       selectedDays = [1, 3, 5],
       specificDates = null,
+      targetPlatform = "both",
     } = req.body || {};
     const postsPerWeek = selectedDays ? selectedDays.length : 0;
     const totalPostsCount = specificDates ? specificDates.length : numWeeks * postsPerWeek;
@@ -313,7 +314,7 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
           source_type: post.source_type || "custom",
           source_id: post.source_id ? String(post.source_id) : null,
           source_url: post.source_url || null,
-          platforms: ["facebook", "instagram"],
+          platforms: targetPlatform === "both" ? ["facebook", "instagram"] : [targetPlatform],
           scheduled_at: scheduledAtISO,
           status: "draft",
         });
@@ -358,7 +359,7 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
             source_type: post.source_type || "custom",
             source_id: post.source_id ? String(post.source_id) : null,
             source_url: post.source_url || null,
-            platforms: ["facebook", "instagram"],
+            platforms: targetPlatform === "both" ? ["facebook", "instagram"] : [targetPlatform],
             scheduled_at: scheduledAtISO,
             status: "draft",
           });

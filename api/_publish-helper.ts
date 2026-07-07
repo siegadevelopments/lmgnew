@@ -64,8 +64,12 @@ export async function publishSocialPost(supabase: any, post: any) {
     if (IG_ACCOUNT_ID && IG_ACCESS_TOKEN && post.image_url) {
       try {
         // Step 1: Create media container
+        const absoluteImageUrl = post.image_url.startsWith("http")
+          ? post.image_url
+          : `https://lifestylemedicinegateway.com${post.image_url.startsWith("/") ? "" : "/"}${post.image_url}`;
+
         const containerParams = new URLSearchParams({
-          image_url: post.image_url,
+          image_url: absoluteImageUrl,
           caption: fullCaption,
           access_token: IG_ACCESS_TOKEN,
         });

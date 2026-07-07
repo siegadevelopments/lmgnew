@@ -284,6 +284,7 @@ export function AdminMarketingTab() {
           numWeeks,
           selectedDays: selectionMode === "weekly" ? selectedDays : null,
           specificDates: selectionMode === "manual" ? selectedSpecificDates : null,
+          targetPlatform,
         }),
       });
 
@@ -449,7 +450,7 @@ export function AdminMarketingTab() {
         image_url: manualForm.image_url || null,
         source_type: "custom",
         source_url: manualForm.source_url || null,
-        platforms: ["facebook", "instagram"],
+        platforms: targetPlatform === "both" ? ["facebook", "instagram"] : [targetPlatform],
         scheduled_at: parseMelbourneTimeToUTC(manualForm.scheduled_at),
         status: "draft",
       });
