@@ -1,4 +1,4 @@
-const GRAPH_API_VERSION = "v25.0";
+const GRAPH_API_VERSION = "v20.0";
 
 export async function publishSocialPost(supabase: any, post: any) {
   const platforms = post.platforms || ["facebook", "instagram"];
