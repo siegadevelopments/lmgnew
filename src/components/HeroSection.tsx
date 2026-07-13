@@ -66,22 +66,21 @@ export function HeroSection() {
             variants={itemVariants}
             className="mb-4 inline-block rounded-full bg-primary/20 px-4 py-1.5 text-xs font-semibold tracking-wide text-primary-foreground"
           >
-            Australia&apos;s Wellness Marketplace
+            Lifestyle as Medicine
           </motion.span>
           <motion.h1
             variants={itemVariants}
             className="text-4xl font-black leading-tight tracking-tighter text-primary-foreground sm:text-5xl lg:text-7xl text-balance"
           >
-            Discover Trusted{" "}
-            <span className="text-wellness-light drop-shadow-sm">Wellness Products</span>{" "}
-            for Healthy Ageing
+            Empowering Your{" "}
+            <span className="text-wellness-light drop-shadow-sm">Health Journey</span>
           </motion.h1>
           <motion.p
             variants={itemVariants}
             className="mt-6 max-w-xl text-base leading-relaxed text-primary-foreground/90 sm:text-lg font-medium"
           >
-            Shop evidence-based wellness products recommended by health experts and trusted
-            Australian brands.
+            Discover curated wellness products, evidence-based articles, and nourishing recipes
+            designed to guide your unique health journey using lifestyle as medicine.
           </motion.p>
 
           <motion.div variants={itemVariants} className="mt-8 flex flex-wrap gap-3">
