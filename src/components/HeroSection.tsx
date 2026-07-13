@@ -79,8 +79,7 @@ export function HeroSection() {
             variants={itemVariants}
             className="mt-6 max-w-xl text-base leading-relaxed text-primary-foreground/90 sm:text-lg font-medium"
           >
-            Discover curated wellness products, evidence-based articles, and nourishing recipes
-            designed to guide your unique health journey using lifestyle as medicine.
+            Discover trusted Australian wellness products, practical recipes, and evidence-based guidance to support menopause, gut health, better sleep, and lasting energy.
           </motion.p>
 
           <motion.div variants={itemVariants} className="mt-8 flex flex-wrap gap-3">
