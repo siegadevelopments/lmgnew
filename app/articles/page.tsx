@@ -14,12 +14,20 @@ export default function ArticlesPage() {
   const { data: articles, isLoading, error } = useQuery(articlesQueryOptions());
   const [search, setSearch] = useState("");
 
-  const filteredArticles = (articles || []).filter(
-    (article) =>
-      (article.title?.toLowerCase() || "").includes(search.toLowerCase()) ||
-      (decodeEntities(article.title || "").toLowerCase()).includes(search.toLowerCase()) ||
-      (article.excerpt?.toLowerCase() || "").includes(search.toLowerCase()),
-  );
+  const filteredArticles = (articles || []).filter((article) => {
+    // Exclude natural remedies from the main articles view
+    const cat = article.category_name?.toLowerCase() || "";
+    if (cat === "natural remedies" || cat === "remedies") return false;
+
+    // Apply search filter
+    if (!search) return true;
+    const searchLower = search.toLowerCase();
+    return (
+      (article.title?.toLowerCase() || "").includes(searchLower) ||
+      (decodeEntities(article.title || "").toLowerCase()).includes(searchLower) ||
+      (article.excerpt?.toLowerCase() || "").includes(searchLower)
+    );
+  });
 
   return (
     <div className="bg-background min-h-screen">
