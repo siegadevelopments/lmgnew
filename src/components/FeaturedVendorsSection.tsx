@@ -41,7 +41,7 @@ export function FeaturedVendorsSection() {
               : [...(vendors || []), ...(vendors || [])].map((vendor, idx) => (
                   <Link
                     key={`${vendor.id}-${idx}`}
-                    href={`/vendors/${vendor.id}`}
+                    href={`/vendors/${vendor.store_slug || vendor.id}`}
                     className="group flex flex-col items-center gap-4 transition-all duration-300 hover:-translate-y-2 shrink-0"
                   >
                     <div className="relative h-20 w-20">

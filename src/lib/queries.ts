@@ -103,6 +103,7 @@ export const productBySlugQueryOptionsV2 = (slug: string) =>
               id,
               store_name,
               store_logo_url,
+              store_slug,
               is_approved,
               is_live
             )
@@ -318,7 +319,7 @@ export const brandsQueryOptions = () =>
       try {
         const { data, error } = await supabase
           .from("vendor_profiles")
-          .select("id, store_name, store_description, store_logo_url, created_at")
+          .select("id, store_name, store_description, store_logo_url, store_slug, created_at")
           .eq("is_approved", true)
           .order("created_at", { ascending: false })
           .limit(100);

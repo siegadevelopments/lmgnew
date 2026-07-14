@@ -335,7 +335,7 @@ function ProductContent() {
                 <span className="text-sm text-muted-foreground">
                   Sold by{" "}
                   <Link
-                    href={`/vendors/${product.vendor_profiles.id}`}
+                    href={`/vendors/${product.vendor_profiles.store_slug || product.vendor_profiles.id}`}
                     className="font-semibold text-primary hover:underline"
                   >
                     {product.vendor_profiles.store_name}

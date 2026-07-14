@@ -53,7 +53,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     supabase.from('products').select('slug, updated_at').eq('status', 'published'),
     supabase.from('articles').select('slug, updated_at'),
     supabase.from('recipes').select('slug, updated_at'),
-    supabase.from('vendor_profiles').select('store_name, updated_at').eq('is_approved', true),
+    supabase.from('vendor_profiles').select('id, store_name, store_slug, updated_at').eq('is_approved', true),
   ]);
 
   const productPages: MetadataRoute.Sitemap = (productsRes.data || []).map((p) => ({
@@ -78,7 +78,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   const vendorPages: MetadataRoute.Sitemap = (vendorsRes.data || []).map((v) => ({
-    url: `${SITE_URL}/vendors/${encodeURIComponent(v.store_name.toLowerCase().replace(/\s+/g, '-'))}`,
+    url: `${SITE_URL}/vendors/${v.store_slug || v.id}`,
     lastModified: v.updated_at ? new Date(v.updated_at) : new Date(),
     changeFrequency: 'weekly' as const,
     priority: 0.7,

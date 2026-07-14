@@ -1,6 +1,6 @@
 'use client'
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +31,9 @@ import { toast } from "sonner";
 import { ChatDialog } from "@/components/chat/ChatDialog";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { SharePopover } from "@/components/SharePopover";
+
+/** UUID v4 regex */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Extract YouTube video ID from any known URL format */
 function extractYouTubeId(url: string): string | null {
@@ -94,16 +97,32 @@ function getEmbedUrl(url: string, autoplay = false): string {
 export default function VendorPage() {
   const params = useParams();
   const slug = params?.slug as string;
+  const router = useRouter();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const isUuid = UUID_RE.test(slug);
 
   const { data: vendor, isLoading: vendorLoading } = useQuery({
     queryKey: ["vendor", slug],
     queryFn: async () => {
+      // Try store_slug first (for human-readable URLs)
+      if (!isUuid) {
+        const { data, error } = await supabase
+          .from("vendor_profiles")
+          .select(
+            "id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, vendor_type, created_at, updated_at, store_categories, store_slug",
+          )
+          .eq("store_slug", slug)
+          .single();
+        if (data) return data as any;
+        if (error && error.code !== "PGRST116") throw error;
+      }
+
+      // Fallback to UUID lookup (backward compatibility)
       const { data, error } = await supabase
         .from("vendor_profiles")
         .select(
-          "id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, vendor_type, created_at, updated_at, store_categories",
+          "id, store_name, store_description, store_logo_url, store_banner_url, website, instagram, facebook, twitter, is_approved, vendor_type, created_at, updated_at, store_categories, store_slug",
         )
         .eq("id", slug)
         .single();
@@ -112,51 +131,61 @@ export default function VendorPage() {
     },
   });
 
+  // Auto-redirect UUID URLs to the canonical slug URL
+  useEffect(() => {
+    if (vendor?.store_slug && isUuid && vendor.store_slug !== slug) {
+      router.replace(`/vendors/${vendor.store_slug}`, { scroll: false });
+    }
+  }, [vendor, isUuid, slug, router]);
+
+  // The actual vendor UUID for sub-queries (slug in the URL may be store_slug)
+  const vendorId = vendor?.id;
+
   const { data: vendorProducts } = useQuery({
-    queryKey: ["products", "vendor", slug],
+    queryKey: ["products", "vendor", vendorId],
     queryFn: async () => {
       const { data } = await supabase
         .from("products")
         .select("*")
-        .eq("vendor_id", slug)
+        .eq("vendor_id", vendorId!)
         .eq("status", "published");
       return (data as any[]) || [];
     },
-    enabled: !!slug,
+    enabled: !!vendorId,
   });
 
   const { data: vendorVideos } = useQuery({
-    queryKey: ["videos", "vendor", slug],
+    queryKey: ["videos", "vendor", vendorId],
     queryFn: async () => {
-      const { data } = await supabase.from("videos").select("*").eq("author_id", slug);
+      const { data } = await supabase.from("videos").select("*").eq("author_id", vendorId!);
       return (data as any[]) || [];
     },
-    enabled: !!slug,
+    enabled: !!vendorId,
   });
 
   const { data: vendorGallery } = useQuery({
-    queryKey: ["vendor_gallery", slug],
+    queryKey: ["vendor_gallery", vendorId],
     queryFn: async () => {
       const { data } = await supabase
         .from("gallery_items")
         .select("*, galleries!inner(*)")
-        .eq("galleries.vendor_id", slug)
+        .eq("galleries.vendor_id", vendorId!)
         .eq("galleries.category", "vendor_gallery");
       return (data as any[]) || [];
     },
-    enabled: !!slug,
+    enabled: !!vendorId,
   });
 
   const { data: streamInfo } = useQuery({
-    queryKey: ["vendor_stream", slug],
+    queryKey: ["vendor_stream", vendorId],
     queryFn: async () => {
       const { data } = await (supabase.from("vendor_streams") as any)
         .select("*")
-        .eq("vendor_id", slug)
+        .eq("vendor_id", vendorId!)
         .maybeSingle();
       return data;
     },
-    enabled: !!slug,
+    enabled: !!vendorId,
   });
 
   const [activeCategory, setActiveCategory] = useState("home");
@@ -218,30 +247,30 @@ export default function VendorPage() {
   };
 
   const { data: isFollowing } = useQuery({
-    queryKey: ["vendor_follow", user?.id, slug],
+    queryKey: ["vendor_follow", user?.id, vendorId],
     queryFn: async () => {
       if (!user) return false;
       const { data } = await supabase
         .from("vendor_follows" as any)
         .select("id")
         .eq("user_id", user.id)
-        .eq("vendor_id", slug)
+        .eq("vendor_id", vendorId!)
         .maybeSingle();
       return !!data;
     },
-    enabled: !!user && !!slug,
+    enabled: !!user && !!vendorId,
   });
 
   const { data: followerCount = 5900 } = useQuery({
-    queryKey: ["vendor_followers_count", slug],
+    queryKey: ["vendor_followers_count", vendorId],
     queryFn: async () => {
       const { count } = await supabase
         .from("vendor_follows" as any)
         .select("*", { count: "exact", head: true })
-        .eq("vendor_id", slug);
+        .eq("vendor_id", vendorId!);
       return (count || 0) + 5900;
     },
-    enabled: !!slug,
+    enabled: !!vendorId,
   });
 
   const toggleFollow = useMutation({
@@ -252,17 +281,17 @@ export default function VendorPage() {
           .from("vendor_follows" as any)
           .delete()
           .eq("user_id", user.id)
-          .eq("vendor_id", slug);
+          .eq("vendor_id", vendorId!);
       } else {
         await (supabase.from("vendor_follows" as any) as any).insert({
           user_id: user.id,
-          vendor_id: slug,
+          vendor_id: vendorId,
         });
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["vendor_follow", user?.id, slug] });
-      queryClient.invalidateQueries({ queryKey: ["vendor_followers_count", slug] });
+      queryClient.invalidateQueries({ queryKey: ["vendor_follow", user?.id, vendorId] });
+      queryClient.invalidateQueries({ queryKey: ["vendor_followers_count", vendorId] });
       toast.success(isFollowing ? "Unfollowed vendor" : "Following vendor");
     },
     onError: (err: any) => {
@@ -789,7 +818,7 @@ export default function VendorPage() {
       </div>
 
       <ChatDialog
-        vendorId={slug}
+        vendorId={vendorId || slug}
         vendorName={vendor.store_name}
         isOpen={isChatOpen}
         onOpenChange={setIsChatOpen}

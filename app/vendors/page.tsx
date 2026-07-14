@@ -42,7 +42,7 @@ export default function VendorsPage() {
             {(vendors || []).map((vendor) => (
               <Link
                 key={vendor.id}
-                href={`/vendors/${vendor.id}`}
+                href={`/vendors/${vendor.store_slug || vendor.id}`}
                 className="group flex flex-col items-center rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:shadow-card hover:-translate-y-1"
               >
                 {vendor.store_logo_url ? (
