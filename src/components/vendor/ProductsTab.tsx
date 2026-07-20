@@ -95,7 +95,7 @@ export function ProductsTab({
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [uploading, submitting]);
 
-  const globalCategories = ["Supplements", "Equipment", "Food", "Books", "Digital", "Services"];
+  const globalCategories = ["Health & Beauty", "Supplements", "Equipment", "Food", "Books", "Digital", "Services"];
 
   const handleUpload = async (file: File, field: "image_url" | "video_url") => {
     setUploading(field);

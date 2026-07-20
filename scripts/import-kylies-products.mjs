@@ -283,7 +283,7 @@ async function main() {
       status: "published",
       variants: variants.length > 0 ? variants : null,
       brand: BRAND_NAME,
-      category: "Supplements", // Default platform category
+      category: "Health & Beauty",
       product_type: "physical",
     };
 

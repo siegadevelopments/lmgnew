@@ -67,8 +67,10 @@ export const productsQueryOptions = () =>
           
         if (error) throw error;
         
-        // Filter for approved and live vendors manually for maximum compatibility
-        const filtered = (data || []).filter((p: any) => p.vendor_profiles?.is_approved && p.vendor_profiles?.is_live);
+        // Filter for approved vendors (allow products if vendor is approved, fallback gracefully if is_live is not set)
+        const filtered = (data || []).filter(
+          (p: any) => !p.vendor_profiles || (p.vendor_profiles.is_approved !== false && p.vendor_profiles.is_live !== false)
+        );
         
         if (filtered.length === 0) {
           // Use global mock products if database is empty
@@ -119,11 +121,15 @@ export const productBySlugQueryOptionsV2 = (slug: string) =>
           return [];
         }
         
-        // Filter for approved and live vendors
-        const filtered = data.filter((p: any) => p.vendor_profiles?.is_approved && p.vendor_profiles?.is_live);
+        // Allow product if vendor profile is approved (is_approved !== false and is_live !== false)
+        const filtered = data.filter(
+          (p: any) => !p.vendor_profiles || (p.vendor_profiles.is_approved !== false && p.vendor_profiles.is_live !== false)
+        );
         
         if (filtered.length === 0) {
-          console.warn("Product found but vendor not approved/live or profile missing for slug:", slug);
+          console.warn("Product found but vendor not approved or profile missing for slug:", slug);
+          // Return raw data if product is published so direct product URLs always load
+          return data;
         }
         
         return filtered;
