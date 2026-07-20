@@ -136,7 +136,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
                 alt={`${product.title} - Lifestyle Medicine Product`}
                 fill
                 sizes="(max-width: 768px) 50vw, 25vw"
-                className="object-cover transition-transform duration-600 group-hover:scale-105"
+                className="object-contain bg-white p-2 transition-transform duration-600 group-hover:scale-105"
                 loading="lazy"
                 quality={80}
               />

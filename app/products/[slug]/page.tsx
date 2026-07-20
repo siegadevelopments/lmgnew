@@ -303,7 +303,7 @@ function ProductContent() {
                 src={product.image_url} 
                 alt={product.title} 
                 fill
-                className="object-cover" 
+                className="object-contain bg-white p-4" 
                 priority
                 sizes="(max-width: 1024px) 100vw, 50vw"
               />
