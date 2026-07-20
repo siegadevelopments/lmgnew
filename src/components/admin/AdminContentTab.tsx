@@ -919,7 +919,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       let contextText = "";
       if (sharingItem) {
         const cleanContent = sharingItem.content?.replace(/<[^>]*>/g, ' ').substring(0, 1000) || "";
-        const itemUrl = `https://lifestylemedicinegateway.com.au/${activeType === "natural_remedies" ? "articles" : activeType}/${sharingItem.slug}`;
+        const itemUrl = `https://lifestylemedicinegateway.com/${activeType === "natural_remedies" ? "articles" : activeType}/${sharingItem.slug}`;
         contextText = `Article Title: ${sharingItem.title}\nLink/URL: ${itemUrl}\nExcerpt: ${sharingItem.excerpt || ""}\nContent: ${cleanContent}`;
       } else {
         contextText = `Post Title: ${editingScheduledPost.title}\nSource URL: ${editingScheduledPost.source_url || ""}\nExisting Caption: ${editingScheduledPost.caption || ""}`;
