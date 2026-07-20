@@ -12,7 +12,9 @@ import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 
-type SortOption = "newest" | "price-low" | "price-high" | "name";
+import { getUserActivity } from "@/lib/tracking";
+
+type SortOption = "recommended" | "random" | "newest" | "price-low" | "price-high" | "name";
 
 const wellnessGoals = [
   "All",
@@ -32,7 +34,7 @@ export default function ProductsPage() {
   const products = data as any[] | undefined;
   const [searchInput, setSearchInput] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
-  const [sortBy, setSortBy] = useState<SortOption>("newest");
+  const [sortBy, setSortBy] = useState<SortOption>("recommended");
 
   // Get unique categories from actual products
   const productCategories = useMemo(() => {
@@ -66,11 +68,32 @@ export default function ProductsPage() {
         filtered = [...filtered].sort((a, b) => a.title.localeCompare(b.title));
         break;
       case "newest":
-      default:
         filtered = [...filtered].sort(
           (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
         break;
+      case "random":
+        filtered = [...filtered].sort(() => Math.random() - 0.5);
+        break;
+      case "recommended":
+      default: {
+        const { preferredCategories, viewedProductIds } = getUserActivity();
+        const scored = filtered.map((p) => {
+          let score = Math.random(); // Base random distribution
+          if (preferredCategories.length > 0 && p.category) {
+            const catIndex = preferredCategories.indexOf(p.category);
+            if (catIndex === 0) score += 3.0;
+            else if (catIndex === 1) score += 2.0;
+            else if (catIndex > 1) score += 1.0;
+          }
+          if (viewedProductIds.includes(p.id)) {
+            score += 0.5;
+          }
+          return { product: p, score };
+        });
+        filtered = scored.sort((a, b) => b.score - a.score).map((s) => s.product);
+        break;
+      }
     }
 
     return filtered;
@@ -139,9 +162,11 @@ export default function ProductsPage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="text-sm bg-transparent border border-border rounded-lg px-3 py-1.5 text-foreground focus:ring-1 focus:ring-primary"
+              className="text-sm bg-transparent border border-border rounded-lg px-3 py-1.5 text-foreground focus:ring-1 focus:ring-primary font-medium"
             >
-              <option value="newest">Newest</option>
+              <option value="recommended">Recommended for You</option>
+              <option value="random">Randomize</option>
+              <option value="newest">Newest Arrivals</option>
               <option value="price-low">Price: Low to High</option>
               <option value="price-high">Price: High to Low</option>
               <option value="name">Name A-Z</option>

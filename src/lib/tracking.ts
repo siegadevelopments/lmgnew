@@ -29,7 +29,45 @@ export const trackEvent = (eventName: string, params?: Record<string, any>) => {
   }
 };
 
-export const trackAddToCart = (product: { id: string | number, title: string, price: number, category?: string }) => {
+export const recordUserActivity = (category?: string, productId?: string | number) => {
+  if (typeof window === "undefined") return;
+  try {
+    if (category) {
+      const rawCats = localStorage.getItem("lmg_user_categories");
+      const cats: string[] = rawCats ? JSON.parse(rawCats) : [];
+      // Move to front if exists, keep max 10
+      const filtered = cats.filter((c) => c !== category);
+      filtered.unshift(category);
+      localStorage.setItem("lmg_user_categories", JSON.stringify(filtered.slice(0, 10)));
+    }
+    if (productId) {
+      const rawIds = localStorage.getItem("lmg_user_viewed_products");
+      const ids: (string | number)[] = rawIds ? JSON.parse(rawIds) : [];
+      const filtered = ids.filter((id) => id !== productId);
+      filtered.unshift(productId);
+      localStorage.setItem("lmg_user_viewed_products", JSON.stringify(filtered.slice(0, 20)));
+    }
+  } catch (e) {
+    console.warn("Failed to save user activity:", e);
+  }
+};
+
+export const getUserActivity = () => {
+  if (typeof window === "undefined") return { preferredCategories: [], viewedProductIds: [] };
+  try {
+    const rawCats = localStorage.getItem("lmg_user_categories");
+    const rawIds = localStorage.getItem("lmg_user_viewed_products");
+    return {
+      preferredCategories: (rawCats ? JSON.parse(rawCats) : []) as string[],
+      viewedProductIds: (rawIds ? JSON.parse(rawIds) : []) as (string | number)[],
+    };
+  } catch {
+    return { preferredCategories: [], viewedProductIds: [] };
+  }
+};
+
+export const trackAddToCart = (product: { id: string | number; title: string; price: number; category?: string }) => {
+  recordUserActivity(product.category, product.id);
   trackEvent("add_to_cart", {
     currency: "AUD",
     value: product.price,
@@ -39,13 +77,14 @@ export const trackAddToCart = (product: { id: string | number, title: string, pr
         item_name: product.title,
         item_category: product.category,
         price: product.price,
-        quantity: 1
-      }
-    ]
+        quantity: 1,
+      },
+    ],
   });
 };
 
-export const trackViewItem = (product: { id: string | number, title: string, price: number, category?: string }) => {
+export const trackViewItem = (product: { id: string | number; title: string; price: number; category?: string }) => {
+  recordUserActivity(product.category, product.id);
   trackEvent("view_item", {
     currency: "AUD",
     value: product.price,
@@ -54,9 +93,9 @@ export const trackViewItem = (product: { id: string | number, title: string, pri
         item_id: product.id,
         item_name: product.title,
         item_category: product.category,
-        price: product.price
-      }
-    ]
+        price: product.price,
+      },
+    ],
   });
 };
 
