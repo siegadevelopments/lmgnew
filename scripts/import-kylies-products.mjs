@@ -271,8 +271,6 @@ async function main() {
       contentHtml += '\n</div>';
     }
 
-    // Add link to original product
-    contentHtml += `\n<p style="margin-top: 16px;"><a href="${SHOPIFY_BASE}/products/${sp.handle}" target="_blank" rel="noopener noreferrer">View on Kylie's Professional website →</a></p>`;
 
     const productData = {
       vendor_id: vendorId,
