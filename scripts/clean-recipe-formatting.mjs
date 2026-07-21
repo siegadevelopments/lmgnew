@@ -23,81 +23,66 @@ const SUPABASE_SERVICE_KEY = envVars.SUPABASE_SERVICE_ROLE_KEY;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-function cleanRecipeContent(str) {
+function extractCleanHtml(str) {
   if (!str) return str;
 
-  let clean = str.trim();
+  let text = str.trim();
 
-  // Strip markdown code blocks
-  clean = clean.replace(/^```(json|html)?\s*/i, "").replace(/\s*```$/, "").trim();
-
-  // Handle case where raw JSON or pseudo-JSON was stored as the content
-  if (clean.startsWith("{") || clean.includes('"content"')) {
-    try {
-      const jsonMatch = clean.match(/\{[\s\S]*\}/);
-      const toParse = jsonMatch ? jsonMatch[0] : clean;
-      const parsed = JSON.parse(toParse);
-      if (parsed.content) {
-        clean = parsed.content;
-      }
-    } catch (_) {
-      const contentMatch = clean.match(/"content"\s*:\s*"([\s\S]*?)"\s*(?:,\s*"(?:prep_time|cook_time|instructions)"|\})/i);
-      if (contentMatch && contentMatch[1]) {
-        clean = contentMatch[1];
-      } else {
-        const contentMatchSimple = clean.match(/"content"\s*:\s*"([\s\S]*?)"/i);
-        if (contentMatchSimple && contentMatchSimple[1]) {
-          clean = contentMatchSimple[1];
-        }
-      }
+  // If text starts with AI role/reasoning JSON preamble like {"role":"assistant"...}
+  if (text.includes('"role":"assistant"') || text.includes('"reasoning":')) {
+    // Look for HTML starting tags inside the reasoning text
+    const htmlStartMatch = text.match(/<(?:h[1-6]|p|div|ul|ol)\b[\s\S]*/i);
+    if (htmlStartMatch) {
+      text = htmlStartMatch[0];
     }
   }
 
-  // Replace escaped \n and raw literal newlines
-  clean = clean.replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\n/g, '\n');
-  
-  // Collapse whitespace between HTML tags
-  clean = clean.replace(/\n+/g, " ").replace(/\s{2,}/g, " ").trim();
+  // If there is trailing AI reasoning after the HTML content (e.g., "Alternatively we could use...", "Use correct tags...")
+  // Cut off at the end of the last closing HTML tag </p>, </ul>, </ol>, </div>, </h2>, <h3>, etc.
+  const lastClosingTagMatch = text.match(/[\s\S]*<\/(?:p|ul|ol|div|h[1-6])>/i);
+  if (lastClosingTagMatch) {
+    text = lastClosingTagMatch[0];
+  }
 
-  return clean;
+  // Remove JSON string escape sequences if any
+  text = text.replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/\\n/g, '\n');
+
+  // Collapse excess whitespace
+  text = text.replace(/\n+/g, " ").replace(/\s{2,}/g, " ").trim();
+
+  return text;
 }
 
 async function main() {
-  console.log("Fetching recipes from database...");
+  console.log("Fetching recipes...");
+  const { data: recipes, error } = await supabase.from("recipes").select("id, title, content");
 
-  const { data: recipes, error: fetchError } = await supabase
-    .from("recipes")
-    .select("id, title, content");
-
-  if (fetchError) {
-    console.error("Error fetching recipes:", fetchError);
+  if (error) {
+    console.error("Error fetching recipes:", error);
     return;
   }
 
-  console.log(`Fetched ${recipes.length} recipes.`);
-  let updatedCount = 0;
+  let updated = 0;
+  for (const r of recipes) {
+    if (!r.content) continue;
 
-  for (const recipe of recipes) {
-    if (!recipe.content) continue;
-
-    const cleaned = cleanRecipeContent(recipe.content);
-
-    if (cleaned !== recipe.content) {
-      console.log(`Cleaning recipe [${recipe.id}]: "${recipe.title}"`);
+    const cleaned = extractCleanHtml(r.content);
+    if (cleaned !== r.content) {
+      console.log(`Cleaning ID ${r.id}: "${r.title}"`);
       const { error: updateError } = await supabase
         .from("recipes")
         .update({ content: cleaned })
-        .eq("id", recipe.id);
+        .eq("id", r.id);
 
-      if (updateError) {
-        console.error(`Failed to update "${recipe.title}":`, updateError);
+      if (!updateError) {
+        updated++;
       } else {
-        updatedCount++;
+        console.error(`Failed to update ${r.id}:`, updateError);
       }
     }
   }
 
-  console.log(`Cleanup complete! Updated ${updatedCount} recipes out of ${recipes.length}.`);
+  console.log(`Finished! Updated ${updated} recipes.`);
 }
 
 main().catch(console.error);
