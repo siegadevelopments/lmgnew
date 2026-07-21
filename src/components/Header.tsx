@@ -37,7 +37,6 @@ const topNavItems = [
 
 const learnItems = [
   { to: "/articles" as const, label: "Articles & References" },
-  { to: "/remedies" as const, label: "Remedies" },
   { to: "/recipes" as const, label: "Recipes" },
   { to: "/videos" as const, label: "Videos" },
   { to: "/natural-remedies" as const, label: "Natural Remedies" },
