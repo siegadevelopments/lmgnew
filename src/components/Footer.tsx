@@ -37,6 +37,7 @@ const footerLinks = {
   ],
   Learn: [
     { label: "Articles", to: "/articles" },
+    { label: "Remedies", to: "/remedies" },
     { label: "Videos", to: "/videos" },
     { label: "Recipes", to: "/recipes" },
     { label: "Natural Remedies", to: "/natural-remedies" },
