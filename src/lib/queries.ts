@@ -202,12 +202,66 @@ export const recipesQueryOptions = () =>
 
 export const recipeBySlugQueryOptions = (slug: string) =>
   queryOptions({
-    queryKey: ["recipes", "bySlug", "v3", slug],
+    queryKey: ["recipes", "bySlug", "v4", slug],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase.from("recipes").select("*").eq("slug", slug).limit(1);
+        const decodedSlug = decodeURIComponent(slug);
+        
+        // 1. Try exact match with decoded slug first
+        const { data: exactMatch } = await supabase
+          .from("recipes")
+          .select("*")
+          .eq("slug", decodedSlug)
+          .maybeSingle();
+
+        if (exactMatch) return [exactMatch];
+
+        // 2. Try exact match with original slug (in case database has encoded chars)
+        const { data: origMatch } = await supabase
+          .from("recipes")
+          .select("*")
+          .eq("slug", slug)
+          .maybeSingle();
+
+        if (origMatch) return [origMatch];
+
+        // 3. Fallback 1: match by replacing dash variants and HTML entity codes
+        const sanitizedSlug = decodedSlug
+          .replace(/&#8211;/g, "%")
+          .replace(/[—–-]/g, "%");
+          
+        const { data: fallbackMatch } = await supabase
+          .from("recipes")
+          .select("*")
+          .ilike("slug", sanitizedSlug)
+          .limit(1);
+
+        if (fallbackMatch && fallbackMatch.length > 0) return fallbackMatch;
+
+        // 4. Fallback 2: Robust match ignoring punctuation differences and trailing characters
+        const cleanString = (str: string) => 
+          str.toLowerCase()
+            .replace(/&#8211;/g, "")
+            .replace(/&amp;/g, "")
+            .replace(/[^a-z0-9]/g, "");
+            
+        const cleanRequested = cleanString(decodedSlug);
+        
+        const firstWord = decodedSlug.split(/[^a-zA-Z0-9]/)[0] || "";
+        const searchPattern = firstWord.length >= 3 ? `${firstWord}%` : `${decodedSlug.substring(0, 10).replace(/[^a-zA-Z0-9]/g, "%")}%`;
+        
+        const { data: candidates, error } = await supabase
+          .from("recipes")
+          .select("*")
+          .ilike("slug", searchPattern)
+          .limit(30);
+
         if (error) throw error;
-        return (data || []) as any[];
+
+        const match = candidates?.find((c: any) => cleanString(c.slug) === cleanRequested);
+        if (match) return [match];
+
+        return [];
       } catch (err: any) {
         console.error("Error fetching recipe by slug:", err?.message || err);
         return [];
