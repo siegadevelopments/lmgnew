@@ -1442,7 +1442,7 @@ export default function AdminPage() {
                 <h1 className="text-2xl font-bold tracking-tight">Content Manager</h1>
                 <p className="text-muted-foreground">Approve articles, recipes, and videos.</p>
               </div>
-              <AdminContentTab vendors={vendors} />
+              <AdminContentTab vendors={vendors} userId={user?.id} />
             </TabsContent>
 
             {/* MESSAGES */}

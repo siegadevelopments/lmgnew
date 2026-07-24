@@ -108,7 +108,7 @@ const CURATED_FOOD_IMAGES = [
   }
 ];
 
-export function AdminContentTab({ vendors }: { vendors: any[] }) {
+export function AdminContentTab({ vendors, userId }: { vendors: any[]; userId?: string }) {
   const [activeType, setActiveType] = useState<"articles" | "videos" | "recipes" | "products" | "media" | "natural_remedies">(
     "articles",
   );
@@ -245,11 +245,15 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   }, [stockSearchOpen]);
 
   // --- Auto-Save Draft Logic ---
+  const getDraftKey = (type = activeType) => `admin_content_draft_${type}_${userId || "default"}`;
+  const getEditDraftKey = (type = activeType) => `admin_content_edit_draft_${type}_${userId || "default"}`;
+  const getShowAddFormKey = (type = activeType) => `admin_content_show_add_form_${type}_${userId || "default"}`;
+
   useEffect(() => {
     // 1. Load drafts on mount and tab switch
-    const editDraft = localStorage.getItem(`admin_content_edit_draft_${activeType}`);
-    const draft = localStorage.getItem(`admin_content_draft_${activeType}`);
-    const savedShowAddForm = localStorage.getItem(`admin_content_show_add_form_${activeType}`);
+    const editDraft = localStorage.getItem(getEditDraftKey());
+    const draft = localStorage.getItem(getDraftKey());
+    const savedShowAddForm = localStorage.getItem(getShowAddFormKey());
 
     if (editDraft) {
       try {
@@ -311,7 +315,7 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
     }
 
     setShowAddForm(savedShowAddForm === "true");
-  }, [activeType]);
+  }, [activeType, userId]);
 
   useEffect(() => {
     // 2. Save drafts on every change
@@ -321,21 +325,21 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
         title, content, imageUrl, embedUrl, selectedVendorId, category, prepTime, cookTime, excerpt,
         galleryCategory, tags
       };
-      localStorage.setItem(`admin_content_edit_draft_${activeType}`, JSON.stringify(editDraft));
-      localStorage.removeItem(`admin_content_draft_${activeType}`);
+      localStorage.setItem(getEditDraftKey(), JSON.stringify(editDraft));
+      localStorage.removeItem(getDraftKey());
     } else {
       const draft = { 
         title, content, imageUrl, embedUrl, selectedVendorId, category, prepTime, cookTime, excerpt,
         galleryCategory, tags
       };
-      localStorage.setItem(`admin_content_draft_${activeType}`, JSON.stringify(draft));
-      localStorage.removeItem(`admin_content_edit_draft_${activeType}`);
+      localStorage.setItem(getDraftKey(), JSON.stringify(draft));
+      localStorage.removeItem(getEditDraftKey());
     }
-  }, [title, content, imageUrl, embedUrl, activeType, selectedVendorId, category, prepTime, cookTime, excerpt, galleryCategory, tags, editingId]);
+  }, [title, content, imageUrl, embedUrl, activeType, selectedVendorId, category, prepTime, cookTime, excerpt, galleryCategory, tags, editingId, userId]);
 
   useEffect(() => {
-    localStorage.setItem(`admin_content_show_add_form_${activeType}`, showAddForm.toString());
-  }, [showAddForm, activeType]);
+    localStorage.setItem(getShowAddFormKey(), showAddForm.toString());
+  }, [showAddForm, activeType, userId]);
 
   // Resume Bulk Recipe Enhancement on mount if interrupted
   useEffect(() => {
@@ -376,9 +380,9 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   }, [uploadingVideo, uploadingImage, loading]);
 
   const clearDraft = (type = activeType) => {
-    localStorage.removeItem(`admin_content_draft_${type}`);
-    localStorage.removeItem(`admin_content_edit_draft_${type}`);
-    localStorage.removeItem(`admin_content_show_add_form_${type}`);
+    localStorage.removeItem(getDraftKey(type));
+    localStorage.removeItem(getEditDraftKey(type));
+    localStorage.removeItem(getShowAddFormKey(type));
   };
 
   useEffect(() => {
