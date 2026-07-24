@@ -247,31 +247,56 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
   // --- Auto-Save Draft Logic ---
   useEffect(() => {
     // 1. Load drafts on mount and tab switch
+    const editDraft = localStorage.getItem(`admin_content_edit_draft_${activeType}`);
     const draft = localStorage.getItem(`admin_content_draft_${activeType}`);
-    
-    // Exit editing mode when switching tabs to prevent data mismatch,
-    // but keep the form open if they were editing or had it open.
+    const savedShowAddForm = localStorage.getItem(`admin_content_show_add_form_${activeType}`);
+
+    if (editDraft) {
+      try {
+        const parsed = JSON.parse(editDraft);
+        if (parsed.editingId) {
+          setEditingId(parsed.editingId);
+          if (parsed.title !== undefined) setTitle(parsed.title || "");
+          if (parsed.content !== undefined) setContent(parsed.content || "");
+          if (parsed.imageUrl !== undefined) setImageUrl(parsed.imageUrl || "");
+          if (parsed.embedUrl !== undefined) setEmbedUrl(parsed.embedUrl || "");
+          if (parsed.selectedVendorId !== undefined) setSelectedVendorId(parsed.selectedVendorId || "");
+          if (parsed.category !== undefined) setCategory(parsed.category || "General");
+          if (parsed.prepTime !== undefined) setPrepTime(parsed.prepTime || "");
+          if (parsed.cookTime !== undefined) setCookTime(parsed.cookTime || "");
+          if (parsed.excerpt !== undefined) setExcerpt(parsed.excerpt || "");
+          if (parsed.galleryCategory !== undefined) setGalleryCategory(parsed.galleryCategory || "vendor_gallery");
+          if (parsed.tags !== undefined) setTags(parsed.tags || []);
+          setShowAddForm(false);
+          return;
+        }
+      } catch (e) {
+        console.error("Failed to parse edit draft", e);
+      }
+    }
+
+    // If no edit draft, reset editing mode
     setEditingId(null);
 
     if (draft) {
       try {
         const parsed = JSON.parse(draft);
-        if (parsed.title) setTitle(parsed.title);
-        if (parsed.content) setContent(parsed.content);
-        if (parsed.imageUrl) setImageUrl(parsed.imageUrl);
-        if (parsed.embedUrl) setEmbedUrl(parsed.embedUrl);
-        if (parsed.selectedVendorId) setSelectedVendorId(parsed.selectedVendorId);
-        if (parsed.category) setCategory(parsed.category);
-        if (parsed.prepTime) setPrepTime(parsed.prepTime);
-        if (parsed.cookTime) setCookTime(parsed.cookTime);
-        if (parsed.excerpt) setExcerpt(parsed.excerpt);
-        if (parsed.galleryCategory) setGalleryCategory(parsed.galleryCategory);
-        if (parsed.tags) setTags(parsed.tags);
+        setTitle(parsed.title || "");
+        setContent(parsed.content || "");
+        setImageUrl(parsed.imageUrl || "");
+        setEmbedUrl(parsed.embedUrl || "");
+        setSelectedVendorId(parsed.selectedVendorId || "");
+        setCategory(parsed.category || "General");
+        setPrepTime(parsed.prepTime || "");
+        setCookTime(parsed.cookTime || "");
+        setExcerpt(parsed.excerpt || "");
+        setGalleryCategory(parsed.galleryCategory || "vendor_gallery");
+        setTags(parsed.tags || []);
       } catch (e) {
         console.error("Failed to parse draft", e);
       }
     } else {
-      // If no draft for this type, clear the form (but don't clear other drafts)
+      // If no draft for this type, clear the form
       setTitle("");
       setContent("");
       setImageUrl("");
@@ -284,18 +309,33 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
       setTags([]);
       setTagInput("");
     }
+
+    setShowAddForm(savedShowAddForm === "true");
   }, [activeType]);
 
   useEffect(() => {
     // 2. Save drafts on every change
-    if (editingId) return; // Don't save drafts while editing existing items
-    
-    const draft = { 
-      title, content, imageUrl, embedUrl, selectedVendorId, category, prepTime, cookTime, excerpt,
-      galleryCategory, tags
-    };
-    localStorage.setItem(`admin_content_draft_${activeType}`, JSON.stringify(draft));
+    if (editingId) {
+      const editDraft = {
+        editingId,
+        title, content, imageUrl, embedUrl, selectedVendorId, category, prepTime, cookTime, excerpt,
+        galleryCategory, tags
+      };
+      localStorage.setItem(`admin_content_edit_draft_${activeType}`, JSON.stringify(editDraft));
+      localStorage.removeItem(`admin_content_draft_${activeType}`);
+    } else {
+      const draft = { 
+        title, content, imageUrl, embedUrl, selectedVendorId, category, prepTime, cookTime, excerpt,
+        galleryCategory, tags
+      };
+      localStorage.setItem(`admin_content_draft_${activeType}`, JSON.stringify(draft));
+      localStorage.removeItem(`admin_content_edit_draft_${activeType}`);
+    }
   }, [title, content, imageUrl, embedUrl, activeType, selectedVendorId, category, prepTime, cookTime, excerpt, galleryCategory, tags, editingId]);
+
+  useEffect(() => {
+    localStorage.setItem(`admin_content_show_add_form_${activeType}`, showAddForm.toString());
+  }, [showAddForm, activeType]);
 
   // Resume Bulk Recipe Enhancement on mount if interrupted
   useEffect(() => {
@@ -337,6 +377,8 @@ export function AdminContentTab({ vendors }: { vendors: any[] }) {
 
   const clearDraft = (type = activeType) => {
     localStorage.removeItem(`admin_content_draft_${type}`);
+    localStorage.removeItem(`admin_content_edit_draft_${type}`);
+    localStorage.removeItem(`admin_content_show_add_form_${type}`);
   };
 
   useEffect(() => {
