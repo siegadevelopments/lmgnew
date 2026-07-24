@@ -1421,7 +1421,6 @@ export function AdminContentTab({ vendors, userId }: { vendors: any[]; userId?: 
               excerpt,
               image_url: imageUrl,
               category_name: activeType === "natural_remedies" ? "Natural remedies" : category,
-              slug: title.toLowerCase().replace(/ /g, "-"),
               author_id: selectedVendorId || undefined,
             })
             .eq("id", editingId);
@@ -1433,7 +1432,6 @@ export function AdminContentTab({ vendors, userId }: { vendors: any[]; userId?: 
               image_url: imageUrl,
               prep_time: parseTimeString(prepTime),
               cook_time: parseTimeString(cookTime),
-              slug: title.toLowerCase().replace(/ /g, "-"),
               tags: tags,
             })
             .eq("id", editingId);
@@ -1455,12 +1453,15 @@ export function AdminContentTab({ vendors, userId }: { vendors: any[]; userId?: 
               price: parseFloat(imageUrl) || 0,
               image_url: embedUrl,
               vendor_id: selectedVendorId,
-              slug: title.toLowerCase().replace(/ /g, "-"),
             })
             .eq("id", editingId);
         }
       } else {
         const targetTable = activeType === "natural_remedies" ? "articles" : activeType;
+        const generatedSlug = title.toLowerCase()
+          .replace(/[\s\W-]+/g, "-")
+          .replace(/^-+|-+$/g, "")
+          + "-" + Math.floor(1000 + Math.random() * 9000);
         
         if (activeType === "articles" || activeType === "natural_remedies") {
           result = await (supabase.from(targetTable) as any).insert({
@@ -1469,7 +1470,7 @@ export function AdminContentTab({ vendors, userId }: { vendors: any[]; userId?: 
             excerpt,
             image_url: imageUrl,
             category_name: activeType === "natural_remedies" ? "Natural remedies" : category,
-            slug: title.toLowerCase().replace(/ /g, "-"),
+            slug: generatedSlug,
             author_id: selectedVendorId || undefined,
           });
         } else if (activeType === "recipes") {
@@ -1477,7 +1478,7 @@ export function AdminContentTab({ vendors, userId }: { vendors: any[]; userId?: 
             ...commonData,
             content,
             image_url: imageUrl,
-            slug: title.toLowerCase().replace(/ /g, "-"),
+            slug: generatedSlug,
             prep_time: parseTimeString(prepTime),
             cook_time: parseTimeString(cookTime),
             tags: tags,
@@ -1498,7 +1499,7 @@ export function AdminContentTab({ vendors, userId }: { vendors: any[]; userId?: 
             price: parseFloat(imageUrl) || 0,
             image_url: embedUrl,
             vendor_id: selectedVendorId,
-            slug: title.toLowerCase().replace(/ /g, "-"),
+            slug: generatedSlug,
             status: "published",
           });
         }
