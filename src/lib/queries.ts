@@ -47,7 +47,6 @@ export const globalMockProductsList = [
   },
   excerpt: "A high-quality, evidence-based wellness product perfect for your lifestyle."
 }));
-
 // --- Products ---
 
 export const productsQueryOptions = () =>
@@ -60,7 +59,19 @@ export const productsQueryOptions = () =>
         const { data, error } = await supabase
           .from("products")
           .select(`
-            *,
+            id,
+            vendor_id,
+            title,
+            slug,
+            excerpt,
+            price,
+            image_url,
+            stock,
+            status,
+            created_at,
+            category,
+            product_type,
+            variants,
             vendor_profiles (store_name, store_logo_url, is_approved, is_live)
           `)
           .eq("status", "published");
@@ -87,6 +98,7 @@ export const productsQueryOptions = () =>
       }
     },
   });
+
 
 export const productBySlugQueryOptionsV2 = (slug: string) =>
   queryOptions({
