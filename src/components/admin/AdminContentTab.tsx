@@ -642,7 +642,8 @@ export function AdminContentTab({ vendors, userId }: { vendors: any[]; userId?: 
             const { data: imageData, error: imageError } = await supabase.functions.invoke("generate-ai-image", {
               body: { 
                 prompt: `${recipe.title} ${cleanPromptContent}`.trim(),
-                author_id: recipe.author_id
+                author_id: recipe.author_id,
+                no_watermark: true
               },
             });
             
@@ -1013,7 +1014,8 @@ export function AdminContentTab({ vendors, userId }: { vendors: any[]; userId?: 
       const { data, error } = await supabase.functions.invoke("generate-ai-image", {
         body: { 
           prompt: promptText.substring(0, 1000),
-          author_id: finalAuthorId
+          author_id: finalAuthorId,
+          no_watermark: true
         },
       });
       
@@ -1526,7 +1528,8 @@ export function AdminContentTab({ vendors, userId }: { vendors: any[]; userId?: 
       const { data, error } = await supabase.functions.invoke("generate-ai-image", {
         body: { 
           prompt: `${title} ${cleanContent}`.trim(),
-          author_id: selectedVendorId
+          author_id: selectedVendorId,
+          no_watermark: true
         },
       });
       if (error) {
@@ -1679,7 +1682,8 @@ export function AdminContentTab({ vendors, userId }: { vendors: any[]; userId?: 
           const { data: imgData, error: imgError } = await supabase.functions.invoke("generate-ai-image", {
             body: { 
               prompt: `${articleTitle} ${cleanContent}`.trim(),
-              author_id: vendorId
+              author_id: vendorId,
+              no_watermark: true
             },
           });
 

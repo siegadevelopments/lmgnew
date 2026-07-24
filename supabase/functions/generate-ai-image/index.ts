@@ -36,7 +36,7 @@ serve(async (req: Request) => {
     const body = await req.json().catch(() => null);
     if (!body) throw new Error("Invalid JSON body");
 
-    const { prompt, folder = "ai-thumbnails", author_id } = body;
+    const { prompt, folder = "ai-thumbnails", author_id, no_watermark } = body;
     if (!prompt) throw new Error("Prompt is required");
 
     const truncatedPrompt = typeof prompt === 'string' ? prompt.substring(0, 3000) : "Wellness lifestyle";
@@ -75,7 +75,7 @@ serve(async (req: Request) => {
             },
             body: JSON.stringify({
               instances: [{ 
-                prompt: `A stunning, high-quality cinematic lifestyle photograph representing: ${truncatedPrompt.substring(0, 500)}. Style: Modern, minimalist, premium wellness aesthetic. CRITICAL: No text, no labels, no anatomical diagrams.` 
+                prompt: `Professional editorial food and lifestyle photography representing: ${truncatedPrompt.substring(0, 400)}. Captured with a professional DSLR camera, 50mm lens, f/2.8, soft natural side-lighting, shallow depth of field, blurred background. Style: Clean, minimalist, premium wellness aesthetic, vibrant natural colors, organic and authentic feel. CRITICAL: No text, no labels, no diagrams, no watermarks, realistic texture, no synthetic rendering, highly detailed.` 
               }],
               parameters: { sampleCount: 1, aspectRatio: "1:1" }
             }),
@@ -89,8 +89,9 @@ serve(async (req: Request) => {
             const base64Data = prediction.bytesBase64Encoded;
             const mimeType = prediction.mimeType || "image/png";
             const binaryData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
-            const watermarkedBlob = await watermarkImage(new Blob([binaryData], { type: mimeType }), author_id);
-            const publicUrl = await saveImage(watermarkedBlob, folder);
+            const rawBlob = new Blob([binaryData], { type: mimeType });
+            const finalBlob = no_watermark ? rawBlob : await watermarkImage(rawBlob, author_id);
+            const publicUrl = await saveImage(finalBlob, folder);
             return new Response(JSON.stringify({ url: publicUrl }), {
               headers: { ...corsHeaders, "Content-Type": "application/json" },
               status: 200,
@@ -119,7 +120,7 @@ serve(async (req: Request) => {
           },
           body: JSON.stringify({
             model: "dall-e-3",
-            prompt: `A stunning, high-quality cinematic lifestyle photograph representing: ${truncatedPrompt.substring(0, 500)}. Style: Modern, minimalist, premium wellness aesthetic. No text.`,
+            prompt: `Professional editorial food and lifestyle photography representing: ${truncatedPrompt.substring(0, 400)}. Captured with a professional DSLR camera, 50mm lens, f/2.8, soft natural side-lighting, shallow depth of field, blurred background. Style: Clean, minimalist, premium wellness aesthetic, vibrant natural colors, organic and authentic feel. CRITICAL: No text, no labels, no watermarks, realistic texture, highly detailed.`,
             n: 1,
             size: "1024x1024",
           }),
@@ -130,8 +131,8 @@ serve(async (req: Request) => {
           const imageUrl = aiData.data[0].url;
           const imageRes = await fetch(imageUrl);
           const blob = await imageRes.blob();
-          const watermarkedBlob = await watermarkImage(blob, author_id);
-          const publicUrl = await saveImage(watermarkedBlob, folder);
+          const finalBlob = no_watermark ? blob : await watermarkImage(blob, author_id);
+          const publicUrl = await saveImage(finalBlob, folder);
           return new Response(JSON.stringify({ url: publicUrl }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
             status: 200,
@@ -152,14 +153,14 @@ serve(async (req: Request) => {
       console.log(`Attempting keyless fallback image generation with Pollinations AI...`);
       const response = await fetch(
         `https://image.pollinations.ai/prompt/${encodeURIComponent(
-          `A stunning high-quality cinematic lifestyle food photo representing ${truncatedPrompt.substring(0, 150)}, premium wellness aesthetic, no text`
+          `Professional editorial food and lifestyle photography representing ${truncatedPrompt.substring(0, 150)}. Clean, minimalist, premium wellness aesthetic, vibrant natural colors, soft lighting, shallow depth of field, no text, no watermarks, high-definition, sharp focus.`
         )}?width=1024&height=1024&nologo=true&private=true`
       );
 
       if (response.ok) {
         const blob = await response.blob();
-        const watermarkedBlob = await watermarkImage(blob, author_id);
-        const publicUrl = await saveImage(watermarkedBlob, folder);
+        const finalBlob = no_watermark ? blob : await watermarkImage(blob, author_id);
+        const publicUrl = await saveImage(finalBlob, folder);
         console.log("Successfully generated image with Pollinations AI fallback!");
         return new Response(JSON.stringify({ url: publicUrl }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
