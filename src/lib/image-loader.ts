@@ -1,8 +1,14 @@
 export default function weservLoader({ src, width, quality }: { src: string; width: number; quality?: number }) {
-  // If it's SVG or GIF, bypass the CDN loader
-  if (src.endsWith('.svg') || src.endsWith('.gif')) {
-    const separator = src.includes('?') ? '&' : '?';
-    return `${src}${separator}w=${width}`;
+  // Bypass proxy for direct R2 domain, Supabase storage, SVG/GIF, and local blob/data URLs
+  if (
+    src.endsWith('.svg') ||
+    src.endsWith('.gif') ||
+    src.startsWith('blob:') ||
+    src.startsWith('data:') ||
+    src.includes('media.lifestylemedicinegateway.com') ||
+    src.includes('supabase.co')
+  ) {
+    return src;
   }
 
   // Handle relative paths (e.g. starting with /)

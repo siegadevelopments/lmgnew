@@ -39,10 +39,32 @@ serve(async (req: Request) => {
     const { prompt, folder = "ai-thumbnails", author_id, no_watermark } = body;
     if (!prompt) throw new Error("Prompt is required");
 
-    const truncatedPrompt = typeof prompt === 'string' ? prompt.substring(0, 3000) : "Wellness lifestyle";
+    const truncatedPrompt = typeof prompt === 'string' ? prompt.substring(0, 1000) : "Wellness lifestyle";
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     
+    // Build smart, context-aware visual prompt without text/banners
+    const lower = truncatedPrompt.toLowerCase();
+    const cleanConcept = truncatedPrompt.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 250);
+
+    let visualContext = "";
+    if (lower.includes("insect") || lower.includes("pest") || lower.includes("garden") || lower.includes("plant") || lower.includes("leaf") || lower.includes("foliage") || lower.includes("spray") || lower.includes("garlic")) {
+      visualContext = "Lush green garden foliage with natural morning dew droplets on vibrant leaves, clean organic botanical setting";
+    } else if (lower.includes("recipe") || lower.includes("cook") || lower.includes("dish") || lower.includes("meal") || lower.includes("soup") || lower.includes("salad") || lower.includes("food") || lower.includes("eat")) {
+      visualContext = "Artfully plated healthy organic dish on a natural wooden tabletop with fresh botanical garnishes";
+    } else if (lower.includes("sleep") || lower.includes("night") || lower.includes("bed") || lower.includes("rest") || lower.includes("insomnia") || lower.includes("relax")) {
+      visualContext = "Serene and cozy minimalist bedroom filled with soft warm morning light streaming through sheer curtains";
+    } else if (lower.includes("skin") || lower.includes("beauty") || lower.includes("oil") || lower.includes("serum") || lower.includes("spa") || lower.includes("lotion")) {
+      visualContext = "Minimalist luxury aesthetic wellness setup, amber glass bottle on white marble with fresh green eucalyptus sprig";
+    } else if (lower.includes("gut") || lower.includes("digest") || lower.includes("microbiome") || lower.includes("tea") || lower.includes("drink")) {
+      visualContext = "Warm ceramic teacup with steaming herbal tea, fresh mint leaves, and natural wooden table";
+    } else {
+      visualContext = "High-end editorial lifestyle and wellness photography representing natural healthy living";
+    }
+
+    const finalPrompt = `High-end editorial photography: ${visualContext}. Inspired by: ${cleanConcept}. Captured with a 50mm f/1.8 lens, soft natural side lighting, shallow depth of field, rich natural textures, professional composition. CRITICAL REQUIREMENTS: ABSOLUTELY NO TEXT, NO WRITING, NO LETTERS, NO WORDS, NO PAPERS, NO CARDS, NO BANNERS, NO LABELS, NO SIGNS, NO LOGOS, NO WATERMARKS, NO GRAPHIC OVERLAYS. Pure photo of real environment only.`;
+    const shortPrompt = `High-end editorial photography: ${visualContext}, subject ${cleanConcept}. Soft lighting, shallow depth of field, 8k resolution. ABSOLUTELY NO TEXT, NO WRITING, NO LETTERS, NO PAPERS, NO CARDS, NO BANNERS, NO LOGOS, NO WATERMARKS.`;
+
     let errorDetails = "";
 
     const saveImage = async (blob: Blob, folder: string): Promise<string> => {
@@ -74,9 +96,7 @@ serve(async (req: Request) => {
               "x-goog-api-key": GEMINI_API_KEY
             },
             body: JSON.stringify({
-              instances: [{ 
-                prompt: `Professional editorial food and lifestyle photography representing: ${truncatedPrompt.substring(0, 400)}. Captured with a professional DSLR camera, 50mm lens, f/2.8, soft natural side-lighting, shallow depth of field, blurred background. Style: Clean, minimalist, premium wellness aesthetic, vibrant natural colors, organic and authentic feel. CRITICAL: No text, no labels, no diagrams, no watermarks, realistic texture, no synthetic rendering, highly detailed.` 
-              }],
+              instances: [{ prompt: finalPrompt }],
               parameters: { sampleCount: 1, aspectRatio: "1:1" }
             }),
           }
@@ -120,7 +140,7 @@ serve(async (req: Request) => {
           },
           body: JSON.stringify({
             model: "dall-e-3",
-            prompt: `Professional editorial food and lifestyle photography representing: ${truncatedPrompt.substring(0, 400)}. Captured with a professional DSLR camera, 50mm lens, f/2.8, soft natural side-lighting, shallow depth of field, blurred background. Style: Clean, minimalist, premium wellness aesthetic, vibrant natural colors, organic and authentic feel. CRITICAL: No text, no labels, no watermarks, realistic texture, highly detailed.`,
+            prompt: finalPrompt,
             n: 1,
             size: "1024x1024",
           }),
@@ -152,9 +172,7 @@ serve(async (req: Request) => {
     try {
       console.log(`Attempting keyless fallback image generation with Pollinations AI...`);
       const response = await fetch(
-        `https://image.pollinations.ai/prompt/${encodeURIComponent(
-          `Professional editorial food and lifestyle photography representing ${truncatedPrompt.substring(0, 150)}. Clean, minimalist, premium wellness aesthetic, vibrant natural colors, soft lighting, shallow depth of field, no text, no watermarks, high-definition, sharp focus.`
-        )}?width=1024&height=1024&nologo=true&private=true`
+        `https://image.pollinations.ai/prompt/${encodeURIComponent(shortPrompt)}?width=1024&height=1024&nologo=true&private=true`
       );
 
       if (response.ok) {

@@ -175,7 +175,7 @@ export function ArticlesTab({ articles, setArticles, userId }: Props) {
                         if (e.target.files?.[0]) {
                           setUploading(true);
                           const url = await uploadMedia(e.target.files[0], `articles/${userId}`);
-                          if (url) setForm({ ...form, image_url: url });
+                          if (url) setForm((prev) => ({ ...prev, image_url: url }));
                           setUploading(false);
                         }
                       }}
