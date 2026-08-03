@@ -37,7 +37,7 @@ export function SchemaOrg({
     sameAs: [
       "https://facebook.com/lifestylemedicinegateway",
       "https://instagram.com/lifestylemedicinegateway",
-      "https://pinterest.com/lifestylemedicinegateway",
+      "https://www.pinterest.com/georgiaerevnidis/",
     ],
     description: "A marketplace for wellness products, services, and expert advice in lifestyle medicine.",
     contactPoint: {
