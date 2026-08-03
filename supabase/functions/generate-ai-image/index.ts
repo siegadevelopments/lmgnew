@@ -49,21 +49,21 @@ serve(async (req: Request) => {
 
     let visualContext = "";
     if (lower.includes("insect") || lower.includes("pest") || lower.includes("garden") || lower.includes("plant") || lower.includes("leaf") || lower.includes("foliage") || lower.includes("spray") || lower.includes("garlic")) {
-      visualContext = "Lush green garden foliage with natural morning dew droplets on vibrant leaves, clean organic botanical setting";
+      visualContext = "A happy person caring for lush green garden plants in a sunlit organic garden, holding natural plant care spray, authentic lifestyle photography";
     } else if (lower.includes("recipe") || lower.includes("cook") || lower.includes("dish") || lower.includes("meal") || lower.includes("soup") || lower.includes("salad") || lower.includes("food") || lower.includes("eat")) {
-      visualContext = "Artfully plated healthy organic dish on a natural wooden tabletop with fresh botanical garnishes";
+      visualContext = "A smiling person in a bright modern kitchen preparing and enjoying a fresh healthy organic meal, natural lifestyle photograph";
     } else if (lower.includes("sleep") || lower.includes("night") || lower.includes("bed") || lower.includes("rest") || lower.includes("insomnia") || lower.includes("relax")) {
-      visualContext = "Serene and cozy minimalist bedroom filled with soft warm morning light streaming through sheer curtains";
+      visualContext = "A peaceful person relaxing comfortably in a warm cozy bedroom with soft natural morning light streaming through curtains";
     } else if (lower.includes("skin") || lower.includes("beauty") || lower.includes("oil") || lower.includes("serum") || lower.includes("spa") || lower.includes("lotion")) {
-      visualContext = "Minimalist luxury aesthetic wellness setup, amber glass bottle on white marble with fresh green eucalyptus sprig";
+      visualContext = "A smiling person with fresh glowing skin enjoying a natural wellness and self-care routine in a bright modern space";
     } else if (lower.includes("gut") || lower.includes("digest") || lower.includes("microbiome") || lower.includes("tea") || lower.includes("drink")) {
-      visualContext = "Warm ceramic teacup with steaming herbal tea, fresh mint leaves, and natural wooden table";
+      visualContext = "A relaxed person holding a warm steaming mug of herbal tea, smiling, natural healthy wellness moment";
     } else {
-      visualContext = "High-end editorial lifestyle and wellness photography representing natural healthy living";
+      visualContext = "An authentic, healthy person engaging in a vibrant modern wellness lifestyle, smiling, natural daylight";
     }
 
-    const finalPrompt = `High-end editorial photography: ${visualContext}. Inspired by: ${cleanConcept}. Captured with a 50mm f/1.8 lens, soft natural side lighting, shallow depth of field, rich natural textures, professional composition. CRITICAL REQUIREMENTS: ABSOLUTELY NO TEXT, NO WRITING, NO LETTERS, NO WORDS, NO PAPERS, NO CARDS, NO BANNERS, NO LABELS, NO SIGNS, NO LOGOS, NO WATERMARKS, NO GRAPHIC OVERLAYS. Pure photo of real environment only.`;
-    const shortPrompt = `High-end editorial photography: ${visualContext}, subject ${cleanConcept}. Soft lighting, shallow depth of field, 8k resolution. ABSOLUTELY NO TEXT, NO WRITING, NO LETTERS, NO PAPERS, NO CARDS, NO BANNERS, NO LOGOS, NO WATERMARKS.`;
+    const finalPrompt = `High-end editorial lifestyle photography featuring real people: ${visualContext}. Topic: ${cleanConcept}. Captured with a professional 50mm f/1.8 DSLR camera, authentic human emotion, natural lighting, shallow depth of field, realistic textures, warm color grading. CRITICAL REQUIREMENTS: ABSOLUTELY NO TEXT, NO WRITING, NO LETTERS, NO WORDS, NO PAPERS, NO CARDS, NO BANNERS, NO LABELS, NO SIGNS, NO LOGOS, NO WATERMARKS, NO GRAPHIC OVERLAYS, NO CARTOONS, NO ARTIFICIAL FRAMES. Pure authentic photographic scene with a person.`;
+    const shortPrompt = `High-end editorial lifestyle photograph of a person, subject: ${visualContext}, topic ${cleanConcept}. Authentic human emotion, natural daylight, 8k photographic detail. ABSOLUTELY NO TEXT, NO WRITING, NO LETTERS, NO PAPERS, NO CARDS, NO BANNERS, NO LOGOS, NO WATERMARKS.`;
 
     let errorDetails = "";
 
