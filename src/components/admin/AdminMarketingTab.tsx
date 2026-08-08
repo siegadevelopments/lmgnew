@@ -158,7 +158,7 @@ export function AdminMarketingTab() {
       const igText = `${caption}\n.\n.\n.\n${hashtagStr || "#LifestyleMedicine #HealthyLiving #Wellness"}`;
       const pinText = `${title}\n\n${caption}${cleanLink}${hashtagStr ? `\n\n${hashtagStr}` : ""}`;
 
-      const res = await fetch("/api/buffer/create-ideas", {
+      const res = await fetch("/api/buffer-create-ideas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
