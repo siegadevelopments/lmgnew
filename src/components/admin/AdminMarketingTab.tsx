@@ -1141,8 +1141,9 @@ export function AdminMarketingTab() {
                                 console.error("Supabase upload error:", uploadError);
                               }
                             }
-                          } catch (e) {
+                          } catch (e: any) {
                             console.error("Failed to upload Pollinations image, falling back to direct URL", e);
+                            toast.error(`Image upload failed: ${e.message || "Unknown error"}`, { id: toastId });
                           }
 
                           setMultiPlatformDraft({
