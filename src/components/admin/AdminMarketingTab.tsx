@@ -211,7 +211,12 @@ export function AdminMarketingTab() {
         throw new Error(data.error || "Database saved, but failed to push to Buffer API");
       }
 
-      toast.success("Posts saved to DB & published to Buffer Queue!", { id: toastId });
+      if (data.warnings && data.warnings.length > 0) {
+        toast.error(`Buffer Warning: ${data.warnings.join(", ")}`, { id: toastId, duration: 8000 });
+      } else {
+        toast.success("Posts saved to DB & published to Buffer Queue!", { id: toastId });
+      }
+      
       setMultiPlatformDraft(null);
       setShowManualForm(false);
       await loadPosts();
@@ -1088,7 +1093,7 @@ export function AdminMarketingTab() {
                           Respond ONLY with a valid JSON object matching this exact structure (no markdown tags, just pure JSON):
                           {
                             "facebook": "Engaging Facebook caption with emojis, key points, STRICTLY 2-3 hashtags max, and a strong call to action to read more at this exact link: ${fullLink}",
-                            "instagram": "Engaging Instagram caption with emojis, line breaks (\\n), a 'Link in bio' call to action, and STRICTLY 3-5 relevant hashtags at the end (do not exceed 5).",
+                            "instagram": "Engaging Instagram caption with emojis, line breaks (\\n), a call to action to read more at this exact link: ${fullLink}, and STRICTLY 3-5 relevant hashtags at the end (do not exceed 5).",
                             "pinterest": "Attention-grabbing Pinterest title and caption, ending with a call to action to read more at: ${fullLink} and STRICTLY 2-4 hashtags."
                           }`;
 
