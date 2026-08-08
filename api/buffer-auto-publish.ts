@@ -43,6 +43,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
     
     const channelData = await channelRes.json();
+    
+    if (channelData.errors && channelData.errors.length > 0) {
+      console.error("Buffer API Error (Channels):", channelData.errors);
+      return res.status(400).json({ error: `Buffer API Error: ${channelData.errors[0].message}` });
+    }
+    
     const channels = channelData.data?.channels || [];
     
     if (channels.length === 0) {
