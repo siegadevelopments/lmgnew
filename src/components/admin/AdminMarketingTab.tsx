@@ -1087,9 +1087,9 @@ export function AdminMarketingTab() {
                           INSTRUCTIONS:
                           Respond ONLY with a valid JSON object matching this exact structure (no markdown tags, just pure JSON):
                           {
-                            "facebook": "Engaging Facebook caption with emojis, key points, and a strong call to action to read more at this exact link: \${fullLink}",
-                            "instagram": "Engaging Instagram caption with emojis, line breaks (\\\\n), a 'Link in bio' call to action, and 8-12 relevant hashtags at the end.",
-                            "pinterest": "Attention-grabbing Pinterest title and caption with a few hashtags, ending with a call to action to read more at: \${fullLink}"
+                            "facebook": "Engaging Facebook caption with emojis, key points, STRICTLY 2-3 hashtags max, and a strong call to action to read more at this exact link: \${fullLink}",
+                            "instagram": "Engaging Instagram caption with emojis, line breaks (\\\\n), a 'Link in bio' call to action, and STRICTLY 3-5 relevant hashtags at the end (do not exceed 5).",
+                            "pinterest": "Attention-grabbing Pinterest title and caption, ending with a call to action to read more at: \${fullLink} and STRICTLY 2-4 hashtags."
                           }\`;
 
                           const headers: Record<string, string> = { "Content-Type": "application/json" };
