@@ -141,6 +141,87 @@ export function AdminMarketingTab() {
   const [savingEdit, setSavingEdit] = useState(false);
   const [pushingBuffer, setPushingBuffer] = useState(false);
 
+  async function handleApproveMultiPlatform() {
+    if (!multiPlatformDraft || !manualForm.scheduled_at) {
+      toast.error("Please ensure you have generated the viral post and selected a scheduled date.");
+      return;
+    }
+    
+    setPushingBuffer(true);
+    const toastId = toast.loading("Saving to database & pushing to Buffer Queue...");
+    
+    try {
+      // 1. Save 3 versions to database
+      const insertData = [
+        {
+          title: manualForm.title || "Facebook Post",
+          caption: multiPlatformDraft.facebook,
+          hashtags: [],
+          image_url: multiPlatformDraft.imageUrl,
+          source_type: "custom",
+          source_url: multiPlatformDraft.sourceUrl,
+          platforms: ["facebook"],
+          scheduled_at: parseMelbourneTimeToUTC(manualForm.scheduled_at),
+          status: "approved",
+        },
+        {
+          title: manualForm.title || "Instagram Post",
+          caption: multiPlatformDraft.instagram,
+          hashtags: [],
+          image_url: multiPlatformDraft.imageUrl,
+          source_type: "custom",
+          source_url: multiPlatformDraft.sourceUrl,
+          platforms: ["instagram"],
+          scheduled_at: parseMelbourneTimeToUTC(manualForm.scheduled_at),
+          status: "approved",
+        },
+        {
+          title: manualForm.title || "Pinterest Post",
+          caption: multiPlatformDraft.pinterest,
+          hashtags: [],
+          image_url: multiPlatformDraft.imageUrl,
+          source_type: "custom",
+          source_url: multiPlatformDraft.sourceUrl,
+          platforms: ["pinterest"],
+          scheduled_at: parseMelbourneTimeToUTC(manualForm.scheduled_at),
+          status: "approved",
+        }
+      ];
+
+      const { error: dbError } = await (supabase.from("scheduled_posts") as any).insert(insertData);
+      if (dbError) throw dbError;
+
+      // 2. Push to Buffer API Queue
+      const res = await fetch("/api/buffer-auto-publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageUrl: multiPlatformDraft.imageUrl,
+          posts: {
+            facebook: multiPlatformDraft.facebook,
+            instagram: multiPlatformDraft.instagram,
+            pinterest: multiPlatformDraft.pinterest,
+          },
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "Database saved, but failed to push to Buffer API");
+      }
+
+      toast.success("Posts saved to DB & published to Buffer Queue!", { id: toastId });
+      setMultiPlatformDraft(null);
+      setShowManualForm(false);
+      await loadPosts();
+    } catch (err: any) {
+      console.error("Multi-platform publish error:", err);
+      toast.error(err.message || "Failed to publish", { id: toastId });
+    } finally {
+      setPushingBuffer(false);
+    }
+  }
+
   async function pushToBuffer(title: string, caption: string, hashtags: string, linkUrl?: string) {
     if (!title || !caption) {
       toast.error("Title and caption are required to push to Buffer");
@@ -196,6 +277,14 @@ export function AdminMarketingTab() {
     scheduled_at: "",
     source_url: "",
   });
+  
+  const [multiPlatformDraft, setMultiPlatformDraft] = useState<{
+    facebook: string;
+    instagram: string;
+    pinterest: string;
+    imageUrl: string;
+    sourceUrl: string;
+  } | null>(null);
 
   // Content Selection states
   const [contentList, setContentList] = useState<{ id: string; title: string; type: string; image_url?: string; slug?: string; excerpt?: string; content?: string }[]>([]);
@@ -987,17 +1076,20 @@ export function AdminMarketingTab() {
                         setEnhancingField("viral");
                         const toastId = toast.loading("AI is crafting a viral post for your selected article...");
                         try {
-                          const prompt = `Create a viral social media post for ${targetPlatform === "all" ? "Facebook, Instagram, and Pinterest" : targetPlatform} about this article/recipe:
+                          const prompt = `Create a viral social media post tailored for Facebook, Instagram, and Pinterest about this article/recipe:
                           
                           Title: ${content.title}
                           Excerpt: ${content.excerpt || ""}
                           Content Summary: ${content.content?.replace(/<[^>]*>/g, ' ').substring(0, 1500) || ""}
                           
                           INSTRUCTIONS:
-                          Format the response strictly with these exact labels:
-                          TITLE: [Attention-grabbing headline]
-                          CAPTION: [Engaging caption with emojis, key points, and call to action]
-                          HASHTAGS: [8-12 space-separated hashtags starting with #]`;
+                          Respond ONLY with a valid JSON object matching this exact structure (no markdown tags, just pure JSON):
+                          {
+                            "facebook": "Engaging Facebook caption with emojis, key points, and call to action.",
+                            "instagram": "Engaging Instagram caption with emojis, line breaks (\\n), and 8-12 relevant hashtags at the end.",
+                            "pinterest": "Attention-grabbing Pinterest title and caption with a few hashtags.",
+                            "imagePrompt": "A highly detailed, aesthetic image generation prompt describing a beautiful, modern, high-quality, photorealistic scene relevant to this wellness topic. NO text in the image."
+                          }`;
 
                           const headers: Record<string, string> = { "Content-Type": "application/json" };
                           const { data: { session } } = await supabase.auth.getSession();
@@ -1018,27 +1110,28 @@ export function AdminMarketingTab() {
                           const data = await response.json();
                           if (!response.ok || data.error) throw new Error(data.error || "Generation failed");
 
-                          const res = data.result || "";
+                          let parsed: any;
+                          try {
+                            const cleanJson = data.result.replace(/```json/gi, '').replace(/```/g, '').trim();
+                            parsed = JSON.parse(cleanJson);
+                          } catch (e) {
+                            console.error("Failed to parse JSON:", data.result);
+                            throw new Error("AI returned invalid format. Try again.");
+                          }
                           
-                          // Robust parsing (handles optional markdown formatting **)
-                          const titleMatch = res.match(/\*?\*?TITLE:\*?\*?\s*(.*)/i);
-                          const captionMatch = res.match(/\*?\*?CAPTION:\*?\*?\s*([\s\S]*?)(?=\*?\*?HASHTAGS:|$)/i);
-                          const hashtagsMatch = res.match(/\*?\*?HASHTAGS:\*?\*?\s*(.*)/i);
+                          const sourceUrl = `/${content.type.toLowerCase()}s/${content.slug}`;
+                          const cleanImagePrompt = encodeURIComponent(parsed.imagePrompt || `aesthetic wellness ${content.title}`);
+                          const generatedImageUrl = `https://image.pollinations.ai/prompt/${cleanImagePrompt}?width=1080&height=1080&nologo=true`;
 
-                          const titleText = titleMatch?.[1]?.trim().replace(/^\*+|\*+$/g, "") || content.title;
-                          const captionText = captionMatch?.[1]?.trim() || res;
-                          const hashtagsText = hashtagsMatch?.[1]?.trim() || "#LifestyleMedicine #HealthyLiving";
+                          setMultiPlatformDraft({
+                            facebook: parsed.facebook,
+                            instagram: parsed.instagram,
+                            pinterest: parsed.pinterest,
+                            imageUrl: generatedImageUrl,
+                            sourceUrl
+                          });
 
-                          setManualForm(prev => ({
-                            ...prev,
-                            title: titleText,
-                            caption: captionText,
-                            hashtags: hashtagsText,
-                            image_url: content.image_url || "",
-                            source_url: `/${content.type.toLowerCase()}s/${content.slug}`,
-                          }));
-
-                          toast.success("Viral post generated!", { id: toastId });
+                          toast.success("Viral posts & image generated!", { id: toastId });
                         } catch (err: any) {
                           console.error("Generate viral post error:", err);
                           toast.error(err.message || "Failed to generate viral post", { id: toastId });
@@ -1058,146 +1151,197 @@ export function AdminMarketingTab() {
                 </div>
               </div>
 
-              <div className="space-y-2 sm:col-span-2">
-                <div className="flex items-center justify-between">
-                  <Label>Title</Label>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs text-primary hover:text-primary gap-1.5"
-                    disabled={enhancingField === "title"}
-                    onClick={() => aiEnhance("title")}
-                  >
-                    {enhancingField === "title" ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <Sparkles className="h-3 w-3" />
-                    )}
-                    {enhancingField === "title"
-                      ? "Enhancing..."
-                      : manualForm.title
-                        ? "Improve with AI"
-                        : "Generate with AI"}
-                  </Button>
+              {multiPlatformDraft ? (
+                <div className="space-y-6 sm:col-span-2">
+                  <div className="space-y-2">
+                    <Label>Schedule Date & Time</Label>
+                    <Input
+                      type="datetime-local"
+                      required
+                      value={manualForm.scheduled_at}
+                      onChange={(e) => setManualForm({ ...manualForm, scheduled_at: e.target.value })}
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="border-blue-500 shadow-sm">
+                      <CardContent className="p-4 space-y-3 text-sm">
+                        <div className="flex items-center gap-2 font-bold text-blue-600"><Facebook className="w-4 h-4"/> Facebook</div>
+                        <img src={multiPlatformDraft.imageUrl} alt="AI Generated" className="w-full h-32 object-cover rounded-md" />
+                        <Textarea 
+                           className="text-xs" 
+                           rows={8} 
+                           value={multiPlatformDraft.facebook} 
+                           onChange={(e) => setMultiPlatformDraft({...multiPlatformDraft, facebook: e.target.value})} 
+                        />
+                      </CardContent>
+                    </Card>
+                    <Card className="border-pink-500 shadow-sm">
+                      <CardContent className="p-4 space-y-3 text-sm">
+                        <div className="flex items-center gap-2 font-bold text-pink-600"><Instagram className="w-4 h-4"/> Instagram</div>
+                        <img src={multiPlatformDraft.imageUrl} alt="AI Generated" className="w-full h-32 object-cover rounded-md" />
+                        <Textarea 
+                           className="text-xs" 
+                           rows={8} 
+                           value={multiPlatformDraft.instagram} 
+                           onChange={(e) => setMultiPlatformDraft({...multiPlatformDraft, instagram: e.target.value})} 
+                        />
+                      </CardContent>
+                    </Card>
+                    <Card className="border-red-500 shadow-sm">
+                      <CardContent className="p-4 space-y-3 text-sm">
+                        <div className="flex items-center gap-2 font-bold text-red-600">
+                          <span className="w-4 h-4 text-center font-serif leading-4 rounded-full bg-red-600 text-white">P</span> Pinterest
+                        </div>
+                        <img src={multiPlatformDraft.imageUrl} alt="AI Generated" className="w-full h-32 object-cover rounded-md" />
+                        <Textarea 
+                           className="text-xs" 
+                           rows={8} 
+                           value={multiPlatformDraft.pinterest} 
+                           onChange={(e) => setMultiPlatformDraft({...multiPlatformDraft, pinterest: e.target.value})} 
+                        />
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2 pt-4">
+                    <Button
+                      type="button"
+                      className="bg-indigo-600 text-white hover:bg-indigo-700"
+                      disabled={pushingBuffer}
+                      onClick={handleApproveMultiPlatform}
+                    >
+                      {pushingBuffer ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                      Approve & Push to Buffer Queue
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => { setMultiPlatformDraft(null); setShowManualForm(false); }}>
+                      Discard
+                    </Button>
+                  </div>
                 </div>
-                <Input
-                  required
-                  value={manualForm.title}
-                  onChange={(e) => setManualForm({ ...manualForm, title: e.target.value })}
-                  placeholder="e.g. Monday Motivation — Gut Health Tips"
-                />
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <div className="flex items-center justify-between">
-                  <Label>Caption</Label>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs text-primary hover:text-primary gap-1.5"
-                    disabled={enhancingField === "caption"}
-                    onClick={() => aiEnhance("caption")}
-                  >
-                    {enhancingField === "caption" ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <Sparkles className="h-3 w-3" />
-                    )}
-                    {enhancingField === "caption"
-                      ? "Writing..."
-                      : manualForm.caption
-                        ? "Rewrite with AI"
-                        : "Write with AI"}
-                  </Button>
-                </div>
-                <Textarea
-                  required
-                  rows={5}
-                  value={manualForm.caption}
-                  onChange={(e) => setManualForm({ ...manualForm, caption: e.target.value })}
-                  placeholder="Write your post caption here... or click 'Write with AI' to generate one"
-                />
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label>Hashtags</Label>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs text-primary hover:text-primary gap-1.5"
-                    disabled={enhancingField === "hashtags"}
-                    onClick={() => aiEnhance("hashtags")}
-                  >
-                    {enhancingField === "hashtags" ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <Sparkles className="h-3 w-3" />
-                    )}
-                    {enhancingField === "hashtags" ? "Generating..." : "Auto-generate"}
-                  </Button>
-                </div>
-                <Input
-                  value={manualForm.hashtags}
-                  onChange={(e) => setManualForm({ ...manualForm, hashtags: e.target.value })}
-                  placeholder="#NaturalWellness, #MenopauseSupport"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Schedule Date & Time</Label>
-                <Input
-                  type="datetime-local"
-                  required
-                  value={manualForm.scheduled_at}
-                  onChange={(e) => setManualForm({ ...manualForm, scheduled_at: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Image URL (optional)</Label>
-                <Input
-                  value={manualForm.image_url}
-                  onChange={(e) => setManualForm({ ...manualForm, image_url: e.target.value })}
-                  placeholder="https://..."
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Link URL (optional)</Label>
-                <Input
-                  value={manualForm.source_url}
-                  onChange={(e) => setManualForm({ ...manualForm, source_url: e.target.value })}
-                  placeholder="/articles/my-article-slug"
-                />
-              </div>
-              <div className="flex flex-wrap gap-2 sm:col-span-2 pt-2">
-                <Button type="submit">
-                  <Plus className="mr-2 h-4 w-4" /> Create Post
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="bg-indigo-600 text-white hover:bg-indigo-700"
-                  disabled={pushingBuffer}
-                  onClick={() =>
-                    pushToBuffer(
-                      manualForm.title,
-                      manualForm.caption,
-                      manualForm.hashtags,
-                      manualForm.source_url
-                    )
-                  }
-                >
-                  {pushingBuffer ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="mr-2 h-4 w-4" />
-                  )}
-                  Push 3 Versions to Buffer
-                </Button>
-                <Button type="button" variant="outline" onClick={() => setShowManualForm(false)}>
-                  Cancel
-                </Button>
-              </div>
+              ) : (
+                <>
+                  <div className="space-y-2 sm:col-span-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Title</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-primary hover:text-primary gap-1.5"
+                        disabled={enhancingField === "title"}
+                        onClick={() => aiEnhance("title")}
+                      >
+                        {enhancingField === "title" ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-3 w-3" />
+                        )}
+                        {enhancingField === "title"
+                          ? "Enhancing..."
+                          : manualForm.title
+                            ? "Improve with AI"
+                            : "Generate with AI"}
+                      </Button>
+                    </div>
+                    <Input
+                      required
+                      value={manualForm.title}
+                      onChange={(e) => setManualForm({ ...manualForm, title: e.target.value })}
+                      placeholder="e.g. Monday Motivation — Gut Health Tips"
+                    />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Caption</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-primary hover:text-primary gap-1.5"
+                        disabled={enhancingField === "caption"}
+                        onClick={() => aiEnhance("caption")}
+                      >
+                        {enhancingField === "caption" ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-3 w-3" />
+                        )}
+                        {enhancingField === "caption"
+                          ? "Writing..."
+                          : manualForm.caption
+                            ? "Rewrite with AI"
+                            : "Write with AI"}
+                      </Button>
+                    </div>
+                    <Textarea
+                      required
+                      rows={5}
+                      value={manualForm.caption}
+                      onChange={(e) => setManualForm({ ...manualForm, caption: e.target.value })}
+                      placeholder="Write your post caption here... or click 'Write with AI' to generate one"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Hashtags</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-primary hover:text-primary gap-1.5"
+                        disabled={enhancingField === "hashtags"}
+                        onClick={() => aiEnhance("hashtags")}
+                      >
+                        {enhancingField === "hashtags" ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-3 w-3" />
+                        )}
+                        {enhancingField === "hashtags" ? "Generating..." : "Auto-generate"}
+                      </Button>
+                    </div>
+                    <Input
+                      value={manualForm.hashtags}
+                      onChange={(e) => setManualForm({ ...manualForm, hashtags: e.target.value })}
+                      placeholder="#NaturalWellness, #MenopauseSupport"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Schedule Date & Time</Label>
+                    <Input
+                      type="datetime-local"
+                      required
+                      value={manualForm.scheduled_at}
+                      onChange={(e) => setManualForm({ ...manualForm, scheduled_at: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Image URL (optional)</Label>
+                    <Input
+                      value={manualForm.image_url}
+                      onChange={(e) => setManualForm({ ...manualForm, image_url: e.target.value })}
+                      placeholder="https://..."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Link URL (optional)</Label>
+                    <Input
+                      value={manualForm.source_url}
+                      onChange={(e) => setManualForm({ ...manualForm, source_url: e.target.value })}
+                      placeholder="/articles/my-article-slug"
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2 sm:col-span-2 pt-2">
+                    <Button type="submit">
+                      <Plus className="mr-2 h-4 w-4" /> Create Post
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => setShowManualForm(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </>
+              )}
             </form>
           </CardContent>
         </Card>
