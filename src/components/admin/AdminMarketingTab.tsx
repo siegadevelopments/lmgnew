@@ -483,6 +483,25 @@ export function AdminMarketingTab() {
     }
   }
 
+  // Clear all posts (all statuses)
+  async function handleClearAllPosts() {
+    if (!confirm(`Are you sure you want to delete ALL ${posts.length} scheduled posts? This action cannot be undone.`)) {
+      return;
+    }
+    const toastId = toast.loading("Deleting all scheduled posts...");
+    try {
+      const { error } = await (supabase.from("scheduled_posts") as any)
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+      if (error) throw error;
+      toast.success("All scheduled posts have been cleared!", { id: toastId });
+      setSelectedPost(null);
+      await loadPosts();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to clear posts", { id: toastId });
+    }
+  }
+
   // Create manual post
   async function handleManualCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -1184,22 +1203,35 @@ export function AdminMarketingTab() {
         </Card>
       )}
 
-      {/* View Toggle */}
-      <div className="flex items-center gap-2">
-        <Button
-          variant={view === "calendar" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setView("calendar")}
-        >
-          <Calendar className="mr-2 h-4 w-4" /> Calendar
-        </Button>
-        <Button
-          variant={view === "list" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setView("list")}
-        >
-          <BarChart3 className="mr-2 h-4 w-4" /> List
-        </Button>
+      {/* View Toggle & Actions */}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Button
+            variant={view === "calendar" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setView("calendar")}
+          >
+            <Calendar className="mr-2 h-4 w-4" /> Calendar
+          </Button>
+          <Button
+            variant={view === "list" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setView("list")}
+          >
+            <BarChart3 className="mr-2 h-4 w-4" /> List
+          </Button>
+        </div>
+
+        {posts.length > 0 && (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleClearAllPosts}
+            className="gap-1.5 font-semibold"
+          >
+            <Trash2 className="h-4 w-4" /> Clear All Scheduled Posts ({posts.length})
+          </Button>
+        )}
       </div>
 
       {/* Calendar View */}
@@ -1432,8 +1464,21 @@ export function AdminMarketingTab() {
                           size="icon"
                           className="h-7 w-7"
                           onClick={() => openEditor(post)}
+                          title="View / Edit post"
                         >
                           <Eye className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-destructive hover:bg-destructive/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(post.id);
+                          }}
+                          title="Delete post"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                         {post.status === "draft" && (
                           <Button
