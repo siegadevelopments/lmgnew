@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminGalleriesTab } from "@/components/admin/AdminGalleriesTab";
 import { AdminContentTab } from "@/components/admin/AdminContentTab";
+import { AdminMarketingTab } from "@/components/admin/AdminMarketingTab";
 import { AdminSubscribersTab } from "@/components/admin/AdminSubscribersTab";
 import { AdminPopupsTab } from "@/components/admin/AdminPopupsTab";
 import { AffiliatesTab } from "@/components/admin/AffiliatesTab";
@@ -49,6 +50,7 @@ import {
   DollarSign,
   Loader2,
   Plus,
+  Share2,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -661,6 +663,7 @@ export default function AdminPage() {
     { id: "streams", label: "Live Streams", icon: Radio },
     { id: "products", label: `Products (${products.length})`, icon: Package },
     { id: "content", label: "Content Manager", icon: FileText },
+    { id: "marketing", label: "Marketing & Buffer", icon: Share2 },
     { id: "galleries", label: "Galleries", icon: ImageIcon },
     { id: "affiliates", label: "Affiliates", icon: LinkIcon },
     { id: "popups", label: "Popups", icon: Sparkles },
@@ -1443,6 +1446,15 @@ export default function AdminPage() {
                 <p className="text-muted-foreground">Approve articles, recipes, and videos.</p>
               </div>
               <AdminContentTab vendors={vendors} userId={user?.id} />
+            </TabsContent>
+
+            {/* MARKETING & BUFFER */}
+            <TabsContent value="marketing" className="mt-0 border-0 p-0">
+              <div className="mb-6 flex flex-col gap-1">
+                <h1 className="text-2xl font-bold tracking-tight">Marketing & Buffer Automation</h1>
+                <p className="text-muted-foreground">Manage social media scheduling and push 3 post versions directly to Buffer.</p>
+              </div>
+              <AdminMarketingTab />
             </TabsContent>
 
             {/* MESSAGES */}
