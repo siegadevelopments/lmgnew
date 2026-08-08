@@ -197,6 +197,7 @@ export function AdminMarketingTab() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           imageUrl: multiPlatformDraft.imageUrl,
+          scheduledAt: parseMelbourneTimeToUTC(manualForm.scheduled_at),
           posts: {
             facebook: multiPlatformDraft.facebook,
             instagram: multiPlatformDraft.instagram,

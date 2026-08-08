@@ -12,7 +12,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
-    const { posts, imageUrl } = body;
+    const { posts, imageUrl, scheduledAt } = body;
 
     const token = process.env.BUFFER_ACCESS_TOKEN || process.env.VITE_BUFFER_ACCESS_TOKEN;
     if (!token) {
@@ -111,8 +111,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               channelId: channel.id,
               text: platform.text,
               assets: [{ image: { url: imageUrl } }],
-              mode: "addToQueue",
+              mode: scheduledAt ? "customScheduled" : "addToQueue",
               schedulingType: "automatic",
+              dueAt: scheduledAt ? scheduledAt : undefined,
               saveToDraft: false,
               metadata
             },
