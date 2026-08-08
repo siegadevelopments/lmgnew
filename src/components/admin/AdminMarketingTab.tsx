@@ -200,7 +200,7 @@ export function AdminMarketingTab() {
   // Content Selection states
   const [contentList, setContentList] = useState<{ id: string; title: string; type: string; image_url?: string; slug?: string; excerpt?: string; content?: string }[]>([]);
   const [selectedContentId, setSelectedContentId] = useState<string>("");
-  const [targetPlatform, setTargetPlatform] = useState<"facebook" | "instagram" | "both">("both");
+  const [targetPlatform, setTargetPlatform] = useState<"facebook" | "instagram" | "pinterest" | "both" | "all">("all");
   const [loadingContent, setLoadingContent] = useState(false);
 
   useEffect(() => {
@@ -879,7 +879,7 @@ export function AdminMarketingTab() {
                     <Megaphone className="h-4 w-4" />
                     Generate from Content
                   </h4>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
                     <Button
                       type="button"
                       variant={targetPlatform === "facebook" ? "secondary" : "ghost"}
@@ -900,12 +900,21 @@ export function AdminMarketingTab() {
                     </Button>
                     <Button
                       type="button"
-                      variant={targetPlatform === "both" ? "secondary" : "ghost"}
+                      variant={targetPlatform === "pinterest" ? "secondary" : "ghost"}
                       size="sm"
                       className="h-7 text-[10px] px-2 font-bold"
-                      onClick={() => setTargetPlatform("both")}
+                      onClick={() => setTargetPlatform("pinterest")}
                     >
-                      Both
+                      <PinterestIcon className="h-3 w-3 mr-1" /> Pin
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={targetPlatform === "all" || targetPlatform === "both" ? "secondary" : "ghost"}
+                      size="sm"
+                      className="h-7 text-[10px] px-2 font-bold"
+                      onClick={() => setTargetPlatform("all")}
+                    >
+                      All
                     </Button>
                   </div>
                 </div>
