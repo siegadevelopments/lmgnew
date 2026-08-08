@@ -960,65 +960,69 @@ export function AdminMarketingTab() {
                       disabled={!selectedContentId || enhancingField === "viral"}
                       onClick={async () => {
                         const content = contentList.find(c => String(c.id) === selectedContentId);
-                        if (!content) return;
+                        if (!content) {
+                          toast.error("Please select an article or recipe first!");
+                          return;
+                        }
                         
                         setEnhancingField("viral");
+                        const toastId = toast.loading("AI is crafting a viral post for your selected article...");
                         try {
-                          const { data: { session } } = await supabase.auth.getSession();
-                          if (!session) throw new Error("Not authenticated");
-
-                          const prompt = `Create a viral social media post for ${targetPlatform === "both" ? "Facebook and Instagram" : targetPlatform}. 
-                          Content Title: ${content.title}
+                          const prompt = `Create a viral social media post for ${targetPlatform === "all" ? "Facebook, Instagram, and Pinterest" : targetPlatform} about this article/recipe:
+                          
+                          Title: ${content.title}
                           Excerpt: ${content.excerpt || ""}
-                          Content: ${content.content?.substring(0, 1000) || ""}
+                          Content Summary: ${content.content?.replace(/<[^>]*>/g, ' ').substring(0, 1500) || ""}
                           
-                          BEST PRACTICES:
-                          1. Start with a powerful HOOK (first line).
-                          2. Use engaging emojis throughout.
-                          3. Focus on benefits and curiosity.
-                          4. End with a clear CALL TO ACTION.
-                          5. Keep it conversational and relatable.
-                          6. For Instagram, use more white space and bullet points.
-                          
-                          Return JSON-like structure:
-                          TITLE: [Viral Title]
-                          CAPTION: [Engaging Caption]
-                          HASHTAGS: [comma-separated hashtags]`;
+                          INSTRUCTIONS:
+                          Format the response strictly with these exact labels:
+                          TITLE: [Attention-grabbing headline]
+                          CAPTION: [Engaging caption with emojis, key points, and call to action]
+                          HASHTAGS: [8-12 space-separated hashtags starting with #]`;
+
+                          const headers: Record<string, string> = { "Content-Type": "application/json" };
+                          const { data: { session } } = await supabase.auth.getSession();
+                          if (session?.access_token) {
+                            headers["Authorization"] = `Bearer ${session.access_token}`;
+                          }
 
                           const response = await fetch("/api/ai-enhance", {
                             method: "POST",
-                            headers: {
-                              "Content-Type": "application/json",
-                              Authorization: `Bearer ${session.access_token}`,
-                            },
+                            headers,
                             body: JSON.stringify({
                               field: "custom",
                               value: prompt,
-                              context: "viral_social_media_generator"
+                              context: `Article: ${content.title}`
                             }),
                           });
 
                           const data = await response.json();
-                          if (!response.ok) throw new Error(data.details || data.error || "Generation failed");
+                          if (!response.ok || data.error) throw new Error(data.error || "Generation failed");
 
-                          // Parse the result
                           const res = data.result || "";
-                          const titleMatch = res.match(/TITLE:\s*(.*)/i);
-                          const captionMatch = res.match(/CAPTION:\s*([\s\S]*?)(?=HASHTAGS:|$)/i);
-                          const hashtagsMatch = res.match(/HASHTAGS:\s*(.*)/i);
+                          
+                          // Robust parsing (handles optional markdown formatting **)
+                          const titleMatch = res.match(/\*?\*?TITLE:\*?\*?\s*(.*)/i);
+                          const captionMatch = res.match(/\*?\*?CAPTION:\*?\*?\s*([\s\S]*?)(?=\*?\*?HASHTAGS:|$)/i);
+                          const hashtagsMatch = res.match(/\*?\*?HASHTAGS:\*?\*?\s*(.*)/i);
+
+                          const titleText = titleMatch?.[1]?.trim().replace(/^\*+|\*+$/g, "") || content.title;
+                          const captionText = captionMatch?.[1]?.trim() || res;
+                          const hashtagsText = hashtagsMatch?.[1]?.trim() || "#LifestyleMedicine #HealthyLiving";
 
                           setManualForm(prev => ({
                             ...prev,
-                            title: titleMatch?.[1]?.trim() || content.title,
-                            caption: captionMatch?.[1]?.trim() || "",
-                            hashtags: hashtagsMatch?.[1]?.trim() || "",
+                            title: titleText,
+                            caption: captionText,
+                            hashtags: hashtagsText,
                             image_url: content.image_url || "",
                             source_url: `/${content.type.toLowerCase()}s/${content.slug}`,
                           }));
 
-                          toast.success("Viral post generated!");
+                          toast.success("Viral post generated!", { id: toastId });
                         } catch (err: any) {
-                          toast.error(err.message || "Failed to generate viral post");
+                          console.error("Generate viral post error:", err);
+                          toast.error(err.message || "Failed to generate viral post", { id: toastId });
                         } finally {
                           setEnhancingField(null);
                         }
