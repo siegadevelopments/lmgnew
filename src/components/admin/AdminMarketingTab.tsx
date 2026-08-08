@@ -133,6 +133,51 @@ export function AdminMarketingTab() {
   const [editPlatforms, setEditPlatforms] = useState<string[]>(["facebook", "instagram"]);
   const [editStatus, setEditStatus] = useState("draft");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [pushingBuffer, setPushingBuffer] = useState(false);
+
+  async function pushToBuffer(title: string, caption: string, hashtags: string, linkUrl?: string) {
+    if (!title || !caption) {
+      toast.error("Title and caption are required to push to Buffer");
+      return;
+    }
+    setPushingBuffer(true);
+    const toastId = toast.loading("Formatting & pushing 3 versions (FB, IG, Pinterest) to Buffer...");
+    try {
+      const hashtagStr = hashtags
+        ? (hashtags.startsWith("#") ? hashtags : hashtags.split(",").map(h => `#${h.trim()}`).join(" "))
+        : "";
+      const cleanLink = linkUrl ? `\n${linkUrl}` : "";
+      
+      const fbText = `${caption}${cleanLink}${hashtagStr ? `\n\n${hashtagStr}` : ""}`;
+      const igText = `${caption}\n.\n.\n.\n${hashtagStr || "#LifestyleMedicine #HealthyLiving #Wellness"}`;
+      const pinText = `${title}\n\n${caption}${cleanLink}${hashtagStr ? `\n\n${hashtagStr}` : ""}`;
+
+      const res = await fetch("/api/buffer/create-ideas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          posts: {
+            facebook: fbText,
+            instagram: igText,
+            pinterest: pinText,
+          },
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "Failed to push to Buffer");
+      }
+
+      toast.success("Pushed 3 versions (Facebook, Instagram, Pinterest) to Buffer Ideas!", { id: toastId });
+    } catch (err: any) {
+      console.error("Buffer Push Error:", err);
+      toast.error(err.message || "Failed to push to Buffer", { id: toastId });
+    } finally {
+      setPushingBuffer(false);
+    }
+  }
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [view, setView] = useState<"calendar" | "list">("calendar");
   const [showManualForm, setShowManualForm] = useState(false);
@@ -1086,9 +1131,30 @@ export function AdminMarketingTab() {
                   placeholder="/articles/my-article-slug"
                 />
               </div>
-              <div className="flex gap-2 sm:col-span-2 pt-2">
+              <div className="flex flex-wrap gap-2 sm:col-span-2 pt-2">
                 <Button type="submit">
                   <Plus className="mr-2 h-4 w-4" /> Create Post
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="bg-indigo-600 text-white hover:bg-indigo-700"
+                  disabled={pushingBuffer}
+                  onClick={() =>
+                    pushToBuffer(
+                      manualForm.title,
+                      manualForm.caption,
+                      manualForm.hashtags,
+                      manualForm.source_url
+                    )
+                  }
+                >
+                  {pushingBuffer ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="mr-2 h-4 w-4" />
+                  )}
+                  Push 3 Versions to Buffer
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setShowManualForm(false)}>
                   Cancel
@@ -1585,6 +1651,20 @@ export function AdminMarketingTab() {
                     <FileEdit className="mr-2 h-4 w-4" />
                   )}
                   Save Changes
+                </Button>
+                <Button
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                  disabled={savingEdit || pushingBuffer}
+                  onClick={() =>
+                    pushToBuffer(editTitle, editCaption, editHashtags, editSourceUrl)
+                  }
+                >
+                  {pushingBuffer ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="mr-2 h-4 w-4" />
+                  )}
+                  Push to Buffer
                 </Button>
                 {selectedPost.status !== "published" && (
                   <Button
