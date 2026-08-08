@@ -1121,17 +1121,39 @@ export function AdminMarketingTab() {
                           
                           const sourceUrl = `/${content.type.toLowerCase()}s/${content.slug}`;
                           const cleanImagePrompt = encodeURIComponent(parsed.imagePrompt || `aesthetic wellness ${content.title}`);
-                          const generatedImageUrl = `https://image.pollinations.ai/prompt/${cleanImagePrompt}?width=1080&height=1080&nologo=true`;
+                          const pollinationsUrl = `https://image.pollinations.ai/prompt/${cleanImagePrompt}?width=1080&height=1080&nologo=true`;
+                          
+                          let finalImageUrl = pollinationsUrl;
+                          
+                          toast.loading("Downloading AI image to media library...", { id: toastId });
+                          try {
+                            const imgRes = await fetch(pollinationsUrl);
+                            if (imgRes.ok) {
+                              const blob = await imgRes.blob();
+                              const fileName = `viral-post-${Date.now()}.jpg`;
+                              const { error: uploadError } = await supabase.storage.from("media").upload(fileName, blob, {
+                                contentType: "image/jpeg",
+                              });
+                              if (!uploadError) {
+                                const { data: pubUrl } = supabase.storage.from("media").getPublicUrl(fileName);
+                                finalImageUrl = pubUrl.publicUrl;
+                              } else {
+                                console.error("Supabase upload error:", uploadError);
+                              }
+                            }
+                          } catch (e) {
+                            console.error("Failed to upload Pollinations image, falling back to direct URL", e);
+                          }
 
                           setMultiPlatformDraft({
                             facebook: parsed.facebook,
                             instagram: parsed.instagram,
                             pinterest: parsed.pinterest,
-                            imageUrl: generatedImageUrl,
+                            imageUrl: finalImageUrl,
                             sourceUrl
                           });
 
-                          toast.success("Viral posts & image generated!", { id: toastId });
+                          toast.success("Viral posts & image generated successfully!", { id: toastId });
                         } catch (err: any) {
                           console.error("Generate viral post error:", err);
                           toast.error(err.message || "Failed to generate viral post", { id: toastId });
