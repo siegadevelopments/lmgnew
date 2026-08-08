@@ -1077,19 +1077,20 @@ export function AdminMarketingTab() {
                         setEnhancingField("viral");
                         const toastId = toast.loading("AI is crafting a viral post for your selected article...");
                         try {
-                          const prompt = `Create a viral social media post tailored for Facebook, Instagram, and Pinterest about this article/recipe:
+                          const fullLink = \`https://www.lifestylemedicinegateway.com/\${content.type.toLowerCase()}s/\${content.slug}\`;
+                          const prompt = \`Create a viral social media post tailored for Facebook, Instagram, and Pinterest about this article/recipe:
                           
-                          Title: ${content.title}
-                          Excerpt: ${content.excerpt || ""}
-                          Content Summary: ${content.content?.replace(/<[^>]*>/g, ' ').substring(0, 1500) || ""}
+                          Title: \${content.title}
+                          Excerpt: \${content.excerpt || ""}
+                          Content Summary: \${content.content?.replace(/<[^>]*>/g, ' ').substring(0, 1500) || ""}
                           
                           INSTRUCTIONS:
                           Respond ONLY with a valid JSON object matching this exact structure (no markdown tags, just pure JSON):
                           {
-                            "facebook": "Engaging Facebook caption with emojis, key points, and call to action.",
-                            "instagram": "Engaging Instagram caption with emojis, line breaks (\\n), and 8-12 relevant hashtags at the end.",
-                            "pinterest": "Attention-grabbing Pinterest title and caption with a few hashtags."
-                          }`;
+                            "facebook": "Engaging Facebook caption with emojis, key points, and a strong call to action to read more at this exact link: \${fullLink}",
+                            "instagram": "Engaging Instagram caption with emojis, line breaks (\\\\n), a 'Link in bio' call to action, and 8-12 relevant hashtags at the end.",
+                            "pinterest": "Attention-grabbing Pinterest title and caption with a few hashtags, ending with a call to action to read more at: \${fullLink}"
+                          }\`;
 
                           const headers: Record<string, string> = { "Content-Type": "application/json" };
                           const { data: { session } } = await supabase.auth.getSession();
