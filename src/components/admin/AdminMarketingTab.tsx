@@ -1120,31 +1120,10 @@ export function AdminMarketingTab() {
                           }
                           
                           const sourceUrl = `/${content.type.toLowerCase()}s/${content.slug}`;
-                          const cleanImagePrompt = encodeURIComponent(parsed.imagePrompt || `aesthetic wellness ${content.title}`);
-                          const pollinationsUrl = `https://image.pollinations.ai/prompt/${cleanImagePrompt}?width=1080&height=1080&nologo=true`;
+                          const rawPrompt = parsed.imagePrompt || `aesthetic wellness ${content.title}`;
                           
-                          let finalImageUrl = pollinationsUrl;
-                          
-                          toast.loading("Downloading AI image to media library...", { id: toastId });
-                          try {
-                            const imgRes = await fetch(pollinationsUrl);
-                            if (imgRes.ok) {
-                              const blob = await imgRes.blob();
-                              const fileName = `viral-post-${Date.now()}.jpg`;
-                              const { error: uploadError } = await supabase.storage.from("media").upload(fileName, blob, {
-                                contentType: "image/jpeg",
-                              });
-                              if (!uploadError) {
-                                const { data: pubUrl } = supabase.storage.from("media").getPublicUrl(fileName);
-                                finalImageUrl = pubUrl.publicUrl;
-                              } else {
-                                console.error("Supabase upload error:", uploadError);
-                              }
-                            }
-                          } catch (e: any) {
-                            console.error("Failed to upload Pollinations image, falling back to direct URL", e);
-                            toast.error(`Image upload failed: ${e.message || "Unknown error"}`, { id: toastId });
-                          }
+                          // Use the internal Vercel API proxy so Buffer API doesn't get blocked by Pollinations
+                          const finalImageUrl = `https://www.lifestylemedicinegateway.com/api/generate-image?prompt=${encodeURIComponent(rawPrompt)}`;
 
                           setMultiPlatformDraft({
                             facebook: parsed.facebook,
