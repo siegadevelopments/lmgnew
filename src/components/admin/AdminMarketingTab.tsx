@@ -1088,8 +1088,7 @@ export function AdminMarketingTab() {
                           {
                             "facebook": "Engaging Facebook caption with emojis, key points, and call to action.",
                             "instagram": "Engaging Instagram caption with emojis, line breaks (\\n), and 8-12 relevant hashtags at the end.",
-                            "pinterest": "Attention-grabbing Pinterest title and caption with a few hashtags.",
-                            "imagePrompt": "A highly detailed, aesthetic image generation prompt describing a beautiful, modern, high-quality, photorealistic scene relevant to this wellness topic. NO text in the image."
+                            "pinterest": "Attention-grabbing Pinterest title and caption with a few hashtags."
                           }`;
 
                           const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -1121,10 +1120,7 @@ export function AdminMarketingTab() {
                           }
                           
                           const sourceUrl = `/${content.type.toLowerCase()}s/${content.slug}`;
-                          const rawPrompt = parsed.imagePrompt || `aesthetic wellness ${content.title}`;
-                          
-                          // Use the internal Vercel API proxy so Buffer API doesn't get blocked by Pollinations
-                          const finalImageUrl = `https://www.lifestylemedicinegateway.com/api/generate-image?prompt=${encodeURIComponent(rawPrompt)}`;
+                          const finalImageUrl = content.image_url || "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=2070&auto=format&fit=crop";
 
                           setMultiPlatformDraft({
                             facebook: parsed.facebook,
