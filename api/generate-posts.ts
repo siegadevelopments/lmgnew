@@ -229,9 +229,9 @@ POST TYPES TO ROTATE:
 
 REQUIREMENTS FOR EACH POST:
 - "title": short topic title (e.g. "5 Gut-Friendly Foods for Perimenopause")
-- "facebook": Engaging Facebook caption with conversational tone, story hook, emojis, call to action with link: https://lifestylemedicinegateway.com{source_url}, and STRICTLY 2-3 hashtags max.
-- "instagram": High-engagement Instagram caption with emojis, line breaks (\\n), CTA to visit link in bio or https://lifestylemedicinegateway.com{source_url}, and STRICTLY 3-5 relevant hashtags at the end.
-- "pinterest": STRICT RULE - Must be CONCISE and UNDER 450 CHARACTERS total (including title, description, link: https://lifestylemedicinegateway.com{source_url}, and hashtags) so it never breaches Pinterest's 500-char limit. Start with a catchy Pin Title, brief description, CTA link, and 2-3 targeted hashtags.
+- "facebook": Engaging Facebook caption with conversational tone, story hook, emojis, the actual article/product link from the content above, and STRICTLY 2-3 hashtags max. DO NOT write literal placeholder strings like "{source_url}" or "Title:" or "Link:". Write the actual readable post copy.
+- "instagram": High-engagement Instagram caption with emojis, line breaks (\\n), CTA to visit link in bio or the actual website link from the content above, and STRICTLY 3-5 relevant hashtags at the end. DO NOT write literal placeholder strings like "{source_url}" or "Title:" or "Link:".
+- "pinterest": STRICT RULE - Must be CONCISE and UNDER 450 CHARACTERS total (including title, description, actual website link, and hashtags) so it never breaches Pinterest's 500-char limit. Start with a catchy Pin Title, brief description, actual CTA link, and 2-3 targeted hashtags. DO NOT write literal placeholder strings like "{source_url}" or "Title:" or "Link:".
 - "source_type": "article" | "product" | "recipe" | "custom"
 - "source_id": the id from the content above (as string), or null for custom
 - "source_url": relative URL like "/articles/slug" or "/shop/product-slug" or null
@@ -310,12 +310,21 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
       const sourceId = post.source_id ? String(post.source_id) : null;
       const sourceUrl = post.source_url || null;
 
+      const cleanCaptionText = (rawText: string) => {
+        let text = rawText || "";
+        // Remove literal placeholder template tags
+        text = text.replace(/\{source_url\}/gi, sourceUrl || "");
+        // Remove structural labels at the start of text or lines
+        text = text.replace(/^(Title|Caption|Link|Description|Post):\s*/gmi, "");
+        return text.trim();
+      };
+
       // Facebook Version
-      const fbCaption = post.facebook || post.caption || "";
+      const fbCaption = cleanCaptionText(post.facebook || post.caption);
       // Instagram Version
-      const igCaption = post.instagram || post.caption || "";
+      const igCaption = cleanCaptionText(post.instagram || post.caption);
       // Pinterest Version (ensuring < 500 chars)
-      let pinCaption = post.pinterest || post.caption || "";
+      let pinCaption = cleanCaptionText(post.pinterest || post.caption);
       if (pinCaption.length > 495) {
         pinCaption = pinCaption.slice(0, 492) + "...";
       }
