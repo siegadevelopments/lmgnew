@@ -82,8 +82,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     `;
 
     for (const platform of platforms) {
-      if (!platform.text) continue;
+      let text = platform.text;
+      if (!text) continue;
       
+      // Pinterest strictly enforces a maximum text / caption length of 500 characters
+      if (platform.name === "pinterest" && text.length > 500) {
+        text = text.slice(0, 497) + "...";
+      }
+
       const channel = channels.find((c: any) => c.service === platform.name);
       if (!channel) {
         errors.push(`${platform.name}: No matching channel connected in Buffer.`);
@@ -109,7 +115,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           variables: {
             input: {
               channelId: channel.id,
-              text: platform.text,
+              text,
               assets: [{ image: { url: imageUrl } }],
               mode: scheduledAt ? "customScheduled" : "addToQueue",
               schedulingType: "automatic",

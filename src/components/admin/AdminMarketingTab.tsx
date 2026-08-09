@@ -243,7 +243,8 @@ export function AdminMarketingTab() {
       
       const fbText = `${caption}${cleanLink}${hashtagStr ? `\n\n${hashtagStr}` : ""}`;
       const igText = `${caption}\n.\n.\n.\n${hashtagStr || "#LifestyleMedicine #HealthyLiving #Wellness"}`;
-      const pinText = `${title}\n\n${caption}${cleanLink}${hashtagStr ? `\n\n${hashtagStr}` : ""}`;
+      let rawPinText = `${title}\n\n${caption}${cleanLink}${hashtagStr ? `\n\n${hashtagStr}` : ""}`;
+      const pinText = rawPinText.length > 500 ? rawPinText.slice(0, 497) + "..." : rawPinText;
 
       const res = await fetch("/api/buffer-create-ideas", {
         method: "POST",
@@ -1089,12 +1090,17 @@ export function AdminMarketingTab() {
                           Excerpt: ${content.excerpt || ""}
                           Content Summary: ${content.content?.replace(/<[^>]*>/g, ' ').substring(0, 1500) || ""}
                           
+                          PLATFORM-SPECIFIC RULES:
+                          1. FACEBOOK: Engaging, conversational tone with story hook, emojis, call to action with link: ${fullLink}, and STRICTLY 2-3 hashtags max.
+                          2. INSTAGRAM: High-engagement visual caption, clear formatting with emojis and line breaks (\\n), CTA to click link in bio or visit ${fullLink}, and STRICTLY 3-5 relevant hashtags at the end.
+                          3. PINTEREST: STRICT RULE - Must be CONCISE and UNDER 450 CHARACTERS total (including title, description, link, and hashtags) so it never gets rejected by Pinterest's 500-char limit. Start with a catchy Pin Title, brief description, CTA link: ${fullLink}, and 2-3 targeted hashtags.
+
                           INSTRUCTIONS:
                           Respond ONLY with a valid JSON object matching this exact structure (no markdown tags, just pure JSON):
                           {
-                            "facebook": "Engaging Facebook caption with emojis, key points, STRICTLY 2-3 hashtags max, and a strong call to action to read more at this exact link: ${fullLink}",
-                            "instagram": "Engaging Instagram caption with emojis, line breaks (\\n), a call to action to read more at this exact link: ${fullLink}, and STRICTLY 3-5 relevant hashtags at the end (do not exceed 5).",
-                            "pinterest": "Attention-grabbing Pinterest title and caption, ending with a call to action to read more at: ${fullLink} and STRICTLY 2-4 hashtags."
+                            "facebook": "Facebook post content...",
+                            "instagram": "Instagram post content...",
+                            "pinterest": "Pinterest post content..."
                           }`;
 
                           const headers: Record<string, string> = { "Content-Type": "application/json" };
