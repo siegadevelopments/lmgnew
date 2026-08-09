@@ -53,6 +53,7 @@ interface ScheduledPost {
   published_at: string | null;
   fb_post_id: string | null;
   ig_post_id: string | null;
+  buffer_post_id: string | null;
   error_message: string | null;
   created_at: string;
 }
@@ -209,6 +210,23 @@ export function AdminMarketingTab() {
       const data = await res.json();
       if (!res.ok || data.error) {
         throw new Error(data.error || "Database saved, but failed to push to Buffer API");
+      }
+
+      // Update database records with created Buffer post IDs if returned
+      if (data.results && Array.isArray(data.results)) {
+        for (const item of data.results) {
+          if (item.platform && item.id) {
+            // Find post created for this platform in this batch (matching title & platform)
+            const postTitle = item.platform === "facebook" ? (manualForm.title || "Facebook Post")
+              : item.platform === "instagram" ? (manualForm.title || "Instagram Post")
+              : (manualForm.title || "Pinterest Post");
+            await (supabase.from("scheduled_posts") as any)
+              .update({ buffer_post_id: item.id })
+              .eq("title", postTitle)
+              .contains("platforms", [item.platform])
+              .eq("scheduled_at", parseMelbourneTimeToUTC(manualForm.scheduled_at));
+          }
+        }
       }
 
       if (data.warnings && data.warnings.length > 0) {
@@ -554,43 +572,89 @@ export function AdminMarketingTab() {
     }
   }
 
-  // Delete post
+  // Delete post (from DB & Buffer)
   async function handleDelete(postId: string) {
     if (!confirm("Delete this scheduled post?")) return;
+    
+    const postToDelete = posts.find((p) => p.id === postId);
+    
+    // 1. Delete from Buffer if a buffer_post_id exists
+    if (postToDelete?.buffer_post_id) {
+      try {
+        await fetch("/api/buffer-delete-post", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ bufferPostId: postToDelete.buffer_post_id }),
+        });
+      } catch (err) {
+        console.error("Failed to delete post from Buffer:", err);
+      }
+    }
+
+    // 2. Delete from DB
     const { error } = await (supabase.from("scheduled_posts") as any).delete().eq("id", postId);
     if (error) toast.error(error.message);
     else {
-      toast.success("Post deleted");
+      toast.success("Post deleted from database and Buffer");
       if (selectedPost?.id === postId) setSelectedPost(null);
       await loadPosts();
     }
   }
 
-  // Clear all drafts
+  // Clear all drafts (from DB & Buffer)
   async function handleClearDrafts() {
     if (!confirm("Delete ALL draft posts? This cannot be undone.")) return;
+    
+    const draftPosts = posts.filter((p) => p.status === "draft");
+    const bufferIds = draftPosts.map((p) => p.buffer_post_id).filter(Boolean);
+
+    if (bufferIds.length > 0) {
+      try {
+        await fetch("/api/buffer-delete-post", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ bufferPostIds: bufferIds }),
+        });
+      } catch (err) {
+        console.error("Failed to delete draft posts from Buffer:", err);
+      }
+    }
+
     const { error } = await (supabase.from("scheduled_posts") as any)
       .delete()
       .eq("status", "draft");
     if (error) toast.error(error.message);
     else {
-      toast.success("All drafts cleared");
+      toast.success("All drafts cleared from database and Buffer");
       await loadPosts();
     }
   }
 
-  // Clear all posts (all statuses)
+  // Clear all posts (all statuses) (from DB & Buffer)
   async function handleClearAllPosts() {
     if (!confirm(`Are you sure you want to delete ALL ${posts.length} scheduled posts? This action cannot be undone.`)) {
       return;
     }
-    const toastId = toast.loading("Deleting all scheduled posts...");
+    const toastId = toast.loading("Deleting all scheduled posts from database & Buffer...");
     try {
+      const bufferIds = posts.map((p) => p.buffer_post_id).filter(Boolean);
+      if (bufferIds.length > 0) {
+        try {
+          await fetch("/api/buffer-delete-post", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ bufferPostIds: bufferIds }),
+          });
+        } catch (bErr) {
+          console.error("Failed to delete posts from Buffer:", bErr);
+        }
+      }
+
       const { error } = await (supabase.from("scheduled_posts") as any)
         .delete()
         .neq("id", "00000000-0000-0000-0000-000000000000");
       if (error) throw error;
-      toast.success("All scheduled posts have been cleared!", { id: toastId });
+      toast.success("All scheduled posts have been cleared from database & Buffer!", { id: toastId });
       setSelectedPost(null);
       await loadPosts();
     } catch (err: any) {
