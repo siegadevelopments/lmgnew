@@ -544,30 +544,95 @@ export function AdminMarketingTab() {
     }
   }
 
-  // Approve post
+  // Push a single post to Buffer API and save its buffer_post_id
+  async function pushSinglePostToBuffer(post: ScheduledPost) {
+    const platform = post.platforms?.[0] || "facebook";
+    const postPayload: Record<string, string> = {};
+    postPayload[platform] = post.caption;
+
+    const res = await fetch("/api/buffer-auto-publish", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        imageUrl: post.image_url,
+        scheduledAt: post.scheduled_at,
+        posts: postPayload,
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      throw new Error(data.error || "Failed to push to Buffer");
+    }
+
+    if (data.results && Array.isArray(data.results) && data.results.length > 0) {
+      const bufferId = data.results[0].id;
+      if (bufferId) {
+        await (supabase.from("scheduled_posts") as any)
+          .update({ buffer_post_id: bufferId })
+          .eq("id", post.id);
+      }
+    }
+
+    return data;
+  }
+
+  // Approve post & push to Buffer
   async function handleApprove(postId: string) {
-    const { error } = await (supabase.from("scheduled_posts") as any)
-      .update({ status: "approved", updated_at: new Date().toISOString() })
-      .eq("id", postId);
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Post approved!");
+    const postToApprove = posts.find((p) => p.id === postId);
+    const toastId = toast.loading("Approving & pushing post to Buffer Queue...");
+    try {
+      if (postToApprove) {
+        await pushSinglePostToBuffer(postToApprove);
+      }
+      const { error } = await (supabase.from("scheduled_posts") as any)
+        .update({ status: "approved", updated_at: new Date().toISOString() })
+        .eq("id", postId);
+
+      if (error) throw error;
+      toast.success("Post approved & scheduled in Buffer Queue!", { id: toastId });
+      await loadPosts();
+    } catch (err: any) {
+      toast.error(`Approval warning: ${err.message || "Failed to sync to Buffer"}`, { id: toastId, duration: 6000 });
+      // Still update status to approved in DB
+      await (supabase.from("scheduled_posts") as any)
+        .update({ status: "approved", updated_at: new Date().toISOString() })
+        .eq("id", postId);
       await loadPosts();
     }
   }
 
-  // Bulk approve all drafts
+  // Bulk approve all drafts & push them to Buffer Queue
   async function handleBulkApprove() {
-    const draftIds = posts.filter((p) => p.status === "draft").map((p) => p.id);
-    if (draftIds.length === 0) return toast.info("No drafts to approve");
+    const draftPosts = posts.filter((p) => p.status === "draft");
+    if (draftPosts.length === 0) return toast.info("No drafts to approve");
 
+    const toastId = toast.loading(`Approving & pushing ${draftPosts.length} posts to Buffer Queue...`);
+    let pushedCount = 0;
+    let failedCount = 0;
+
+    for (const post of draftPosts) {
+      try {
+        await pushSinglePostToBuffer(post);
+        pushedCount++;
+      } catch (err) {
+        console.error(`Failed to push post ${post.id} to Buffer:`, err);
+        failedCount++;
+      }
+    }
+
+    const draftIds = draftPosts.map((p) => p.id);
     const { error } = await (supabase.from("scheduled_posts") as any)
       .update({ status: "approved", updated_at: new Date().toISOString() })
       .in("id", draftIds);
 
-    if (error) toast.error(error.message);
-    else {
-      toast.success(`Approved ${draftIds.length} posts!`);
+    if (error) {
+      toast.error(error.message, { id: toastId });
+    } else {
+      toast.success(
+        `Approved ${draftIds.length} posts (${pushedCount} queued in Buffer${failedCount > 0 ? `, ${failedCount} warnings` : ""})!`,
+        { id: toastId }
+      );
       await loadPosts();
     }
   }

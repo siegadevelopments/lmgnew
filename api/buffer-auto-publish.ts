@@ -19,9 +19,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: "BUFFER_ACCESS_TOKEN is missing in Vercel environment variables." });
     }
 
-    if (!imageUrl) {
-      return res.status(400).json({ error: "An imageUrl is strictly required for automated Buffer publishing to Facebook, Instagram, and Pinterest." });
-    }
+    const fallbackImage = "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=2070&auto=format&fit=crop";
+    const finalImageUrl = imageUrl || fallbackImage;
 
     // 1. Fetch available channels to map dynamically
     const channelQuery = `
@@ -116,7 +115,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             input: {
               channelId: channel.id,
               text,
-              assets: [{ image: { url: imageUrl } }],
+              assets: [{ image: { url: finalImageUrl } }],
               mode: scheduledAt ? "customScheduled" : "addToQueue",
               schedulingType: "automatic",
               dueAt: scheduledAt ? scheduledAt : undefined,
