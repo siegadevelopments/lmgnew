@@ -1642,11 +1642,13 @@ export function AdminMarketingTab() {
                             {new Date(post.scheduled_at).toLocaleDateString("en-AU", {
                               day: "numeric",
                               month: "short",
+                              timeZone: "Australia/Melbourne",
                             })}{" "}
                             at{" "}
                             {new Date(post.scheduled_at).toLocaleTimeString("en-AU", {
                               hour: "2-digit",
                               minute: "2-digit",
+                              timeZone: "Australia/Melbourne",
                             })}
                           </span>
                         </div>
@@ -1767,6 +1769,7 @@ export function AdminMarketingTab() {
                     day: "numeric",
                     month: "short",
                     year: "numeric",
+                    timeZone: "Australia/Melbourne",
                   })}
                 </p>
               </div>
