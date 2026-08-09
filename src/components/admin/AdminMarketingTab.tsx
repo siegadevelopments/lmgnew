@@ -127,6 +127,7 @@ export function AdminMarketingTab() {
   const [generating, setGenerating] = useState(false);
   const [numWeeks, setNumWeeks] = useState(4);
   const [selectedDays, setSelectedDays] = useState<number[]>([1, 3, 5]); // Mon, Wed, Fri
+  const [selectedTime, setSelectedTime] = useState<string>("09:00");
   const [selectionMode, setSelectionMode] = useState<"weekly" | "manual">("weekly");
   const [selectedSpecificDates, setSelectedSpecificDates] = useState<string[]>([]);
   const [publishing, setPublishing] = useState<string | null>(null);
@@ -429,9 +430,10 @@ export function AdminMarketingTab() {
     return dates;
   }, [numWeeks, selectedDays, selectionMode, selectedSpecificDates]);
 
-  // Generate 30 days
+  // Generate posts & push directly to Buffer
   async function handleGenerate() {
     setGenerating(true);
+    const toastId = toast.loading("Generating viral AI content & pushing 3 versions (FB, IG, Pin) to Buffer...");
     try {
       const {
         data: { session },
@@ -449,20 +451,24 @@ export function AdminMarketingTab() {
           numWeeks,
           selectedDays: selectionMode === "weekly" ? selectedDays : null,
           specificDates: selectionMode === "manual" ? selectedSpecificDates : null,
+          targetTime: selectedTime,
           targetPlatform,
+          autoPushBuffer: true,
         }),
       });
 
       const data = await response.json();
       if (!response.ok) throw new Error(data.suggestion || data.error || "Generation failed");
 
-      toast.success(data.message || `Generated ${data.count} posts!`);
+      if (data.bufferWarnings && data.bufferWarnings.length > 0) {
+        toast.error(`Buffer Warnings: ${data.bufferWarnings.join(", ")}`, { id: toastId, duration: 8000 });
+      } else {
+        toast.success(data.message || `Generated ${data.count} posts & scheduled to Buffer!`, { id: toastId });
+      }
       await loadPosts();
     } catch (err: any) {
       const message = err.message || "Failed to generate posts";
-      toast.error(message, {
-        duration: 5000,
-      });
+      toast.error(message, { id: toastId, duration: 6000 });
       console.error("Generation error:", err);
     } finally {
       setGenerating(false);
@@ -991,6 +997,21 @@ export function AdminMarketingTab() {
                           {d.l}
                         </button>
                       ))}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">
+                      Time (Melbourne)
+                    </span>
+                    <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg border border-border/50 h-9">
+                      <input
+                        type="time"
+                        className="h-full rounded-md border-0 bg-transparent px-2 py-0 text-sm font-semibold focus:ring-0 cursor-pointer"
+                        value={selectedTime}
+                        onChange={(e) => setSelectedTime(e.target.value)}
+                        disabled={generating}
+                      />
                     </div>
                   </div>
 

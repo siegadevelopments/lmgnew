@@ -148,13 +148,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       startDate,
       selectedDays = [1, 3, 5],
       specificDates = null,
+      targetTime = "09:00",
       targetPlatform = "both",
+      autoPushBuffer = false,
     } = req.body || {};
     const postsPerWeek = selectedDays ? selectedDays.length : 0;
     const totalPostsCount = specificDates ? specificDates.length : numWeeks * postsPerWeek;
 
     if (totalPostsCount === 0)
       return res.status(400).json({ error: "No dates selected for generation" });
+
+    // Extract selected hour & minute (Melbourne time)
+    const [timeHrStr, timeMinStr] = (targetTime || "09:00").split(":");
+    const customHour = parseInt(timeHrStr || "9", 10);
 
     const genAI = new GoogleGenerativeAI(geminiKey);
 
@@ -361,7 +367,7 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
         if (!dateStr) return;
         
         const { year, month, day } = getYearMonthDayComponents(dateStr);
-        const hour = timeSlots[post.time_slot] || 9;
+        const hour = customHour !== undefined ? customHour : (timeSlots[post.time_slot] || 9);
         const scheduledAtISO = parseMelbourneDateTimeToUTC(year, month, day, hour);
 
         scheduledPosts.push(...createPostEntriesForSlot(post, scheduledAtISO, index));
@@ -389,7 +395,7 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
       while (postIndex < posts.length) {
         if (selectedDays.includes(melbourneDate.getUTCDay())) {
           const post = posts[postIndex];
-          const hour = timeSlots[post.time_slot] || 9;
+          const hour = customHour !== undefined ? customHour : (timeSlots[post.time_slot] || 9);
           
           const scheduledAtISO = parseMelbourneDateTimeToUTC(
             melbourneDate.getUTCFullYear(),
@@ -406,6 +412,11 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
       }
     }
 
+    // Set status to approved if auto-pushing to Buffer
+    if (autoPushBuffer) {
+      scheduledPosts.forEach(p => { p.status = "approved"; });
+    }
+
     // 5. Insert into database
     const { data: inserted, error: insertError } = await supabase
       .from("scheduled_posts")
@@ -417,10 +428,70 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
       return res.status(500).json({ error: "Failed to save posts", details: insertError.message });
     }
 
+    // 6. Push to Buffer API directly if autoPushBuffer is true
+    const bufferWarnings: string[] = [];
+    if (autoPushBuffer && inserted && inserted.length > 0) {
+      // Group inserted post entries by scheduled_at date
+      const groupedBySlot: Record<string, { facebook?: string; instagram?: string; pinterest?: string; imageUrl?: string; scheduledAt: string }> = {};
+      
+      for (const row of inserted) {
+        const key = row.scheduled_at;
+        if (!groupedBySlot[key]) {
+          groupedBySlot[key] = { scheduledAt: key, imageUrl: row.image_url };
+        }
+        const platform = row.platforms?.[0];
+        if (platform === "facebook") groupedBySlot[key].facebook = row.caption;
+        if (platform === "instagram") groupedBySlot[key].instagram = row.caption;
+        if (platform === "pinterest") groupedBySlot[key].pinterest = row.caption;
+      }
+
+      // Send each date slot to Buffer
+      const bufferToken = process.env.BUFFER_ACCESS_TOKEN || process.env.VITE_BUFFER_ACCESS_TOKEN;
+      const originUrl = req.headers.origin || "http://localhost:3000";
+
+      for (const slotKey of Object.keys(groupedBySlot)) {
+        const slotData = groupedBySlot[slotKey];
+        try {
+          const bRes = await fetch(`${originUrl}/api/buffer-auto-publish`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              imageUrl: slotData.imageUrl,
+              scheduledAt: slotData.scheduledAt,
+              posts: {
+                facebook: slotData.facebook,
+                instagram: slotData.instagram,
+                pinterest: slotData.pinterest,
+              },
+            }),
+          });
+          const bData = await bRes.json();
+          if (bData.warnings && Array.isArray(bData.warnings)) {
+            bufferWarnings.push(...bData.warnings);
+          }
+          if (bData.results && Array.isArray(bData.results)) {
+            for (const item of bData.results) {
+              if (item.platform && item.id) {
+                await supabase
+                  .from("scheduled_posts")
+                  .update({ buffer_post_id: item.id })
+                  .eq("scheduled_at", slotData.scheduledAt)
+                  .contains("platforms", [item.platform]);
+              }
+            }
+          }
+        } catch (bErr: any) {
+          console.error(`Error auto-pushing slot ${slotKey} to Buffer:`, bErr);
+          bufferWarnings.push(`Slot ${slotKey}: ${bErr.message}`);
+        }
+      }
+    }
+
     return res.status(200).json({
       success: true,
       count: inserted?.length || 0,
-      message: `Generated ${inserted?.length || 0} posts across ${numWeeks} weeks!`,
+      bufferWarnings: bufferWarnings.length > 0 ? bufferWarnings : undefined,
+      message: `Generated ${inserted?.length || 0} posts (FB, IG, Pinterest) across ${numWeeks} weeks & pushed to Buffer!`,
     });
   } catch (error: any) {
     console.error("Generate posts error:", error);
