@@ -20,7 +20,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const fallbackImage = "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=2070&auto=format&fit=crop";
-    const finalImageUrl = imageUrl || fallbackImage;
+    let finalImageUrl = imageUrl || fallbackImage;
+
+    // Instagram & social platforms in Buffer do not support .gif files for standard image posts
+    if (finalImageUrl.toLowerCase().endsWith(".gif") || finalImageUrl.toLowerCase().includes(".gif?")) {
+      finalImageUrl = fallbackImage;
+    }
 
     // 1. Fetch available channels to map dynamically
     const channelQuery = `
