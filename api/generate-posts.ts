@@ -222,9 +222,10 @@ POST TYPES TO ROTATE:
 7. "Community Question" — Engagement post asking for experiences
 
 REQUIREMENTS FOR EACH POST:
-- "title": short internal title (not shown publicly)
-- "caption": the actual post text, 150-300 words, with line breaks as \\n
-- "hashtags": array of 4-6 hashtags (mix of broad + niche, e.g. #MenopauseSupport #NaturalWellness #AustralianMade)
+- "title": short topic title (e.g. "5 Gut-Friendly Foods for Perimenopause")
+- "facebook": Engaging Facebook caption with conversational tone, story hook, emojis, call to action with link: https://lifestylemedicinegateway.com{source_url}, and STRICTLY 2-3 hashtags max.
+- "instagram": High-engagement Instagram caption with emojis, line breaks (\\n), CTA to visit link in bio or https://lifestylemedicinegateway.com{source_url}, and STRICTLY 3-5 relevant hashtags at the end.
+- "pinterest": STRICT RULE - Must be CONCISE and UNDER 450 CHARACTERS total (including title, description, link: https://lifestylemedicinegateway.com{source_url}, and hashtags) so it never breaches Pinterest's 500-char limit. Start with a catchy Pin Title, brief description, CTA link, and 2-3 targeted hashtags.
 - "source_type": "article" | "product" | "recipe" | "custom"
 - "source_id": the id from the content above (as string), or null for custom
 - "source_url": relative URL like "/articles/slug" or "/shop/product-slug" or null
@@ -296,6 +297,63 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
 
     const scheduledPosts = [];
 
+    const createPostEntriesForSlot = (post: any, scheduledAtISO: string, slotIndex: number) => {
+      const baseTitle = post.title || `Post ${slotIndex + 1}`;
+      const imageUrl = post.image_url || null;
+      const sourceType = post.source_type || "custom";
+      const sourceId = post.source_id ? String(post.source_id) : null;
+      const sourceUrl = post.source_url || null;
+
+      // Facebook Version
+      const fbCaption = post.facebook || post.caption || "";
+      // Instagram Version
+      const igCaption = post.instagram || post.caption || "";
+      // Pinterest Version (ensuring < 500 chars)
+      let pinCaption = post.pinterest || post.caption || "";
+      if (pinCaption.length > 495) {
+        pinCaption = pinCaption.slice(0, 492) + "...";
+      }
+
+      return [
+        {
+          title: `${baseTitle} (FB)`,
+          caption: fbCaption,
+          hashtags: [],
+          image_url: imageUrl,
+          source_type: sourceType,
+          source_id: sourceId,
+          source_url: sourceUrl,
+          platforms: ["facebook"],
+          scheduled_at: scheduledAtISO,
+          status: "draft",
+        },
+        {
+          title: `${baseTitle} (IG)`,
+          caption: igCaption,
+          hashtags: [],
+          image_url: imageUrl,
+          source_type: sourceType,
+          source_id: sourceId,
+          source_url: sourceUrl,
+          platforms: ["instagram"],
+          scheduled_at: scheduledAtISO,
+          status: "draft",
+        },
+        {
+          title: `${baseTitle} (Pin)`,
+          caption: pinCaption,
+          hashtags: [],
+          image_url: imageUrl,
+          source_type: sourceType,
+          source_id: sourceId,
+          source_url: sourceUrl,
+          platforms: ["pinterest"],
+          scheduled_at: scheduledAtISO,
+          status: "draft",
+        },
+      ];
+    };
+
     if (specificDates && specificDates.length > 0) {
       // Use exact specific dates
       posts.forEach((post, index) => {
@@ -306,18 +364,7 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
         const hour = timeSlots[post.time_slot] || 9;
         const scheduledAtISO = parseMelbourneDateTimeToUTC(year, month, day, hour);
 
-        scheduledPosts.push({
-          title: post.title || `Post ${index + 1}`,
-          caption: post.caption || "",
-          hashtags: Array.isArray(post.hashtags) ? post.hashtags : [],
-          image_url: post.image_url || null,
-          source_type: post.source_type || "custom",
-          source_id: post.source_id ? String(post.source_id) : null,
-          source_url: post.source_url || null,
-          platforms: targetPlatform === "both" ? ["facebook", "instagram"] : [targetPlatform],
-          scheduled_at: scheduledAtISO,
-          status: "draft",
-        });
+        scheduledPosts.push(...createPostEntriesForSlot(post, scheduledAtISO, index));
       });
     } else {
       // Use weekly pattern logic
@@ -351,22 +398,11 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
             hour
           );
 
-          scheduledPosts.push({
-            title: post.title || `Post ${postIndex + 1}`,
-            caption: post.caption || "",
-            hashtags: Array.isArray(post.hashtags) ? post.hashtags : [],
-            image_url: post.image_url || null,
-            source_type: post.source_type || "custom",
-            source_id: post.source_id ? String(post.source_id) : null,
-            source_url: post.source_url || null,
-            platforms: targetPlatform === "both" ? ["facebook", "instagram"] : [targetPlatform],
-            scheduled_at: scheduledAtISO,
-            status: "draft",
-          });
+          scheduledPosts.push(...createPostEntriesForSlot(post, scheduledAtISO, postIndex));
           postIndex++;
         }
         melbourneDate.setUTCDate(melbourneDate.getUTCDate() + 1);
-        if (scheduledPosts.length > 500) break; // Safety
+        if (scheduledPosts.length > 1500) break; // Safety
       }
     }
 
