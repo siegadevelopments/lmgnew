@@ -369,7 +369,7 @@ export function Header() {
           <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Learn
           </p>
-          {learnItems.slice(0, 5).map((item) => (
+          {learnItems.map((item) => (
             <Link
               key={item.label}
               href={item.to}

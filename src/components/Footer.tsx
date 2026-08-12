@@ -41,6 +41,9 @@ const footerLinks = {
     { label: "Recipes", to: "/recipes" },
     { label: "Natural Remedies", to: "/natural-remedies" },
     { label: "Studies", to: "/studies" },
+    { label: "Anecdotes", to: "/anecdotes" },
+    { label: "Memes", to: "/memes" },
+    { label: "Charts", to: "/charts" },
   ],
   Company: [
     { label: "About Us", to: "/about" },
