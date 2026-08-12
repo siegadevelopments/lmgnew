@@ -36,35 +36,73 @@ serve(async (req: Request) => {
     const body = await req.json().catch(() => null);
     if (!body) throw new Error("Invalid JSON body");
 
-    const { prompt, folder = "ai-thumbnails", author_id, no_watermark } = body;
+    const { prompt, folder = "ai-thumbnails", author_id, no_watermark, aspect_ratio = "16:9" } = body;
     if (!prompt) throw new Error("Prompt is required");
 
     const truncatedPrompt = typeof prompt === 'string' ? prompt.substring(0, 1000) : "Wellness lifestyle";
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     
-    // Build smart, context-aware visual prompt without text/banners
-    const lower = truncatedPrompt.toLowerCase();
-    const cleanConcept = truncatedPrompt.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 250);
+    // 1. Generate clean, photorealistic visual prompt using Gemini 2.5 Flash if available
+    let visualPrompt = "";
+    if (GEMINI_API_KEY) {
+      try {
+        console.log("Refining visual prompt with Gemini 2.5 Flash...");
+        const promptRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{
+                role: "user",
+                parts: [{
+                  text: `You are an expert visual art director for a high-end health and wellness editorial magazine.
+Article/Topic context: "${truncatedPrompt}"
 
-    let visualContext = "";
-    if (lower.includes("insect") || lower.includes("pest") || lower.includes("garden") || lower.includes("plant") || lower.includes("leaf") || lower.includes("foliage") || lower.includes("spray") || lower.includes("garlic")) {
-      visualContext = "A happy person caring for lush green garden plants in a sunlit organic garden, holding natural plant care spray, authentic lifestyle photography";
-    } else if (lower.includes("recipe") || lower.includes("cook") || lower.includes("dish") || lower.includes("meal") || lower.includes("soup") || lower.includes("salad") || lower.includes("food") || lower.includes("eat")) {
-      visualContext = "A smiling person in a bright modern kitchen preparing and enjoying a fresh healthy organic meal, natural lifestyle photograph";
-    } else if (lower.includes("sleep") || lower.includes("night") || lower.includes("bed") || lower.includes("rest") || lower.includes("insomnia") || lower.includes("relax")) {
-      visualContext = "A peaceful person relaxing comfortably in a warm cozy bedroom with soft natural morning light streaming through curtains";
-    } else if (lower.includes("skin") || lower.includes("beauty") || lower.includes("oil") || lower.includes("serum") || lower.includes("spa") || lower.includes("lotion")) {
-      visualContext = "A smiling person with fresh glowing skin enjoying a natural wellness and self-care routine in a bright modern space";
-    } else if (lower.includes("gut") || lower.includes("digest") || lower.includes("microbiome") || lower.includes("tea") || lower.includes("drink")) {
-      visualContext = "A relaxed person holding a warm steaming mug of herbal tea, smiling, natural healthy wellness moment";
-    } else {
-      visualContext = "An authentic, healthy person engaging in a vibrant modern wellness lifestyle, smiling, natural daylight";
+Write a single, highly realistic, crystal-clear visual description of a photographic scene suitable for an article cover hero photo.
+STRICT RULES:
+1. Focus on ONE clear visual subject (e.g., fresh vibrant organic ingredients, clean modern wellness setting, serene morning routine, herbal tea with fresh herbs, high-end skincare bottles).
+2. Specify 8k photographic details: crisp sharp focus, natural warm daylight, soft background bokeh, 50mm DSLR camera shot, vivid realistic textures.
+3. DO NOT use words like "text", "paper", "writing", "card", "label", "banner", "logo", "watermark", or negative phrasing.
+4. Output ONLY the 1-sentence photographic description. No quotes, no preamble.`
+                }]
+              }],
+              generationConfig: { temperature: 0.7, maxOutputTokens: 150 }
+            })
+          }
+        );
+        if (promptRes.ok) {
+          const promptData = await promptRes.json();
+          visualPrompt = promptData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+        }
+      } catch (e) {
+        console.error("Gemini visual prompt refinement error:", e);
+      }
     }
 
-    const finalPrompt = `High-end editorial lifestyle photography featuring real people: ${visualContext}. Topic: ${cleanConcept}. Captured with a professional 50mm f/1.8 DSLR camera, authentic human emotion, natural lighting, shallow depth of field, realistic textures, warm color grading. CRITICAL REQUIREMENTS: ABSOLUTELY NO TEXT, NO WRITING, NO LETTERS, NO WORDS, NO PAPERS, NO CARDS, NO BANNERS, NO LABELS, NO SIGNS, NO LOGOS, NO WATERMARKS, NO GRAPHIC OVERLAYS, NO CARTOONS, NO ARTIFICIAL FRAMES. Pure authentic photographic scene with a person.`;
-    const shortPrompt = `High-end editorial lifestyle photograph of a person, subject: ${visualContext}, topic ${cleanConcept}. Authentic human emotion, natural daylight, 8k photographic detail. ABSOLUTELY NO TEXT, NO WRITING, NO LETTERS, NO PAPERS, NO CARDS, NO BANNERS, NO LOGOS, NO WATERMARKS.`;
+    if (!visualPrompt) {
+      // Fallback clean photographic visual prompt without negative words like "NO TEXT"
+      const lower = truncatedPrompt.toLowerCase();
+      const cleanConcept = truncatedPrompt.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 150);
+      let subject = "a vibrant, modern health and wellness lifestyle scene";
+      
+      if (lower.includes("garden") || lower.includes("plant") || lower.includes("leaf") || lower.includes("spray") || lower.includes("pest") || lower.includes("insect")) {
+        subject = "lush green organic plant foliage with natural sunlight and fresh morning dew drops";
+      } else if (lower.includes("recipe") || lower.includes("cook") || lower.includes("dish") || lower.includes("salad") || lower.includes("soup") || lower.includes("food")) {
+        subject = "a freshly prepared colorful organic dish on a rustic wooden dining table";
+      } else if (lower.includes("sleep") || lower.includes("rest") || lower.includes("night") || lower.includes("bedroom")) {
+        subject = "a calm, peaceful bedroom setting with soft warm morning light streaming through curtains";
+      } else if (lower.includes("skin") || lower.includes("beauty") || lower.includes("oil") || lower.includes("serum") || lower.includes("spa")) {
+        subject = "natural organic skincare oil bottles on a white marble surface with fresh botanical accents";
+      } else if (lower.includes("tea") || lower.includes("drink") || lower.includes("smoothie") || lower.includes("gut") || lower.includes("digest")) {
+        subject = "a glass cup of warm herbal tea surrounded by fresh mint leaves and sunlight";
+      }
 
+      visualPrompt = `High-end editorial photograph of ${subject}, topic concept: ${cleanConcept}. Professional 50mm DSLR camera, sharp focus, natural daylight, soft bokeh, 8k photographic detail.`;
+    }
+
+    console.log("Final Visual Prompt:", visualPrompt);
     let errorDetails = "";
 
     const saveImage = async (blob: Blob, folder: string): Promise<string> => {
@@ -83,12 +121,13 @@ serve(async (req: Request) => {
       }
     };
 
-    // 1. Try Gemini (Imagen 3)
+    // 1. Try Gemini Imagen 3
     if (GEMINI_API_KEY) {
       try {
-        console.log(`Attempting image generation with Gemini...`);
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict`,
+        console.log(`Attempting image generation with Gemini Imagen 3...`);
+        const modelName = "imagen-3.0-generate-002";
+        let response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predict`,
           {
             method: "POST",
             headers: { 
@@ -96,11 +135,29 @@ serve(async (req: Request) => {
               "x-goog-api-key": GEMINI_API_KEY
             },
             body: JSON.stringify({
-              instances: [{ prompt: finalPrompt }],
-              parameters: { sampleCount: 1, aspectRatio: "1:1" }
+              instances: [{ prompt: visualPrompt }],
+              parameters: { sampleCount: 1, aspectRatio: aspect_ratio === "1:1" ? "1:1" : "16:9" }
             }),
           }
         );
+
+        if (!response.ok) {
+          // Fallback to imagen-3.0-generate-001
+          response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict`,
+            {
+              method: "POST",
+              headers: { 
+                "Content-Type": "application/json",
+                "x-goog-api-key": GEMINI_API_KEY
+              },
+              body: JSON.stringify({
+                instances: [{ prompt: visualPrompt }],
+                parameters: { sampleCount: 1, aspectRatio: aspect_ratio === "1:1" ? "1:1" : "16:9" }
+              }),
+            }
+          );
+        }
 
         if (response.ok) {
           const aiData = await response.json();
@@ -128,10 +185,10 @@ serve(async (req: Request) => {
       errorDetails += "GEMINI_API_KEY not set | ";
     }
 
-    // 2. Try OpenAI (DALL-E 3)
+    // 2. Try OpenAI DALL-E 3
     if (OPENAI_API_KEY) {
       try {
-        console.log(`Attempting fallback image generation with OpenAI...`);
+        console.log(`Attempting fallback image generation with OpenAI DALL-E 3...`);
         const response = await fetch("https://api.openai.com/v1/images/generations", {
           method: "POST",
           headers: {
@@ -140,9 +197,10 @@ serve(async (req: Request) => {
           },
           body: JSON.stringify({
             model: "dall-e-3",
-            prompt: finalPrompt,
+            prompt: visualPrompt,
             n: 1,
-            size: "1024x1024",
+            quality: "hd",
+            size: aspect_ratio === "1:1" ? "1024x1024" : "1792x1024",
           }),
         });
 
@@ -168,18 +226,21 @@ serve(async (req: Request) => {
       errorDetails += "OPENAI_API_KEY not set | ";
     }
 
-    // 3. Try Pollinations AI (100% Free & Keyless Fallback)
+    // 3. Try Pollinations AI (High-Definition FLUX model)
     try {
-      console.log(`Attempting keyless fallback image generation with Pollinations AI...`);
-      const response = await fetch(
-        `https://image.pollinations.ai/prompt/${encodeURIComponent(shortPrompt)}?width=1024&height=1024&nologo=true&private=true`
-      );
+      console.log(`Attempting keyless fallback image generation with Pollinations FLUX...`);
+      const seed = Math.floor(Math.random() * 1000000);
+      const width = aspect_ratio === "1:1" ? 1024 : 1280;
+      const height = aspect_ratio === "1:1" ? 1024 : 720;
+      const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(visualPrompt)}?width=${width}&height=${height}&model=flux&nologo=true&private=true&enhance=true&seed=${seed}`;
+
+      const response = await fetch(pollinationsUrl);
 
       if (response.ok) {
         const blob = await response.blob();
         const finalBlob = no_watermark ? blob : await watermarkImage(blob, author_id);
         const publicUrl = await saveImage(finalBlob, folder);
-        console.log("Successfully generated image with Pollinations AI fallback!");
+        console.log("Successfully generated HD image with Pollinations FLUX fallback!");
         return new Response(JSON.stringify({ url: publicUrl }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
@@ -266,7 +327,8 @@ async function watermarkImage(imageBlob: Blob, authorId: string | null) {
     }
     
     mainImg.composite(bg, mainImg.width - bg.width - 50, mainImg.height - bg.height - 50);
-    const finalBuffer = await mainImg.encodeJPEG(80);
+    // Encode with 95% JPEG quality to ensure sharp high resolution images
+    const finalBuffer = await mainImg.encodeJPEG(95);
     return new Blob([finalBuffer], { type: 'image/jpeg' });
   } catch (e) {
     console.error("Watermarking failed:", e);

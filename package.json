@@ -92,6 +92,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
+    "lightningcss-darwin-arm64": "^1.33.0",
     "postcss": "^8.5.15",
     "prettier": "^3.7.3",
     "typescript": "^5.8.3",

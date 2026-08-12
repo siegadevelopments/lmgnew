@@ -13,10 +13,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: "Prompt is required" });
     }
 
-    const cleanImagePrompt = encodeURIComponent(prompt);
+    // Remove any negative text tokens that cause distorted paper/text renders
+    const sanitizedPrompt = prompt
+      .replace(/ABSOLUTELY NO TEXT|NO WRITING|NO LETTERS|NO PAPERS|NO CARDS|NO BANNERS|NO LOGOS|NO WATERMARKS/gi, "")
+      .trim();
+
+    const cleanImagePrompt = encodeURIComponent(sanitizedPrompt);
     // Add a random seed to bust any bad caches on pollinations side
     const seed = Math.floor(Math.random() * 1000000);
-    const pollinationsUrl = `https://image.pollinations.ai/prompt/${cleanImagePrompt}?width=1080&height=1080&nologo=true&seed=${seed}`;
+    const pollinationsUrl = `https://image.pollinations.ai/prompt/${cleanImagePrompt}?width=1280&height=720&model=flux&nologo=true&private=true&enhance=true&seed=${seed}`;
 
     const imageRes = await fetch(pollinationsUrl, {
       headers: {
