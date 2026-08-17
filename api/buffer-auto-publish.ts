@@ -33,6 +33,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         channels(input: $input) {
           id
           service
+          subprofiles {
+            id
+            name
+          }
+          defaultSubprofileId
         }
       }
     `;
@@ -100,12 +105,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         continue;
       }
 
-      // Prepare metadata requirements for Facebook/Instagram
+      // Prepare metadata requirements for Facebook/Instagram/Pinterest
       let metadata: any = undefined;
       if (platform.name === "facebook") {
         metadata = { facebook: { type: "post" } };
       } else if (platform.name === "instagram") {
         metadata = { instagram: { type: "post", shouldShareToFeed: true } };
+      } else if (platform.name === "pinterest") {
+        const boardId = channel.defaultSubprofileId || (channel.subprofiles && channel.subprofiles.length > 0 ? channel.subprofiles[0].id : null);
+        if (!boardId) {
+          errors.push(`${platform.name}: No board (subprofile) found for Pinterest channel.`);
+          continue;
+        }
+        metadata = { pinterest: { boardId: boardId } };
       }
 
       const response = await fetch("https://api.buffer.com", {

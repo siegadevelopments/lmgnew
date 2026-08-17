@@ -121,10 +121,77 @@ STRICT RULES:
       }
     };
 
-    // 1. Try Gemini Imagen 3
+    // 1. Try Pollinations AI (High-Definition FLUX model) - Primary to avoid AI tags
+    try {
+      console.log(`Attempting image generation with Pollinations FLUX (Primary)...`);
+      const seed = Math.floor(Math.random() * 1000000);
+      const width = aspect_ratio === "1:1" ? 1024 : 1280;
+      const height = aspect_ratio === "1:1" ? 1024 : 720;
+      const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(visualPrompt)}?width=${width}&height=${height}&model=flux&nologo=true&private=true&enhance=true&seed=${seed}`;
+
+      const response = await fetch(pollinationsUrl);
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const finalBlob = no_watermark ? await stripMetadata(blob) : await watermarkImage(blob, author_id);
+        const publicUrl = await saveImage(finalBlob, folder);
+        console.log("Successfully generated HD image with Pollinations FLUX!");
+        return new Response(JSON.stringify({ url: publicUrl }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      } else {
+        errorDetails += `Pollinations AI Error (${response.status}) | `;
+      }
+    } catch (e: any) {
+      errorDetails += `Pollinations AI Exception: ${e.message} | `;
+    }
+
+    // 2. Try OpenAI DALL-E 3 (Fallback)
+    if (OPENAI_API_KEY) {
+      try {
+        console.log(`Attempting fallback image generation with OpenAI DALL-E 3...`);
+        const response = await fetch("https://api.openai.com/v1/images/generations", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: "dall-e-3",
+            prompt: visualPrompt,
+            n: 1,
+            quality: "hd",
+            size: aspect_ratio === "1:1" ? "1024x1024" : "1792x1024",
+          }),
+        });
+
+        if (response.ok) {
+          const aiData = await response.json();
+          const imageUrl = aiData.data[0].url;
+          const imageRes = await fetch(imageUrl);
+          const blob = await imageRes.blob();
+          const finalBlob = no_watermark ? await stripMetadata(blob) : await watermarkImage(blob, author_id);
+          const publicUrl = await saveImage(finalBlob, folder);
+          return new Response(JSON.stringify({ url: publicUrl }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          });
+        } else {
+          const errText = await response.text();
+          errorDetails += `OpenAI Error (${response.status}): ${errText.substring(0, 100)}... | `;
+        }
+      } catch (e: any) {
+        errorDetails += `OpenAI Exception: ${e.message} | `;
+      }
+    } else {
+      errorDetails += "OPENAI_API_KEY not set | ";
+    }
+
+    // 3. Try Gemini Imagen 3 (Fallback - Note: Uses SynthID which may trigger AI tags)
     if (GEMINI_API_KEY) {
       try {
-        console.log(`Attempting image generation with Gemini Imagen 3...`);
+        console.log(`Attempting fallback image generation with Gemini Imagen 3...`);
         const modelName = "imagen-3.0-generate-002";
         let response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predict`,
@@ -167,7 +234,7 @@ STRICT RULES:
             const mimeType = prediction.mimeType || "image/png";
             const binaryData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
             const rawBlob = new Blob([binaryData], { type: mimeType });
-            const finalBlob = no_watermark ? rawBlob : await watermarkImage(rawBlob, author_id);
+            const finalBlob = no_watermark ? await stripMetadata(rawBlob) : await watermarkImage(rawBlob, author_id);
             const publicUrl = await saveImage(finalBlob, folder);
             return new Response(JSON.stringify({ url: publicUrl }), {
               headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -185,73 +252,6 @@ STRICT RULES:
       errorDetails += "GEMINI_API_KEY not set | ";
     }
 
-    // 2. Try OpenAI DALL-E 3
-    if (OPENAI_API_KEY) {
-      try {
-        console.log(`Attempting fallback image generation with OpenAI DALL-E 3...`);
-        const response = await fetch("https://api.openai.com/v1/images/generations", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${OPENAI_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: "dall-e-3",
-            prompt: visualPrompt,
-            n: 1,
-            quality: "hd",
-            size: aspect_ratio === "1:1" ? "1024x1024" : "1792x1024",
-          }),
-        });
-
-        if (response.ok) {
-          const aiData = await response.json();
-          const imageUrl = aiData.data[0].url;
-          const imageRes = await fetch(imageUrl);
-          const blob = await imageRes.blob();
-          const finalBlob = no_watermark ? blob : await watermarkImage(blob, author_id);
-          const publicUrl = await saveImage(finalBlob, folder);
-          return new Response(JSON.stringify({ url: publicUrl }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 200,
-          });
-        } else {
-          const errText = await response.text();
-          errorDetails += `OpenAI Error (${response.status}): ${errText.substring(0, 100)}... | `;
-        }
-      } catch (e: any) {
-        errorDetails += `OpenAI Exception: ${e.message} | `;
-      }
-    } else {
-      errorDetails += "OPENAI_API_KEY not set | ";
-    }
-
-    // 3. Try Pollinations AI (High-Definition FLUX model)
-    try {
-      console.log(`Attempting keyless fallback image generation with Pollinations FLUX...`);
-      const seed = Math.floor(Math.random() * 1000000);
-      const width = aspect_ratio === "1:1" ? 1024 : 1280;
-      const height = aspect_ratio === "1:1" ? 1024 : 720;
-      const pollinationsUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(visualPrompt)}?width=${width}&height=${height}&model=flux&nologo=true&private=true&enhance=true&seed=${seed}`;
-
-      const response = await fetch(pollinationsUrl);
-
-      if (response.ok) {
-        const blob = await response.blob();
-        const finalBlob = no_watermark ? blob : await watermarkImage(blob, author_id);
-        const publicUrl = await saveImage(finalBlob, folder);
-        console.log("Successfully generated HD image with Pollinations FLUX fallback!");
-        return new Response(JSON.stringify({ url: publicUrl }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        });
-      } else {
-        errorDetails += `Pollinations AI Error (${response.status}) | `;
-      }
-    } catch (e: any) {
-      errorDetails += `Pollinations AI Exception: ${e.message} | `;
-    }
-
     throw new Error(`AI generation failed. Details: ${errorDetails}`);
   } catch (error: any) {
     console.error("AI Generation Error:", error.message);
@@ -264,6 +264,19 @@ STRICT RULES:
     });
   }
 });
+
+async function stripMetadata(imageBlob: Blob): Promise<Blob> {
+  try {
+    const mainImageData = new Uint8Array(await imageBlob.arrayBuffer());
+    const mainImg = await Image.decode(mainImageData);
+    // Encoding as JPEG via ImageScript drops all EXIF, XMP, and C2PA metadata
+    const finalBuffer = await mainImg.encodeJPEG(95);
+    return new Blob([finalBuffer], { type: 'image/jpeg' });
+  } catch (e) {
+    console.error("Metadata stripping failed:", e);
+    return imageBlob;
+  }
+}
 
 async function watermarkImage(imageBlob: Blob, authorId: string | null) {
   try {
