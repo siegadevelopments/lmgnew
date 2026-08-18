@@ -160,6 +160,36 @@ const FEATURED_PRODUCTS: Record<string, ChatProduct[]> = {
   ],
 };
 
+// Helper to format content cleanly without raw asterisks
+function formatMessageContent(content: string) {
+  // Strip all ** asterisks
+  const clean = content.replace(/\*\*/g, "");
+  
+  // Format markdown-style links [Link Text](/url)
+  const parts = clean.split(/(\[[^\]]+\]\([^)]+\))/g);
+
+  return (
+    <span>
+      {parts.map((part, index) => {
+        const match = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+        if (match) {
+          const [, text, url] = match;
+          return (
+            <Link
+              key={index}
+              href={url}
+              className="text-primary font-bold underline hover:opacity-80 transition-opacity"
+            >
+              {text}
+            </Link>
+          );
+        }
+        return part;
+      })}
+    </span>
+  );
+}
+
 export function GlobalChat() {
   const { user } = useAuth();
   const { addItem } = useCart();
@@ -334,7 +364,7 @@ export function GlobalChat() {
     });
   };
 
-  // Generate Interactive Automated Response from Health Guru
+  // Generate Interactive Automated Response from Health Guru (Clean text without raw **)
   const generateAutomatedResponse = (query: string): { text: string; products?: ChatProduct[]; options?: InteractiveOption[] } => {
     const q = query.toLowerCase();
 
@@ -349,11 +379,11 @@ export function GlobalChat() {
     ) {
       if (!user) {
         return {
-          text: "🔐 **Please Log In to Check Order Status**: \n\nTo view your order history, live tracking details, and fulfillment updates, please **log in to your account**.\n\n👉 **[Click here to Log In](/login?redirect=/profile)**\n\nOnce logged in, your active orders will be displayed under **My Account -> Orders**!",
+          text: "🔐 Please Log In to Check Order Status:\n\nTo view your order history, live tracking details, and fulfillment updates, please log in to your account.\n\n👉 [Click here to Log In](/login?redirect=/profile)\n\nOnce logged in, your active orders will be displayed under My Account -> Orders!",
         };
       } else {
         return {
-          text: `📦 **Order Tracking**: \n\nYou are logged in as **${user.email}**.\n\nYou can view all your receipts and tracking numbers directly in your **[My Account Orders Page](/profile)**.\n\n• Processing: 1-2 business days\n• Delivery: 3-5 business days`,
+          text: `📦 Order Tracking:\n\nYou are logged in as ${user.email}.\n\nYou can view all your receipts and tracking numbers directly in your [My Account Orders Page](/profile).\n\n• Processing: 1-2 business days\n• Delivery: 3-5 business days`,
         };
       }
     }
@@ -361,54 +391,54 @@ export function GlobalChat() {
     // 2. SHIPPING & DELIVERY
     if (q.includes("shipping") || q.includes("deliver") || q.includes("how long") || q.includes("courier")) {
       return {
-        text: "🚚 **Shipping & Delivery Info**: \n\n• **Free Standard Shipping**: On all orders over $50!\n• **Standard Delivery**: 3–5 business days across the US ($5.99 flat rate for orders under $50).\n• **Express Shipping**: 2-day delivery options available at checkout.",
+        text: "🚚 Shipping & Delivery Info:\n\n• Free Standard Shipping: On all orders over $50!\n• Standard Delivery: 3–5 business days across the US ($5.99 flat rate for orders under $50).\n• Express Shipping: 2-day delivery options available at checkout.",
       };
     }
 
     // 3. REFUNDS & RETURNS
     if (q.includes("refund") || q.includes("return") || q.includes("exchange") || q.includes("guarantee") || q.includes("policy")) {
       return {
-        text: "💳 **30-Day Money-Back Guarantee**: \n\nWe back all products with a 30-Day Money-Back Guarantee! If you are unsatisfied for any reason, email us at **info@lifestylemedicinegateway.com** or reply here to request a return label.",
+        text: "💳 30-Day Money-Back Guarantee:\n\nWe back all products with a 30-Day Money-Back Guarantee! If you are unsatisfied for any reason, email us at info@lifestylemedicinegateway.com or reply here to request a return label.",
       };
     }
 
     // 4. SPECIFIC WELLNESS CATEGORY INQUIRIES WITH PRODUCT CARDS
     if (q.includes("gut") || q.includes("digestion") || q.includes("probiotic") || q.includes("bloat")) {
       return {
-        text: "🦠 **Gut Health Recommendations**: \nHere are our top physician-formulated gut health solutions to optimize digestion, balance microbiome flora, and relieve bloating:",
+        text: "🦠 Gut Health Recommendations:\nHere are our top physician-formulated gut health solutions to optimize digestion, balance microbiome flora, and relieve bloating:",
         products: FEATURED_PRODUCTS.gut,
       };
     }
 
     if (q.includes("menopause") || q.includes("hormone") || q.includes("hot flash") || q.includes("women")) {
       return {
-        text: "🌸 **Menopause & Hormone Support**: \nHere are our top targeted formulas for hormonal balance, hot flash relief, and mood stabilization:",
+        text: "🌸 Menopause & Hormone Support:\nHere are our top targeted formulas for hormonal balance, hot flash relief, and mood stabilization:",
         products: FEATURED_PRODUCTS.menopause,
       };
     }
 
     if (q.includes("aging") || q.includes("ageing") || q.includes("nad") || q.includes("longevity") || q.includes("vitality")) {
       return {
-        text: "✨ **Healthy Ageing & Cellular Vitality**: \nBoost mitochondrial energy, cellular repair, and longevity with these top formulations:",
+        text: "✨ Healthy Ageing & Cellular Vitality:\nBoost mitochondrial energy, cellular repair, and longevity with these top formulations:",
         products: FEATURED_PRODUCTS.aging,
       };
     }
 
     if (q.includes("sleep") || q.includes("stress") || q.includes("anxiety") || q.includes("relax") || q.includes("magnesium") || q.includes("ashwagandha")) {
       return {
-        text: "🌙 **Sleep & Stress Recovery**: \nCalm your nervous system and support deep restorative sleep with these high-potency adaptogens:",
+        text: "🌙 Sleep & Stress Recovery:\nCalm your nervous system and support deep restorative sleep with these high-potency adaptogens:",
         products: FEATURED_PRODUCTS.sleep,
       };
     }
 
     if (q.includes("weight") || q.includes("metabolism") || q.includes("berberine") || q.includes("blood sugar")) {
       return {
-        text: "⚖️ **Weight Management & Metabolism**: \nSupport healthy glucose metabolism, AMPK pathway activation, and metabolic energy:",
+        text: "⚖️ Weight Management & Metabolism:\nSupport healthy glucose metabolism, AMPK pathway activation, and metabolic energy:",
         products: FEATURED_PRODUCTS.weight,
       };
     }
 
-    // 5. GENERIC PRODUCT RECOMMENDATION INQUIRY (Asks interactive question + target options)
+    // 5. GENERIC PRODUCT RECOMMENDATION INQUIRY (Interactive Product Finder)
     if (
       q.includes("recommend") || 
       q.includes("product") || 
@@ -418,7 +448,7 @@ export function GlobalChat() {
       q.includes("mind")
     ) {
       return {
-        text: "🌿 **Health Guru Product Finder**: \n\nI'd love to recommend the best physician-curated formulas for you! **What specific health goal or focus do you have in mind today?**\n\nSelect a goal below or type your specific health concern:",
+        text: "🌿 Health Guru Product Finder:\n\nI'd love to recommend the best physician-curated formulas for you! What specific health goal or focus do you have in mind today?\n\nSelect a goal below or type your specific health concern:",
         options: [
           { label: "🌸 Menopause & Hormones", text: "I'd like product recommendations for menopause & hormone support." },
           { label: "🦠 Gut & Digestion", text: "I'd like product recommendations for gut health & digestion." },
@@ -432,13 +462,13 @@ export function GlobalChat() {
     // 6. ARTICLES & GUIDES
     if (q.includes("article") || q.includes("study") || q.includes("recipe") || q.includes("video") || q.includes("learn")) {
       return {
-        text: "📚 **Health Guru Knowledge Base**: \n\nCheck out our evidence-based wellness resources:\n\n• 📝 **[Articles & References](/articles)**\n• 🥗 **[Recipes](/recipes)**\n• 🎥 **[Videos](/videos)**\n• 🎁 **[Healthy Aging Starter Kit](/healthy-aging-starter-kit)**",
+        text: "📚 Health Guru Knowledge Base:\n\nCheck out our evidence-based wellness resources:\n\n• 📝 [Articles & References](/articles)\n• 🥗 [Recipes](/recipes)\n• 🎥 [Videos](/videos)\n• 🎁 [Healthy Aging Starter Kit](/healthy-aging-starter-kit)",
       };
     }
 
     // 7. GENERAL INQUIRY FALLBACK WITH OPTIONS
     return {
-      text: `👋 **Health Guru**: \n\nThanks for reaching out! I've recorded your question: *"${query}"*.\n\nWhat would you like to explore today?`,
+      text: `👋 Health Guru:\n\nThanks for reaching out! I've recorded your question: "${query}".\n\nWhat would you like to explore today?`,
       options: [
         { label: "🌿 Product Recommendations", text: "Hi Health Guru, I'd like a product recommendation." },
         { label: "🚚 Shipping & Delivery", text: "How long does shipping take and what are the delivery options?" },
@@ -654,7 +684,7 @@ export function GlobalChat() {
                       👋 Welcome! I am Health Guru
                     </p>
                     <p className="text-muted-foreground leading-relaxed">
-                      Ask me about product recommendations, shipping, returns, or health topics! *(For **Order Status**, please log in).*
+                      I'm your 24/7 Wellness & Product Assistant. Ask me anything about products, recipes, shipping, or health topics! *(For **Order Status**, please log in).*
                     </p>
                   </div>
                 </div>
@@ -682,7 +712,7 @@ export function GlobalChat() {
                             : "bg-background text-foreground rounded-tl-none border border-border"
                         )}
                       >
-                        {msg.content}
+                        {formatMessageContent(msg.content)}
                       </div>
 
                       {/* Interactive Options Chips if present */}
