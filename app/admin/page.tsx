@@ -119,6 +119,8 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [pendingPayoutsCount, setPendingPayoutsCount] = useState(0);
+  const [openSupportChatsCount, setOpenSupportChatsCount] = useState(0);
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
     totalOrders: 0,
@@ -257,6 +259,32 @@ export default function AdminPage() {
         }));
         setProducts(productsData);
 
+        // Fetch pending payouts count
+        let pendingPayouts = 0;
+        try {
+          const { data: earningsData } = await (supabase as any)
+            .from("vendor_earnings")
+            .select("amount")
+            .eq("status", "pending");
+          if (earningsData && earningsData.length > 0) {
+            pendingPayouts = earningsData.length;
+          }
+        } catch (e) {}
+        setPendingPayoutsCount(pendingPayouts);
+
+        // Fetch open support chats count
+        let openSupportChats = 0;
+        try {
+          const { data: convsData } = await (supabase as any)
+            .from("chat_conversations")
+            .select("id")
+            .eq("status", "open");
+          if (convsData && convsData.length > 0) {
+            openSupportChats = convsData.length;
+          }
+        } catch (e) {}
+        setOpenSupportChatsCount(openSupportChats);
+
         setStats({
           totalUsers: allUsers.length,
           totalOrders: allOrders.length,
@@ -273,6 +301,20 @@ export default function AdminPage() {
     }
 
     loadData();
+
+    // Subscribe to realtime changes for instant badge updates
+    const adminChannel = supabase
+      .channel("admin_sidebar_realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => loadData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "chat_conversations" }, () => loadData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "contact_messages" }, () => loadData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "vendor_earnings" }, () => loadData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "vendor_profiles" }, () => loadData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(adminChannel);
+    };
   }, [role]);
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
@@ -657,11 +699,15 @@ export default function AdminPage() {
 
   if (role !== "admin") return null;
 
+  const pendingOrdersCount = orders.filter((o) => o.status === "pending").length;
+  const unapprovedVendorsCount = vendors.filter((v) => !v.is_approved).length;
+  const unreadMessagesCount = stats.contactMessages + openSupportChatsCount;
+
   const sidebarItems = [
     { id: "overview", label: "Dashboard", icon: LayoutDashboard },
-    { id: "orders", label: `Orders (${orders.length})`, icon: ShoppingBag },
-    { id: "vendors", label: "Vendors", icon: Store },
-    { id: "payouts", label: "Payouts", icon: DollarSign },
+    { id: "orders", label: `Orders (${orders.length})`, icon: ShoppingBag, badge: pendingOrdersCount, hasRedDot: pendingOrdersCount > 0 },
+    { id: "vendors", label: "Vendors", icon: Store, badge: unapprovedVendorsCount, hasRedDot: unapprovedVendorsCount > 0 },
+    { id: "payouts", label: "Payouts", icon: DollarSign, badge: pendingPayoutsCount, hasRedDot: pendingPayoutsCount > 0 },
     { id: "streams", label: "Live Streams", icon: Radio },
     { id: "products", label: `Products (${products.length})`, icon: Package },
     { id: "content", label: "Content Manager", icon: FileText },
@@ -670,7 +716,7 @@ export default function AdminPage() {
     { id: "affiliates", label: "Affiliates", icon: LinkIcon },
     { id: "popups", label: "Popups", icon: Sparkles },
     { id: "subscribers", label: `Subscribers (${stats.subscribers})`, icon: Mail },
-    { id: "messages", label: "Messages", icon: MessageSquare, badge: stats.contactMessages },
+    { id: "messages", label: "Messages", icon: MessageSquare, badge: unreadMessagesCount, hasRedDot: unreadMessagesCount > 0 },
     { id: "users", label: `Users (${users.length})`, icon: Users },
   ];
 
@@ -693,18 +739,26 @@ export default function AdminPage() {
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base font-semibold transition-all hover:bg-accent",
+                  "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base font-semibold transition-all hover:bg-accent relative",
                   activeTab === item.id ? "bg-primary/10 text-primary font-bold" : "text-muted-foreground",
                 )}
               >
                 <item.icon className="h-5 w-5" />
                 <span>{item.label}</span>
+                {item.hasRedDot && (
+                  <span className="relative flex h-2.5 w-2.5 ml-auto shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
+                  </span>
+                )}
                 {item.badge !== undefined && item.badge > 0 && (
-                  <Badge variant="destructive" className="ml-auto h-5 px-1.5 text-xs font-bold">
+                  <Badge variant="destructive" className={cn("h-5 px-1.5 text-xs font-bold shrink-0", item.hasRedDot ? "ml-1.5" : "ml-auto")}>
                     {item.badge}
                   </Badge>
                 )}
-                {activeTab === item.id && <ChevronRight className="ml-auto h-5 w-5" />}
+                {activeTab === item.id && !item.hasRedDot && item.badge === undefined && (
+                  <ChevronRight className="ml-auto h-5 w-5" />
+                )}
               </button>
             ))}
           </nav>
@@ -751,7 +805,7 @@ export default function AdminPage() {
                       setMobileMenuOpen(false);
                     }}
                     className={cn(
-                      "flex w-full items-center gap-3 rounded-lg px-4 py-3 text-lg font-semibold transition-all",
+                      "flex w-full items-center gap-3 rounded-lg px-4 py-3 text-lg font-semibold transition-all relative",
                       activeTab === item.id
                         ? "bg-primary/10 text-primary font-bold"
                         : "text-muted-foreground",
@@ -759,6 +813,17 @@ export default function AdminPage() {
                   >
                     <item.icon className="h-6 w-6" />
                     <span>{item.label}</span>
+                    {item.hasRedDot && (
+                      <span className="relative flex h-3 w-3 ml-auto shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
+                      </span>
+                    )}
+                    {item.badge !== undefined && item.badge > 0 && (
+                      <Badge variant="destructive" className={cn("h-5 px-2 text-xs font-bold shrink-0", item.hasRedDot ? "ml-2" : "ml-auto")}>
+                        {item.badge}
+                      </Badge>
+                    )}
                   </button>
                 ))}
               </nav>
