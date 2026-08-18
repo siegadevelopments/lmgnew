@@ -69,6 +69,15 @@ interface AnalyticsData {
     totalMonthlyImpressions: number;
     totalEngagements: number;
   };
+  debug?: {
+    hasGaPropertyId: boolean;
+    hasGaClientEmail: boolean;
+    hasGaPrivateKey: boolean;
+    gaError: string | null;
+    hasMetaAccessToken: boolean;
+    hasMetaPageId: boolean;
+    metaError: string | null;
+  };
 }
 
 export default function PublicAnalyticsPage() {
@@ -138,7 +147,7 @@ export default function PublicAnalyticsPage() {
                 Refresh
               </Button>
 
-              <SetupGuideDialog isLive={data?.isLive ?? false} />
+              <SetupGuideDialog isLive={data?.isLive ?? false} debug={data?.debug} />
             </div>
           </div>
         </div>
@@ -146,6 +155,24 @@ export default function PublicAnalyticsPage() {
 
       {/* Main Content */}
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 space-y-10">
+        {/* Diagnostic Banner when not live */}
+        {data && !data.isLive && data.debug && (
+          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200 text-xs space-y-2">
+            <div className="flex items-center justify-between font-semibold text-sm">
+              <span className="flex items-center gap-2">
+                <Info className="h-4 w-4 text-amber-500" />
+                Live API Connection Status: Demo / Preview Mode
+              </span>
+              <SetupGuideDialog isLive={false} debug={data.debug} buttonText="View Diagnostic Details" />
+            </div>
+            {data.debug.gaError && (
+              <p className="font-mono bg-background/80 p-2 rounded border border-amber-500/20 text-[11px] overflow-x-auto text-amber-800 dark:text-amber-300">
+                <strong>Google Analytics Status:</strong> {data.debug.gaError}
+              </p>
+            )}
+          </div>
+        )}
+
         {loading ? (
           <div className="py-24 text-center space-y-4">
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-primary border-r-transparent" />
@@ -438,13 +465,21 @@ function StatCard({
   );
 }
 
-function SetupGuideDialog({ isLive }: { isLive: boolean }) {
+function SetupGuideDialog({
+  isLive,
+  debug,
+  buttonText = 'API Setup Guide',
+}: {
+  isLive: boolean;
+  debug?: AnalyticsData['debug'];
+  buttonText?: string;
+}) {
   return (
     <Dialog>
       <DialogTrigger asChild>
         <Button variant="default" size="sm" className="gap-2 rounded-xl">
           <Info className="h-3.5 w-3.5" />
-          API Setup Guide
+          {buttonText}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md rounded-2xl">
@@ -459,6 +494,40 @@ function SetupGuideDialog({ isLive }: { isLive: boolean }) {
         </DialogHeader>
 
         <div className="space-y-4 text-xs">
+          {debug && (
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2 text-foreground">
+              <div className="font-bold flex items-center gap-1.5 text-amber-700 dark:text-amber-300">
+                <ShieldCheck className="h-4 w-4" />
+                Live Connection Diagnostic Status
+              </div>
+              <div className="space-y-1 font-mono text-[11px]">
+                <div className="flex justify-between">
+                  <span>GA4_PROPERTY_ID:</span>
+                  <span className={debug.hasGaPropertyId ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'}>
+                    {debug.hasGaPropertyId ? 'SET' : 'MISSING'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>GA4_CLIENT_EMAIL:</span>
+                  <span className={debug.hasGaClientEmail ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'}>
+                    {debug.hasGaClientEmail ? 'SET' : 'MISSING'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>GA4_PRIVATE_KEY:</span>
+                  <span className={debug.hasGaPrivateKey ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'}>
+                    {debug.hasGaPrivateKey ? 'SET' : 'MISSING'}
+                  </span>
+                </div>
+              </div>
+              {debug.gaError && (
+                <div className="mt-2 p-2 rounded bg-background border border-amber-500/30 text-[11px] text-rose-600 dark:text-rose-400 overflow-x-auto font-mono">
+                  <strong>GA Error:</strong> {debug.gaError}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="p-3 rounded-xl bg-muted border border-border space-y-2">
             <div className="font-bold text-foreground flex items-center gap-1.5">
               <Globe className="h-4 w-4 text-indigo-500" />
