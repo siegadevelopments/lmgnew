@@ -26,7 +26,7 @@ CREATE POLICY "Allow insert notifications" ON public.notifications FOR INSERT WI
 DROP POLICY IF EXISTS "Allow update notifications" ON public.notifications;
 CREATE POLICY "Allow update notifications" ON public.notifications FOR UPDATE USING (true);
 
--- 2. Ensure chat_conversations table exists and ALTER existing table to add support columns
+-- 2. Ensure chat_conversations table exists and ALTER existing table
 CREATE TABLE IF NOT EXISTS public.chat_conversations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     customer_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -34,6 +34,10 @@ CREATE TABLE IF NOT EXISTS public.chat_conversations (
     last_message_at TIMESTAMPTZ DEFAULT NOW(),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Make vendor_id and customer_id nullable for support and guest chats
+ALTER TABLE public.chat_conversations ALTER COLUMN vendor_id DROP NOT NULL;
+ALTER TABLE public.chat_conversations ALTER COLUMN customer_id DROP NOT NULL;
 
 -- Add support chat columns to existing chat_conversations table
 ALTER TABLE public.chat_conversations ADD COLUMN IF NOT EXISTS guest_name TEXT;

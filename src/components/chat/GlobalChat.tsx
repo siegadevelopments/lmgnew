@@ -243,16 +243,24 @@ export function GlobalChat() {
           convErr = e;
         }
 
-        // If extended columns are missing, fallback to standard schema
+        // If error occurs due to NOT NULL constraints or missing columns
         if (convErr || !newConv) {
-          console.warn("Extended chat_conversations columns missing, falling back to base columns.");
-          const fallbackRes = await (supabase.from("chat_conversations" as any) as any)
+          console.warn("Attempting fallback conversation insertion due to schema constraint:", convErr);
+          
+          let fallbackRes = await (supabase.from("chat_conversations" as any) as any)
             .insert({
               customer_id: user?.id || null,
+              vendor_id: user?.id || null,
               last_message_at: new Date().toISOString(),
             })
             .select()
             .single();
+
+          if (fallbackRes.error && fallbackRes.error.message?.includes("vendor_id")) {
+            // If vendor_id constraint is strictly enforced on old schema
+            toast.error("Database constraint error: Please run the SQL migration script in Supabase SQL Editor to allow support chats.");
+            throw fallbackRes.error;
+          }
 
           if (fallbackRes.error) throw fallbackRes.error;
           newConv = fallbackRes.data;
