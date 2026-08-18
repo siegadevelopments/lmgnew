@@ -197,6 +197,9 @@ export async function GET() {
   let isGaLive = false;
   let isMetaLive = false;
 
+  let gaError: string | null = null;
+  let metaError: string | null = null;
+
   // 1. Fetch Google Analytics 4 Data if credentials are provided
   if (gaPropertyId && gaClientEmail && gaPrivateKey) {
     try {
@@ -208,9 +211,16 @@ export async function GET() {
         ...liveGaMetrics,
       };
       isGaLive = true;
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error fetching GA4 data:", err);
+      gaError = err?.message || String(err);
     }
+  } else {
+    const missing = [];
+    if (!gaPropertyId) missing.push("GA4_PROPERTY_ID");
+    if (!gaClientEmail) missing.push("GA4_CLIENT_EMAIL");
+    if (!gaPrivateKey) missing.push("GA4_PRIVATE_KEY");
+    gaError = `Missing environment variables: ${missing.join(", ")}`;
   }
 
   // 2. Fetch Meta Insights Data if credentials are provided
@@ -230,13 +240,19 @@ export async function GET() {
         const json = await res.json();
         metaData = json.data;
         isMetaLive = true;
+      } else {
+        metaError = `Meta API returned status ${res.status}`;
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error fetching Meta insights:", err);
+      metaError = err?.message || String(err);
     }
+  } else {
+    const missing = [];
+    if (!metaAccessToken) missing.push("META_ACCESS_TOKEN");
+    if (!metaPageId) missing.push("META_PAGE_ID");
+    metaError = `Missing environment variables: ${missing.join(", ")}`;
   }
-
-
 
   const responsePayload = {
     timestamp: new Date().toISOString(),
@@ -249,6 +265,15 @@ export async function GET() {
       totalMonthlyAudience: (gaData?.totalUsers || demoGaData.totalUsers) + (metaData?.totalReach || demoMetaData.totalReach),
       totalMonthlyImpressions: (gaData?.pageViews || demoGaData.pageViews) + (metaData?.totalImpressions || demoMetaData.totalImpressions),
       totalEngagements: demoMetaData.postEngagements + Math.round(demoGaData.pageViews * 0.15)
+    },
+    debug: {
+      hasGaPropertyId: Boolean(gaPropertyId),
+      hasGaClientEmail: Boolean(gaClientEmail),
+      hasGaPrivateKey: Boolean(gaPrivateKey),
+      gaError,
+      hasMetaAccessToken: Boolean(metaAccessToken),
+      hasMetaPageId: Boolean(metaPageId),
+      metaError,
     }
   };
 
