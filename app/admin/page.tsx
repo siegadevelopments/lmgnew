@@ -21,6 +21,8 @@ import { sendBrandedResetEmail } from "@/lib/admin-actions";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ProductsTab } from "@/components/vendor/ProductsTab";
 import { AdminPayoutsTab } from "@/components/admin/AdminPayoutsTab";
+import { AdminMessagesTab } from "@/components/admin/AdminMessagesTab";
+import { NotificationBell } from "@/components/admin/NotificationBell";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -677,9 +679,12 @@ export default function AdminPage() {
       {/* Sidebar - Desktop */}
       <aside className="hidden w-64 border-r border-border bg-card lg:block shrink-0">
         <div className="sticky top-0 flex h-full flex-col p-6">
-          <div className="mb-8 px-2">
-            <h2 className="text-2xl font-bold tracking-tight">LMG Admin</h2>
-            <p className="text-sm text-muted-foreground mt-1">Platform Control Center</p>
+          <div className="mb-8 px-2 flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">LMG Admin</h2>
+              <p className="text-sm text-muted-foreground mt-1">Platform Control Center</p>
+            </div>
+            <NotificationBell />
           </div>
 
           <nav className="flex-1 space-y-1">
@@ -1458,100 +1463,8 @@ export default function AdminPage() {
             </TabsContent>
 
             {/* MESSAGES */}
-            <TabsContent value="messages" className="mt-0 border-0 p-0 space-y-4">
-              <div className="mb-6 flex flex-col gap-1">
-                <h1 className="text-2xl font-bold tracking-tight">Contact Messages</h1>
-                <p className="text-muted-foreground">Respond to user inquiries and support.</p>
-              </div>
-              {messages.length === 0 ? (
-                <Card>
-                  <CardContent className="py-12 text-center text-sm text-muted-foreground">
-                    No messages found.
-                  </CardContent>
-                </Card>
-              ) : (
-                messages.map((msg) => (
-                  <Card
-                    key={msg.id}
-                    className={cn(
-                      "border-border/50",
-                      msg.read
-                        ? "opacity-60 grayscale-[0.5]"
-                        : "border-primary/20 bg-primary/5 shadow-sm",
-                    )}
-                  >
-                    <CardContent className="pt-6">
-                      <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-3">
-                            <h3 className="text-base font-bold text-foreground">{msg.subject}</h3>
-                            {!msg.read && (
-                              <Badge
-                                variant="destructive"
-                                className="h-5 px-1.5 text-[10px] font-black uppercase tracking-wider"
-                              >
-                                New
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="mt-1 text-sm font-medium text-primary">
-                            {msg.name}{" "}
-                            <span className="text-muted-foreground font-normal">({msg.email})</span>
-                          </p>
-                          <Separator className="my-3 opacity-20" />
-                          <p className="text-sm text-foreground/80 leading-relaxed bg-background/50 p-3 rounded-md border border-border/30">
-                            {msg.message}
-                          </p>
-                          <p className="mt-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                            {new Date(msg.created_at).toLocaleString()}
-                          </p>
-                        </div>
-                        <div className="flex flex-row sm:flex-col gap-2 shrink-0">
-                          {!msg.read && (
-                            <Button
-                              variant="default"
-                              size="sm"
-                              onClick={() => markMessageRead(msg.id)}
-                              className="shadow-lg h-9"
-                            >
-                              Mark Read
-                            </Button>
-                          )}
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-destructive hover:bg-destructive/10 h-9"
-                              >
-                                <Trash2 className="h-4 w-4 mr-1" /> Delete
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete message?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This will permanently remove the message from {msg.name}. This
-                                  action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteMessage(msg.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
+            <TabsContent value="messages" className="mt-0 border-0 p-0">
+              <AdminMessagesTab />
             </TabsContent>
 
             {/* USERS */}

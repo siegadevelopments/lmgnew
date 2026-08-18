@@ -20,6 +20,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { uploadMedia, deleteMediaWithSafety } from "@/lib/upload";
+import { createAdminNotification } from "@/lib/notifications";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface Video {
@@ -113,6 +114,14 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
         if (error) throw error;
         if (data) {
           setVideos([data as Video, ...videos]);
+
+          createAdminNotification({
+            type: "content",
+            title: `🎥 New Video Published: ${form.title}`,
+            message: `A video titled "${form.title}" was added to the platform.`,
+            link: "/admin?tab=content",
+            metadata: { video_id: data.id, title: form.title },
+          });
 
           if (uploadMode === "file") {
             toast.success("Video uploaded and added successfully!");

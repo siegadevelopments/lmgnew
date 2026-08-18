@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadMedia, deleteMediaWithSafety } from "@/lib/upload";
+import { createAdminNotification } from "@/lib/notifications";
 import { toast } from "sonner";
 import {
   Plus,
@@ -172,6 +173,13 @@ export function ProductsTab({
         if (data) {
           setProducts([data as Product, ...products]);
           toast.success("Product created!");
+          createAdminNotification({
+            type: "content",
+            title: `🛍️ New Product Created: ${form.title}`,
+            message: `A new product "${form.title}" ($${form.price}) was added to the catalog.`,
+            link: "/admin?tab=products",
+            metadata: { product_id: data.id, title: form.title },
+          });
         }
       }
 

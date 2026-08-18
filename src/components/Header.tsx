@@ -9,6 +9,7 @@ import { CartButton } from "@/components/CartButton";
 import { useAuth } from "@/hooks/use-auth";
 import { ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { NotificationBell } from "@/components/admin/NotificationBell";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -215,6 +216,10 @@ export function Header() {
             </Button>
           </Link>
           <CartButton />
+          {(role === "admin" ||
+            user?.email === "siegaej@gmail.com" ||
+            user?.email === "siegadevelopments@gmail.com" ||
+            user?.email === "siegapython@gmail.com") && <NotificationBell />}
 
           {/* Auth */}
           {loading ? (

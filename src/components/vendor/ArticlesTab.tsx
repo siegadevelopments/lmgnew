@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadMedia } from "@/lib/upload";
+import { createAdminNotification } from "@/lib/notifications";
 import { toast } from "sonner";
 import { Pencil, Trash2, Plus } from "lucide-react";
 
@@ -75,6 +76,13 @@ export function ArticlesTab({ articles, setArticles, userId }: Props) {
         if (data) {
           setArticles([data as Article, ...articles]);
           toast.success("Article published successfully!");
+          createAdminNotification({
+            type: "content",
+            title: `📝 New Article Published: ${form.title}`,
+            message: `A vendor published a new article titled "${form.title}".`,
+            link: "/admin?tab=content",
+            metadata: { article_id: data.id, title: form.title },
+          });
         }
       }
 

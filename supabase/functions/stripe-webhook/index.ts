@@ -255,6 +255,21 @@ serve(async (req: Request) => {
 
       console.log(`Order ${orderId} completed and paid. Notifications sent.`);
 
+      // Insert Admin In-App Notification
+      try {
+        await supabase.from("notifications").insert({
+          recipient_role: "admin",
+          type: "order",
+          title: `🛍️ New Order #${orderId.substring(0, 8)}`,
+          message: `Customer ${session.customer_details?.email || "Guest"} placed an order of $${(session.amount_total! / 100).toFixed(2)}.`,
+          link: "/admin?tab=orders",
+          metadata: { order_id: orderId, amount: session.amount_total! / 100 },
+          read: false,
+        });
+      } catch (notifErr) {
+        console.error("Error inserting notification:", notifErr);
+      }
+
       // 4. Notify Admin of Paid Order
       if (RESEND_API_KEY) {
         await fetch("https://api.resend.com/emails", {
