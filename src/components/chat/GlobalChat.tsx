@@ -367,10 +367,24 @@ export function GlobalChat() {
       }
     }
 
-    // 2. SHIPPING & DELIVERY
-    if (q.includes("shipping") || q.includes("deliver") || q.includes("how long") || q.includes("courier")) {
+    // 2. SHIPPING, DELIVERY & PRODUCT RECEIVING
+    if (
+      q.includes("receive") || 
+      q.includes("shipping") || 
+      q.includes("deliver") || 
+      q.includes("courier") || 
+      q.includes("post") || 
+      q.includes("how long") || 
+      q.includes("arrival") || 
+      q.includes("arrive") || 
+      q.includes("transit") || 
+      q.includes("fulfillment") ||
+      q.includes("get my order") ||
+      q.includes("sent") ||
+      q.includes("dispatch")
+    ) {
       return {
-        text: "🚚 Shipping & Delivery Info:\n\n• Free Standard Shipping: On all orders over $50!\n• Standard Delivery: 3–5 business days across the US ($5.99 flat rate for orders under $50).\n• Express Shipping: 2-day delivery options available at checkout.",
+        text: "🚚 Product Delivery & Fulfillment:\n\nAll orders placed on Lifestyle Medicine Gateway are processed within 1–2 business days and delivered directly to your address via standard or express courier services.\n\n• Standard Delivery: 3–5 business days ($5.99 flat rate, or FREE on orders over $50).\n• Express Shipping: 2-day priority delivery available at checkout.\n\nOnce your order ships, you will receive an email notification with your tracking number (and you can view live tracking under My Account -> Orders)!",
       };
     }
 
@@ -422,14 +436,17 @@ export function GlobalChat() {
       };
     }
 
-    // 5. GENERIC PRODUCT RECOMMENDATION INQUIRY (Interactive Product Finder)
+    // 5. GENERIC PRODUCT RECOMMENDATION INQUIRY (Explicit Product Finder Request)
     if (
       q.includes("recommend") || 
-      q.includes("product") || 
-      q.includes("supplement") || 
       q.includes("suggest") || 
-      q.includes("what should i get") ||
-      q.includes("mind")
+      q.includes("what should i buy") || 
+      q.includes("what to buy") || 
+      q.includes("best product") || 
+      q.includes("product recommendation") ||
+      q.includes("looking for a product") ||
+      q.includes("which supplement") ||
+      q.includes("what should i get")
     ) {
       return {
         text: "🌿 Health Guru Product Finder:\n\nI'd love to recommend the best products from our website store! What specific health goal or focus do you have in mind today?\n\nSelect a goal below or type your specific health concern:",
