@@ -79,7 +79,7 @@ export default function PublicAnalyticsPage() {
   const fetchAnalytics = async () => {
     try {
       setRefreshing(true);
-      const res = await fetch('/api/analytics');
+      const res = await fetch(`/api/analytics?t=${Date.now()}`, { cache: 'no-store' });
       if (res.ok) {
         const json = await res.json();
         setData(json);
