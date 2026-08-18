@@ -13,10 +13,9 @@ import {
   Headphones,
   Clock,
   Loader2,
-  Lock,
-  ExternalLink
+  RotateCcw,
+  Plus
 } from "lucide-react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
@@ -61,17 +60,16 @@ export function GlobalChat() {
   // Guest visitor state
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
-  const [guestSaved, setGuestSaved] = useState(false);
   const [guestSessionId, setGuestSessionId] = useState<string>("");
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Load guest info from localStorage on mount
+  // Initialize or fetch guest session on mount
   useEffect(() => {
     if (typeof window !== "undefined") {
       let storedId = localStorage.getItem("lmg_support_guest_id");
       if (!storedId) {
-        storedId = "guest_" + Math.random().toString(36).substring(2, 11) + Date.now();
+        storedId = "guest_" + Math.random().toString(36).substring(2, 9) + Date.now();
         localStorage.setItem("lmg_support_guest_id", storedId);
       }
       setGuestSessionId(storedId);
@@ -82,7 +80,6 @@ export function GlobalChat() {
           const parsed = JSON.parse(storedInfo);
           if (parsed.name) setGuestName(parsed.name);
           if (parsed.email) setGuestEmail(parsed.email);
-          if (parsed.name && parsed.email) setGuestSaved(true);
         } catch (e) {
           console.error("Error parsing guest info:", e);
         }
@@ -90,8 +87,14 @@ export function GlobalChat() {
     }
   }, []);
 
-  // Fetch or initialize conversation with schema resilience
-  const initConversation = async () => {
+  // Fetch active conversation
+  const initConversation = async (forceNew = false) => {
+    if (forceNew) {
+      setConversationId(null);
+      setMessages([]);
+      return;
+    }
+
     setLoading(true);
     try {
       let { data: convs, error } = await (supabase.from("chat_conversations" as any) as any)
@@ -101,7 +104,6 @@ export function GlobalChat() {
         .limit(1);
 
       if (error) {
-        console.warn("Retrying conversation fetch without extended columns:", error.message);
         if (user) {
           const fallbackRes = await (supabase.from("chat_conversations" as any) as any)
             .select("*")
@@ -136,10 +138,7 @@ export function GlobalChat() {
         .eq("conversation_id", convId)
         .order("created_at", { ascending: true });
 
-      if (error) {
-        console.error("Error fetching messages:", error);
-        return;
-      }
+      if (error) return;
       setMessages((data || []) as ChatMessage[]);
     } catch (err) {
       console.error("Fetch messages error:", err);
@@ -150,7 +149,7 @@ export function GlobalChat() {
     if (isOpen) {
       initConversation();
     }
-  }, [isOpen, user, guestSaved]);
+  }, [isOpen, user]);
 
   // Realtime subscription for incoming messages
   useEffect(() => {
@@ -192,21 +191,17 @@ export function GlobalChat() {
     }
   }, [messages, isBotTyping, isOpen]);
 
-  // Handle guest registration form submit
-  const handleSaveGuest = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!guestName.trim() || !guestEmail.trim()) {
-      toast.error("Please enter your name and email to start chatting.");
-      return;
-    }
-    localStorage.setItem(
-      "lmg_support_guest_info",
-      JSON.stringify({ name: guestName.trim(), email: guestEmail.trim() })
-    );
-    setGuestSaved(true);
+  // Start fresh conversation (New Chat button)
+  const handleStartNewChat = () => {
+    const newGuestId = "guest_" + Math.random().toString(36).substring(2, 9) + Date.now();
+    localStorage.setItem("lmg_support_guest_id", newGuestId);
+    setGuestSessionId(newGuestId);
+    setConversationId(null);
+    setMessages([]);
+    toast.success("Started a new support chat session!");
   };
 
-  // Generate Smart Automated Assistant Response based on website data & authentication rules
+  // Generate Smart Automated Assistant Response
   const generateAutomatedResponse = (query: string): string => {
     const q = query.toLowerCase();
 
@@ -220,23 +215,23 @@ export function GlobalChat() {
       q.includes("my purchase")
     ) {
       if (!user) {
-        return "🔐 **Authentication Required**: \n\nTo view your order history, live tracking details, and package fulfillment updates, please **log in to your account**.\n\n👉 **[Click here to Log In](/login?redirect=/profile)**\n\nOnce logged in, you can view all active and past orders instantly under **My Account -> Orders**!";
+        return "🔐 **Please Log In to Check Order Status**: \n\nTo view your order history, live tracking details, and fulfillment updates, please **log in to your account**.\n\n👉 **[Click here to Log In](/login?redirect=/profile)**\n\nOnce logged in, your active orders will be displayed under **My Account -> Orders**!";
       } else {
-        return `📦 **Order Tracking**: \n\nYou are currently logged in as **${user.email}**.\n\nYou can view all your order receipts, tracking numbers, and shipment statuses directly in your **[My Account Orders Dashboard](/profile)**.\n\n• Standard order processing: 1-2 business days\n• Delivery time: 3-5 business days`;
+        return `📦 **Order Tracking**: \n\nYou are logged in as **${user.email}**.\n\nYou can view all your receipts and tracking numbers directly in your **[My Account Orders Page](/profile)**.\n\n• Processing: 1-2 business days\n• Delivery: 3-5 business days`;
       }
     }
 
     // 2. SHIPPING & DELIVERY
     if (q.includes("shipping") || q.includes("deliver") || q.includes("how long") || q.includes("courier")) {
-      return "🚚 **Shipping & Delivery Info**: \n\n• **Free Standard Shipping**: On all orders over $50!\n• **Standard Shipping**: 3–5 business days across the US ($5.99 flat rate for orders under $50).\n• **Express Shipping**: 2-day delivery options available at checkout.\n• **Fulfillment**: Orders process within 24–48 hours from our verified brand partners.";
+      return "🚚 **Shipping & Delivery Info**: \n\n• **Free Standard Shipping**: On all orders over $50!\n• **Standard Delivery**: 3–5 business days across the US ($5.99 flat rate for orders under $50).\n• **Express Shipping**: 2-day delivery options available at checkout.";
     }
 
     // 3. REFUNDS & RETURNS
     if (q.includes("refund") || q.includes("return") || q.includes("exchange") || q.includes("guarantee") || q.includes("policy")) {
-      return "💳 **30-Day Happiness Guarantee**: \n\nWe stand by all curated products on Lifestyle Medicine Gateway! If you are not satisfied with your purchase, you may initiate a return or exchange within 30 days.\n\nTo start a return, email us at **info@lifestylemedicinegateway.com** or let us know right here in chat and our admin team will send you a return label.";
+      return "💳 **30-Day Money-Back Guarantee**: \n\nWe back all products with a 30-Day Money-Back Guarantee! If you are unsatisfied for any reason, email us at **info@lifestylemedicinegateway.com** or reply here to request a return label.";
     }
 
-    // 4. WELLNESS CATEGORIES & PRODUCT RECOMMENDATIONS
+    // 4. WELLNESS CATEGORIES & RECOMMENDATIONS
     if (
       q.includes("product") || 
       q.includes("recommend") || 
@@ -245,36 +240,29 @@ export function GlobalChat() {
       q.includes("menopause") || 
       q.includes("aging") || 
       q.includes("stress") || 
-      q.includes("sleep") || 
-      q.includes("heart") || 
-      q.includes("brain") || 
-      q.includes("weight")
+      q.includes("sleep")
     ) {
-      return "🌿 **Lifestyle Medicine Gateway Catalog**: \n\nWe feature physician-reviewed products across 9 core wellness categories:\n\n• 🌸 **[Menopause Support](/categories/menopause-support)**: Phytoestrogen blends & hormone balance\n• 🦠 **[Gut Health](/categories/gut-health)**: Probiotics, Prebiotics & Microbiome support\n• ✨ **[Healthy Ageing](/categories/healthy-ageing)**: Cellular vitality, NAD+ boosters & Antioxidants\n• 🌙 **[Sleep & Recovery](/categories/sleep-recovery)**: Magnesium Glycinate, L-Theanine & Melatonin\n• 🧘 **[Stress Management](/categories/stress-management)**: Ashwagandha & Adaptogens\n• ⚖️ **[Weight Management](/categories/weight-management)**: Metabolic & Blood Sugar balance\n• ❤️ **[Heart Health](/categories/heart-health)** & 🧠 **[Brain Health](/categories/brain-health)**\n\nYou can browse our entire curated store at **[Shop All Products](/products)**!";
+      return "🌿 **Wellness Collections**: \n\nExplore physician-reviewed formulas:\n\n• 🌸 **[Menopause Support](/categories/menopause-support)**\n• 🦠 **[Gut Health](/categories/gut-health)**\n• ✨ **[Healthy Ageing](/categories/healthy-ageing)**\n• 🌙 **[Sleep & Recovery](/categories/sleep-recovery)**\n• 🧘 **[Stress Management](/categories/stress-management)**\n\nBrowse the complete catalog at **[Shop All Products](/products)**!";
     }
 
-    // 5. ARTICLES & EDUCATIONAL RESOURCES
-    if (q.includes("article") || q.includes("study") || q.includes("research") || q.includes("recipe") || q.includes("video") || q.includes("learn")) {
-      return "📚 **Educational Resources & Evidence-Based Content**: \n\nExplore our free evidence-based library created by health professionals:\n\n• 📝 **[Articles & References](/articles)**: Clinical reviews & evidence breakdowns\n• 🥗 **[Recipes](/recipes)**: Physician-curated plant-rich and nutrient-dense recipes\n• 🎥 **[Videos](/videos)**: Expert lectures & wellness webinars\n• 🔬 **[Studies](/studies)** & 🧪 **[Natural Remedies](/natural-remedies)**\n• 🎁 **[Healthy Aging Starter Kit](/healthy-aging-starter-kit)**";
+    // 5. ARTICLES & GUIDES
+    if (q.includes("article") || q.includes("study") || q.includes("recipe") || q.includes("video") || q.includes("learn")) {
+      return "📚 **Evidence-Based Content**: \n\nCheck out our educational library:\n\n• 📝 **[Articles & References](/articles)**\n• 🥗 **[Recipes](/recipes)**\n• 🎥 **[Videos](/videos)**\n• 🎁 **[Healthy Aging Starter Kit](/healthy-aging-starter-kit)**";
     }
 
     // 6. SELL WITH US / VENDORS
-    if (q.includes("sell") || q.includes("vendor") || q.includes("brand") || q.includes("partner") || q.includes("register store")) {
-      return "🏪 **Sell With Us / Vendor Program**: \n\nAre you a verified wellness or lifestyle medicine brand? You can list your products and reach thousands of health-conscious customers!\n\n👉 **[Learn More & Apply as a Vendor](/sell-with-us)**\n\nApproved vendors get access to our vendor portal, live analytics, order fulfillment dashboard, and direct customer messaging!";
+    if (q.includes("sell") || q.includes("vendor") || q.includes("brand") || q.includes("partner")) {
+      return "🏪 **Vendor Program**: \n\nAre you a verified wellness brand? Apply to join our marketplace:\n👉 **[Learn More & Apply](/sell-with-us)**";
     }
 
     // 7. GENERAL INQUIRY FALLBACK
-    return `👋 **LMG Support Assistant**: \n\nThank you for reaching out! I've recorded your question: *"${query}"*.\n\nAn Admin support team member has been notified via real-time alerts and will respond shortly. You can also explore our **[Shop All Products](/products)** or **[Helpful Articles](/articles)** while you wait!`;
+    return `👋 **LMG Support Assistant**: \n\nThanks for asking! I've recorded your message: *"${query}"*.\n\nAn admin team member has been notified and will jump in shortly to assist! Feel free to browse **[Shop All Products](/products)** while you wait.`;
   };
 
   // Send user message and trigger automated AI reply
   const handleSendMessage = async (textToSend?: string) => {
     const content = (textToSend || newMessage).trim();
     if (!content) return;
-
-    if (!user && !guestSaved && !guestName && !guestEmail) {
-      setGuestSaved(false);
-    }
 
     setLoading(true);
     setNewMessage("");
@@ -286,13 +274,15 @@ export function GlobalChat() {
       if (!activeConvId) {
         let newConv = null;
         let convErr = null;
+        const currentGuestName = guestName || "Guest Visitor";
+        const currentGuestEmail = guestEmail || guestSessionId;
 
         try {
           const res = await (supabase.from("chat_conversations" as any) as any)
             .insert({
               customer_id: user?.id || null,
-              guest_name: user ? null : (guestName || "Guest Visitor"),
-              guest_email: user ? null : (guestEmail || guestSessionId),
+              guest_name: user ? null : currentGuestName,
+              guest_email: user ? null : currentGuestEmail,
               is_support: true,
               status: "open",
               last_message_at: new Date().toISOString(),
@@ -322,7 +312,7 @@ export function GlobalChat() {
         setConversationId(newConv.id);
       }
 
-      const senderName = user ? (user.email?.split("@")[0] || "Customer") : (guestName || "Guest");
+      const senderName = user ? (user.email?.split("@")[0] || "Customer") : (guestName || "Guest Visitor");
       const senderType = user ? "user" : "guest";
 
       // 1. Insert User Message
@@ -396,7 +386,6 @@ export function GlobalChat() {
             });
           }
         } catch (botErr) {
-          console.warn("Could not persist bot reply in DB:", botErr);
           setMessages((prev) => [
             ...prev,
             {
@@ -411,7 +400,7 @@ export function GlobalChat() {
         } finally {
           setIsBotTyping(false);
         }
-      }, 900);
+      }, 800);
 
     } catch (err: any) {
       console.error("Failed to send support message:", err);
@@ -422,11 +411,7 @@ export function GlobalChat() {
   };
 
   const handleQuickPromptClick = (promptText: string) => {
-    if (!user && !guestSaved) {
-      setNewMessage(promptText);
-    } else {
-      handleSendMessage(promptText);
-    }
+    handleSendMessage(promptText);
   };
 
   return (
@@ -441,191 +426,153 @@ export function GlobalChat() {
             className="mb-4 w-[92vw] sm:w-[380px] h-[540px] max-h-[85vh] rounded-2xl bg-background border border-border shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
-            <div className="bg-primary px-4 py-3.5 text-primary-foreground flex items-center justify-between shadow-sm shrink-0">
-              <div className="flex items-center gap-3">
+            <div className="bg-primary px-4 py-3 text-primary-foreground flex items-center justify-between shadow-sm shrink-0">
+              <div className="flex items-center gap-2.5">
                 <div className="relative">
-                  <div className="h-10 w-10 rounded-full bg-white/10 flex items-center justify-center border border-white/20">
-                    <Headphones className="h-5 w-5 text-white" />
+                  <div className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center border border-white/20">
+                    <Headphones className="h-4 w-4 text-white" />
                   </div>
-                  <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-400 border-2 border-primary" />
+                  <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-400 border-2 border-primary" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm leading-tight text-white flex items-center gap-1.5">
+                  <h3 className="font-bold text-xs leading-tight text-white flex items-center gap-1.5">
                     LMG Live Support
-                    <Sparkles className="h-3.5 w-3.5 text-amber-300 animate-pulse" />
+                    <Sparkles className="h-3 w-3 text-amber-300 animate-pulse" />
                   </h3>
-                  <p className="text-[11px] text-white/80 flex items-center gap-1">
-                    <Clock className="h-3 w-3" /> Online 24/7 • Instant Knowledge Bot
+                  <p className="text-[10px] text-white/80 flex items-center gap-1">
+                    <Clock className="h-3 w-3" /> Online 24/7 • Instant Answers
                   </p>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsOpen(false)}
-                className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/10 rounded-full"
-              >
-                <X className="h-5 w-5" />
-              </Button>
+
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleStartNewChat}
+                  title="Start New Chat"
+                  className="h-7 w-7 text-white/80 hover:text-white hover:bg-white/10 rounded-full"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsOpen(false)}
+                  className="h-8 w-8 text-white/80 hover:text-white hover:bg-white/10 rounded-full"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
             </div>
 
-            {/* Guest Entry Form */}
-            {!user && !guestSaved ? (
-              <div className="p-5 flex-1 flex flex-col justify-center bg-muted/20">
-                <div className="bg-background border border-border rounded-xl p-5 shadow-sm space-y-4">
-                  <div className="text-center space-y-1">
-                    <div className="h-12 w-12 rounded-full bg-primary/10 text-primary mx-auto flex items-center justify-center mb-2">
-                      <MessageCircle className="h-6 w-6" />
-                    </div>
-                    <h4 className="font-bold text-foreground text-base">Chat with Support</h4>
-                    <p className="text-xs text-muted-foreground">
-                      Please enter your details below so we can assist you with your order or questions.
+            {/* Messages Stream */}
+            <div className="flex-1 p-4 bg-muted/10 overflow-y-auto" ref={scrollRef}>
+              <div className="space-y-3.5">
+                {/* Welcome message */}
+                <div className="flex items-start gap-2.5">
+                  <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
+                    <Bot className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="max-w-[85%] rounded-2xl rounded-tl-none bg-background border border-border p-3 text-xs shadow-sm space-y-1">
+                    <p className="font-bold text-foreground flex items-center gap-1.5">
+                      👋 Welcome to Lifestyle Medicine Gateway!
+                    </p>
+                    <p className="text-muted-foreground leading-relaxed">
+                      How can I help you today? Type a question below or pick a quick topic! *(Note: For **Order Status**, please log in first).*
                     </p>
                   </div>
-
-                  <form onSubmit={handleSaveGuest} className="space-y-3">
-                    <div>
-                      <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
-                        Your Name
-                      </label>
-                      <Input
-                        value={guestName}
-                        onChange={(e) => setGuestName(e.target.value)}
-                        placeholder="e.g. Jane Doe"
-                        className="h-9 text-xs"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block mb-1">
-                        Your Email
-                      </label>
-                      <Input
-                        type="email"
-                        value={guestEmail}
-                        onChange={(e) => setGuestEmail(e.target.value)}
-                        placeholder="e.g. jane@example.com"
-                        className="h-9 text-xs"
-                        required
-                      />
-                    </div>
-                    <Button type="submit" className="w-full h-9 text-xs font-semibold">
-                      Start Live Chat
-                    </Button>
-                  </form>
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* Messages Stream */}
-                <div className="flex-1 p-4 bg-muted/10 overflow-y-auto" ref={scrollRef}>
-                  <div className="space-y-3.5">
-                    {/* Welcome message */}
-                    <div className="flex items-start gap-2.5">
-                      <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
-                        <Bot className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="max-w-[85%] rounded-2xl rounded-tl-none bg-background border border-border p-3 text-xs shadow-sm space-y-1">
-                        <p className="font-bold text-foreground flex items-center gap-1.5">
-                          👋 Welcome to Lifestyle Medicine Gateway!
-                        </p>
-                        <p className="text-muted-foreground leading-relaxed">
-                          Ask me about products, shipping, returns, categories, or recipes! *(Note: For **Order Status & Tracking**, please log in first).*
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Chat Messages */}
-                    {messages.map((msg) => {
-                      const isMe = msg.sender_type === "user" || msg.sender_type === "guest" || msg.sender_id === user?.id;
-                      return (
-                        <div
-                          key={msg.id}
-                          className={cn("flex flex-col", isMe ? "items-end" : "items-start")}
-                        >
-                          {!isMe && (
-                            <span className="text-[10px] text-muted-foreground font-semibold mb-0.5 px-1 flex items-center gap-1">
-                              <Bot className="h-3 w-3 text-primary" /> {msg.sender_name || "LMG Support"}
-                            </span>
-                          )}
-                          <div
-                            className={cn(
-                              "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs shadow-sm whitespace-pre-wrap break-words leading-relaxed",
-                              isMe
-                                ? "bg-primary text-primary-foreground rounded-tr-none"
-                                : "bg-background text-foreground rounded-tl-none border border-border"
-                            )}
-                          >
-                            {msg.content}
-                          </div>
-                          <span className="text-[9px] text-muted-foreground mt-1 px-1 flex items-center gap-1">
-                            {new Date(msg.created_at).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                            {isMe && <CheckCheck className="h-3 w-3 text-primary" />}
-                          </span>
-                        </div>
-                      );
-                    })}
-
-                    {/* Bot Typing Indicator */}
-                    {isBotTyping && (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground bg-background border border-border p-2.5 rounded-2xl rounded-tl-none max-w-[70%]">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-                        <span>LMG Support AI is searching site data...</span>
-                      </div>
-                    )}
-                  </div>
                 </div>
 
-                {/* Quick Prompts Chip Carousel */}
-                {messages.length < 2 && (
-                  <div className="px-3 py-2 bg-background border-t border-border/50 flex gap-1.5 overflow-x-auto shrink-0 scrollbar-none">
-                    {QUICK_PROMPTS.map((qp, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => handleQuickPromptClick(qp.text)}
-                        className="whitespace-nowrap rounded-full bg-accent/60 hover:bg-accent text-[11px] font-medium text-foreground px-3 py-1 border border-border transition-colors shrink-0"
+                {/* Chat Messages */}
+                {messages.map((msg) => {
+                  const isMe = msg.sender_type === "user" || msg.sender_type === "guest" || msg.sender_id === user?.id;
+                  return (
+                    <div
+                      key={msg.id}
+                      className={cn("flex flex-col", isMe ? "items-end" : "items-start")}
+                    >
+                      {!isMe && (
+                        <span className="text-[10px] text-muted-foreground font-semibold mb-0.5 px-1 flex items-center gap-1">
+                          <Bot className="h-3 w-3 text-primary" /> {msg.sender_name || "LMG Support"}
+                        </span>
+                      )}
+                      <div
+                        className={cn(
+                          "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs shadow-sm whitespace-pre-wrap break-words leading-relaxed",
+                          isMe
+                            ? "bg-primary text-primary-foreground rounded-tr-none"
+                            : "bg-background text-foreground rounded-tl-none border border-border"
+                        )}
                       >
-                        {qp.label}
-                      </button>
-                    ))}
+                        {msg.content}
+                      </div>
+                      <span className="text-[9px] text-muted-foreground mt-1 px-1 flex items-center gap-1">
+                        {new Date(msg.created_at).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                        {isMe && <CheckCheck className="h-3 w-3 text-primary" />}
+                      </span>
+                    </div>
+                  );
+                })}
+
+                {/* Bot Typing Indicator */}
+                {isBotTyping && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground bg-background border border-border p-2.5 rounded-2xl rounded-tl-none max-w-[70%]">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                    <span>LMG Support AI is typing...</span>
                   </div>
                 )}
+              </div>
+            </div>
 
-                {/* Footer Composer */}
-                <form
-                  onSubmit={(e) => {
+            {/* Quick Prompts Chip Carousel */}
+            {messages.length < 2 && (
+              <div className="px-3 py-2 bg-background border-t border-border/50 flex gap-1.5 overflow-x-auto shrink-0 scrollbar-none">
+                {QUICK_PROMPTS.map((qp, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleQuickPromptClick(qp.text)}
+                    className="whitespace-nowrap rounded-full bg-accent/60 hover:bg-accent text-[11px] font-medium text-foreground px-3 py-1 border border-border transition-colors shrink-0"
+                  >
+                    {qp.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Footer Composer */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSendMessage();
+              }}
+              className="p-3 bg-background border-t border-border flex items-center gap-2 shrink-0"
+            >
+              <Input
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Ask a question..."
+                className="flex-1 h-9 text-xs bg-muted/20"
+                disabled={loading}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
                     handleSendMessage();
-                  }}
-                  className="p-3 bg-background border-t border-border flex items-center gap-2 shrink-0"
-                >
-                  <Input
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type your message here..."
-                    className="flex-1 h-9 text-xs bg-muted/20"
-                    disabled={loading}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                  />
-                  <Button
-                    type="submit"
-                    size="icon"
-                    className="h-9 w-9 shrink-0"
-                    disabled={!newMessage.trim() || loading}
-                  >
-                    <Send className="h-4 w-4" />
-                  </Button>
-                </form>
-              </>
-            )}
+                  }
+                }}
+              />
+              <Button
+                type="submit"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+                disabled={!newMessage.trim() || loading}
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </form>
           </motion.div>
         )}
       </AnimatePresence>
