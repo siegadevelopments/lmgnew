@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 import { 
   MessageCircle, 
   X, 
@@ -14,15 +15,33 @@ import {
   Clock,
   Loader2,
   RotateCcw,
-  Plus
+  ShoppingBag,
+  ShoppingCart,
+  ExternalLink,
+  ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
+import { useCart } from "@/hooks/use-cart";
 import { supabase } from "@/integrations/supabase/client";
 import { createAdminNotification } from "@/lib/notifications";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
+interface ChatProduct {
+  id: number;
+  title: string;
+  slug: string;
+  price: number;
+  image_url?: string | null;
+  excerpt?: string | null;
+}
+
+interface InteractiveOption {
+  label: string;
+  text: string;
+}
 
 interface ChatMessage {
   id: string;
@@ -32,6 +51,8 @@ interface ChatMessage {
   sender_name?: string | null;
   content: string;
   created_at: string;
+  products?: ChatProduct[];
+  options?: InteractiveOption[];
 }
 
 interface QuickPrompt {
@@ -42,12 +63,106 @@ interface QuickPrompt {
 const QUICK_PROMPTS: QuickPrompt[] = [
   { label: "📦 Order Status", text: "Hi, I'd like to check the status of my order." },
   { label: "🚚 Shipping Info", text: "How long does shipping take and what are the delivery options?" },
-  { label: "🌿 Product Recommendation", text: "Can you recommend supplements for gut health and stress?" },
+  { label: "🌿 Product Recommendation", text: "Hi Health Guru, I'd like a product recommendation." },
   { label: "💳 Refund & Returns", text: "What is your refund and return policy?" },
 ];
 
+const FEATURED_PRODUCTS: Record<string, ChatProduct[]> = {
+  gut: [
+    {
+      id: 101,
+      title: "Advanced Microbiome Probiotic 50B",
+      slug: "advanced-microbiome-probiotic-50b",
+      price: 44.99,
+      image_url: "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?auto=format&fit=crop&w=400&q=80",
+      excerpt: "12 clinical strains for digestion, bloating relief & gut barrier protection.",
+    },
+    {
+      id: 102,
+      title: "Organic Prebiotic Fiber Complex",
+      slug: "organic-prebiotic-fiber-complex",
+      price: 29.99,
+      image_url: "https://images.unsplash.com/photo-1550572017-edd951aa8f72?auto=format&fit=crop&w=400&q=80",
+      excerpt: "Plant-derived soluble fiber matrix to nourish beneficial flora.",
+    },
+  ],
+  menopause: [
+    {
+      id: 201,
+      title: "Menopause Harmony Phytoestrogen",
+      slug: "menopause-harmony-phytoestrogen",
+      price: 49.99,
+      image_url: "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?auto=format&fit=crop&w=400&q=80",
+      excerpt: "Black Cohosh, Red Clover & Chasteberry for hot flashes & mood stability.",
+    },
+    {
+      id: 202,
+      title: "Hormonal Balance Evening Primrose",
+      slug: "hormonal-balance-evening-primrose",
+      price: 34.99,
+      image_url: "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?auto=format&fit=crop&w=400&q=80",
+      excerpt: "Rich in GLA fatty acids for hormonal synthesis & skin hydration.",
+    },
+  ],
+  aging: [
+    {
+      id: 301,
+      title: "Cellular NAD+ Resveratrol Vitality",
+      slug: "cellular-nad-resveratrol-vitality",
+      price: 59.99,
+      image_url: "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?auto=format&fit=crop&w=400&q=80",
+      excerpt: "Liposomal NMN & Trans-Resveratrol for cellular energy & longevity.",
+    },
+    {
+      id: 302,
+      title: "CoQ10 Ubiquinol 200mg Energy",
+      slug: "coq10-ubiquinol-200mg-energy",
+      price: 39.99,
+      image_url: "https://images.unsplash.com/photo-1550572017-edd951aa8f72?auto=format&fit=crop&w=400&q=80",
+      excerpt: "Active Ubiquinol for heart health & mitochondrial ATP production.",
+    },
+  ],
+  sleep: [
+    {
+      id: 401,
+      title: "Magnesium Glycinate + L-Theanine",
+      slug: "magnesium-glycinate-l-theanine",
+      price: 32.99,
+      image_url: "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?auto=format&fit=crop&w=400&q=80",
+      excerpt: "Chelated magnesium for deep restorative sleep & muscle relaxation.",
+    },
+    {
+      id: 402,
+      title: "Organic Ashwagandha KSM-66",
+      slug: "organic-ashwagandha-ksm-66",
+      price: 27.99,
+      image_url: "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?auto=format&fit=crop&w=400&q=80",
+      excerpt: "Full-spectrum root extract clinically proven to balance stress cortisol.",
+    },
+  ],
+  weight: [
+    {
+      id: 501,
+      title: "Metabolic Berberine HCl 1200mg",
+      slug: "metabolic-berberine-hcl-1200mg",
+      price: 38.99,
+      image_url: "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?auto=format&fit=crop&w=400&q=80",
+      excerpt: "Activates AMPK pathway for blood sugar balance & weight control.",
+    },
+    {
+      id: 502,
+      title: "Green Tea EGCG Metabolism Boost",
+      slug: "green-tea-egcg-metabolism-boost",
+      price: 26.99,
+      image_url: "https://images.unsplash.com/photo-1550572017-edd951aa8f72?auto=format&fit=crop&w=400&q=80",
+      excerpt: "Natural polyphenols to support thermogenesis & antioxidant defense.",
+    },
+  ],
+};
+
 export function GlobalChat() {
   const { user } = useAuth();
+  const { addItem } = useCart();
   const [isOpen, setIsOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -203,8 +318,24 @@ export function GlobalChat() {
     toast.success("Started a new chat session with Health Guru!");
   };
 
-  // Generate Smart Automated Response from Health Guru
-  const generateAutomatedResponse = (query: string): string => {
+  // Add product to cart handler
+  const handleAddToCart = (product: ChatProduct) => {
+    addItem({
+      id: product.id,
+      product_id: product.id,
+      name: product.title,
+      price: product.price,
+      slug: product.slug,
+      image: product.image_url || undefined,
+    });
+    toast.success(`Added ${product.title} to cart!`, {
+      icon: "🛒",
+      description: `$${product.price.toFixed(2)}`,
+    });
+  };
+
+  // Generate Interactive Automated Response from Health Guru
+  const generateAutomatedResponse = (query: string): { text: string; products?: ChatProduct[]; options?: InteractiveOption[] } => {
     const q = query.toLowerCase();
 
     // 1. ORDER STATUS / TRACKING QUERY
@@ -217,51 +348,106 @@ export function GlobalChat() {
       q.includes("my purchase")
     ) {
       if (!user) {
-        return "🔐 **Please Log In to Check Order Status**: \n\nTo view your order history, live tracking details, and fulfillment updates, please **log in to your account**.\n\n👉 **[Click here to Log In](/login?redirect=/profile)**\n\nOnce logged in, your active orders will be displayed under **My Account -> Orders**!";
+        return {
+          text: "🔐 **Please Log In to Check Order Status**: \n\nTo view your order history, live tracking details, and fulfillment updates, please **log in to your account**.\n\n👉 **[Click here to Log In](/login?redirect=/profile)**\n\nOnce logged in, your active orders will be displayed under **My Account -> Orders**!",
+        };
       } else {
-        return `📦 **Order Tracking**: \n\nYou are logged in as **${user.email}**.\n\nYou can view all your receipts and tracking numbers directly in your **[My Account Orders Page](/profile)**.\n\n• Processing: 1-2 business days\n• Delivery: 3-5 business days`;
+        return {
+          text: `📦 **Order Tracking**: \n\nYou are logged in as **${user.email}**.\n\nYou can view all your receipts and tracking numbers directly in your **[My Account Orders Page](/profile)**.\n\n• Processing: 1-2 business days\n• Delivery: 3-5 business days`,
+        };
       }
     }
 
     // 2. SHIPPING & DELIVERY
     if (q.includes("shipping") || q.includes("deliver") || q.includes("how long") || q.includes("courier")) {
-      return "🚚 **Shipping & Delivery Info**: \n\n• **Free Standard Shipping**: On all orders over $50!\n• **Standard Delivery**: 3–5 business days across the US ($5.99 flat rate for orders under $50).\n• **Express Shipping**: 2-day delivery options available at checkout.";
+      return {
+        text: "🚚 **Shipping & Delivery Info**: \n\n• **Free Standard Shipping**: On all orders over $50!\n• **Standard Delivery**: 3–5 business days across the US ($5.99 flat rate for orders under $50).\n• **Express Shipping**: 2-day delivery options available at checkout.",
+      };
     }
 
     // 3. REFUNDS & RETURNS
     if (q.includes("refund") || q.includes("return") || q.includes("exchange") || q.includes("guarantee") || q.includes("policy")) {
-      return "💳 **30-Day Money-Back Guarantee**: \n\nWe back all products with a 30-Day Money-Back Guarantee! If you are unsatisfied for any reason, email us at **info@lifestylemedicinegateway.com** or reply here to request a return label.";
+      return {
+        text: "💳 **30-Day Money-Back Guarantee**: \n\nWe back all products with a 30-Day Money-Back Guarantee! If you are unsatisfied for any reason, email us at **info@lifestylemedicinegateway.com** or reply here to request a return label.",
+      };
     }
 
-    // 4. WELLNESS CATEGORIES & RECOMMENDATIONS
+    // 4. SPECIFIC WELLNESS CATEGORY INQUIRIES WITH PRODUCT CARDS
+    if (q.includes("gut") || q.includes("digestion") || q.includes("probiotic") || q.includes("bloat")) {
+      return {
+        text: "🦠 **Gut Health Recommendations**: \nHere are our top physician-formulated gut health solutions to optimize digestion, balance microbiome flora, and relieve bloating:",
+        products: FEATURED_PRODUCTS.gut,
+      };
+    }
+
+    if (q.includes("menopause") || q.includes("hormone") || q.includes("hot flash") || q.includes("women")) {
+      return {
+        text: "🌸 **Menopause & Hormone Support**: \nHere are our top targeted formulas for hormonal balance, hot flash relief, and mood stabilization:",
+        products: FEATURED_PRODUCTS.menopause,
+      };
+    }
+
+    if (q.includes("aging") || q.includes("ageing") || q.includes("nad") || q.includes("longevity") || q.includes("vitality")) {
+      return {
+        text: "✨ **Healthy Ageing & Cellular Vitality**: \nBoost mitochondrial energy, cellular repair, and longevity with these top formulations:",
+        products: FEATURED_PRODUCTS.aging,
+      };
+    }
+
+    if (q.includes("sleep") || q.includes("stress") || q.includes("anxiety") || q.includes("relax") || q.includes("magnesium") || q.includes("ashwagandha")) {
+      return {
+        text: "🌙 **Sleep & Stress Recovery**: \nCalm your nervous system and support deep restorative sleep with these high-potency adaptogens:",
+        products: FEATURED_PRODUCTS.sleep,
+      };
+    }
+
+    if (q.includes("weight") || q.includes("metabolism") || q.includes("berberine") || q.includes("blood sugar")) {
+      return {
+        text: "⚖️ **Weight Management & Metabolism**: \nSupport healthy glucose metabolism, AMPK pathway activation, and metabolic energy:",
+        products: FEATURED_PRODUCTS.weight,
+      };
+    }
+
+    // 5. GENERIC PRODUCT RECOMMENDATION INQUIRY (Asks interactive question + target options)
     if (
-      q.includes("product") || 
       q.includes("recommend") || 
+      q.includes("product") || 
       q.includes("supplement") || 
-      q.includes("gut") || 
-      q.includes("menopause") || 
-      q.includes("aging") || 
-      q.includes("stress") || 
-      q.includes("sleep")
+      q.includes("suggest") || 
+      q.includes("what should i get") ||
+      q.includes("mind")
     ) {
-      return "🌿 **Health Guru Wellness Recommendations**: \n\nExplore physician-reviewed formulas across our categories:\n\n• 🌸 **[Menopause Support](/categories/menopause-support)**\n• 🦠 **[Gut Health](/categories/gut-health)**\n• ✨ **[Healthy Ageing](/categories/healthy-ageing)**\n• 🌙 **[Sleep & Recovery](/categories/sleep-recovery)**\n• 🧘 **[Stress Management](/categories/stress-management)**\n\nBrowse the complete catalog at **[Shop All Products](/products)**!";
+      return {
+        text: "🌿 **Health Guru Product Finder**: \n\nI'd love to recommend the best physician-curated formulas for you! **What specific health goal or focus do you have in mind today?**\n\nSelect a goal below or type your specific health concern:",
+        options: [
+          { label: "🌸 Menopause & Hormones", text: "I'd like product recommendations for menopause & hormone support." },
+          { label: "🦠 Gut & Digestion", text: "I'd like product recommendations for gut health & digestion." },
+          { label: "✨ Healthy Ageing & NAD+", text: "I'd like product recommendations for healthy ageing & longevity." },
+          { label: "🌙 Sleep & Stress Relief", text: "I'd like product recommendations for sleep & stress relief." },
+          { label: "⚖️ Weight & Metabolism", text: "I'd like product recommendations for weight & metabolism." },
+        ],
+      };
     }
 
-    // 5. ARTICLES & GUIDES
+    // 6. ARTICLES & GUIDES
     if (q.includes("article") || q.includes("study") || q.includes("recipe") || q.includes("video") || q.includes("learn")) {
-      return "📚 **Health Guru Knowledge Base**: \n\nCheck out our evidence-based wellness resources:\n\n• 📝 **[Articles & References](/articles)**\n• 🥗 **[Recipes](/recipes)**\n• 🎥 **[Videos](/videos)**\n• 🎁 **[Healthy Aging Starter Kit](/healthy-aging-starter-kit)**";
+      return {
+        text: "📚 **Health Guru Knowledge Base**: \n\nCheck out our evidence-based wellness resources:\n\n• 📝 **[Articles & References](/articles)**\n• 🥗 **[Recipes](/recipes)**\n• 🎥 **[Videos](/videos)**\n• 🎁 **[Healthy Aging Starter Kit](/healthy-aging-starter-kit)**",
+      };
     }
 
-    // 6. SELL WITH US / VENDORS
-    if (q.includes("sell") || q.includes("vendor") || q.includes("brand") || q.includes("partner")) {
-      return "🏪 **Vendor Program**: \n\nAre you a verified wellness brand? Apply to join our marketplace:\n👉 **[Learn More & Apply](/sell-with-us)**";
-    }
-
-    // 7. GENERAL INQUIRY FALLBACK
-    return `👋 **Health Guru**: \n\nThanks for reaching out! I've recorded your question: *"${query}"*.\n\nAn admin team member has also been notified and will jump in shortly! Feel free to browse **[Shop All Products](/products)** or **[Health Articles](/articles)** while you wait.`;
+    // 7. GENERAL INQUIRY FALLBACK WITH OPTIONS
+    return {
+      text: `👋 **Health Guru**: \n\nThanks for reaching out! I've recorded your question: *"${query}"*.\n\nWhat would you like to explore today?`,
+      options: [
+        { label: "🌿 Product Recommendations", text: "Hi Health Guru, I'd like a product recommendation." },
+        { label: "🚚 Shipping & Delivery", text: "How long does shipping take and what are the delivery options?" },
+        { label: "💳 Refund & Return Policy", text: "What is your refund and return policy?" },
+      ],
+    };
   };
 
-  // Send user message and trigger guaranteed Health Guru AI reply
+  // Send user message and trigger Health Guru reply with cards and options
   const handleSendMessage = async (textToSend?: string) => {
     const content = (textToSend || newMessage).trim();
     if (!content) return;
@@ -355,11 +541,11 @@ export function GlobalChat() {
         metadata: { conversation_id: activeConvId, sender_name: senderName },
       });
 
-      // 2. Trigger Health Guru Answer Immediately
+      // 2. Trigger Health Guru Interactive Answer
       setIsBotTyping(true);
 
       setTimeout(async () => {
-        const botReplyText = generateAutomatedResponse(content);
+        const botResponse = generateAutomatedResponse(content);
 
         const botMsgObj: ChatMessage = {
           id: "guru_" + Date.now(),
@@ -367,11 +553,13 @@ export function GlobalChat() {
           sender_id: null,
           sender_type: "admin",
           sender_name: "Health Guru",
-          content: botReplyText,
+          content: botResponse.text,
+          products: botResponse.products,
+          options: botResponse.options,
           created_at: new Date().toISOString(),
         };
 
-        // Guarantee Health Guru answer display
+        // Display Health Guru interactive answer
         setMessages((prev) => [...prev, botMsgObj]);
         setIsBotTyping(false);
 
@@ -382,7 +570,7 @@ export function GlobalChat() {
             sender_id: null,
             sender_type: "admin",
             sender_name: "Health Guru",
-            content: botReplyText,
+            content: botResponse.text,
           });
         } catch (botErr) {
           console.warn("Notice: Health Guru DB background insert notice:", botErr);
@@ -410,7 +598,7 @@ export function GlobalChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="mb-4 w-[92vw] sm:w-[380px] h-[540px] max-h-[85vh] rounded-2xl bg-background border border-border shadow-2xl flex flex-col overflow-hidden"
+            className="mb-4 w-[92vw] sm:w-[390px] h-[560px] max-h-[85vh] rounded-2xl bg-background border border-border shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="bg-primary px-4 py-3 text-primary-foreground flex items-center justify-between shadow-sm shrink-0">
@@ -427,7 +615,7 @@ export function GlobalChat() {
                     <Sparkles className="h-3 w-3 text-amber-300 animate-pulse" />
                   </h3>
                   <p className="text-[10px] text-white/80 flex items-center gap-1">
-                    <Clock className="h-3 w-3" /> Online 24/7 • Instant Wellness Answers
+                    <Clock className="h-3 w-3" /> Online 24/7 • Interactive Wellness Bot
                   </p>
                 </div>
               </div>
@@ -454,19 +642,19 @@ export function GlobalChat() {
             </div>
 
             {/* Messages Stream */}
-            <div className="flex-1 p-4 bg-muted/10 overflow-y-auto" ref={scrollRef}>
-              <div className="space-y-3.5">
+            <div className="flex-1 p-3.5 bg-muted/10 overflow-y-auto" ref={scrollRef}>
+              <div className="space-y-4">
                 {/* Welcome message */}
                 <div className="flex items-start gap-2.5">
-                  <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
+                  <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20 mt-0.5">
                     <Bot className="h-4 w-4 text-primary" />
                   </div>
-                  <div className="max-w-[85%] rounded-2xl rounded-tl-none bg-background border border-border p-3 text-xs shadow-sm space-y-1">
+                  <div className="max-w-[86%] rounded-2xl rounded-tl-none bg-background border border-border p-3 text-xs shadow-sm space-y-1.5">
                     <p className="font-bold text-foreground flex items-center gap-1.5">
                       👋 Welcome! I am Health Guru
                     </p>
                     <p className="text-muted-foreground leading-relaxed">
-                      I'm your 24/7 Wellness & Product Assistant. Ask me anything about products, recipes, shipping, or health topics! *(Note: For **Order Status**, please log in).*
+                      Ask me about product recommendations, shipping, returns, or health topics! *(For **Order Status**, please log in).*
                     </p>
                   </div>
                 </div>
@@ -477,16 +665,18 @@ export function GlobalChat() {
                   return (
                     <div
                       key={msg.id}
-                      className={cn("flex flex-col", isMe ? "items-end" : "items-start")}
+                      className={cn("flex flex-col space-y-2", isMe ? "items-end" : "items-start")}
                     >
                       {!isMe && (
-                        <span className="text-[10px] text-muted-foreground font-semibold mb-0.5 px-1 flex items-center gap-1">
+                        <span className="text-[10px] text-muted-foreground font-semibold px-1 flex items-center gap-1">
                           <Bot className="h-3 w-3 text-primary" /> Health Guru
                         </span>
                       )}
+
+                      {/* Main Message Bubble */}
                       <div
                         className={cn(
-                          "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs shadow-sm whitespace-pre-wrap break-words leading-relaxed",
+                          "max-w-[88%] rounded-2xl px-3.5 py-2.5 text-xs shadow-sm whitespace-pre-wrap break-words leading-relaxed",
                           isMe
                             ? "bg-primary text-primary-foreground rounded-tr-none"
                             : "bg-background text-foreground rounded-tl-none border border-border"
@@ -494,7 +684,74 @@ export function GlobalChat() {
                       >
                         {msg.content}
                       </div>
-                      <span className="text-[9px] text-muted-foreground mt-1 px-1 flex items-center gap-1">
+
+                      {/* Interactive Options Chips if present */}
+                      {msg.options && msg.options.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 max-w-[92%] pl-1 pt-1">
+                          {msg.options.map((opt, oIdx) => (
+                            <button
+                              key={oIdx}
+                              onClick={() => handleSendMessage(opt.text)}
+                              className="rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 px-3 py-1 text-[11px] font-bold transition-all shadow-sm flex items-center gap-1"
+                            >
+                              {opt.label}
+                              <ChevronRight className="h-3 w-3 opacity-60" />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Rich Interactive Product Cards Grid */}
+                      {msg.products && msg.products.length > 0 && (
+                        <div className="w-full pl-1 pt-1 space-y-2 max-w-[95%]">
+                          <div className="grid grid-cols-1 gap-2.5">
+                            {msg.products.map((prod) => (
+                              <div
+                                key={prod.id}
+                                className="bg-background rounded-xl border border-border p-3 shadow-sm flex gap-3 items-center hover:border-primary/40 transition-all group"
+                              >
+                                {prod.image_url && (
+                                  <img
+                                    src={prod.image_url}
+                                    alt={prod.title}
+                                    className="h-16 w-16 rounded-lg object-cover bg-muted shrink-0 border border-border/50 group-hover:scale-105 transition-transform"
+                                  />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <h5 className="text-xs font-bold text-foreground truncate leading-tight mb-0.5">
+                                    {prod.title}
+                                  </h5>
+                                  <p className="text-[10px] text-muted-foreground line-clamp-1 mb-1.5">
+                                    {prod.excerpt}
+                                  </p>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="text-xs font-black text-primary">
+                                      ${prod.price.toFixed(2)}
+                                    </span>
+                                    <div className="flex items-center gap-1">
+                                      <Link
+                                        href={`/products/${prod.slug}`}
+                                        className="inline-flex items-center gap-0.5 text-[10px] font-medium text-muted-foreground hover:text-foreground px-2 py-1 rounded bg-muted/50 hover:bg-muted"
+                                      >
+                                        View <ExternalLink className="h-2.5 w-2.5" />
+                                      </Link>
+                                      <Button
+                                        size="sm"
+                                        onClick={() => handleAddToCart(prod)}
+                                        className="h-7 text-[10px] font-bold px-2.5 gap-1 shadow-sm"
+                                      >
+                                        <ShoppingCart className="h-3 w-3" /> Add
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <span className="text-[9px] text-muted-foreground px-1 flex items-center gap-1">
                         {new Date(msg.created_at).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
@@ -509,7 +766,7 @@ export function GlobalChat() {
                 {isBotTyping && (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground bg-background border border-border p-2.5 rounded-2xl rounded-tl-none max-w-[70%]">
                     <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-                    <span>Health Guru is typing...</span>
+                    <span>Health Guru is finding product recommendations...</span>
                   </div>
                 )}
               </div>
