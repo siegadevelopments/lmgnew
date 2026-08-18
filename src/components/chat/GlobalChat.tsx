@@ -68,99 +68,6 @@ const QUICK_PROMPTS: QuickPrompt[] = [
   { label: "💳 Refund & Returns", text: "What is your refund and return policy?" },
 ];
 
-const FALLBACK_PRODUCTS: Record<string, ChatProduct[]> = {
-  gut: [
-    {
-      id: 101,
-      title: "Advanced Microbiome Probiotic 50B",
-      slug: "advanced-microbiome-probiotic-50b",
-      price: 44.99,
-      image_url: "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?auto=format&fit=crop&w=400&q=80",
-      excerpt: "12 clinical strains for digestion, bloating relief & gut barrier protection.",
-    },
-    {
-      id: 102,
-      title: "Organic Prebiotic Fiber Complex",
-      slug: "organic-prebiotic-fiber-complex",
-      price: 29.99,
-      image_url: "https://images.unsplash.com/photo-1550572017-edd951aa8f72?auto=format&fit=crop&w=400&q=80",
-      excerpt: "Plant-derived soluble fiber matrix to nourish beneficial flora.",
-    },
-  ],
-  menopause: [
-    {
-      id: 201,
-      title: "Menopause Harmony Phytoestrogen",
-      slug: "menopause-harmony-phytoestrogen",
-      price: 49.99,
-      image_url: "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?auto=format&fit=crop&w=400&q=80",
-      excerpt: "Black Cohosh, Red Clover & Chasteberry for hot flashes & mood stability.",
-    },
-    {
-      id: 202,
-      title: "Hormonal Balance Evening Primrose",
-      slug: "hormonal-balance-evening-primrose",
-      price: 34.99,
-      image_url: "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?auto=format&fit=crop&w=400&q=80",
-      excerpt: "Rich in GLA fatty acids for hormonal synthesis & skin hydration.",
-    },
-  ],
-  aging: [
-    {
-      id: 301,
-      title: "Cellular NAD+ Resveratrol Vitality",
-      slug: "cellular-nad-resveratrol-vitality",
-      price: 59.99,
-      image_url: "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?auto=format&fit=crop&w=400&q=80",
-      excerpt: "Liposomal NMN & Trans-Resveratrol for cellular energy & longevity.",
-    },
-    {
-      id: 302,
-      title: "CoQ10 Ubiquinol 200mg Energy",
-      slug: "coq10-ubiquinol-200mg-energy",
-      price: 39.99,
-      image_url: "https://images.unsplash.com/photo-1550572017-edd951aa8f72?auto=format&fit=crop&w=400&q=80",
-      excerpt: "Active Ubiquinol for heart health & mitochondrial ATP production.",
-    },
-  ],
-  sleep: [
-    {
-      id: 401,
-      title: "Magnesium Glycinate + L-Theanine",
-      slug: "magnesium-glycinate-l-theanine",
-      price: 32.99,
-      image_url: "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?auto=format&fit=crop&w=400&q=80",
-      excerpt: "Chelated magnesium for deep restorative sleep & muscle relaxation.",
-    },
-    {
-      id: 402,
-      title: "Organic Ashwagandha KSM-66",
-      slug: "organic-ashwagandha-ksm-66",
-      price: 27.99,
-      image_url: "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?auto=format&fit=crop&w=400&q=80",
-      excerpt: "Full-spectrum root extract clinically proven to balance stress cortisol.",
-    },
-  ],
-  weight: [
-    {
-      id: 501,
-      title: "Metabolic Berberine HCl 1200mg",
-      slug: "metabolic-berberine-hcl-1200mg",
-      price: 38.99,
-      image_url: "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?auto=format&fit=crop&w=400&q=80",
-      excerpt: "Activates AMPK pathway for blood sugar balance & weight control.",
-    },
-    {
-      id: 502,
-      title: "Green Tea EGCG Metabolism Boost",
-      slug: "green-tea-egcg-metabolism-boost",
-      price: 26.99,
-      image_url: "https://images.unsplash.com/photo-1550572017-edd951aa8f72?auto=format&fit=crop&w=400&q=80",
-      excerpt: "Natural polyphenols to support thermogenesis & antioxidant defense.",
-    },
-  ],
-};
-
 // Helper to format content cleanly without raw asterisks
 function formatMessageContent(content: string) {
   // Strip all ** asterisks
@@ -228,7 +135,7 @@ export function GlobalChat() {
             slug: p.slug || p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
             price: Number(p.price || 0),
             image_url: p.image_url || null,
-            excerpt: p.excerpt || p.category || "Published product on Lifestyle Medicine Gateway",
+            excerpt: p.excerpt || p.category || "Available on Lifestyle Medicine Gateway",
             category: p.category || "",
           }));
           setDbProducts(formatted);
@@ -240,21 +147,45 @@ export function GlobalChat() {
     loadRealProducts();
   }, []);
 
-  // Helper to query real website products by keyword
-  const getMatchingProducts = (keywords: string[], fallbackCategory: keyof typeof FALLBACK_PRODUCTS): ChatProduct[] => {
-    if (dbProducts.length > 0) {
-      const matches = dbProducts.filter((p) => {
-        const title = (p.title || "").toLowerCase();
-        const cat = (p.category || "").toLowerCase();
-        const exc = (p.excerpt || "").toLowerCase();
-        return keywords.some((kw) => title.includes(kw) || cat.includes(kw) || exc.includes(kw));
-      });
-
-      if (matches.length > 0) return matches.slice(0, 3);
-      // Return top website products if no keyword hit
-      return dbProducts.slice(0, 3);
+  // Helper to query REAL website products asynchronously
+  const getMatchingProductsAsync = async (keywords: string[]): Promise<ChatProduct[]> => {
+    let source = dbProducts;
+    if (source.length === 0) {
+      try {
+        const { data } = await (supabase.from("products" as any) as any)
+          .select("id, title, slug, excerpt, price, image_url, category, status")
+          .eq("status", "published")
+          .order("created_at", { ascending: false })
+          .limit(50);
+        if (data && data.length > 0) {
+          source = data.map((p: any) => ({
+            id: typeof p.id === "number" ? p.id : parseInt(p.id, 10) || Math.floor(Math.random() * 10000),
+            title: p.title,
+            slug: p.slug || p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+            price: Number(p.price || 0),
+            image_url: p.image_url || null,
+            excerpt: p.excerpt || p.category || "Available on Lifestyle Medicine Gateway",
+            category: p.category || "",
+          }));
+          setDbProducts(source);
+        }
+      } catch (e) {
+        console.error("Error fetching products async:", e);
+      }
     }
-    return FALLBACK_PRODUCTS[fallbackCategory] || [];
+
+    if (source.length === 0) return [];
+
+    const matches = source.filter((p) => {
+      const title = (p.title || "").toLowerCase();
+      const cat = (p.category || "").toLowerCase();
+      const exc = (p.excerpt || "").toLowerCase();
+      return keywords.some((kw) => title.includes(kw) || cat.includes(kw) || exc.includes(kw));
+    });
+
+    if (matches.length > 0) return matches.slice(0, 3);
+    // If no keyword match found, return top published products from the website database!
+    return source.slice(0, 3);
   };
 
   // Initialize or fetch guest session on mount
@@ -412,8 +343,8 @@ export function GlobalChat() {
     });
   };
 
-  // Generate Interactive Automated Response from Health Guru using REAL website products
-  const generateAutomatedResponse = (query: string): { text: string; products?: ChatProduct[]; options?: InteractiveOption[] } => {
+  // Generate Interactive Automated Response using 100% REAL website products from DB
+  const generateAutomatedResponse = async (query: string): Promise<{ text: string; products?: ChatProduct[]; options?: InteractiveOption[] }> => {
     const q = query.toLowerCase();
 
     // 1. ORDER STATUS / TRACKING QUERY
@@ -452,37 +383,42 @@ export function GlobalChat() {
 
     // 4. SPECIFIC WELLNESS CATEGORY INQUIRIES WITH REAL WEBSITE PRODUCTS
     if (q.includes("gut") || q.includes("digestion") || q.includes("probiotic") || q.includes("bloat")) {
+      const realProds = await getMatchingProductsAsync(["gut", "digestion", "probiotic", "cleanse", "digest", "bloat"]);
       return {
-        text: "🦠 Gut Health Recommendations:\nHere are our top physician-formulated gut health products available on our store:",
-        products: getMatchingProducts(["gut", "digestion", "probiotic", "microbiome", "digest", "bloat"], "gut"),
+        text: "🦠 Gut & Digestive Health Solutions:\nHere are top wellness products available directly on our website:",
+        products: realProds,
       };
     }
 
-    if (q.includes("menopause") || q.includes("hormone") || q.includes("hot flash") || q.includes("women")) {
+    if (q.includes("menopause") || q.includes("hormone") || q.includes("hot flash") || q.includes("women") || q.includes("pad") || q.includes("bundle")) {
+      const realProds = await getMatchingProductsAsync(["menopause", "hormone", "women", "bundle", "pad", "sanitary", "care"]);
       return {
-        text: "🌸 Menopause & Hormone Support:\nHere are our top targeted formulas for hormonal balance and hot flash relief available on our store:",
-        products: getMatchingProducts(["menopause", "hormone", "phytoestrogen", "hot flash", "women"], "menopause"),
+        text: "🌸 Women's Wellness & Care Solutions:\nHere are top wellness products available directly on our website:",
+        products: realProds,
       };
     }
 
-    if (q.includes("aging") || q.includes("ageing") || q.includes("nad") || q.includes("longevity") || q.includes("vitality")) {
+    if (q.includes("aging") || q.includes("ageing") || q.includes("nad") || q.includes("longevity") || q.includes("vitality") || q.includes("soap") || q.includes("oil")) {
+      const realProds = await getMatchingProductsAsync(["aging", "ageing", "vitality", "oil", "soap", "castor", "organic"]);
       return {
-        text: "✨ Healthy Ageing & Cellular Vitality:\nBoost mitochondrial energy and cellular longevity with these products from our store:",
-        products: getMatchingProducts(["aging", "ageing", "nad", "longevity", "cellular", "vitality"], "aging"),
+        text: "✨ Healthy Ageing & Personal Care Solutions:\nHere are top wellness products available directly on our website:",
+        products: realProds,
       };
     }
 
-    if (q.includes("sleep") || q.includes("stress") || q.includes("anxiety") || q.includes("relax") || q.includes("magnesium") || q.includes("ashwagandha")) {
+    if (q.includes("sleep") || q.includes("stress") || q.includes("anxiety") || q.includes("relax") || q.includes("copper") || q.includes("bracelet") || q.includes("therapy")) {
+      const realProds = await getMatchingProductsAsync(["sleep", "stress", "relax", "copper", "magnetic", "bracelet", "therapy"]);
       return {
-        text: "🌙 Sleep & Stress Recovery:\nCalm your nervous system and support deep restorative sleep with these products from our store:",
-        products: getMatchingProducts(["sleep", "stress", "magnesium", "ashwagandha", "relax", "calm"], "sleep"),
+        text: "🌙 Rest & Natural Therapy Solutions:\nHere are top wellness products available directly on our website:",
+        products: realProds,
       };
     }
 
-    if (q.includes("weight") || q.includes("metabolism") || q.includes("berberine") || q.includes("blood sugar")) {
+    if (q.includes("weight") || q.includes("metabolism") || q.includes("deodorant") || q.includes("cleanse")) {
+      const realProds = await getMatchingProductsAsync(["cleanse", "deodorant", "weight", "metabolism", "organic", "wellness"]);
       return {
-        text: "⚖️ Weight Management & Metabolism:\nSupport healthy glucose metabolism and metabolic energy with these products from our store:",
-        products: getMatchingProducts(["weight", "metabolism", "berberine", "glucose", "sugar"], "weight"),
+        text: "⚖️ Wellness & Body Care Solutions:\nHere are top wellness products available directly on our website:",
+        products: realProds,
       };
     }
 
@@ -496,13 +432,12 @@ export function GlobalChat() {
       q.includes("mind")
     ) {
       return {
-        text: "🌿 Health Guru Product Finder:\n\nI'd love to recommend the best physician-curated formulas from our website! What specific health goal or focus do you have in mind today?\n\nSelect a goal below or type your specific health concern:",
+        text: "🌿 Health Guru Product Finder:\n\nI'd love to recommend the best products from our website store! What specific health goal or focus do you have in mind today?\n\nSelect a goal below or type your specific health concern:",
         options: [
-          { label: "🌸 Menopause & Hormones", text: "I'd like product recommendations for menopause & hormone support." },
-          { label: "🦠 Gut & Digestion", text: "I'd like product recommendations for gut health & digestion." },
-          { label: "✨ Healthy Ageing & NAD+", text: "I'd like product recommendations for healthy ageing & longevity." },
-          { label: "🌙 Sleep & Stress Relief", text: "I'd like product recommendations for sleep & stress relief." },
-          { label: "⚖️ Weight & Metabolism", text: "I'd like product recommendations for weight & metabolism." },
+          { label: "🌸 Women's & Hormone Care", text: "I'd like product recommendations for women's care & bundles." },
+          { label: "🦠 Gut & Cleanse Solutions", text: "I'd like product recommendations for gut & body cleanse." },
+          { label: "✨ Organic Castor & Skincare", text: "I'd like product recommendations for organic oils & soaps." },
+          { label: "🌙 Natural Therapy & Wellness", text: "I'd like product recommendations for natural therapy & wellness." },
         ],
       };
     }
@@ -514,9 +449,11 @@ export function GlobalChat() {
       };
     }
 
-    // 7. GENERAL INQUIRY FALLBACK WITH OPTIONS
+    // 7. GENERAL INQUIRY FALLBACK WITH OPTIONS & REAL PRODUCTS
+    const realProds = await getMatchingProductsAsync(["wellness", "cleanse", "organic", "bundle"]);
     return {
-      text: `👋 Health Guru:\n\nThanks for reaching out! I've recorded your question: "${query}".\n\nWhat would you like to explore today?`,
+      text: `👋 Health Guru:\n\nThanks for reaching out! Here are top featured products from our website store:`,
+      products: realProds,
       options: [
         { label: "🌿 Product Recommendations", text: "Hi Health Guru, I'd like a product recommendation." },
         { label: "🚚 Shipping & Delivery", text: "How long does shipping take and what are the delivery options?" },
@@ -525,7 +462,7 @@ export function GlobalChat() {
     };
   };
 
-  // Send user message and trigger Health Guru reply with cards and options
+  // Send user message and trigger Health Guru reply with real DB products
   const handleSendMessage = async (textToSend?: string) => {
     const content = (textToSend || newMessage).trim();
     if (!content) return;
@@ -619,11 +556,11 @@ export function GlobalChat() {
         metadata: { conversation_id: activeConvId, sender_name: senderName },
       });
 
-      // 2. Trigger Health Guru Interactive Answer
+      // 2. Trigger Health Guru Interactive Answer with REAL DB products
       setIsBotTyping(true);
 
       setTimeout(async () => {
-        const botResponse = generateAutomatedResponse(content);
+        const botResponse = await generateAutomatedResponse(content);
 
         const botMsgObj: ChatMessage = {
           id: "guru_" + Date.now(),
@@ -653,7 +590,7 @@ export function GlobalChat() {
         } catch (botErr) {
           console.warn("Notice: Health Guru DB background insert notice:", botErr);
         }
-      }, 500);
+      }, 400);
 
     } catch (err: any) {
       console.error("Failed to send support message:", err);
