@@ -732,7 +732,7 @@ export function GlobalChat() {
                       👋 Welcome! I am Health Guru
                     </p>
                     <p className="text-muted-foreground leading-relaxed">
-                      I'm your 24/7 Wellness & Product Assistant. Ask me anything about products, recipes, shipping, or health topics! *(For **Order Status**, please log in).*
+                      I'm your 24/7 Wellness & Product Assistant. Ask me anything about products, recipes, shipping, or health topics! (For Order Status, please log in).
                     </p>
                   </div>
                 </div>
