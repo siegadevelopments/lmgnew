@@ -168,7 +168,9 @@ export function GlobalChat() {
         (payload) => {
           const newMsg = payload.new as ChatMessage;
           setMessages((prev) => {
-            if (prev.some((m) => m.id === newMsg.id)) return prev;
+            if (prev.some((m) => m.id === newMsg.id || (m.content === newMsg.content && m.sender_name === newMsg.sender_name))) {
+              return prev;
+            }
             return [...prev, newMsg];
           });
 
@@ -198,10 +200,10 @@ export function GlobalChat() {
     setGuestSessionId(newGuestId);
     setConversationId(null);
     setMessages([]);
-    toast.success("Started a new support chat session!");
+    toast.success("Started a new chat session with Health Guru!");
   };
 
-  // Generate Smart Automated Assistant Response
+  // Generate Smart Automated Response from Health Guru
   const generateAutomatedResponse = (query: string): string => {
     const q = query.toLowerCase();
 
@@ -242,12 +244,12 @@ export function GlobalChat() {
       q.includes("stress") || 
       q.includes("sleep")
     ) {
-      return "🌿 **Wellness Collections**: \n\nExplore physician-reviewed formulas:\n\n• 🌸 **[Menopause Support](/categories/menopause-support)**\n• 🦠 **[Gut Health](/categories/gut-health)**\n• ✨ **[Healthy Ageing](/categories/healthy-ageing)**\n• 🌙 **[Sleep & Recovery](/categories/sleep-recovery)**\n• 🧘 **[Stress Management](/categories/stress-management)**\n\nBrowse the complete catalog at **[Shop All Products](/products)**!";
+      return "🌿 **Health Guru Wellness Recommendations**: \n\nExplore physician-reviewed formulas across our categories:\n\n• 🌸 **[Menopause Support](/categories/menopause-support)**\n• 🦠 **[Gut Health](/categories/gut-health)**\n• ✨ **[Healthy Ageing](/categories/healthy-ageing)**\n• 🌙 **[Sleep & Recovery](/categories/sleep-recovery)**\n• 🧘 **[Stress Management](/categories/stress-management)**\n\nBrowse the complete catalog at **[Shop All Products](/products)**!";
     }
 
     // 5. ARTICLES & GUIDES
     if (q.includes("article") || q.includes("study") || q.includes("recipe") || q.includes("video") || q.includes("learn")) {
-      return "📚 **Evidence-Based Content**: \n\nCheck out our educational library:\n\n• 📝 **[Articles & References](/articles)**\n• 🥗 **[Recipes](/recipes)**\n• 🎥 **[Videos](/videos)**\n• 🎁 **[Healthy Aging Starter Kit](/healthy-aging-starter-kit)**";
+      return "📚 **Health Guru Knowledge Base**: \n\nCheck out our evidence-based wellness resources:\n\n• 📝 **[Articles & References](/articles)**\n• 🥗 **[Recipes](/recipes)**\n• 🎥 **[Videos](/videos)**\n• 🎁 **[Healthy Aging Starter Kit](/healthy-aging-starter-kit)**";
     }
 
     // 6. SELL WITH US / VENDORS
@@ -256,10 +258,10 @@ export function GlobalChat() {
     }
 
     // 7. GENERAL INQUIRY FALLBACK
-    return `👋 **LMG Support Assistant**: \n\nThanks for asking! I've recorded your message: *"${query}"*.\n\nAn admin team member has been notified and will jump in shortly to assist! Feel free to browse **[Shop All Products](/products)** while you wait.`;
+    return `👋 **Health Guru**: \n\nThanks for reaching out! I've recorded your question: *"${query}"*.\n\nAn admin team member has also been notified and will jump in shortly! Feel free to browse **[Shop All Products](/products)** or **[Health Articles](/articles)** while you wait.`;
   };
 
-  // Send user message and trigger automated AI reply
+  // Send user message and trigger guaranteed Health Guru AI reply
   const handleSendMessage = async (textToSend?: string) => {
     const content = (textToSend || newMessage).trim();
     if (!content) return;
@@ -315,92 +317,77 @@ export function GlobalChat() {
       const senderName = user ? (user.email?.split("@")[0] || "Customer") : (guestName || "Guest Visitor");
       const senderType = user ? "user" : "guest";
 
-      // 1. Insert User Message
-      let insertedUserMsg = null;
-      try {
-        const res = await (supabase.from("chat_messages" as any) as any)
-          .insert({
+      // 1. Instantly display user message
+      const userMsgObj: ChatMessage = {
+        id: "usr_" + Date.now(),
+        conversation_id: activeConvId!,
+        sender_id: user?.id || null,
+        sender_type: senderType,
+        sender_name: senderName,
+        content: content,
+        created_at: new Date().toISOString(),
+      };
+
+      setMessages((prev) => [...prev, userMsgObj]);
+
+      // Background insert of user message
+      (async () => {
+        try {
+          await (supabase.from("chat_messages" as any) as any).insert({
             conversation_id: activeConvId,
             sender_id: user?.id || null,
             sender_type: senderType,
             sender_name: senderName,
             content: content,
-          })
-          .select()
-          .single();
-        insertedUserMsg = res.data;
-      } catch (e) {
-        const fallbackRes = await (supabase.from("chat_messages" as any) as any)
-          .insert({
-            conversation_id: activeConvId,
-            sender_id: user?.id || null,
-            content: content,
-          })
-          .select()
-          .single();
-        insertedUserMsg = fallbackRes.data;
-      }
-
-      if (insertedUserMsg) {
-        setMessages((prev) => [...prev, insertedUserMsg as ChatMessage]);
-      }
-
-      // Update conversation timestamp
-      try {
-        await (supabase.from("chat_conversations" as any) as any)
-          .update({ last_message_at: new Date().toISOString() })
-          .eq("id", activeConvId);
-      } catch (e) {}
+          });
+          await (supabase.from("chat_conversations" as any) as any)
+            .update({ last_message_at: new Date().toISOString() })
+            .eq("id", activeConvId);
+        } catch (e) {}
+      })();
 
       // Trigger Admin Notification
       createAdminNotification({
         type: "message",
-        title: `💬 New Support Chat from ${senderName}`,
+        title: `💬 New Chat from ${senderName}`,
         message: content.length > 80 ? content.substring(0, 80) + "..." : content,
         link: "/admin?tab=messages",
         metadata: { conversation_id: activeConvId, sender_name: senderName },
       });
 
-      // 2. Trigger Automated Assistant Reply
+      // 2. Trigger Health Guru Answer Immediately
       setIsBotTyping(true);
 
       setTimeout(async () => {
         const botReplyText = generateAutomatedResponse(content);
 
-        try {
-          const { data: botMsg } = await (supabase.from("chat_messages" as any) as any)
-            .insert({
-              conversation_id: activeConvId,
-              sender_id: null,
-              sender_type: "admin",
-              sender_name: "LMG Support AI",
-              content: botReplyText,
-            })
-            .select()
-            .single();
+        const botMsgObj: ChatMessage = {
+          id: "guru_" + Date.now(),
+          conversation_id: activeConvId!,
+          sender_id: null,
+          sender_type: "admin",
+          sender_name: "Health Guru",
+          content: botReplyText,
+          created_at: new Date().toISOString(),
+        };
 
-          if (botMsg) {
-            setMessages((prev) => {
-              if (prev.some((m) => m.id === botMsg.id)) return prev;
-              return [...prev, botMsg as ChatMessage];
-            });
-          }
+        // Guarantee Health Guru answer display
+        setMessages((prev) => [...prev, botMsgObj]);
+        setIsBotTyping(false);
+
+        // Background persistence
+        try {
+          await (supabase.from("chat_messages" as any) as any).insert({
+            conversation_id: activeConvId,
+            sender_id: null,
+            sender_type: "admin",
+            sender_name: "Health Guru",
+            content: botReplyText,
+          });
         } catch (botErr) {
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: "bot_" + Date.now(),
-              conversation_id: activeConvId!,
-              sender_type: "admin",
-              sender_name: "LMG Support AI",
-              content: botReplyText,
-              created_at: new Date().toISOString(),
-            },
-          ]);
-        } finally {
-          setIsBotTyping(false);
+          console.warn("Notice: Health Guru DB background insert notice:", botErr);
         }
-      }, 800);
+      }, 500);
 
     } catch (err: any) {
       console.error("Failed to send support message:", err);
@@ -430,17 +417,17 @@ export function GlobalChat() {
               <div className="flex items-center gap-2.5">
                 <div className="relative">
                   <div className="h-9 w-9 rounded-full bg-white/10 flex items-center justify-center border border-white/20">
-                    <Headphones className="h-4 w-4 text-white" />
+                    <Bot className="h-5 w-5 text-white" />
                   </div>
                   <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-400 border-2 border-primary" />
                 </div>
                 <div>
                   <h3 className="font-bold text-xs leading-tight text-white flex items-center gap-1.5">
-                    LMG Live Support
+                    Health Guru AI
                     <Sparkles className="h-3 w-3 text-amber-300 animate-pulse" />
                   </h3>
                   <p className="text-[10px] text-white/80 flex items-center gap-1">
-                    <Clock className="h-3 w-3" /> Online 24/7 • Instant Answers
+                    <Clock className="h-3 w-3" /> Online 24/7 • Instant Wellness Answers
                   </p>
                 </div>
               </div>
@@ -476,10 +463,10 @@ export function GlobalChat() {
                   </div>
                   <div className="max-w-[85%] rounded-2xl rounded-tl-none bg-background border border-border p-3 text-xs shadow-sm space-y-1">
                     <p className="font-bold text-foreground flex items-center gap-1.5">
-                      👋 Welcome to Lifestyle Medicine Gateway!
+                      👋 Welcome! I am Health Guru
                     </p>
                     <p className="text-muted-foreground leading-relaxed">
-                      How can I help you today? Type a question below or pick a quick topic! *(Note: For **Order Status**, please log in first).*
+                      I'm your 24/7 Wellness & Product Assistant. Ask me anything about products, recipes, shipping, or health topics! *(Note: For **Order Status**, please log in).*
                     </p>
                   </div>
                 </div>
@@ -494,7 +481,7 @@ export function GlobalChat() {
                     >
                       {!isMe && (
                         <span className="text-[10px] text-muted-foreground font-semibold mb-0.5 px-1 flex items-center gap-1">
-                          <Bot className="h-3 w-3 text-primary" /> {msg.sender_name || "LMG Support"}
+                          <Bot className="h-3 w-3 text-primary" /> Health Guru
                         </span>
                       )}
                       <div
@@ -522,7 +509,7 @@ export function GlobalChat() {
                 {isBotTyping && (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground bg-background border border-border p-2.5 rounded-2xl rounded-tl-none max-w-[70%]">
                     <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-                    <span>LMG Support AI is typing...</span>
+                    <span>Health Guru is typing...</span>
                   </div>
                 )}
               </div>
@@ -554,7 +541,7 @@ export function GlobalChat() {
               <Input
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Ask a question..."
+                placeholder="Ask Health Guru anything..."
                 className="flex-1 h-9 text-xs bg-muted/20"
                 disabled={loading}
                 onKeyDown={(e) => {
@@ -588,7 +575,7 @@ export function GlobalChat() {
               className="absolute right-16 top-1.5 whitespace-nowrap rounded-xl bg-slate-900 text-white px-3.5 py-2 text-xs font-semibold shadow-xl border border-slate-800 flex items-center gap-2"
             >
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              Chat with 24/7 AI Support
+              Chat with Health Guru AI
             </motion.div>
           )}
         </AnimatePresence>
@@ -603,7 +590,7 @@ export function GlobalChat() {
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.92 }}
           className="relative flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-2xl hover:bg-primary/90 transition-all border-2 border-white/20"
-          aria-label="Open Live Support Chat"
+          aria-label="Open Health Guru Chat"
         >
           {isOpen ? (
             <X className="h-6 w-6" />
