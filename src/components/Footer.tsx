@@ -47,6 +47,7 @@ const footerLinks = {
   ],
   Company: [
     { label: "About Us", to: "/about" },
+    { label: "Public Analytics", to: "/analytics" },
     { label: "Sell With Us", to: "/sell-with-us" },
     { label: "Contact", to: "/contact" },
     { label: "FAQ", to: "/faq" },
