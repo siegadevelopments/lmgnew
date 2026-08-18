@@ -28,15 +28,72 @@ export default function RecipesPage() {
   }, [recipes, search]);
 
   const quickRecipes = useMemo(() => {
-    return filteredRecipes.filter((recipe) => (recipe.prep_time || 0) + (recipe.cook_time || 0) > 0 && (recipe.prep_time || 0) + (recipe.cook_time || 0) <= 15);
+    return filteredRecipes.filter(
+      (recipe) =>
+        (recipe.prep_time || 0) + (recipe.cook_time || 0) > 0 &&
+        (recipe.prep_time || 0) + (recipe.cook_time || 0) <= 15
+    );
+  }, [filteredRecipes]);
+
+  const veganRecipes = useMemo(() => {
+    return filteredRecipes.filter((recipe) => {
+      const titleLower = (recipe.title || "").toLowerCase();
+      const excerptLower = (recipe.excerpt || "").toLowerCase();
+      const tagsArray: string[] = Array.isArray(recipe.tags)
+        ? recipe.tags.map((t: string) => String(t).toLowerCase())
+        : [];
+
+      return (
+        tagsArray.some((t) => t.includes("vegan") || t.includes("plant-based")) ||
+        titleLower.includes("vegan") ||
+        titleLower.includes("plant-based") ||
+        excerptLower.includes("vegan") ||
+        excerptLower.includes("plant-based")
+      );
+    });
+  }, [filteredRecipes]);
+
+  const pastaRecipes = useMemo(() => {
+    const pastaKeywords = [
+      "pasta",
+      "spaghetti",
+      "penne",
+      "fettuccine",
+      "macaroni",
+      "lasagna",
+      "rigatoni",
+      "linguine",
+      "gnocchi",
+      "orzo",
+      "ramen",
+      "noodle",
+    ];
+    return filteredRecipes.filter((recipe) => {
+      const titleLower = (recipe.title || "").toLowerCase();
+      const excerptLower = (recipe.excerpt || "").toLowerCase();
+      const tagsArray: string[] = Array.isArray(recipe.tags)
+        ? recipe.tags.map((t: string) => String(t).toLowerCase())
+        : [];
+
+      return (
+        pastaKeywords.some((kw) => tagsArray.some((t) => t.includes(kw))) ||
+        pastaKeywords.some((kw) => titleLower.includes(kw)) ||
+        pastaKeywords.some((kw) => excerptLower.includes(kw))
+      );
+    });
   }, [filteredRecipes]);
 
   const otherRecipes = useMemo(() => {
-    return filteredRecipes.filter((recipe) => {
-      const totalTime = (recipe.prep_time || 0) + (recipe.cook_time || 0);
-      return totalTime === 0 || totalTime > 15;
-    });
-  }, [filteredRecipes]);
+    const featuredIds = new Set([
+      ...quickRecipes.map((r) => r.id),
+      ...veganRecipes.map((r) => r.id),
+      ...pastaRecipes.map((r) => r.id),
+    ]);
+    return filteredRecipes.filter((recipe) => !featuredIds.has(recipe.id));
+  }, [filteredRecipes, quickRecipes, veganRecipes, pastaRecipes]);
+
+  const hasSpecificSections =
+    quickRecipes.length > 0 || veganRecipes.length > 0 || pastaRecipes.length > 0;
 
   return (
     <div className="bg-background min-h-screen">
@@ -89,7 +146,33 @@ export default function RecipesPage() {
                 </h2>
                 <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
                   {quickRecipes.map((recipe) => (
-                    <RecipeCard key={recipe.id} recipe={recipe} />
+                    <RecipeCard key={`quick-${recipe.id}`} recipe={recipe} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {veganRecipes.length > 0 && (
+              <section>
+                <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl mb-8">
+                  Vegan Recipes
+                </h2>
+                <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                  {veganRecipes.map((recipe) => (
+                    <RecipeCard key={`vegan-${recipe.id}`} recipe={recipe} />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {pastaRecipes.length > 0 && (
+              <section>
+                <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl mb-8">
+                  Pasta Recipes
+                </h2>
+                <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                  {pastaRecipes.map((recipe) => (
+                    <RecipeCard key={`pasta-${recipe.id}`} recipe={recipe} />
                   ))}
                 </div>
               </section>
@@ -98,11 +181,11 @@ export default function RecipesPage() {
             {otherRecipes.length > 0 && (
               <section>
                 <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl mb-8">
-                  {quickRecipes.length > 0 ? "More Recipes" : "All Recipes"}
+                  {hasSpecificSections ? "More Recipes" : "All Recipes"}
                 </h2>
                 <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
                   {otherRecipes.map((recipe) => (
-                    <RecipeCard key={recipe.id} recipe={recipe} />
+                    <RecipeCard key={`other-${recipe.id}`} recipe={recipe} />
                   ))}
                 </div>
               </section>

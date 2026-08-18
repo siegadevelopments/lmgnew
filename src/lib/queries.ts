@@ -201,7 +201,7 @@ export const recipesQueryOptions = () =>
       try {
         const { data, error } = await supabase
           .from("recipes")
-          .select("id, title, slug, image_url, prep_time, cook_time, excerpt, created_at")
+          .select("id, title, slug, image_url, prep_time, cook_time, excerpt, tags, created_at")
           .order("created_at", { ascending: false });
         if (error) throw error;
         return (data || []) as any[];
