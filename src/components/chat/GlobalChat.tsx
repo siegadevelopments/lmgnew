@@ -36,6 +36,7 @@ interface ChatProduct {
   price: number;
   image_url?: string | null;
   excerpt?: string | null;
+  category?: string | null;
 }
 
 interface InteractiveOption {
@@ -67,7 +68,7 @@ const QUICK_PROMPTS: QuickPrompt[] = [
   { label: "💳 Refund & Returns", text: "What is your refund and return policy?" },
 ];
 
-const FEATURED_PRODUCTS: Record<string, ChatProduct[]> = {
+const FALLBACK_PRODUCTS: Record<string, ChatProduct[]> = {
   gut: [
     {
       id: 101,
@@ -201,6 +202,7 @@ export function GlobalChat() {
   const [loading, setLoading] = useState(false);
   const [isBotTyping, setIsBotTyping] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [dbProducts, setDbProducts] = useState<ChatProduct[]>([]);
 
   // Guest visitor state
   const [guestName, setGuestName] = useState("");
@@ -208,6 +210,52 @@ export function GlobalChat() {
   const [guestSessionId, setGuestSessionId] = useState<string>("");
 
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Load real products from website database
+  useEffect(() => {
+    async function loadRealProducts() {
+      try {
+        const { data, error } = await (supabase.from("products" as any) as any)
+          .select("id, title, slug, excerpt, price, image_url, category, status")
+          .eq("status", "published")
+          .order("created_at", { ascending: false })
+          .limit(100);
+
+        if (!error && data && data.length > 0) {
+          const formatted: ChatProduct[] = data.map((p: any) => ({
+            id: typeof p.id === "number" ? p.id : parseInt(p.id, 10) || Math.floor(Math.random() * 10000),
+            title: p.title,
+            slug: p.slug || p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+            price: Number(p.price || 0),
+            image_url: p.image_url || null,
+            excerpt: p.excerpt || p.category || "Published product on Lifestyle Medicine Gateway",
+            category: p.category || "",
+          }));
+          setDbProducts(formatted);
+        }
+      } catch (err) {
+        console.error("Error loading real products from DB for chat:", err);
+      }
+    }
+    loadRealProducts();
+  }, []);
+
+  // Helper to query real website products by keyword
+  const getMatchingProducts = (keywords: string[], fallbackCategory: keyof typeof FALLBACK_PRODUCTS): ChatProduct[] => {
+    if (dbProducts.length > 0) {
+      const matches = dbProducts.filter((p) => {
+        const title = (p.title || "").toLowerCase();
+        const cat = (p.category || "").toLowerCase();
+        const exc = (p.excerpt || "").toLowerCase();
+        return keywords.some((kw) => title.includes(kw) || cat.includes(kw) || exc.includes(kw));
+      });
+
+      if (matches.length > 0) return matches.slice(0, 3);
+      // Return top website products if no keyword hit
+      return dbProducts.slice(0, 3);
+    }
+    return FALLBACK_PRODUCTS[fallbackCategory] || [];
+  };
 
   // Initialize or fetch guest session on mount
   useEffect(() => {
@@ -364,7 +412,7 @@ export function GlobalChat() {
     });
   };
 
-  // Generate Interactive Automated Response from Health Guru (Clean text without raw **)
+  // Generate Interactive Automated Response from Health Guru using REAL website products
   const generateAutomatedResponse = (query: string): { text: string; products?: ChatProduct[]; options?: InteractiveOption[] } => {
     const q = query.toLowerCase();
 
@@ -402,39 +450,39 @@ export function GlobalChat() {
       };
     }
 
-    // 4. SPECIFIC WELLNESS CATEGORY INQUIRIES WITH PRODUCT CARDS
+    // 4. SPECIFIC WELLNESS CATEGORY INQUIRIES WITH REAL WEBSITE PRODUCTS
     if (q.includes("gut") || q.includes("digestion") || q.includes("probiotic") || q.includes("bloat")) {
       return {
-        text: "🦠 Gut Health Recommendations:\nHere are our top physician-formulated gut health solutions to optimize digestion, balance microbiome flora, and relieve bloating:",
-        products: FEATURED_PRODUCTS.gut,
+        text: "🦠 Gut Health Recommendations:\nHere are our top physician-formulated gut health products available on our store:",
+        products: getMatchingProducts(["gut", "digestion", "probiotic", "microbiome", "digest", "bloat"], "gut"),
       };
     }
 
     if (q.includes("menopause") || q.includes("hormone") || q.includes("hot flash") || q.includes("women")) {
       return {
-        text: "🌸 Menopause & Hormone Support:\nHere are our top targeted formulas for hormonal balance, hot flash relief, and mood stabilization:",
-        products: FEATURED_PRODUCTS.menopause,
+        text: "🌸 Menopause & Hormone Support:\nHere are our top targeted formulas for hormonal balance and hot flash relief available on our store:",
+        products: getMatchingProducts(["menopause", "hormone", "phytoestrogen", "hot flash", "women"], "menopause"),
       };
     }
 
     if (q.includes("aging") || q.includes("ageing") || q.includes("nad") || q.includes("longevity") || q.includes("vitality")) {
       return {
-        text: "✨ Healthy Ageing & Cellular Vitality:\nBoost mitochondrial energy, cellular repair, and longevity with these top formulations:",
-        products: FEATURED_PRODUCTS.aging,
+        text: "✨ Healthy Ageing & Cellular Vitality:\nBoost mitochondrial energy and cellular longevity with these products from our store:",
+        products: getMatchingProducts(["aging", "ageing", "nad", "longevity", "cellular", "vitality"], "aging"),
       };
     }
 
     if (q.includes("sleep") || q.includes("stress") || q.includes("anxiety") || q.includes("relax") || q.includes("magnesium") || q.includes("ashwagandha")) {
       return {
-        text: "🌙 Sleep & Stress Recovery:\nCalm your nervous system and support deep restorative sleep with these high-potency adaptogens:",
-        products: FEATURED_PRODUCTS.sleep,
+        text: "🌙 Sleep & Stress Recovery:\nCalm your nervous system and support deep restorative sleep with these products from our store:",
+        products: getMatchingProducts(["sleep", "stress", "magnesium", "ashwagandha", "relax", "calm"], "sleep"),
       };
     }
 
     if (q.includes("weight") || q.includes("metabolism") || q.includes("berberine") || q.includes("blood sugar")) {
       return {
-        text: "⚖️ Weight Management & Metabolism:\nSupport healthy glucose metabolism, AMPK pathway activation, and metabolic energy:",
-        products: FEATURED_PRODUCTS.weight,
+        text: "⚖️ Weight Management & Metabolism:\nSupport healthy glucose metabolism and metabolic energy with these products from our store:",
+        products: getMatchingProducts(["weight", "metabolism", "berberine", "glucose", "sugar"], "weight"),
       };
     }
 
@@ -448,7 +496,7 @@ export function GlobalChat() {
       q.includes("mind")
     ) {
       return {
-        text: "🌿 Health Guru Product Finder:\n\nI'd love to recommend the best physician-curated formulas for you! What specific health goal or focus do you have in mind today?\n\nSelect a goal below or type your specific health concern:",
+        text: "🌿 Health Guru Product Finder:\n\nI'd love to recommend the best physician-curated formulas from our website! What specific health goal or focus do you have in mind today?\n\nSelect a goal below or type your specific health concern:",
         options: [
           { label: "🌸 Menopause & Hormones", text: "I'd like product recommendations for menopause & hormone support." },
           { label: "🦠 Gut & Digestion", text: "I'd like product recommendations for gut health & digestion." },
