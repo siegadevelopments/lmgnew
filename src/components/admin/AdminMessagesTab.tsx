@@ -81,17 +81,31 @@ export function AdminMessagesTab() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Load live support conversations
+  // Load live support conversations with schema resilience
   const fetchConversations = async () => {
     setLoadingConvs(true);
     try {
-      const { data, error } = await (supabase.from("chat_conversations" as any) as any)
-        .select("*, profiles!chat_conversations_customer_id_fkey(full_name, avatar_url)")
-        .order("last_message_at", { ascending: false });
+      let data = null;
+      let error = null;
 
-      if (error && error.code !== "PGRST116") {
-        console.error("Error fetching conversations:", error);
+      try {
+        const res = await (supabase.from("chat_conversations" as any) as any)
+          .select("*, profiles!chat_conversations_customer_id_fkey(full_name, avatar_url)")
+          .order("last_message_at", { ascending: false });
+        data = res.data;
+        error = res.error;
+      } catch (e) {
+        error = e;
       }
+
+      if (error) {
+        console.warn("Retrying fetchConversations without relationship join:", error.message);
+        const fallbackRes = await (supabase.from("chat_conversations" as any) as any)
+          .select("*")
+          .order("last_message_at", { ascending: false });
+        data = fallbackRes.data;
+      }
+
       setConversations((data || []) as Conversation[]);
       if (data && data.length > 0 && !selectedConv) {
         setSelectedConv(data[0]);

@@ -87,26 +87,34 @@ export function GlobalChat() {
     }
   }, []);
 
-  // Fetch or initialize conversation
+  // Fetch or initialize conversation with schema-resilient queries
   const initConversation = async () => {
     setLoading(true);
     try {
-      let query = (supabase.from("chat_conversations" as any) as any)
+      // 1. Try querying with full support columns
+      let { data: convs, error } = await (supabase.from("chat_conversations" as any) as any)
         .select("*")
-        .eq("is_support", true);
+        .eq("is_support", true)
+        .order("created_at", { ascending: false })
+        .limit(1);
 
-      if (user) {
-        query = query.eq("customer_id", user.id);
-      } else if (guestEmail) {
-        query = query.eq("guest_email", guestEmail);
-      } else if (guestSessionId) {
-        query = query.eq("guest_name", guestSessionId);
-      }
-
-      const { data: convs, error } = await query.order("created_at", { ascending: false }).limit(1);
-
-      if (error && error.code !== "PGRST116") {
-        console.error("Error finding support conversation:", error);
+      // 2. If error due to missing columns in table schema, fallback to customer_id or simple select
+      if (error) {
+        console.warn("Retrying conversation fetch without extended columns:", error.message);
+        if (user) {
+          const fallbackRes = await (supabase.from("chat_conversations" as any) as any)
+            .select("*")
+            .eq("customer_id", user.id)
+            .order("created_at", { ascending: false })
+            .limit(1);
+          convs = fallbackRes.data;
+        } else {
+          const fallbackRes = await (supabase.from("chat_conversations" as any) as any)
+            .select("*")
+            .order("created_at", { ascending: false })
+            .limit(1);
+          convs = fallbackRes.data;
+        }
       }
 
       if (convs && convs.length > 0) {
@@ -165,7 +173,7 @@ export function GlobalChat() {
             return [...prev, newMsg];
           });
 
-          if (!isOpen && newMsg.sender_type === "admin") {
+          if (!isOpen && (newMsg.sender_type === "admin" || !newMsg.sender_id)) {
             setUnreadCount((c) => c + 1);
           }
         }
@@ -198,13 +206,12 @@ export function GlobalChat() {
     setGuestSaved(true);
   };
 
-  // Send message
+  // Send message with fallback for schema variations
   const handleSendMessage = async (textToSend?: string) => {
     const content = (textToSend || newMessage).trim();
     if (!content) return;
 
     if (!user && !guestSaved && !guestName && !guestEmail) {
-      // Prompt guest if not saved
       setGuestSaved(false);
     }
 
@@ -214,19 +221,43 @@ export function GlobalChat() {
 
       // Create conversation if none exists
       if (!activeConvId) {
-        const { data: newConv, error: convErr } = await (supabase.from("chat_conversations" as any) as any)
-          .insert({
-            customer_id: user?.id || null,
-            guest_name: user ? null : (guestName || "Guest Visitor"),
-            guest_email: user ? null : (guestEmail || guestSessionId),
-            is_support: true,
-            status: "open",
-            last_message_at: new Date().toISOString(),
-          })
-          .select()
-          .single();
+        // Try full object insertion first
+        let newConv = null;
+        let convErr = null;
 
-        if (convErr) throw convErr;
+        try {
+          const res = await (supabase.from("chat_conversations" as any) as any)
+            .insert({
+              customer_id: user?.id || null,
+              guest_name: user ? null : (guestName || "Guest Visitor"),
+              guest_email: user ? null : (guestEmail || guestSessionId),
+              is_support: true,
+              status: "open",
+              last_message_at: new Date().toISOString(),
+            })
+            .select()
+            .single();
+          newConv = res.data;
+          convErr = res.error;
+        } catch (e: any) {
+          convErr = e;
+        }
+
+        // If extended columns are missing, fallback to standard schema
+        if (convErr || !newConv) {
+          console.warn("Extended chat_conversations columns missing, falling back to base columns.");
+          const fallbackRes = await (supabase.from("chat_conversations" as any) as any)
+            .insert({
+              customer_id: user?.id || null,
+              last_message_at: new Date().toISOString(),
+            })
+            .select()
+            .single();
+
+          if (fallbackRes.error) throw fallbackRes.error;
+          newConv = fallbackRes.data;
+        }
+
         activeConvId = newConv.id;
         setConversationId(newConv.id);
       }
@@ -234,26 +265,50 @@ export function GlobalChat() {
       const senderName = user ? (user.email?.split("@")[0] || "Customer") : (guestName || "Guest");
       const senderType = user ? "user" : "guest";
 
-      const { data: insertedMsg, error: msgErr } = await (supabase.from("chat_messages" as any) as any)
-        .insert({
-          conversation_id: activeConvId,
-          sender_id: user?.id || null,
-          sender_type: senderType,
-          sender_name: senderName,
-          content: content,
-        })
-        .select()
-        .single();
+      // Insert message with fallback
+      let insertedMsg = null;
+      let msgErr = null;
 
-      if (msgErr) throw msgErr;
+      try {
+        const res = await (supabase.from("chat_messages" as any) as any)
+          .insert({
+            conversation_id: activeConvId,
+            sender_id: user?.id || null,
+            sender_type: senderType,
+            sender_name: senderName,
+            content: content,
+          })
+          .select()
+          .single();
+        insertedMsg = res.data;
+        msgErr = res.error;
+      } catch (e) {
+        msgErr = e;
+      }
+
+      if (msgErr || !insertedMsg) {
+        console.warn("Extended chat_messages columns missing, falling back to base message columns.");
+        const fallbackMsgRes = await (supabase.from("chat_messages" as any) as any)
+          .insert({
+            conversation_id: activeConvId,
+            sender_id: user?.id || null,
+            content: content,
+          })
+          .select()
+          .single();
+
+        if (fallbackMsgRes.error) throw fallbackMsgRes.error;
+        insertedMsg = fallbackMsgRes.data;
+      }
 
       // Update conversation timestamp
-      await (supabase.from("chat_conversations" as any) as any)
-        .update({
-          last_message_at: new Date().toISOString(),
-          status: "open",
-        })
-        .eq("id", activeConvId);
+      try {
+        await (supabase.from("chat_conversations" as any) as any)
+          .update({ last_message_at: new Date().toISOString() })
+          .eq("id", activeConvId);
+      } catch (e) {
+        // ignore timestamp update error
+      }
 
       // Trigger Admin Notification
       createAdminNotification({

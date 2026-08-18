@@ -1,6 +1,6 @@
 -- Migration: Notifications and Support Chat enhancements
 
--- Create notifications table
+-- 1. Create notifications table if not exists
 CREATE TABLE IF NOT EXISTS public.notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -17,42 +17,41 @@ CREATE TABLE IF NOT EXISTS public.notifications (
 -- Enable RLS on notifications
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
--- Policies for notifications
 DROP POLICY IF EXISTS "Allow read notifications" ON public.notifications;
-CREATE POLICY "Allow read notifications" ON public.notifications
-    FOR SELECT USING (true);
+CREATE POLICY "Allow read notifications" ON public.notifications FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS "Allow insert notifications" ON public.notifications;
-CREATE POLICY "Allow insert notifications" ON public.notifications
-    FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow insert notifications" ON public.notifications FOR INSERT WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Allow update notifications" ON public.notifications;
-CREATE POLICY "Allow update notifications" ON public.notifications
-    FOR UPDATE USING (true);
+CREATE POLICY "Allow update notifications" ON public.notifications FOR UPDATE USING (true);
 
--- Ensure chat_conversations table exists with support chat support
+-- 2. Ensure chat_conversations table exists and ALTER existing table to add support columns
 CREATE TABLE IF NOT EXISTS public.chat_conversations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     customer_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     vendor_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-    guest_name TEXT,
-    guest_email TEXT,
-    is_support BOOLEAN DEFAULT false,
-    status TEXT DEFAULT 'open',
     last_message_at TIMESTAMPTZ DEFAULT NOW(),
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Ensure chat_messages table exists
+-- Add support chat columns to existing chat_conversations table
+ALTER TABLE public.chat_conversations ADD COLUMN IF NOT EXISTS guest_name TEXT;
+ALTER TABLE public.chat_conversations ADD COLUMN IF NOT EXISTS guest_email TEXT;
+ALTER TABLE public.chat_conversations ADD COLUMN IF NOT EXISTS is_support BOOLEAN DEFAULT false;
+ALTER TABLE public.chat_conversations ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'open';
+
+-- 3. Ensure chat_messages table exists and ALTER existing table
 CREATE TABLE IF NOT EXISTS public.chat_messages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     conversation_id UUID REFERENCES public.chat_conversations(id) ON DELETE CASCADE,
     sender_id UUID,
-    sender_type TEXT DEFAULT 'user', -- 'user', 'admin', 'vendor', 'guest'
-    sender_name TEXT,
     content TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE public.chat_messages ADD COLUMN IF NOT EXISTS sender_type TEXT DEFAULT 'user';
+ALTER TABLE public.chat_messages ADD COLUMN IF NOT EXISTS sender_name TEXT;
 
 -- RLS policies for chat
 ALTER TABLE public.chat_conversations ENABLE ROW LEVEL SECURITY;
