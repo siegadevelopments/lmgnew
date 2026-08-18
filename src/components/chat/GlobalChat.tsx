@@ -12,8 +12,11 @@ import {
   Sparkles, 
   Headphones,
   Clock,
-  Loader2
+  Loader2,
+  Lock,
+  ExternalLink
 } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
@@ -203,27 +206,65 @@ export function GlobalChat() {
     setGuestSaved(true);
   };
 
-  // Generate Smart Automated Assistant Response
+  // Generate Smart Automated Assistant Response based on website data & authentication rules
   const generateAutomatedResponse = (query: string): string => {
     const q = query.toLowerCase();
 
-    if (q.includes("order") || q.includes("status") || q.includes("track")) {
-      return "📦 **Order Status**: You can view your current order status and tracking details under your **My Account -> Orders** page! Standard order processing takes 1-2 business days, and shipping takes 3-5 business days. An admin team member has also been notified of your request!";
+    // 1. ORDER STATUS / TRACKING QUERY
+    if (
+      q.includes("order") || 
+      q.includes("status") || 
+      q.includes("track") || 
+      q.includes("package") || 
+      q.includes("where is my") ||
+      q.includes("my purchase")
+    ) {
+      if (!user) {
+        return "🔐 **Authentication Required**: \n\nTo view your order history, live tracking details, and package fulfillment updates, please **log in to your account**.\n\n👉 **[Click here to Log In](/login?redirect=/profile)**\n\nOnce logged in, you can view all active and past orders instantly under **My Account -> Orders**!";
+      } else {
+        return `📦 **Order Tracking**: \n\nYou are currently logged in as **${user.email}**.\n\nYou can view all your order receipts, tracking numbers, and shipment statuses directly in your **[My Account Orders Dashboard](/profile)**.\n\n• Standard order processing: 1-2 business days\n• Delivery time: 3-5 business days`;
+      }
     }
 
-    if (q.includes("shipping") || q.includes("deliver") || q.includes("how long")) {
-      return "🚚 **Shipping & Delivery**: We offer **FREE Standard Shipping** on all orders over $50! Standard shipping takes 3–5 business days across the US. Express 2-day delivery options are available at checkout.";
+    // 2. SHIPPING & DELIVERY
+    if (q.includes("shipping") || q.includes("deliver") || q.includes("how long") || q.includes("courier")) {
+      return "🚚 **Shipping & Delivery Info**: \n\n• **Free Standard Shipping**: On all orders over $50!\n• **Standard Shipping**: 3–5 business days across the US ($5.99 flat rate for orders under $50).\n• **Express Shipping**: 2-day delivery options available at checkout.\n• **Fulfillment**: Orders process within 24–48 hours from our verified brand partners.";
     }
 
-    if (q.includes("product") || q.includes("recommend") || q.includes("supplement") || q.includes("gut") || q.includes("menopause") || q.includes("aging") || q.includes("stress")) {
-      return "🌿 **Wellness Recommendations**: Our top physician-curated formulas include:\n- **Gut Health**: High-Potency Probiotics & Prebiotic Fiber\n- **Menopause Support**: Herbal Phytoestrogen & Balance Blends\n- **Stress & Sleep**: Ashwagandha, L-Theanine & Magnesium Glycinate\n\nFeel free to explore our **Shop All** section or let us know if you need specific ingredient guidance!";
+    // 3. REFUNDS & RETURNS
+    if (q.includes("refund") || q.includes("return") || q.includes("exchange") || q.includes("guarantee") || q.includes("policy")) {
+      return "💳 **30-Day Happiness Guarantee**: \n\nWe stand by all curated products on Lifestyle Medicine Gateway! If you are not satisfied with your purchase, you may initiate a return or exchange within 30 days.\n\nTo start a return, email us at **info@lifestylemedicinegateway.com** or let us know right here in chat and our admin team will send you a return label.";
     }
 
-    if (q.includes("refund") || q.includes("return") || q.includes("exchange") || q.includes("policy")) {
-      return "💳 **Returns & Refunds**: We back all products with a **30-Day Money-Back Guarantee**! If you are unsatisfied for any reason, you can request a full refund or exchange by emailing info@lifestylemedicinegateway.com or chatting with us right here.";
+    // 4. WELLNESS CATEGORIES & PRODUCT RECOMMENDATIONS
+    if (
+      q.includes("product") || 
+      q.includes("recommend") || 
+      q.includes("supplement") || 
+      q.includes("gut") || 
+      q.includes("menopause") || 
+      q.includes("aging") || 
+      q.includes("stress") || 
+      q.includes("sleep") || 
+      q.includes("heart") || 
+      q.includes("brain") || 
+      q.includes("weight")
+    ) {
+      return "🌿 **Lifestyle Medicine Gateway Catalog**: \n\nWe feature physician-reviewed products across 9 core wellness categories:\n\n• 🌸 **[Menopause Support](/categories/menopause-support)**: Phytoestrogen blends & hormone balance\n• 🦠 **[Gut Health](/categories/gut-health)**: Probiotics, Prebiotics & Microbiome support\n• ✨ **[Healthy Ageing](/categories/healthy-ageing)**: Cellular vitality, NAD+ boosters & Antioxidants\n• 🌙 **[Sleep & Recovery](/categories/sleep-recovery)**: Magnesium Glycinate, L-Theanine & Melatonin\n• 🧘 **[Stress Management](/categories/stress-management)**: Ashwagandha & Adaptogens\n• ⚖️ **[Weight Management](/categories/weight-management)**: Metabolic & Blood Sugar balance\n• ❤️ **[Heart Health](/categories/heart-health)** & 🧠 **[Brain Health](/categories/brain-health)**\n\nYou can browse our entire curated store at **[Shop All Products](/products)**!";
     }
 
-    return `👋 Thanks for reaching out! I'm the **LMG Support AI Assistant**. \n\nI have received your message: *"${query}"* and dispatched a notification to our platform support team. An admin specialist will review and reply shortly! Is there anything else I can help you with in the meantime?`;
+    // 5. ARTICLES & EDUCATIONAL RESOURCES
+    if (q.includes("article") || q.includes("study") || q.includes("research") || q.includes("recipe") || q.includes("video") || q.includes("learn")) {
+      return "📚 **Educational Resources & Evidence-Based Content**: \n\nExplore our free evidence-based library created by health professionals:\n\n• 📝 **[Articles & References](/articles)**: Clinical reviews & evidence breakdowns\n• 🥗 **[Recipes](/recipes)**: Physician-curated plant-rich and nutrient-dense recipes\n• 🎥 **[Videos](/videos)**: Expert lectures & wellness webinars\n• 🔬 **[Studies](/studies)** & 🧪 **[Natural Remedies](/natural-remedies)**\n• 🎁 **[Healthy Aging Starter Kit](/healthy-aging-starter-kit)**";
+    }
+
+    // 6. SELL WITH US / VENDORS
+    if (q.includes("sell") || q.includes("vendor") || q.includes("brand") || q.includes("partner") || q.includes("register store")) {
+      return "🏪 **Sell With Us / Vendor Program**: \n\nAre you a verified wellness or lifestyle medicine brand? You can list your products and reach thousands of health-conscious customers!\n\n👉 **[Learn More & Apply as a Vendor](/sell-with-us)**\n\nApproved vendors get access to our vendor portal, live analytics, order fulfillment dashboard, and direct customer messaging!";
+    }
+
+    // 7. GENERAL INQUIRY FALLBACK
+    return `👋 **LMG Support Assistant**: \n\nThank you for reaching out! I've recorded your question: *"${query}"*.\n\nAn Admin support team member has been notified via real-time alerts and will respond shortly. You can also explore our **[Shop All Products](/products)** or **[Helpful Articles](/articles)** while you wait!`;
   };
 
   // Send user message and trigger automated AI reply
@@ -356,7 +397,6 @@ export function GlobalChat() {
           }
         } catch (botErr) {
           console.warn("Could not persist bot reply in DB:", botErr);
-          // Local fallback render
           setMessages((prev) => [
             ...prev,
             {
@@ -371,7 +411,7 @@ export function GlobalChat() {
         } finally {
           setIsBotTyping(false);
         }
-      }, 1000);
+      }, 900);
 
     } catch (err: any) {
       console.error("Failed to send support message:", err);
@@ -415,7 +455,7 @@ export function GlobalChat() {
                     <Sparkles className="h-3.5 w-3.5 text-amber-300 animate-pulse" />
                   </h3>
                   <p className="text-[11px] text-white/80 flex items-center gap-1">
-                    <Clock className="h-3 w-3" /> Online 24/7 • Instant AI Answers
+                    <Clock className="h-3 w-3" /> Online 24/7 • Instant Knowledge Bot
                   </p>
                 </div>
               </div>
@@ -490,7 +530,7 @@ export function GlobalChat() {
                           👋 Welcome to Lifestyle Medicine Gateway!
                         </p>
                         <p className="text-muted-foreground leading-relaxed">
-                          I am your 24/7 LMG Support Assistant. How can I help you today? Select a quick topic below or type your question!
+                          Ask me about products, shipping, returns, categories, or recipes! *(Note: For **Order Status & Tracking**, please log in first).*
                         </p>
                       </div>
                     </div>
@@ -533,7 +573,7 @@ export function GlobalChat() {
                     {isBotTyping && (
                       <div className="flex items-center gap-2 text-xs text-muted-foreground bg-background border border-border p-2.5 rounded-2xl rounded-tl-none max-w-[70%]">
                         <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-                        <span>LMG Support AI is typing...</span>
+                        <span>LMG Support AI is searching site data...</span>
                       </div>
                     )}
                   </div>
