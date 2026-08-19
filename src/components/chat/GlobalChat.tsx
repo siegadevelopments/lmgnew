@@ -62,10 +62,10 @@ interface QuickPrompt {
 }
 
 const QUICK_PROMPTS: QuickPrompt[] = [
-  { label: "📦 Order Status", text: "Hi, I'd like to check the status of my order." },
-  { label: "🚚 Shipping Info", text: "How long does shipping take and what are the delivery options?" },
-  { label: "🌿 Product Recommendation", text: "Hi Health Guru, I'd like a product recommendation." },
-  { label: "💳 Refund & Returns", text: "What is your refund and return policy?" },
+  { label: "📚 Articles & Research", text: "Show me health articles and research studies." },
+  { label: "🥗 Healthy Recipes", text: "Show me healthy recipes and nutrition guides." },
+  { label: "😂 Memes & Infographics", text: "Show me wellness memes and charts." },
+  { label: "🌿 Natural Remedies", text: "Show me natural remedies and holistic care." },
 ];
 
 // Helper to format content cleanly without raw asterisks
@@ -342,7 +342,7 @@ export function GlobalChat() {
     });
   };
 
-  // Generate Interactive Automated Response using 100% REAL website products from DB & AI
+  // Generate Interactive Automated Response prioritizing Education & Learning Resources
   const generateAutomatedResponse = async (query: string): Promise<{ text: string; products?: ChatProduct[]; options?: InteractiveOption[] }> => {
     const q = query.toLowerCase().trim();
     const cleanQ = q.replace(/[^a-z0-9\s]/g, "");
@@ -351,24 +351,73 @@ export function GlobalChat() {
     const greetingWords = new Set(["hi", "hello", "hey", "greetings", "howdy", "sup", "yo", "hi there", "hello there", "good morning", "good afternoon", "good evening", "good day"]);
     if (greetingWords.has(cleanQ) || /^(hi+|hello+|hey+|greetings|howdy)(\s+|$)/i.test(q)) {
       return {
-        text: "Hello! 👋 How can I help you today?\n\nI'm Health Guru, your AI wellness assistant. Feel free to ask me anything about our products, health recommendations, order tracking, or wellness guides!\n\nHere are a few quick ways to get started:",
+        text: "Hello! 👋 Welcome to Lifestyle Medicine Gateway — your premier health education & wellness platform!\n\nWhat would you like to learn or explore today? We offer a rich library of evidence-based resources:\n\n• 📝 [Articles & References](/articles) — Research-backed health guides\n• 🥗 [Healthy Recipes](/recipes) — Nourishing meal plans & ideas\n• 🎥 [Videos](/videos) — Expert masterclasses & tutorials\n• 🌿 [Natural Remedies](/natural-remedies) — Holistic lifestyle remedies\n• 🔬 [Studies](/studies) & [Anecdotes](/anecdotes) — Clinical literature & real experiences\n• 😂 [Memes](/memes) & 📊 [Charts](/charts) — Fun & visual health charts\n• 🛍️ [Marketplace Store](/products) — Curated wellness products\n\nHow can I guide your learning today?",
         options: [
-          { label: "🌿 Product Recommendations", text: "Hi Health Guru, I'd like a product recommendation." },
-          { label: "📦 Order Status & Tracking", text: "Hi, I'd like to check the status of my order." },
-          { label: "🚚 Shipping & Delivery", text: "How long does shipping take and what are the delivery options?" },
-          { label: "💳 Refund & Return Policy", text: "What is your refund and return policy?" },
+          { label: "📚 Explore Articles & Research", text: "Show me health articles and research studies." },
+          { label: "🥗 Discover Healthy Recipes", text: "Show me healthy recipes and nutrition guides." },
+          { label: "😂 Wellness Memes & Charts", text: "Show me wellness memes and charts." },
+          { label: "🌿 Natural Remedies & Care", text: "Show me natural remedies and holistic care." },
+          { label: "🛍️ Browse Marketplace Store", text: "I'd like to browse products in the shop." },
         ],
       };
     }
 
     // BOT IDENTITY & CAPABILITIES
-    if (q.includes("who are you") || q.includes("what are you") || q.includes("what can you do") || q.includes("help me")) {
+    if (q.includes("who are you") || q.includes("what are you") || q.includes("what can you do") || q.includes("help me") || q.includes("about") || q.includes("education")) {
       return {
-        text: "🌿 I'm Health Guru, your interactive AI wellness guide for Lifestyle Medicine Gateway!\n\nHere is how I can assist you:\n\n• 🛍️ **Product Finder**: Discover top natural remedies for gut health, menopause, healthy ageing, rest & therapy.\n• 📦 **Order Tracking**: Check live shipping & fulfillment status.\n• 📚 **Wellness Guides**: Explore research articles, recipes, and videos.\n• 💳 **Policy Info**: Learn about our 30-day money-back guarantee.\n\nWhat would you like to explore today?",
+        text: "🌿 Welcome to Lifestyle Medicine Gateway!\n\nWe are an evidence-based health education platform & wellness marketplace dedicated to empowering your well-being through lifestyle medicine.\n\nHere is what you can discover on our platform:\n\n• 📝 [Articles & References](/articles) — Science-backed wellness guides\n• 🥗 [Healthy Recipes](/recipes) — Easy, nutritious recipe ideas\n• 🎥 [Videos](/videos) — Masterclasses & video guides\n• 🔬 [Studies](/studies) & [Anecdotes](/anecdotes) — Clinical data & stories\n• 😂 [Memes](/memes) & 📊 [Charts](/charts) — Fun & visual health graphics\n• 🌿 [Natural Remedies](/natural-remedies) — Holistic lifestyle solutions\n• 🛍️ [Marketplace Store](/products) — Organic products & care bundles\n\nWhat topic or resource would you like to explore?",
         options: [
-          { label: "🌸 Women's & Hormone Care", text: "I'd like product recommendations for women's care & bundles." },
-          { label: "🦠 Gut & Cleanse Solutions", text: "I'd like product recommendations for gut & body cleanse." },
-          { label: "📦 Order Status", text: "Hi, I'd like to check the status of my order." },
+          { label: "📚 Explore Articles & Research", text: "Show me health articles and research studies." },
+          { label: "🥗 Discover Healthy Recipes", text: "Show me healthy recipes and nutrition guides." },
+          { label: "😂 Wellness Memes & Charts", text: "Show me wellness memes and charts." },
+        ],
+      };
+    }
+
+    // RECIPES & NUTRITION
+    if (q.includes("recipe") || q.includes("cook") || q.includes("food") || q.includes("meal") || q.includes("smoothie") || q.includes("nutrition")) {
+      return {
+        text: "🥗 Healthy Recipes & Nutrition Guides:\n\nFuel your body with science-backed, delicious recipes tailored for gut health, hormone balance, and vitality!\n\n• 🥗 [Browse All Healthy Recipes](/recipes)\n• 🎁 [Healthy Aging Starter Kit](/healthy-aging-starter-kit)\n\nWhat type of recipe or nutrition advice are you looking for today?",
+        options: [
+          { label: "🥗 Gut-Friendly Recipes", text: "Show me gut-friendly recipes." },
+          { label: "🌸 Hormone Support Recipes", text: "Show me recipes for hormone balance." },
+          { label: "📝 Read Health Articles", text: "Show me health articles and research studies." },
+        ],
+      };
+    }
+
+    // MEMES, CHARTS & INFOGRAPHICS
+    if (q.includes("meme") || q.includes("funny") || q.includes("chart") || q.includes("infographic") || q.includes("visual") || q.includes("joke")) {
+      return {
+        text: "😂 Wellness Memes & Health Infographics:\n\nLaughter and clear visuals are key pillars of lifestyle medicine! Check out our fun, relatable wellness memes and easy-to-read health charts:\n\n• 😂 [Browse Relatable Wellness Memes](/memes)\n• 📊 [Explore Health Charts & Infographics](/charts)\n\nEnjoy learning wellness in a fun, accessible way!",
+        options: [
+          { label: "😂 View Wellness Memes", text: "Show me wellness memes." },
+          { label: "📊 View Health Charts", text: "Show me health charts." },
+          { label: "📝 Read Health Articles", text: "Show me health articles and research studies." },
+        ],
+      };
+    }
+
+    // ARTICLES, RESEARCH, STUDIES & ANECDOTES
+    if (q.includes("article") || q.includes("study") || q.includes("studies") || q.includes("anecdote") || q.includes("guide") || q.includes("research") || q.includes("learn") || q.includes("read") || q.includes("evidence")) {
+      return {
+        text: "📚 Evidence-Based Health Education Hub:\n\nDive into our deep library of research-backed articles, clinical studies, and real community anecdotes:\n\n• 📝 [Articles & References](/articles) — In-depth health & wellness guides\n• 🔬 [Clinical Studies](/studies) — Research-backed scientific literature\n• 📖 [Real Anecdotes](/anecdotes) — Real health journeys & community stories\n• 🎥 [Video Masterclasses](/videos) — Expert video masterclasses\n\nWhat health topic would you like to read about?",
+        options: [
+          { label: "🌸 Women's & Menopause Health", text: "Show me articles on women's health and menopause." },
+          { label: "🦠 Gut & Digestive Health", text: "Show me articles on gut health and digestion." },
+          { label: "🌙 Rest & Stress Management", text: "Show me articles on sleep and stress relief." },
+        ],
+      };
+    }
+
+    // NATURAL REMEDIES
+    if (q.includes("remedy") || q.includes("remedies") || q.includes("natural") || q.includes("holistic") || q.includes("herbal")) {
+      return {
+        text: "🌿 Natural Remedies & Holistic Lifestyle Solutions:\n\nDiscover evidence-based natural remedies for daily wellness, recovery, and prevention:\n\n• 🌿 [Explore Natural Remedies](/natural-remedies)\n• 📝 [Read Holistic Health Articles](/articles)\n\nWhat specific natural remedy or health focus would you like to explore?",
+        options: [
+          { label: "🌸 Hormone & Women's Care", text: "Show me natural remedies for hormone care." },
+          { label: "🦠 Gut & Cleanse Remedies", text: "Show me natural remedies for gut health." },
+          { label: "🌙 Rest & Sleep Remedies", text: "Show me natural remedies for sleep." },
         ],
       };
     }
@@ -434,11 +483,11 @@ export function GlobalChat() {
       };
     }
 
-    // 4. SPECIFIC WELLNESS CATEGORY INQUIRIES WITH REAL WEBSITE PRODUCTS
+    // 4. SPECIFIC WELLNESS CATEGORY INQUIRIES WITH REAL WEBSITE PRODUCTS & ARTICLES
     if (q.includes("gut") || q.includes("digestion") || q.includes("probiotic") || q.includes("bloat")) {
       const realProds = await getMatchingProductsAsync(["gut", "digestion", "probiotic", "cleanse", "digest", "bloat"]);
       return {
-        text: "🦠 Gut & Digestive Health Solutions:\nHere are top wellness products available directly on our website:",
+        text: "🦠 Gut & Digestive Health Hub:\nCheck out our [Gut Health Articles](/articles) & top wellness solutions available on our website:",
         products: realProds,
       };
     }
@@ -446,7 +495,7 @@ export function GlobalChat() {
     if (q.includes("menopause") || q.includes("hormone") || q.includes("hot flash") || q.includes("women") || q.includes("pad") || q.includes("bundle")) {
       const realProds = await getMatchingProductsAsync(["menopause", "hormone", "women", "bundle", "pad", "sanitary", "care"]);
       return {
-        text: "🌸 Women's Wellness & Care Solutions:\nHere are top wellness products available directly on our website:",
+        text: "🌸 Women's Wellness & Hormone Hub:\nCheck out our [Menopause & Hormone Guides](/articles) & top care solutions available on our website:",
         products: realProds,
       };
     }
@@ -454,7 +503,7 @@ export function GlobalChat() {
     if (q.includes("aging") || q.includes("ageing") || q.includes("nad") || q.includes("longevity") || q.includes("vitality") || q.includes("soap") || q.includes("oil")) {
       const realProds = await getMatchingProductsAsync(["aging", "ageing", "vitality", "oil", "soap", "castor", "organic"]);
       return {
-        text: "✨ Healthy Ageing & Personal Care Solutions:\nHere are top wellness products available directly on our website:",
+        text: "✨ Healthy Ageing & Personal Care Hub:\nCheck out our [Healthy Ageing Starter Kit](/healthy-aging-starter-kit) & top care products:",
         products: realProds,
       };
     }
@@ -462,20 +511,12 @@ export function GlobalChat() {
     if (q.includes("sleep") || q.includes("stress") || q.includes("anxiety") || q.includes("relax") || q.includes("copper") || q.includes("bracelet") || q.includes("therapy")) {
       const realProds = await getMatchingProductsAsync(["sleep", "stress", "relax", "copper", "magnetic", "bracelet", "therapy"]);
       return {
-        text: "🌙 Rest & Natural Therapy Solutions:\nHere are top wellness products available directly on our website:",
+        text: "🌙 Rest & Natural Therapy Hub:\nCheck out our [Rest & Stress Relief Articles](/articles) & top therapy solutions:",
         products: realProds,
       };
     }
 
-    if (q.includes("weight") || q.includes("metabolism") || q.includes("deodorant") || q.includes("cleanse")) {
-      const realProds = await getMatchingProductsAsync(["cleanse", "deodorant", "weight", "metabolism", "organic", "wellness"]);
-      return {
-        text: "⚖️ Wellness & Body Care Solutions:\nHere are top wellness products available directly on our website:",
-        products: realProds,
-      };
-    }
-
-    // 5. GENERIC PRODUCT RECOMMENDATION INQUIRY (Explicit Product Finder Request)
+    // 5. GENERIC PRODUCT RECOMMENDATION INQUIRY
     if (
       q.includes("recommend") || 
       q.includes("suggest") || 
@@ -498,14 +539,7 @@ export function GlobalChat() {
       };
     }
 
-    // 6. ARTICLES & GUIDES
-    if (q.includes("article") || q.includes("study") || q.includes("recipe") || q.includes("video") || q.includes("learn")) {
-      return {
-        text: "📚 Health Guru Knowledge Base:\n\nCheck out our evidence-based wellness resources:\n\n• 📝 [Articles & References](/articles)\n• 🥗 [Recipes](/recipes)\n• 🎥 [Videos](/videos)\n• 🎁 [Healthy Aging Starter Kit](/healthy-aging-starter-kit)",
-      };
-    }
-
-    // 7. AI SEARCH / SMART FALLBACK FOR UNMATCHED CUSTOM INQUIRIES
+    // 6. AI SEARCH / SMART FALLBACK FOR UNMATCHED CUSTOM INQUIRIES
     try {
       const res = await fetch("/api/ai-chat", {
         method: "POST",
@@ -522,15 +556,14 @@ export function GlobalChat() {
       console.warn("AI API fetch notice:", e);
     }
 
-    // 8. GENERAL INQUIRY FALLBACK WITH OPTIONS & REAL PRODUCTS
-    const realProds = await getMatchingProductsAsync(["wellness", "cleanse", "organic", "bundle"]);
+    // 7. GENERAL INQUIRY FALLBACK WITH EDUCATION FOCUS
     return {
-      text: `👋 Health Guru:\n\nThanks for reaching out! Here are top featured products from our website store:`,
-      products: realProds,
+      text: `🌿 Health Guru Educational Hub:\n\nI'd love to help you explore our health education resources and wellness platform!\n\nHere is where you can learn:\n• 📝 [Articles & Research](/articles)\n• 🥗 [Healthy Recipes](/recipes)\n• 🎥 [Video Masterclasses](/videos)\n• 😂 [Wellness Memes](/memes) & 📊 [Health Charts](/charts)\n• 🌿 [Natural Remedies](/natural-remedies)\n• 🛍️ [Marketplace Store](/products)`,
       options: [
-        { label: "🌿 Product Recommendations", text: "Hi Health Guru, I'd like a product recommendation." },
-        { label: "🚚 Shipping & Delivery", text: "How long does shipping take and what are the delivery options?" },
-        { label: "💳 Refund & Return Policy", text: "What is your refund and return policy?" },
+        { label: "📚 Explore Articles & Research", text: "Show me health articles and research studies." },
+        { label: "🥗 Discover Healthy Recipes", text: "Show me healthy recipes and nutrition guides." },
+        { label: "😂 Wellness Memes & Charts", text: "Show me wellness memes and charts." },
+        { label: "🛍️ Browse Shop", text: "I'd like to browse products in the shop." },
       ],
     };
   };
