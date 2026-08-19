@@ -23,6 +23,17 @@ import {
   Check,
   RefreshCw
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
@@ -81,34 +92,51 @@ export function AdminMessagesTab() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Load live support conversations with schema resilience
+  // Load live support conversations safely with profile hydration
   const fetchConversations = async () => {
     setLoadingConvs(true);
     try {
-      let data = null;
-      let error = null;
+      const res = await (supabase.from("chat_conversations" as any) as any)
+        .select("*")
+        .order("last_message_at", { ascending: false });
 
-      try {
-        const res = await (supabase.from("chat_conversations" as any) as any)
-          .select("*, profiles!chat_conversations_customer_id_fkey(full_name, avatar_url)")
-          .order("last_message_at", { ascending: false });
-        data = res.data;
-        error = res.error;
-      } catch (e) {
-        error = e;
+      let data = (res.data || []) as Conversation[];
+
+      if (data.length > 0) {
+        const customerIds = Array.from(
+          new Set(data.map((c) => c.customer_id).filter(Boolean))
+        ) as string[];
+
+        if (customerIds.length > 0) {
+          const { data: profilesData } = await (supabase.from("profiles" as any) as any)
+            .select("id, full_name, avatar_url")
+            .in("id", customerIds);
+
+          if (profilesData && profilesData.length > 0) {
+            const profileMap = new Map<string, { full_name: string; avatar_url: string | null }>(
+              profilesData.map((p: any) => [
+                p.id,
+                { full_name: p.full_name, avatar_url: p.avatar_url },
+              ])
+            );
+            data = data.map((c) => ({
+              ...c,
+              profiles: c.customer_id ? profileMap.get(c.customer_id) : undefined,
+            }));
+          }
+        }
       }
 
-      if (error) {
-        console.warn("Retrying fetchConversations without relationship join:", error.message);
-        const fallbackRes = await (supabase.from("chat_conversations" as any) as any)
-          .select("*")
-          .order("last_message_at", { ascending: false });
-        data = fallbackRes.data;
-      }
+      setConversations(data);
 
-      setConversations((data || []) as Conversation[]);
-      if (data && data.length > 0 && !selectedConv) {
-        setSelectedConv(data[0]);
+      if (data.length > 0) {
+        setSelectedConv((prev) => {
+          if (!prev) return data[0];
+          const match = data.find((c) => c.id === prev.id);
+          return match || data[0];
+        });
+      } else {
+        setSelectedConv(null);
       }
     } catch (err) {
       console.error("Fetch convs error:", err);
@@ -152,7 +180,7 @@ export function AdminMessagesTab() {
     fetchConversations();
     fetchContactMessages();
 
-    // Subscribe to all conversations insertions/updates
+    // Subscribe to all conversations insertions/updates/deletions
     const convChannel = supabase
       .channel("admin_global_chat_convs")
       .on(
@@ -177,23 +205,28 @@ export function AdminMessagesTab() {
     if (selectedConv) {
       fetchMessages(selectedConv.id);
 
-      // Subscribe to messages in current active conversation
+      // Subscribe to messages in current active conversation (INSERT & DELETE)
       const msgChannel = supabase
         .channel(`admin_chat_msgs:${selectedConv.id}`)
         .on(
           "postgres_changes",
           {
-            event: "INSERT",
+            event: "*",
             schema: "public",
             table: "chat_messages",
             filter: `conversation_id=eq.${selectedConv.id}`,
           },
           (payload) => {
-            const newMsg = payload.new as ChatMessage;
-            setMessages((prev) => {
-              if (prev.some((m) => m.id === newMsg.id)) return prev;
-              return [...prev, newMsg];
-            });
+            if (payload.eventType === "INSERT") {
+              const newMsg = payload.new as ChatMessage;
+              setMessages((prev) => {
+                if (prev.some((m) => m.id === newMsg.id)) return prev;
+                return [...prev, newMsg];
+              });
+            } else if (payload.eventType === "DELETE") {
+              const deletedId = (payload.old as any).id;
+              setMessages((prev) => prev.filter((m) => m.id !== deletedId));
+            }
           }
         )
         .subscribe();
@@ -242,6 +275,50 @@ export function AdminMessagesTab() {
       toast.error(err.message || "Failed to send message.");
     } finally {
       setSending(false);
+    }
+  };
+
+  // Delete single message
+  const handleDeleteMessage = async (msgId: string) => {
+    try {
+      const { error } = await (supabase.from("chat_messages" as any) as any)
+        .delete()
+        .eq("id", msgId);
+
+      if (error) throw error;
+
+      setMessages((prev) => prev.filter((m) => m.id !== msgId));
+      toast.success("Message deleted.");
+    } catch (err: any) {
+      console.error("Delete message error:", err);
+      toast.error(err.message || "Failed to delete message.");
+    }
+  };
+
+  // Delete entire conversation
+  const handleDeleteConversation = async (convId: string) => {
+    try {
+      await (supabase.from("chat_messages" as any) as any)
+        .delete()
+        .eq("conversation_id", convId);
+
+      const { error } = await (supabase.from("chat_conversations" as any) as any)
+        .delete()
+        .eq("id", convId);
+
+      if (error) throw error;
+
+      setConversations((prev) => {
+        const nextConvs = prev.filter((c) => c.id !== convId);
+        if (selectedConv?.id === convId) {
+          setSelectedConv(nextConvs[0] || null);
+        }
+        return nextConvs;
+      });
+      toast.success("Conversation deleted.");
+    } catch (err: any) {
+      console.error("Delete conv error:", err);
+      toast.error(err.message || "Failed to delete conversation.");
     }
   };
 
@@ -456,6 +533,36 @@ export function AdminMessagesTab() {
                       <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
                       {selectedConv.status === "resolved" ? "Reopen Chat" : "Mark Resolved"}
                     </Button>
+
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 text-xs font-semibold gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Delete Chat
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Entire Conversation?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will permanently delete this conversation and all associated messages. This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDeleteConversation(selectedConv.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Delete Permanently
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </CardHeader>
 
@@ -467,20 +574,82 @@ export function AdminMessagesTab() {
                       return (
                         <div
                           key={msg.id}
-                          className={cn("flex flex-col", isAdmin ? "items-end" : "items-start")}
+                          className={cn("flex flex-col group relative", isAdmin ? "items-end" : "items-start")}
                         >
                           <span className="text-[10px] text-muted-foreground font-semibold mb-0.5 px-1">
                             {isAdmin ? "LMG Admin Support" : (msg.sender_name || "Customer")}
                           </span>
-                          <div
-                            className={cn(
-                              "max-w-[75%] rounded-2xl px-4 py-2.5 text-xs shadow-sm whitespace-pre-wrap leading-relaxed",
-                              isAdmin
-                                ? "bg-primary text-primary-foreground rounded-tr-none"
-                                : "bg-background text-foreground rounded-tl-none border border-border"
+                          <div className="flex items-center gap-1.5 max-w-[85%]">
+                            {isAdmin && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <button
+                                    title="Delete message"
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-muted-foreground hover:text-destructive rounded"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Message?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete this message? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDeleteMessage(msg.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             )}
-                          >
-                            {msg.content}
+
+                            <div
+                              className={cn(
+                                "rounded-2xl px-4 py-2.5 text-xs shadow-sm whitespace-pre-wrap leading-relaxed",
+                                isAdmin
+                                  ? "bg-primary text-primary-foreground rounded-tr-none"
+                                  : "bg-background text-foreground rounded-tl-none border border-border"
+                              )}
+                            >
+                              {msg.content}
+                            </div>
+
+                            {!isAdmin && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <button
+                                    title="Delete message"
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-muted-foreground hover:text-destructive rounded"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Message?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete this message? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDeleteMessage(msg.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
                           </div>
                           <span className="text-[9px] text-muted-foreground mt-1 px-1">
                             {new Date(msg.created_at).toLocaleTimeString([], {
