@@ -221,32 +221,31 @@ export function GlobalChat() {
 
     setLoading(true);
     try {
-      let { data: convs, error } = await (supabase.from("chat_conversations" as any) as any)
+      const currentGuestEmail = guestEmail || guestSessionId;
+      let query = (supabase.from("chat_conversations" as any) as any)
         .select("*")
-        .eq("is_support", true)
+        .eq("is_support", true);
+
+      if (user) {
+        query = query.eq("customer_id", user.id);
+      } else if (currentGuestEmail) {
+        query = query.eq("guest_email", currentGuestEmail);
+      } else {
+        setConversationId(null);
+        setMessages([]);
+        return;
+      }
+
+      const { data: convs, error } = await query
         .order("created_at", { ascending: false })
         .limit(1);
 
-      if (error) {
-        if (user) {
-          const fallbackRes = await (supabase.from("chat_conversations" as any) as any)
-            .select("*")
-            .eq("customer_id", user.id)
-            .order("created_at", { ascending: false })
-            .limit(1);
-          convs = fallbackRes.data;
-        } else {
-          const fallbackRes = await (supabase.from("chat_conversations" as any) as any)
-            .select("*")
-            .order("created_at", { ascending: false })
-            .limit(1);
-          convs = fallbackRes.data;
-        }
-      }
-
-      if (convs && convs.length > 0) {
+      if (!error && convs && convs.length > 0) {
         setConversationId(convs[0].id);
         fetchMessages(convs[0].id);
+      } else {
+        setConversationId(null);
+        setMessages([]);
       }
     } catch (err) {
       console.error("Init conversation error:", err);
@@ -605,21 +604,26 @@ export function GlobalChat() {
 
       setMessages((prev) => [...prev, userMsgObj]);
 
-      // Background insert of user message
-      (async () => {
-        try {
-          await (supabase.from("chat_messages" as any) as any).insert({
-            conversation_id: activeConvId,
-            sender_id: user?.id || null,
-            sender_type: senderType,
-            sender_name: senderName,
-            content: content,
-          });
-          await (supabase.from("chat_conversations" as any) as any)
-            .update({ last_message_at: new Date().toISOString() })
-            .eq("id", activeConvId);
-        } catch (e) {}
-      })();
+      // Synchronous insert of user message to Database
+      try {
+        const { error: userMsgErr } = await (supabase.from("chat_messages" as any) as any).insert({
+          conversation_id: activeConvId,
+          sender_id: user?.id ? user.id : null,
+          sender_type: senderType,
+          sender_name: senderName,
+          content: content,
+        });
+
+        if (userMsgErr) {
+          console.error("Failed to persist user message in DB:", userMsgErr);
+        }
+
+        await (supabase.from("chat_conversations" as any) as any)
+          .update({ last_message_at: new Date().toISOString() })
+          .eq("id", activeConvId);
+      } catch (e) {
+        console.error("Error inserting user message:", e);
+      }
 
       // Trigger Admin Notification
       createAdminNotification({
@@ -652,17 +656,21 @@ export function GlobalChat() {
         setMessages((prev) => [...prev, botMsgObj]);
         setIsBotTyping(false);
 
-        // Background persistence
+        // Synchronous persistence of bot response
         try {
-          await (supabase.from("chat_messages" as any) as any).insert({
+          const { error: botMsgErr } = await (supabase.from("chat_messages" as any) as any).insert({
             conversation_id: activeConvId,
             sender_id: null,
             sender_type: "admin",
             sender_name: "Health Guru",
             content: botResponse.text,
           });
+
+          if (botMsgErr) {
+            console.error("Failed to persist bot response in DB:", botMsgErr);
+          }
         } catch (botErr) {
-          console.warn("Notice: Health Guru DB background insert notice:", botErr);
+          console.error("Notice: Health Guru DB background insert notice:", botErr);
         }
       }, 400);
 

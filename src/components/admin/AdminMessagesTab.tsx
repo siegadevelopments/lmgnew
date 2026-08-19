@@ -527,6 +527,20 @@ export function AdminMessagesTab() {
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => {
+                        fetchConversations();
+                        if (selectedConv) fetchMessages(selectedConv.id);
+                      }}
+                      className="h-8 text-xs font-semibold gap-1.5"
+                      title="Refresh messages"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                      Refresh
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={toggleConvStatus}
                       className="h-8 text-xs font-semibold gap-1.5"
                     >
