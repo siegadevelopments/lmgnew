@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -108,16 +108,25 @@ const statusColors: Record<string, string> = {
 const getStatusColor = (status: string) =>
   statusColors[status?.toLowerCase()] || "bg-slate-500/10 text-slate-600 border-slate-200";
 
-export default function AdminPage() {
+function AdminDashboardContent() {
   const { user, role, loading: authLoading, signOut } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeTabParam = searchParams?.get("tab");
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [vendors, setVendors] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState(activeTabParam || "overview");
+
+  useEffect(() => {
+    if (activeTabParam && activeTabParam !== activeTab) {
+      setActiveTab(activeTabParam);
+    }
+  }, [activeTabParam]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pendingPayoutsCount, setPendingPayoutsCount] = useState(0);
   const [openSupportChatsCount, setOpenSupportChatsCount] = useState(0);
@@ -730,7 +739,7 @@ export default function AdminPage() {
               <h2 className="text-2xl font-bold tracking-tight">LMG Admin</h2>
               <p className="text-sm text-muted-foreground mt-1">Platform Control Center</p>
             </div>
-            <NotificationBell />
+            <NotificationBell onSelectTab={setActiveTab} />
           </div>
 
           <nav className="flex-1 space-y-1">
@@ -1807,5 +1816,19 @@ export default function AdminPage() {
         </Dialog>
       )}
     </div>
+  );
+}
+
+export default function AdminPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      }
+    >
+      <AdminDashboardContent />
+    </Suspense>
   );
 }

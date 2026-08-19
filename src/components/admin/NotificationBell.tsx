@@ -38,7 +38,7 @@ const typeIcons = {
   system: <Sparkles className="h-4 w-4 text-indigo-500" />,
 };
 
-export function NotificationBell() {
+export function NotificationBell({ onSelectTab }: { onSelectTab?: (tab: string) => void }) {
   const router = useRouter();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -78,21 +78,36 @@ export function NotificationBell() {
     };
   }, []);
 
-  const handleNotificationClick = async (notif: NotificationItem) => {
+  const handleNotificationClick = (notif: NotificationItem) => {
+    // Mark as read in background without blocking navigation
     if (!notif.read) {
-      await markNotificationRead(notif.id);
+      markNotificationRead(notif.id).catch((err) => console.error("Error marking read:", err));
       setNotifications((prev) =>
         prev.map((n) => (n.id === notif.id ? { ...n, read: true } : n))
       );
     }
     setIsOpen(false);
 
-    if (notif.link) {
-      router.push(notif.link);
+    const targetLink = notif.link || (
+      notif.type === "message" ? "/admin?tab=messages" :
+      notif.type === "order" ? "/admin?tab=orders" :
+      notif.type === "content" ? "/admin?tab=content" :
+      notif.type === "vendor" ? "/admin?tab=vendors" :
+      "/admin?tab=overview"
+    );
+
+    const match = targetLink.match(/[?&]tab=([^&]+)/);
+    const tabName = match ? match[1] : null;
+
+    if (onSelectTab && tabName) {
+      onSelectTab(tabName);
     }
+
+    router.push(targetLink);
   };
 
-  const handleMarkAllRead = async () => {
+  const handleMarkAllRead = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     await markAllNotificationsRead();
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
@@ -131,8 +146,9 @@ export function NotificationBell() {
           </div>
           {unreadCount > 0 && (
             <button
+              type="button"
               onClick={handleMarkAllRead}
-              className="text-[11px] font-medium text-primary hover:underline flex items-center gap-1"
+              className="text-[11px] font-medium text-primary hover:underline flex items-center gap-1 cursor-pointer"
             >
               <CheckCheck className="h-3.5 w-3.5" /> Mark all read
             </button>
@@ -144,10 +160,11 @@ export function NotificationBell() {
           {notifications.map((n) => (
             <button
               key={n.id}
+              type="button"
               onClick={() => handleNotificationClick(n)}
               className={cn(
-                "w-full p-3 text-left transition-colors flex items-start gap-3 hover:bg-accent/50",
-                !n.read ? "bg-primary/5 font-medium" : "opacity-80"
+                "w-full p-3 text-left transition-colors flex items-start gap-3 hover:bg-accent/70 cursor-pointer select-none",
+                !n.read ? "bg-primary/5 font-medium" : "opacity-80 hover:opacity-100"
               )}
             >
               <div className="p-2 rounded-full bg-muted shrink-0 mt-0.5">
@@ -184,13 +201,17 @@ export function NotificationBell() {
 
         {/* Footer */}
         <div className="p-2 bg-muted/20 border-t border-border text-center">
-          <Link
-            href="/admin?tab=overview"
-            onClick={() => setIsOpen(false)}
-            className="text-[11px] font-semibold text-primary hover:underline inline-flex items-center gap-1"
+          <button
+            type="button"
+            onClick={() => {
+              setIsOpen(false);
+              if (onSelectTab) onSelectTab("overview");
+              router.push("/admin?tab=overview");
+            }}
+            className="text-[11px] font-semibold text-primary hover:underline inline-flex items-center gap-1 cursor-pointer"
           >
             View Dashboard Overview <ChevronRight className="h-3 w-3" />
-          </Link>
+          </button>
         </div>
       </PopoverContent>
     </Popover>
