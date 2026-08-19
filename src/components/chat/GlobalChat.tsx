@@ -343,9 +343,49 @@ export function GlobalChat() {
     });
   };
 
-  // Generate Interactive Automated Response using 100% REAL website products from DB
+  // Generate Interactive Automated Response using 100% REAL website products from DB & AI
   const generateAutomatedResponse = async (query: string): Promise<{ text: string; products?: ChatProduct[]; options?: InteractiveOption[] }> => {
-    const q = query.toLowerCase();
+    const q = query.toLowerCase().trim();
+    const cleanQ = q.replace(/[^a-z0-9\s]/g, "");
+
+    // 0. GREETINGS & CASUAL SMALL TALK (e.g., "Hi", "Hello", "Hey", "Good morning")
+    const greetingWords = new Set(["hi", "hello", "hey", "greetings", "howdy", "sup", "yo", "hi there", "hello there", "good morning", "good afternoon", "good evening", "good day"]);
+    if (greetingWords.has(cleanQ) || /^(hi+|hello+|hey+|greetings|howdy)(\s+|$)/i.test(q)) {
+      return {
+        text: "Hello! 👋 How can I help you today?\n\nI'm Health Guru, your AI wellness assistant. Feel free to ask me anything about our products, health recommendations, order tracking, or wellness guides!\n\nHere are a few quick ways to get started:",
+        options: [
+          { label: "🌿 Product Recommendations", text: "Hi Health Guru, I'd like a product recommendation." },
+          { label: "📦 Order Status & Tracking", text: "Hi, I'd like to check the status of my order." },
+          { label: "🚚 Shipping & Delivery", text: "How long does shipping take and what are the delivery options?" },
+          { label: "💳 Refund & Return Policy", text: "What is your refund and return policy?" },
+        ],
+      };
+    }
+
+    // BOT IDENTITY & CAPABILITIES
+    if (q.includes("who are you") || q.includes("what are you") || q.includes("what can you do") || q.includes("help me")) {
+      return {
+        text: "🌿 I'm Health Guru, your interactive AI wellness guide for Lifestyle Medicine Gateway!\n\nHere is how I can assist you:\n\n• 🛍️ **Product Finder**: Discover top natural remedies for gut health, menopause, healthy ageing, rest & therapy.\n• 📦 **Order Tracking**: Check live shipping & fulfillment status.\n• 📚 **Wellness Guides**: Explore research articles, recipes, and videos.\n• 💳 **Policy Info**: Learn about our 30-day money-back guarantee.\n\nWhat would you like to explore today?",
+        options: [
+          { label: "🌸 Women's & Hormone Care", text: "I'd like product recommendations for women's care & bundles." },
+          { label: "🦠 Gut & Cleanse Solutions", text: "I'd like product recommendations for gut & body cleanse." },
+          { label: "📦 Order Status", text: "Hi, I'd like to check the status of my order." },
+        ],
+      };
+    }
+
+    // GRATITUDE & FAREWELLS
+    if (q.includes("thank") || q.includes("thx") || q.includes("appreciate") || q.includes("awesome") || q.includes("great bot")) {
+      return {
+        text: "You're very welcome! 🌸😊 I'm always here if you need anything else. Have a wonderful and healthy day!",
+      };
+    }
+
+    if (q.includes("bye") || q.includes("goodbye") || q.includes("see ya") || q.includes("have a nice day")) {
+      return {
+        text: "Goodbye! 🌿 Have a peaceful and healthy day ahead!",
+      };
+    }
 
     // 1. ORDER STATUS / TRACKING QUERY
     if (
@@ -466,7 +506,24 @@ export function GlobalChat() {
       };
     }
 
-    // 7. GENERAL INQUIRY FALLBACK WITH OPTIONS & REAL PRODUCTS
+    // 7. AI SEARCH / SMART FALLBACK FOR UNMATCHED CUSTOM INQUIRIES
+    try {
+      const res = await fetch("/api/ai-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: query }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.response) {
+          return { text: data.response };
+        }
+      }
+    } catch (e) {
+      console.warn("AI API fetch notice:", e);
+    }
+
+    // 8. GENERAL INQUIRY FALLBACK WITH OPTIONS & REAL PRODUCTS
     const realProds = await getMatchingProductsAsync(["wellness", "cleanse", "organic", "bundle"]);
     return {
       text: `👋 Health Guru:\n\nThanks for reaching out! Here are top featured products from our website store:`,
