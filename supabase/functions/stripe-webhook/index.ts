@@ -257,7 +257,7 @@ serve(async (req: Request) => {
 
       // Insert Admin In-App Notification
       try {
-        await supabase.from("notifications").insert({
+        await supabaseAdmin.from("notifications").insert({
           recipient_role: "admin",
           type: "order",
           title: `🛍️ New Order #${orderId.substring(0, 8)}`,

@@ -163,8 +163,7 @@ export function ProductsTab({
           form.title.toLowerCase().replace(/[\s\W-]+/g, "-") +
           "-" +
           Math.floor(Math.random() * 1000);
-        const { data, error } = await supabase
-          .from("products")
+        const { data, error } = await (supabase.from("products") as any)
           .insert({ ...payload, vendor_id: userId, slug } as any)
           .select()
           .single();
@@ -178,7 +177,7 @@ export function ProductsTab({
             title: `🛍️ New Product Created: ${form.title}`,
             message: `A new product "${form.title}" ($${form.price}) was added to the catalog.`,
             link: "/admin?tab=products",
-            metadata: { product_id: data.id, title: form.title },
+            metadata: { product_id: (data as any).id, title: form.title },
           });
         }
       }

@@ -66,8 +66,7 @@ export function ArticlesTab({ articles, setArticles, userId }: Props) {
           form.title.toLowerCase().replace(/[\s\W-]+/g, "-") +
           "-" +
           Math.floor(Math.random() * 1000);
-        const { data, error } = await supabase
-          .from("articles")
+        const { data, error } = await (supabase.from("articles") as any)
           .insert({ ...payload, slug })
           .select()
           .single();
@@ -81,7 +80,7 @@ export function ArticlesTab({ articles, setArticles, userId }: Props) {
             title: `📝 New Article Published: ${form.title}`,
             message: `A vendor published a new article titled "${form.title}".`,
             link: "/admin?tab=content",
-            metadata: { article_id: data.id, title: form.title },
+            metadata: { article_id: (data as any).id, title: form.title },
           });
         }
       }

@@ -109,7 +109,7 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
         }
       } else {
         // Create new
-        const { data, error } = await supabase.from("videos").insert(payload).select().single();
+        const { data, error } = await (supabase.from("videos") as any).insert(payload).select().single();
 
         if (error) throw error;
         if (data) {
@@ -120,7 +120,7 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
             title: `🎥 New Video Published: ${form.title}`,
             message: `A video titled "${form.title}" was added to the platform.`,
             link: "/admin?tab=content",
-            metadata: { video_id: data.id, title: form.title },
+            metadata: { video_id: (data as any).id, title: form.title },
           });
 
           if (uploadMode === "file") {
