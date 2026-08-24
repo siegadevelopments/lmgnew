@@ -605,9 +605,15 @@ export function GlobalChat() {
         }
 
         if (convErr || !newConv) {
+          console.error("Primary conversation insert failed:", convErr);
+          // Fallback to purely guest if the user ID is invalid (e.g., deleted from DB but session active)
           let fallbackRes = await (supabase.from("chat_conversations" as any) as any)
             .insert({
-              customer_id: user?.id || null,
+              customer_id: null,
+              guest_name: currentGuestName,
+              guest_email: currentGuestEmail,
+              is_support: true,
+              status: "open",
               last_message_at: new Date().toISOString(),
             })
             .select()
