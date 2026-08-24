@@ -8,11 +8,15 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { adminUpdateVendorProfile } from "../../../app/actions/vendor";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Mail, Upload } from "lucide-react";
+import { Mail, Upload } from "lucide-react";
 import { uploadMedia } from "@/lib/upload";
 import { sendBrandedResetEmail } from "@/lib/admin-actions";
 
@@ -123,16 +127,7 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
         updated_at: new Date().toISOString(),
       };
 
-      const { error: profileError } = await (supabase.from("vendor_profiles") as any)
-        .update(updateData as any)
-        .eq("id", vendor.id)
-        .select("id")
-        .single();
-
-      if (profileError) {
-        console.error("Profile update error:", profileError);
-        throw new Error(`Profile update failed: ${profileError.message}`);
-      }
+      await adminUpdateVendorProfile(vendor.id, updateData);
 
       // Update or insert stream info
       if (formData.mux_stream_key || formData.mux_playback_id) {
