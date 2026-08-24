@@ -57,8 +57,9 @@ export function NotificationBell({ onSelectTab }: { onSelectTab?: (tab: string) 
     loadNotifications();
 
     // Subscribe to realtime notifications
+    // Use a random suffix to prevent Strict Mode double-mount "already subscribed" errors
     const channel = supabase
-      .channel("admin_notifications_realtime")
+      .channel(`admin_notifications_realtime_${Math.random().toString(36).substring(7)}`)
       .on(
         "postgres_changes",
         {

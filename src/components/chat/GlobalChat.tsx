@@ -279,7 +279,7 @@ export function GlobalChat() {
     if (!conversationId) return;
 
     const channel = supabase
-      .channel(`support_chat:${conversationId}`)
+      .channel(`support_chat:${conversationId}_${Math.random().toString(36).substring(7)}`)
       .on(
         "postgres_changes",
         {

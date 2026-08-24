@@ -74,7 +74,7 @@ export function ChatDialog({ vendorId, vendorName, isOpen, onOpenChange }: ChatD
     if (!conversation?.id) return;
 
     const channel = supabase
-      .channel(`chat:${conversation.id}`)
+      .channel(`chat:${conversation.id}_${Math.random().toString(36).substring(7)}`)
       .on(
         "postgres_changes",
         {

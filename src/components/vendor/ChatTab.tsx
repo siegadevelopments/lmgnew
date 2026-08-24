@@ -107,7 +107,7 @@ export function ChatTab({ vendorId }: { vendorId: string }) {
 
     // Global subscription for all messages & deletions for this vendor
     const channel = supabase
-      .channel(`vendor_global_chat:${vendorId}`)
+      .channel(`vendor_global_chat:${vendorId}_${Math.random().toString(36).substring(7)}`)
       .on(
         "postgres_changes",
         {

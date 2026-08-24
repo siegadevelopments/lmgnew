@@ -182,7 +182,7 @@ export function AdminMessagesTab() {
 
     // Subscribe to all conversations insertions/updates/deletions
     const convChannel = supabase
-      .channel("admin_global_chat_convs")
+      .channel(`admin_global_chat_convs_${Math.random().toString(36).substring(7)}`)
       .on(
         "postgres_changes",
         {
@@ -207,7 +207,7 @@ export function AdminMessagesTab() {
 
       // Subscribe to messages in current active conversation (INSERT & DELETE)
       const msgChannel = supabase
-        .channel(`admin_chat_msgs:${selectedConv.id}`)
+        .channel(`admin_chat_msgs:${selectedConv.id}_${Math.random().toString(36).substring(7)}`)
         .on(
           "postgres_changes",
           {
