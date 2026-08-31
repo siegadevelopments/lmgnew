@@ -360,14 +360,16 @@ export function AdminMarketingTab() {
   async function loadSourceContent() {
     setLoadingContent(true);
     try {
-      const [articles, recipes] = await Promise.all([
+      const [articles, recipes, videos] = await Promise.all([
         supabase.from("articles").select("id, title, image_url, slug, excerpt, content").order("created_at", { ascending: false }).limit(20),
         supabase.from("recipes").select("id, title, image_url, slug, excerpt, content").order("created_at", { ascending: false }).limit(20),
+        supabase.from("videos").select("id, title, thumbnail_url, embed_url, description").order("created_at", { ascending: false }).limit(20),
       ]);
 
       const combined = [
         ...(articles.data || []).map((a: any) => ({ ...a, type: "Article" })),
         ...(recipes.data || []).map((r: any) => ({ ...r, type: "Recipe" })),
+        ...(videos.data || []).map((v: any) => ({ ...v, type: "Video", image_url: v.thumbnail_url, slug: v.embed_url, excerpt: v.description?.substring(0, 100), content: v.description })),
       ];
       setContentList(combined);
     } catch (err) {
@@ -1272,7 +1274,7 @@ export function AdminMarketingTab() {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Select Article or Recipe</Label>
+                    <Label>Select Article, Recipe, or Video</Label>
                     <select
                       className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none"
                       value={selectedContentId}
@@ -1312,7 +1314,7 @@ export function AdminMarketingTab() {
                       onClick={async () => {
                         const content = contentList.find(c => String(c.id) === selectedContentId);
                         if (!content) {
-                          toast.error("Please select an article or recipe first!");
+                          toast.error("Please select an article, recipe, or video first!");
                           return;
                         }
                         
@@ -1320,7 +1322,7 @@ export function AdminMarketingTab() {
                         const toastId = toast.loading("AI is crafting a viral post for your selected article...");
                         try {
                           const fullLink = `https://www.lifestylemedicinegateway.com/${content.type.toLowerCase()}s/${content.slug}`;
-                          const prompt = `Create a viral social media post tailored for Facebook, Instagram, and Pinterest about this article/recipe:
+                          const prompt = `Create a viral social media post tailored for Facebook, Instagram, and Pinterest about this ${content.type.toLowerCase()}:
                           
                           Title: ${content.title}
                           Excerpt: ${content.excerpt || ""}
@@ -1351,7 +1353,7 @@ export function AdminMarketingTab() {
                             body: JSON.stringify({
                               field: "custom",
                               value: prompt,
-                              context: `Article: ${content.title}`
+                              context: `${content.type}: ${content.title}`
                             }),
                           });
 
@@ -1771,8 +1773,8 @@ export function AdminMarketingTab() {
                 <Sparkles className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
                 <h3 className="text-lg font-bold mb-2">No posts scheduled yet</h3>
                 <p className="text-sm text-muted-foreground mb-6">
-                  Click "Generate 30 Days" to create AI-powered marketing content from your articles
-                  and products.
+                  Click "Generate 30 Days" to create AI-powered marketing content from your articles,
+                  videos, and products.
                 </p>
               </CardContent>
             </Card>

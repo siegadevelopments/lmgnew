@@ -161,18 +161,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     productsQuery = productsQuery.limit(50);
 
     const recipesQuery = supabase.from("recipes").select("id, title, slug, excerpt, image_url").limit(50);
+    const videosQuery = supabase.from("videos").select("id, title, embed_url, description, thumbnail_url").limit(50);
 
-    const [articlesRes, productsRes, recipesRes] = await Promise.all([
+    const [articlesRes, productsRes, recipesRes, videosRes] = await Promise.all([
       articlesQuery,
       productsQuery,
       recipesQuery,
+      videosQuery,
     ]);
 
     const articles = (articlesRes.data || []).filter((a: any) => !usedSourceIds.has(String(a.id)));
     const products = (productsRes.data || []).filter((p: any) => !usedSourceIds.has(String(p.id)));
     const recipes = (recipesRes.data || []).filter((r: any) => !usedSourceIds.has(String(r.id)));
+    const videos = (videosRes.data || []).filter((v: any) => !usedSourceIds.has(String(v.id)));
 
-    const totalContent = articles.length + products.length + recipes.length;
+    const totalContent = articles.length + products.length + recipes.length + videos.length;
     if (totalContent === 0) {
       return res.status(400).json({ error: "No new content found to generate posts from. All recent content may have already been posted." });
     }
@@ -226,6 +229,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           excerpt: (r.excerpt || "").substring(0, 100),
           image: r.image_url,
         })),
+      videos: videos
+        .slice(0, 10)
+        .map((v) => ({
+          id: v.id,
+          title: v.title,
+          slug: v.embed_url,
+          excerpt: (v.description || "").substring(0, 100),
+          image: v.thumbnail_url,
+        })),
     });
 
     const generationPrompt = `${AUDIENCE_PROMPT}
@@ -237,7 +249,7 @@ CONTENT TO PROMOTE:
 ${contentSummary}
 
 DISTRIBUTION STRATEGY:
-- Mix educational articles (40%), product features (40%), and recipes/lifestyle (20%).
+- Mix educational articles (40%), product features (40%), and recipes/videos (20%).
 - Ensure content rotates logically across the selected days.
 - Focus on building trust early and converting towards the end of the batch.
 
@@ -255,7 +267,7 @@ REQUIREMENTS FOR EACH POST:
 - "facebook": Engaging Facebook caption with conversational tone, story hook, emojis, the actual article/product link from the content above, and STRICTLY 2-3 hashtags max. DO NOT write literal placeholder strings like "{source_url}" or "Title:" or "Link:". Write the actual readable post copy.
 - "instagram": High-engagement Instagram caption with emojis, line breaks (\\n), CTA to visit link in bio or the actual website link from the content above, and STRICTLY 3-5 relevant hashtags at the end. DO NOT write literal placeholder strings like "{source_url}" or "Title:" or "Link:".
 - "pinterest": STRICT RULE - Must be CONCISE and UNDER 450 CHARACTERS total (including title, description, actual website link, and hashtags) so it never breaches Pinterest's 500-char limit. Start with a catchy Pin Title, brief description, actual CTA link, and 2-3 targeted hashtags. DO NOT write literal placeholder strings like "{source_url}" or "Title:" or "Link:".
-- "source_type": "article" | "product" | "recipe" | "custom"
+- "source_type": "article" | "product" | "recipe" | "video" | "custom"
 - "source_id": the id from the content above (as string), or null for custom
 - "source_url": relative URL like "/articles/slug" or "/shop/product-slug" or null
 - "image_url": the image URL from the source content, or null
