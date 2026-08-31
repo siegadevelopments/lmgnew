@@ -275,6 +275,9 @@ export function GlobalChat() {
   }, [isOpen, user]);
 
   // Realtime subscription for incoming messages
+  const isOpenRef = useRef(isOpen);
+  useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
+
   useEffect(() => {
     if (!conversationId) return;
 
@@ -291,13 +294,34 @@ export function GlobalChat() {
         (payload) => {
           const newMsg = payload.new as ChatMessage;
           setMessages((prev) => {
-            if (prev.some((m) => m.id === newMsg.id || (m.content === newMsg.content && m.sender_name === newMsg.sender_name))) {
-              return prev;
+            // Only deduplicate by real DB UUID — ignore temp local IDs (usr_/guru_)
+            const isDuplicate = prev.some((m) => {
+              // If both are real UUIDs, compare directly
+              if (!m.id.startsWith("usr_") && !m.id.startsWith("guru_")) {
+                return m.id === newMsg.id;
+              }
+              // If a temp local message matches content+sender, replace it with the DB version
+              if (m.content === newMsg.content && m.sender_name === newMsg.sender_name) {
+                return true;
+              }
+              return false;
+            });
+
+            if (isDuplicate) {
+              // Replace temp local message with real DB message (to get real ID)
+              return prev.map((m) =>
+                (m.id.startsWith("usr_") || m.id.startsWith("guru_")) &&
+                m.content === newMsg.content &&
+                m.sender_name === newMsg.sender_name
+                  ? newMsg
+                  : m
+              );
             }
+
             return [...prev, newMsg];
           });
 
-          if (!isOpen && (newMsg.sender_type === "admin" || !newMsg.sender_id)) {
+          if (!isOpenRef.current && (newMsg.sender_type === "admin" || !newMsg.sender_id)) {
             setUnreadCount((c) => c + 1);
           }
         }
@@ -307,7 +331,7 @@ export function GlobalChat() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId, isOpen]);
+  }, [conversationId]);
 
   // Auto-scroll message stream
   useEffect(() => {

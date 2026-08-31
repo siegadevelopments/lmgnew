@@ -318,6 +318,7 @@ function AdminDashboardContent() {
       .channel("admin_sidebar_realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => loadData())
       .on("postgres_changes", { event: "*", schema: "public", table: "chat_conversations" }, () => loadData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "chat_messages" }, () => loadData())
       .on("postgres_changes", { event: "*", schema: "public", table: "contact_messages" }, () => loadData())
       .on("postgres_changes", { event: "*", schema: "public", table: "vendor_earnings" }, () => loadData())
       .on("postgres_changes", { event: "*", schema: "public", table: "vendor_profiles" }, () => loadData())
