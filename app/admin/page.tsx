@@ -254,7 +254,9 @@ function AdminDashboardContent() {
 
         setOrders(allOrders);
         setMessages(allMessages);
-        setUsers(usersWithEmails.length > 0 ? usersWithEmails : allUsers);
+        const finalUsers = usersWithEmails.length > 0 ? usersWithEmails : allUsers;
+        finalUsers.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        setUsers(finalUsers);
 
         const vendorsWithStreams = vendorsWithEmails.map((v) => ({
           ...v,
