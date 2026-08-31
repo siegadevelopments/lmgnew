@@ -33,10 +33,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         channels(input: $input) {
           id
           service
-          subprofiles {
-            id
-            name
-          }
           defaultSubprofileId
         }
       }
@@ -112,7 +108,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } else if (platform.name === "instagram") {
         metadata = { instagram: { type: "post", shouldShareToFeed: true } };
       } else if (platform.name === "pinterest") {
-        const boardId = channel.defaultSubprofileId || (channel.subprofiles && channel.subprofiles.length > 0 ? channel.subprofiles[0].id : null);
+        const boardId = channel.defaultSubprofileId;
         if (!boardId) {
           errors.push(`${platform.name}: No board (subprofile) found for Pinterest channel.`);
           continue;
