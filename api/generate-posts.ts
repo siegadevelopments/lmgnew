@@ -231,13 +231,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         })),
       videos: videos
         .slice(0, 10)
-        .map((v) => ({
-          id: v.id,
-          title: v.title,
-          slug: v.embed_url,
-          excerpt: (v.description || "").substring(0, 100),
-          image: v.thumbnail_url,
-        })),
+        .map((v) => {
+          let image = v.thumbnail_url;
+          if (!image && v.embed_url?.includes("youtube.com/watch?v=")) {
+            const m = v.embed_url.match(/v=([^&]+)/);
+            if (m && m[1]) image = `https://img.youtube.com/vi/${m[1]}/maxresdefault.jpg`;
+          } else if (!image && v.embed_url?.includes("youtu.be/")) {
+            const m = v.embed_url.match(/youtu\.be\/([^?]+)/);
+            if (m && m[1]) image = `https://img.youtube.com/vi/${m[1]}/maxresdefault.jpg`;
+          }
+          return {
+            id: v.id,
+            title: v.title,
+            slug: v.embed_url,
+            excerpt: (v.description || "").substring(0, 100),
+            image: image,
+          };
+        }),
     });
 
     const generationPrompt = `${AUDIENCE_PROMPT}
@@ -269,7 +279,7 @@ REQUIREMENTS FOR EACH POST:
 - "pinterest": STRICT RULE - Must be CONCISE and UNDER 450 CHARACTERS total (including title, description, actual website link, and hashtags) so it never breaches Pinterest's 500-char limit. Start with a catchy Pin Title, brief description, actual CTA link, and 2-3 targeted hashtags. DO NOT write literal placeholder strings like "{source_url}" or "Title:" or "Link:".
 - "source_type": "article" | "product" | "recipe" | "video" | "custom"
 - "source_id": the id from the content above (as string), or null for custom
-- "source_url": relative URL like "/articles/slug" or "/shop/product-slug" or null
+- "source_url": For articles/recipes/products use relative URL like "/articles/slug" or "/shop/product-slug". For videos, use the full absolute YouTube URL provided in the slug field.
 - "image_url": the image URL from the source content, or null
 - "time_slot": "morning" | "midday" | "evening"
 

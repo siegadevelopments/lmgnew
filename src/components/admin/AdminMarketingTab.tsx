@@ -317,6 +317,7 @@ export function AdminMarketingTab() {
   const [selectedContentId, setSelectedContentId] = useState<string>("");
   const [targetPlatform, setTargetPlatform] = useState<"facebook" | "instagram" | "pinterest" | "both" | "all">("all");
   const [loadingContent, setLoadingContent] = useState(false);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
 
   const [vendors, setVendors] = useState<{ id: string; store_name: string }[]>([]);
   const [selectedVendorId, setSelectedVendorId] = useState<string>("");
@@ -360,10 +361,11 @@ export function AdminMarketingTab() {
   async function loadSourceContent() {
     setLoadingContent(true);
     try {
-      const [articles, recipes, videos] = await Promise.all([
+      const [articles, recipes, videos, products] = await Promise.all([
         supabase.from("articles").select("id, title, image_url, slug, excerpt, content").order("created_at", { ascending: false }).limit(20),
         supabase.from("recipes").select("id, title, image_url, slug, excerpt, content").order("created_at", { ascending: false }).limit(20),
         supabase.from("videos").select("id, title, thumbnail_url, embed_url, description").order("created_at", { ascending: false }).limit(20),
+        supabase.from("products").select("id, title, slug, excerpt, image_url").eq("status", "published").limit(50),
       ]);
 
       const combined = [
@@ -372,6 +374,7 @@ export function AdminMarketingTab() {
         ...(videos.data || []).map((v: any) => ({ ...v, type: "Video", image_url: v.thumbnail_url, slug: v.embed_url, excerpt: v.description?.substring(0, 100), content: v.description })),
       ];
       setContentList(combined);
+      setAllProducts(products.data || []);
     } catch (err) {
       console.error("Error loading source content:", err);
     } finally {
@@ -1321,17 +1324,28 @@ export function AdminMarketingTab() {
                         setEnhancingField("viral");
                         const toastId = toast.loading("AI is crafting a viral post for your selected article...");
                         try {
-                          const fullLink = `https://www.lifestylemedicinegateway.com/${content.type.toLowerCase()}s/${content.slug}`;
+                          const fullLink = content.type === "Video" 
+                            ? content.slug 
+                            : `https://www.lifestylemedicinegateway.com/${content.type.toLowerCase()}s/${content.slug}`;
+                          
+                          // Shuffle and pick top 10 products to avoid overflowing prompt
+                          const shuffledProducts = [...allProducts].sort(() => 0.5 - Math.random()).slice(0, 10);
+                          const productsContext = shuffledProducts.map(p => `- ${p.title} (https://www.lifestylemedicinegateway.com/shop/${p.slug}) - ${p.excerpt || ""}`).join('\n');
+                          
                           const prompt = `Create a viral social media post tailored for Facebook, Instagram, and Pinterest about this ${content.type.toLowerCase()}:
                           
                           Title: ${content.title}
                           Excerpt: ${content.excerpt || ""}
                           Content Summary: ${content.content?.replace(/<[^>]*>/g, ' ').substring(0, 1500) || ""}
                           
+                          MANDATORY: You MUST select one highly relevant product from the following list and organically integrate it into the post, including its link.
+                          Available Products:
+                          ${productsContext}
+                          
                           PLATFORM-SPECIFIC RULES:
-                          1. FACEBOOK: Engaging, conversational tone with story hook, emojis, call to action with link: ${fullLink}, and STRICTLY 2-3 hashtags max.
-                          2. INSTAGRAM: High-engagement visual caption, clear formatting with emojis and line breaks (\\n), CTA to click link in bio or visit ${fullLink}, and STRICTLY 3-5 relevant hashtags at the end.
-                          3. PINTEREST: STRICT RULE - Must be CONCISE and UNDER 450 CHARACTERS total (including title, description, link, and hashtags) so it never gets rejected by Pinterest's 500-char limit. Start with a catchy Pin Title, brief description, CTA link: ${fullLink}, and 2-3 targeted hashtags.
+                          1. FACEBOOK: Engaging, conversational tone with story hook, emojis, call to action with link: ${fullLink} AND the link to the related product you chose. STRICTLY 2-3 hashtags max.
+                          2. INSTAGRAM: High-engagement visual caption, clear formatting with emojis and line breaks (\\n), CTA to click link in bio or visit ${fullLink} and check out the related product. STRICTLY 3-5 relevant hashtags at the end.
+                          3. PINTEREST: STRICT RULE - Must be CONCISE and UNDER 450 CHARACTERS total (including title, description, link, and hashtags) so it never gets rejected by Pinterest's 500-char limit. Start with a catchy Pin Title, brief description, CTA link to ${fullLink} and the related product, and 2-3 targeted hashtags.
 
                           INSTRUCTIONS:
                           Respond ONLY with a valid JSON object matching this exact structure (no markdown tags, just pure JSON):
@@ -1369,8 +1383,29 @@ export function AdminMarketingTab() {
                             throw new Error("AI returned invalid format. Try again.");
                           }
                           
-                          const sourceUrl = `/${content.type.toLowerCase()}s/${content.slug}`;
-                          const finalImageUrl = content.image_url || "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=2070&auto=format&fit=crop";
+                          const sourceUrl = content.type === "Video"
+                            ? content.slug
+                            : `/${content.type.toLowerCase()}s/${content.slug}`;
+                            
+                          let finalImageUrl = content.image_url;
+                          
+                          // Fallback to YouTube thumbnail if it's a video and has a YouTube URL
+                          if (!finalImageUrl && content.type === "Video" && content.slug?.includes("youtube.com/watch?v=")) {
+                            const videoIdMatch = content.slug.match(/v=([^&]+)/);
+                            if (videoIdMatch && videoIdMatch[1]) {
+                              finalImageUrl = `https://img.youtube.com/vi/${videoIdMatch[1]}/maxresdefault.jpg`;
+                            }
+                          } else if (!finalImageUrl && content.type === "Video" && content.slug?.includes("youtu.be/")) {
+                            const videoIdMatch = content.slug.match(/youtu\.be\/([^?]+)/);
+                            if (videoIdMatch && videoIdMatch[1]) {
+                              finalImageUrl = `https://img.youtube.com/vi/${videoIdMatch[1]}/maxresdefault.jpg`;
+                            }
+                          }
+                          
+                          // Final fallback
+                          if (!finalImageUrl) {
+                            finalImageUrl = "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=2070&auto=format&fit=crop";
+                          }
 
                           setMultiPlatformDraft({
                             facebook: parsed.facebook,
