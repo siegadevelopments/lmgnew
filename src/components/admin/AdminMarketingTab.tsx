@@ -318,10 +318,44 @@ export function AdminMarketingTab() {
   const [targetPlatform, setTargetPlatform] = useState<"facebook" | "instagram" | "pinterest" | "both" | "all">("all");
   const [loadingContent, setLoadingContent] = useState(false);
 
+  const [vendors, setVendors] = useState<{ id: string; store_name: string }[]>([]);
+  const [selectedVendorId, setSelectedVendorId] = useState<string>("");
+  const [vendorProducts, setVendorProducts] = useState<{ id: number; title: string }[]>([]);
+  const [selectedProductIds, setSelectedProductIds] = useState<number[]>([]);
+
   useEffect(() => {
     loadPosts();
     loadSourceContent();
+    loadVendors();
   }, []);
+
+  async function loadVendors() {
+    try {
+      const { data } = await supabase.from("vendor_profiles").select("id, store_name").eq("is_approved", true);
+      setVendors(data || []);
+    } catch (err) {
+      console.error("Error loading vendors", err);
+    }
+  }
+
+  useEffect(() => {
+    if (selectedVendorId) {
+      loadVendorProducts(selectedVendorId);
+    } else {
+      setVendorProducts([]);
+      setSelectedProductIds([]);
+    }
+  }, [selectedVendorId]);
+
+  async function loadVendorProducts(vendorId: string) {
+    try {
+      const { data } = await supabase.from("products").select("id, title").eq("vendor_id", vendorId).eq("status", "published");
+      setVendorProducts(data || []);
+      setSelectedProductIds((data || []).map((p: any) => p.id));
+    } catch (err) {
+      console.error("Error loading products", err);
+    }
+  }
 
   async function loadSourceContent() {
     setLoadingContent(true);
@@ -454,6 +488,8 @@ export function AdminMarketingTab() {
           targetTime: selectedTime,
           targetPlatform,
           autoPushBuffer: true,
+          selectedVendorId: selectedVendorId || null,
+          selectedProductIds: selectedProductIds.length > 0 ? selectedProductIds : null,
         }),
       });
 
@@ -1051,6 +1087,56 @@ export function AdminMarketingTab() {
                     >
                       Clear All
                     </Button>
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex flex-col gap-1.5 w-full sm:w-auto">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">
+                  Vendor (Optional)
+                </span>
+                <select
+                  className="bg-muted/50 p-1 rounded-lg border border-border/50 h-9 text-sm font-semibold focus:ring-0 cursor-pointer px-2"
+                  value={selectedVendorId}
+                  onChange={(e) => setSelectedVendorId(e.target.value)}
+                  disabled={generating}
+                >
+                  <option value="">All Vendors</option>
+                  {vendors.map((v) => (
+                    <option key={v.id} value={v.id}>{v.store_name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              {selectedVendorId && vendorProducts.length > 0 && (
+                <div className="flex flex-col gap-1.5 w-full sm:w-auto max-w-[200px]">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">
+                    Products ({selectedProductIds.length}/{vendorProducts.length})
+                  </span>
+                  <div className="bg-muted/50 p-1 rounded-lg border border-border/50 h-9 flex items-center overflow-hidden">
+                    <select
+                      className="bg-transparent h-full text-sm font-semibold focus:ring-0 cursor-pointer px-2 w-full truncate"
+                      value=""
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        if (!isNaN(val)) {
+                          if (selectedProductIds.includes(val)) {
+                            setSelectedProductIds(prev => prev.filter(id => id !== val));
+                          } else {
+                            setSelectedProductIds(prev => [...prev, val]);
+                          }
+                        }
+                      }}
+                      disabled={generating}
+                    >
+                      <option value="">Select/Deselect Products</option>
+                      <option value="all">-- Toggle All --</option>
+                      {vendorProducts.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {selectedProductIds.includes(p.id) ? "✅ " : "⬜ "}{p.title}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               )}

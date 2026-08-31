@@ -115,34 +115,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .single();
     if (profile?.role !== "admin") return res.status(403).json({ error: "Admin access required" });
 
-    // 2. Fetch all content
-    const [articlesRes, productsRes, recipesRes] = await Promise.all([
-      supabase
-        .from("articles")
-        .select("id, title, slug, excerpt, image_url, category_name")
-        .eq("status", "published")
-        .limit(50),
-      supabase
-        .from("products")
-        .select("id, title, slug, price, excerpt, image_url, category, brand")
-        .eq("status", "published")
-        .limit(50),
-      supabase.from("recipes").select("id, title, slug, excerpt, image_url").limit(50),
-    ]);
-
-    const articles = articlesRes.data || [];
-    const products = productsRes.data || [];
-    const recipes = recipesRes.data || [];
-
-    const totalContent = articles.length + products.length + recipes.length;
-    if (totalContent === 0) {
-      return res.status(400).json({ error: "No content found to generate posts from." });
-    }
-
-    // 3. Generate with Gemini AI
-    const geminiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || "";
-    if (!geminiKey) return res.status(500).json({ error: "GEMINI_API_KEY not configured" });
-
     const {
       numWeeks = 4,
       startDate,
@@ -151,12 +123,63 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       targetTime = "09:00",
       targetPlatform = "both",
       autoPushBuffer = false,
+      selectedVendorId = null,
+      selectedProductIds = [],
     } = req.body || {};
+    
     const postsPerWeek = selectedDays ? selectedDays.length : 0;
     const totalPostsCount = specificDates ? specificDates.length : numWeeks * postsPerWeek;
 
     if (totalPostsCount === 0)
       return res.status(400).json({ error: "No dates selected for generation" });
+
+    // Fetch existing scheduled posts to prevent duplication
+    const { data: existingPosts } = await supabase
+      .from("scheduled_posts")
+      .select("source_id")
+      .not("source_id", "is", null);
+      
+    const usedSourceIds = new Set((existingPosts || []).map((p: any) => p.source_id));
+
+    // 2. Fetch all content
+    const articlesQuery = supabase
+      .from("articles")
+      .select("id, title, slug, excerpt, image_url, category_name")
+      .eq("status", "published")
+      .limit(50);
+      
+    let productsQuery = supabase
+      .from("products")
+      .select("id, title, slug, price, excerpt, image_url, category, brand")
+      .eq("status", "published");
+      
+    if (selectedProductIds && selectedProductIds.length > 0) {
+      productsQuery = productsQuery.in("id", selectedProductIds);
+    } else if (selectedVendorId) {
+      productsQuery = productsQuery.eq("vendor_id", selectedVendorId);
+    }
+    productsQuery = productsQuery.limit(50);
+
+    const recipesQuery = supabase.from("recipes").select("id, title, slug, excerpt, image_url").limit(50);
+
+    const [articlesRes, productsRes, recipesRes] = await Promise.all([
+      articlesQuery,
+      productsQuery,
+      recipesQuery,
+    ]);
+
+    const articles = (articlesRes.data || []).filter((a: any) => !usedSourceIds.has(String(a.id)));
+    const products = (productsRes.data || []).filter((p: any) => !usedSourceIds.has(String(p.id)));
+    const recipes = (recipesRes.data || []).filter((r: any) => !usedSourceIds.has(String(r.id)));
+
+    const totalContent = articles.length + products.length + recipes.length;
+    if (totalContent === 0) {
+      return res.status(400).json({ error: "No new content found to generate posts from. All recent content may have already been posted." });
+    }
+
+    // 3. Generate with Gemini AI
+    const geminiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || "";
+    if (!geminiKey) return res.status(500).json({ error: "GEMINI_API_KEY not configured" });
 
     // Extract selected hour & minute (Melbourne time)
     const [timeHrStr, timeMinStr] = (targetTime || "09:00").split(":");
