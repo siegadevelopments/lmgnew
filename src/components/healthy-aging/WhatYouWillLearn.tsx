@@ -1,35 +1,48 @@
-import { ArrowRight, BookOpen, Utensils, Zap, BedDouble, ShieldAlert, Heart } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Utensils, Zap, BedDouble, ShieldAlert, Heart, BookOpen } from "lucide-react";
 
 const topics = [
   {
     title: "Nutrition & Gut Health",
-    description: "Learn which healthy foods and supplements support your microbiome, reduce inflammation, and aid in weight management.",
+    description: "Anti-inflammatory foods, microbiome support, and Mediterranean diet guides to nourish your body from the inside out.",
     icon: <Utensils className="w-6 h-6 text-teal-600" />,
+    href: "/articles",
+    linkLabel: "Read Our Nutrition Guides",
   },
   {
     title: "Movement & Disease Prevention",
-    description: "Discover simple routines for heart health, diabetes prevention, and maintaining muscle mass.",
+    description: "Simple routines for heart health, diabetes prevention, and maintaining muscle mass at every age.",
     icon: <Zap className="w-6 h-6 text-teal-600" />,
+    href: "/articles",
+    linkLabel: "Explore Movement Articles",
   },
   {
-    title: "Sleep",
-    description: "Master techniques for achieving deep, restorative sleep every night.",
+    title: "Restorative Sleep",
+    description: "Evidence-based techniques for deep sleep — from restless legs solutions to circadian rhythm optimization.",
     icon: <BedDouble className="w-6 h-6 text-teal-600" />,
+    href: "/natural-remedies",
+    linkLabel: "View Sleep Remedies",
   },
   {
-    title: "Stress",
-    description: "Implement daily habits that lower cortisol and protect your brain.",
+    title: "Stress & Brain Health",
+    description: "Natural strategies to lower cortisol, clear brain fog, and protect cognitive function as you age.",
     icon: <ShieldAlert className="w-6 h-6 text-teal-600" />,
+    href: "/natural-remedies",
+    linkLabel: "Browse Natural Remedies",
   },
   {
-    title: "Relationships",
-    description: "Understand the powerful impact of social connection on longevity.",
+    title: "Social Connection & Longevity",
+    description: "Understand the powerful impact of community, relationships, and purpose on physical and emotional longevity.",
     icon: <Heart className="w-6 h-6 text-teal-600" />,
+    href: "/articles",
+    linkLabel: "Read Wellbeing Articles",
   },
   {
-    title: "Hormones & Menopause",
-    description: "Navigate natural changes smoothly with targeted lifestyle medicine and healthy ageing practices.",
+    title: "Menopause & Hormonal Health",
+    description: "Navigate natural changes with targeted lifestyle medicine — from hot flashes and sleep disruptions to energy and mood.",
     icon: <BookOpen className="w-6 h-6 text-teal-600" />,
+    href: "/natural-remedies",
+    linkLabel: "Explore Menopause Support",
   },
 ];
 
@@ -38,11 +51,14 @@ export function WhatYouWillLearn() {
     <section className="py-20 bg-cream-50">
       <div className="container mx-auto px-4">
         <div className="text-center max-w-2xl mx-auto mb-16">
+          <div className="inline-block px-3 py-1 rounded-full bg-teal-50 text-teal-700 text-sm font-semibold mb-4">
+            Inside Your Free Guide
+          </div>
           <h2 className="text-3xl md:text-4xl font-bold font-playfair text-teal-900 mb-4">
-            What You'll Learn
+            What You&apos;ll Learn
           </h2>
           <p className="text-gray-600">
-            Our free guide breaks down complex science into actionable, daily steps across these key areas.
+            Our free guide breaks down complex science into actionable, daily steps across these key areas — with links to our full resource library.
           </p>
         </div>
 
@@ -56,10 +72,13 @@ export function WhatYouWillLearn() {
                 {topic.icon}
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">{topic.title}</h3>
-              <p className="text-gray-600 flex-grow mb-4">{topic.description}</p>
-              <button className="flex items-center text-teal-600 font-medium group-hover:text-teal-800 transition-colors mt-auto w-fit">
-                Learn More <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-              </button>
+              <p className="text-gray-600 flex-grow mb-4 text-sm">{topic.description}</p>
+              <Link 
+                href={topic.href} 
+                className="flex items-center text-teal-600 font-medium group-hover:text-teal-800 transition-colors mt-auto w-fit text-sm"
+              >
+                {topic.linkLabel} <ArrowRight className="w-3.5 h-3.5 ml-1 group-hover:translate-x-1 transition-transform" />
+              </Link>
             </div>
           ))}
         </div>
