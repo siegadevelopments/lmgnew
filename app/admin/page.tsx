@@ -155,7 +155,7 @@ function AdminDashboardContent() {
   const [productForm, setProductForm] = useState({
     title: "",
     price: "",
-    stock: "50",
+    stock: "100",
     image_url: "",
     description: "",
     status: "published",
@@ -602,7 +602,7 @@ function AdminDashboardContent() {
       setProductForm({
         title: "",
         price: "",
-        stock: "50",
+        stock: "100",
         image_url: "",
         description: "",
         status: "published",
