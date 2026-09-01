@@ -87,12 +87,14 @@ function ProductContent() {
     );
   }
 
-  const currentPrice = selectedVariant ? selectedVariant.price : product.price;
+  const currentPrice = selectedVariant && selectedVariant.price && Number(selectedVariant.price) > 0 && Number(selectedVariant.price) < 10000
+    ? Number(selectedVariant.price)
+    : product.price;
   const currentStock = selectedVariant
-    ? selectedVariant.available
-      ? product.stock
-      : 0
-    : product.stock;
+    ? selectedVariant.available === false
+      ? 0
+      : (selectedVariant.stock !== undefined && selectedVariant.stock !== null ? Number(selectedVariant.stock) : (product.stock ?? 100))
+    : (product.stock ?? 100);
 
   const handleAddToCart = async () => {
     if (!user) {
