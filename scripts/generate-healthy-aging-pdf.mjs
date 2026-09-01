@@ -11,7 +11,7 @@ function createHealthyAgingPDF(outputPath) {
 
     const doc = new PDFDocument({
       size: 'A4',
-      margin: 40,
+      margin: 0, // Zero margin to prevent automatic PDFKit page overflows
       info: {
         Title: 'Healthy Ageing Starter Kit',
         Author: 'Lifestyle Medicine Gateway',
@@ -33,21 +33,19 @@ function createHealthyAgingPDF(outputPath) {
     const GOLD = '#d97706';        // amber-600
 
     // Helper Functions
-    const addHeader = (pageNum) => {
-      if (pageNum === 1) return; // Skip cover
+    const addHeader = () => {
       doc.save();
       doc.fontSize(8).fillColor(TEXT_MUTED).text('LIFESTYLE MEDICINE GATEWAY', 40, 25);
-      doc.fontSize(8).fillColor(TEAL_MAIN).text('HEALTHY AGEING STARTER KIT', 350, 25, { align: 'right' });
+      doc.fontSize(8).fillColor(TEAL_MAIN).text('HEALTHY AGEING STARTER KIT', 350, 25, { align: 'right', width: 205 });
       doc.moveTo(40, 36).lineTo(555, 36).strokeColor('#e5e7eb').lineWidth(0.75).stroke();
       doc.restore();
     };
 
     const addFooter = (pageNum, totalPages = 5) => {
-      if (pageNum === 1) return; // Skip cover
       doc.save();
       doc.moveTo(40, 800).lineTo(555, 800).strokeColor('#e5e7eb').lineWidth(0.75).stroke();
       doc.fontSize(8).fillColor(TEXT_MUTED).text('© Lifestyle Medicine Gateway | lifestylemedicinegateway.com', 40, 808);
-      doc.fontSize(8).fillColor(TEXT_MUTED).text(`Page ${pageNum} of ${totalPages}`, 350, 808, { align: 'right' });
+      doc.fontSize(8).fillColor(TEXT_MUTED).text(`Page ${pageNum} of ${totalPages}`, 350, 808, { align: 'right', width: 205 });
       doc.restore();
     };
 
@@ -57,29 +55,28 @@ function createHealthyAgingPDF(outputPath) {
     doc.rect(0, 0, 595, 842).fill(SAGE_BG);
 
     // Decorative Top Banner
-    doc.rect(0, 0, 595, 220).fill(TEAL_DARK);
-
-    // Accent line
-    doc.rect(0, 220, 595, 6).fill(GOLD);
+    doc.rect(0, 0, 595, 210).fill(TEAL_DARK);
+    doc.rect(0, 210, 595, 5).fill(GOLD);
 
     // Title on Top Banner
-    doc.fillColor('#ffffff').fontSize(12).text('OFFICIAL EVIDENCE-BASED GUIDE', 50, 55, { characterSpacing: 2 });
-    doc.fillColor('#ffffff').fontSize(32).font('Helvetica-Bold').text('HEALTHY AGEING\nSTARTER KIT', 50, 80, { leading: 6 });
-    doc.fillColor(TEAL_LIGHT).fontSize(13).font('Helvetica').text('Practical Strategies for Energy, Sleep, Mobility & Longevity', 50, 160);
+    doc.fillColor('#ffffff').fontSize(11).font('Helvetica-Bold').text('OFFICIAL EVIDENCE-BASED GUIDE', 50, 50, { characterSpacing: 1.5 });
+    doc.fillColor('#ffffff').fontSize(30).font('Helvetica-Bold').text('HEALTHY AGEING', 50, 75);
+    doc.fillColor('#ffffff').fontSize(30).font('Helvetica-Bold').text('STARTER KIT', 50, 110);
+    doc.fillColor(TEAL_LIGHT).fontSize(12).font('Helvetica').text('Practical Strategies for Energy, Sleep, Mobility & Longevity', 50, 155);
 
     // Main Card Body
-    doc.roundedRect(40, 260, 515, 520, 12).fill('#ffffff').strokeColor('#e2e8f0').lineWidth(1).stroke();
+    doc.roundedRect(40, 240, 515, 540, 10).fill('#ffffff').strokeColor('#e2e8f0').lineWidth(1).stroke();
 
     // Welcome Callout Box inside Card
-    doc.roundedRect(65, 290, 465, 110, 8).fill(SAGE_BG);
-    doc.fillColor(TEAL_DARK).fontSize(16).font('Helvetica-Bold').text('Welcome to Your Healthy Ageing Journey', 85, 310);
-    doc.fillColor(TEXT_DARK).fontSize(10).font('Helvetica').text(
+    doc.roundedRect(65, 265, 465, 105, 8).fill(SAGE_BG);
+    doc.fillColor(TEAL_DARK).fontSize(15).font('Helvetica-Bold').text('Welcome to Your Healthy Ageing Journey', 85, 282);
+    doc.fillColor(TEXT_DARK).fontSize(9.5).font('Helvetica').text(
       'Ageing vibrant is not about luck—it is about daily choices. This Starter Kit brings together the science of Lifestyle Medicine to help you protect your brain, optimize energy, manage stress, and nourish your body naturally.',
-      85, 335, { width: 425, lineGap: 4 }
+      85, 305, { width: 425, lineGap: 3 }
     );
 
     // Key Highlights Grid
-    doc.fillColor(TEAL_DARK).fontSize(14).font('Helvetica-Bold').text('What You Will Discover Inside:', 65, 430);
+    doc.fillColor(TEAL_DARK).fontSize(13).font('Helvetica-Bold').text('What You Will Discover Inside:', 65, 395);
 
     const coverHighlights = [
       { title: 'The 6 Pillars of Lifestyle Medicine', desc: 'The clinical foundation for preventing and managing chronic disease.' },
@@ -89,29 +86,29 @@ function createHealthyAgingPDF(outputPath) {
       { title: 'Printable 7-Day Habit Tracker', desc: 'Actionable daily checklist to turn science into lasting routine.' },
     ];
 
-    let highlightY = 460;
-    coverHighlights.forEach((item, index) => {
-      doc.circle(75, highlightY + 6, 4).fill(TEAL_MAIN);
-      doc.fillColor(TEXT_DARK).fontSize(11).font('Helvetica-Bold').text(item.title, 90, highlightY);
-      doc.fillColor(TEXT_MUTED).fontSize(9.5).font('Helvetica').text(item.desc, 90, highlightY + 14, { width: 420 });
-      highlightY += 44;
+    let highlightY = 422;
+    coverHighlights.forEach((item) => {
+      doc.circle(75, highlightY + 5, 3.5).fill(TEAL_MAIN);
+      doc.fillColor(TEXT_DARK).fontSize(10.5).font('Helvetica-Bold').text(item.title, 90, highlightY);
+      doc.fillColor(TEXT_MUTED).fontSize(9).font('Helvetica').text(item.desc, 90, highlightY + 13, { width: 420 });
+      highlightY += 40;
     });
 
     // Footer info on cover
-    doc.moveTo(65, 715).lineTo(530, 715).strokeColor('#e2e8f0').lineWidth(1).stroke();
-    doc.fillColor(TEAL_DARK).fontSize(11).font('Helvetica-Bold').text('Lifestyle Medicine Gateway', 65, 730, { align: 'center' });
-    doc.fillColor(TEXT_MUTED).fontSize(9).font('Helvetica').text('Evidence-based health education, natural remedies & trusted marketplace', 65, 746, { align: 'center' });
+    doc.moveTo(65, 710).lineTo(530, 710).strokeColor('#e2e8f0').lineWidth(0.75).stroke();
+    doc.fillColor(TEAL_DARK).fontSize(11).font('Helvetica-Bold').text('Lifestyle Medicine Gateway', 65, 725, { width: 465, align: 'center' });
+    doc.fillColor(TEXT_MUTED).fontSize(8.5).font('Helvetica').text('Evidence-based health education, natural remedies & trusted marketplace', 65, 740, { width: 465, align: 'center' });
 
 
     // ==========================================
     // PAGE 2: THE 6 PILLARS OF LIFESTYLE MEDICINE
     // ==========================================
     doc.addPage();
-    addHeader(2);
+    addHeader();
     addFooter(2);
 
-    doc.fillColor(TEAL_DARK).fontSize(20).font('Helvetica-Bold').text('The 6 Pillars of Lifestyle Medicine', 40, 55);
-    doc.fillColor(TEXT_MUTED).fontSize(10).font('Helvetica').text('Lifestyle medicine is a medical specialty that uses therapeutic lifestyle interventions as a primary modality to treat chronic conditions and promote long-term vitality.', 40, 82, { width: 515, lineGap: 3 });
+    doc.fillColor(TEAL_DARK).fontSize(18).font('Helvetica-Bold').text('The 6 Pillars of Lifestyle Medicine', 40, 50);
+    doc.fillColor(TEXT_MUTED).fontSize(9.5).font('Helvetica').text('Lifestyle medicine is a medical specialty that uses therapeutic lifestyle interventions as a primary modality to treat chronic conditions and promote long-term vitality.', 40, 75, { width: 515, lineGap: 3 });
 
     const pillars = [
       {
@@ -146,20 +143,14 @@ function createHealthyAgingPDF(outputPath) {
       }
     ];
 
-    let pillarY = 135;
+    let pillarY = 120;
     pillars.forEach((p) => {
-      // Card background
-      doc.roundedRect(40, pillarY, 515, 92, 8).fill('#f8fafc').strokeColor('#e2e8f0').lineWidth(1).stroke();
-      
-      // Number badge
-      doc.roundedRect(52, pillarY + 12, 32, 32, 6).fill(TEAL_MAIN);
+      doc.roundedRect(40, pillarY, 515, 96, 6).fill('#f8fafc').strokeColor('#e2e8f0').lineWidth(0.75).stroke();
+      doc.roundedRect(52, pillarY + 12, 32, 32, 5).fill(TEAL_MAIN);
       doc.fillColor('#ffffff').fontSize(14).font('Helvetica-Bold').text(p.num, 52, pillarY + 20, { width: 32, align: 'center' });
-
-      // Content
-      doc.fillColor(TEAL_DARK).fontSize(12).font('Helvetica-Bold').text(p.title, 96, pillarY + 14);
-      doc.fillColor(TEXT_DARK).fontSize(9.5).font('Helvetica').text(p.body, 96, pillarY + 32, { width: 445, lineGap: 3 });
-
-      pillarY += 104;
+      doc.fillColor(TEAL_DARK).fontSize(11.5).font('Helvetica-Bold').text(p.title, 96, pillarY + 14);
+      doc.fillColor(TEXT_DARK).fontSize(9).font('Helvetica').text(p.body, 96, pillarY + 32, { width: 445, lineGap: 2.5 });
+      pillarY += 108;
     });
 
 
@@ -167,15 +158,15 @@ function createHealthyAgingPDF(outputPath) {
     // PAGE 3: NUTRITION & GUT HEALTH STRATEGY
     // ==========================================
     doc.addPage();
-    addHeader(3);
+    addHeader();
     addFooter(3);
 
-    doc.fillColor(TEAL_DARK).fontSize(20).font('Helvetica-Bold').text('Anti-Inflammatory Nutrition & Gut Health', 40, 55);
-    doc.fillColor(TEXT_MUTED).fontSize(10).font('Helvetica').text('Over 70% of your immune system resides in your gut. Supporting your gut microbiome is one of the most effective ways to slow cellular ageing and maintain high daily energy.', 40, 82, { width: 515, lineGap: 3 });
+    doc.fillColor(TEAL_DARK).fontSize(18).font('Helvetica-Bold').text('Anti-Inflammatory Nutrition & Gut Health', 40, 50);
+    doc.fillColor(TEXT_MUTED).fontSize(9.5).font('Helvetica').text('Over 70% of your immune system resides in your gut. Supporting your gut microbiome is one of the most effective ways to slow cellular ageing and maintain high daily energy.', 40, 75, { width: 515, lineGap: 3 });
 
     // Section 1: Key Principles Box
-    doc.roundedRect(40, 130, 515, 140, 8).fill(SAGE_BG).strokeColor('#dcfce7').lineWidth(1).stroke();
-    doc.fillColor(TEAL_DARK).fontSize(13).font('Helvetica-Bold').text('Core Anti-Inflammatory Dietary Rules:', 55, 145);
+    doc.roundedRect(40, 115, 515, 135, 6).fill(SAGE_BG).strokeColor('#dcfce7').lineWidth(1).stroke();
+    doc.fillColor(TEAL_DARK).fontSize(12).font('Helvetica-Bold').text('Core Anti-Inflammatory Dietary Rules:', 55, 128);
 
     const rules = [
       'Diversify Your Plants: Aim for 30+ different plant foods per week (vegetables, fruits, herbs, nuts, seeds).',
@@ -184,15 +175,15 @@ function createHealthyAgingPDF(outputPath) {
       'Healthy Fats over Processed Oils: Cold-pressed olive oil, avocados, and macadamia oils protect cell membranes.'
     ];
 
-    let ruleY = 170;
+    let ruleY = 152;
     rules.forEach((rule) => {
-      doc.circle(63, ruleY + 4, 3).fill(TEAL_MAIN);
-      doc.fillColor(TEXT_DARK).fontSize(9.5).font('Helvetica').text(rule, 73, ruleY, { width: 465 });
-      ruleY += 24;
+      doc.circle(63, ruleY + 4, 2.5).fill(TEAL_MAIN);
+      doc.fillColor(TEXT_DARK).fontSize(9).font('Helvetica').text(rule, 72, ruleY, { width: 468 });
+      ruleY += 23;
     });
 
     // Section 2: Recommended Superfoods Table
-    doc.fillColor(TEAL_DARK).fontSize(14).font('Helvetica-Bold').text('Top Ageing-Well Foods & Their Science-Backed Benefits', 40, 295);
+    doc.fillColor(TEAL_DARK).fontSize(13).font('Helvetica-Bold').text('Top Ageing-Well Foods & Their Science-Backed Benefits', 40, 272);
 
     const superfoods = [
       { food: 'Kakadu Plum', benefit: 'Highest natural Vitamin C on Earth. Fights oxidative stress and boosts collagen synthesis.' },
@@ -202,29 +193,29 @@ function createHealthyAgingPDF(outputPath) {
       { food: 'Fermented Foods (Kombucha, Sauerkraut)', benefit: 'Provides live probiotics to diversify gut flora and enhance nutrient bio-availability.' },
     ];
 
-    let foodY = 325;
+    let foodY = 295;
     // Table Header
-    doc.roundedRect(40, foodY, 515, 24, 4).fill(TEAL_DARK);
-    doc.fillColor('#ffffff').fontSize(10).font('Helvetica-Bold').text('Food / Ingredient', 50, foodY + 7);
-    doc.fillColor('#ffffff').fontSize(10).font('Helvetica-Bold').text('Longevity & Health Benefit', 200, foodY + 7);
-    foodY += 24;
+    doc.roundedRect(40, foodY, 515, 22, 4).fill(TEAL_DARK);
+    doc.fillColor('#ffffff').fontSize(9.5).font('Helvetica-Bold').text('Food / Ingredient', 50, foodY + 6);
+    doc.fillColor('#ffffff').fontSize(9.5).font('Helvetica-Bold').text('Longevity & Health Benefit', 200, foodY + 6);
+    foodY += 22;
 
     superfoods.forEach((item, index) => {
       const rowBg = index % 2 === 0 ? '#ffffff' : '#f8fafc';
-      doc.rect(40, foodY, 515, 38).fill(rowBg);
-      doc.rect(40, foodY, 515, 38).strokeColor('#f1f5f9').lineWidth(0.5).stroke();
+      doc.rect(40, foodY, 515, 36).fill(rowBg);
+      doc.rect(40, foodY, 515, 36).strokeColor('#f1f5f9').lineWidth(0.5).stroke();
 
-      doc.fillColor(TEAL_MAIN).fontSize(9.5).font('Helvetica-Bold').text(item.food, 50, foodY + 12, { width: 140 });
-      doc.fillColor(TEXT_DARK).fontSize(9).font('Helvetica').text(item.benefit, 200, foodY + 8, { width: 345, lineGap: 2 });
-      foodY += 38;
+      doc.fillColor(TEAL_MAIN).fontSize(9).font('Helvetica-Bold').text(item.food, 50, foodY + 10, { width: 140 });
+      doc.fillColor(TEXT_DARK).fontSize(8.5).font('Helvetica').text(item.benefit, 200, foodY + 7, { width: 345, lineGap: 2 });
+      foodY += 36;
     });
 
     // Section 3: Hydration & Circadian Tip
-    doc.roundedRect(40, 545, 515, 110, 8).fill('#f0f9ff').strokeColor('#bae6fd').lineWidth(1).stroke();
-    doc.fillColor('#0369a1').fontSize(12).font('Helvetica-Bold').text('💡 Hydration & Circadian Rhythm Strategy', 55, 560);
-    doc.fillColor(TEXT_DARK).fontSize(9.5).font('Helvetica').text(
+    doc.roundedRect(40, 505, 515, 95, 6).fill('#f0f9ff').strokeColor('#bae6fd').lineWidth(1).stroke();
+    doc.fillColor('#0369a1').fontSize(11).font('Helvetica-Bold').text('[STRATEGY] Hydration & Circadian Rhythm Protocol', 55, 518);
+    doc.fillColor(TEXT_DARK).fontSize(9).font('Helvetica').text(
       'Drink 500ml of fresh water within 15 minutes of waking to rehydrate cells after sleep. Pair this with 10-15 minutes of early morning sunlight exposure to set your master circadian clock, improving nighttime melatonin production and daytime alertness.',
-      55, 582, { width: 485, lineGap: 3 }
+      55, 538, { width: 485, lineGap: 2.5 }
     );
 
 
@@ -232,24 +223,24 @@ function createHealthyAgingPDF(outputPath) {
     // PAGE 4: DAILY HABIT TRACKER (PRINTABLE)
     // ==========================================
     doc.addPage();
-    addHeader(4);
+    addHeader();
     addFooter(4);
 
-    doc.fillColor(TEAL_DARK).fontSize(20).font('Helvetica-Bold').text('Printable 7-Day Healthy Ageing Tracker', 40, 55);
-    doc.fillColor(TEXT_MUTED).fontSize(10).font('Helvetica').text('Consistency creates transformation. Print this page or use it digitally to check off your daily core lifestyle medicine habits.', 40, 82, { width: 515, lineGap: 3 });
+    doc.fillColor(TEAL_DARK).fontSize(18).font('Helvetica-Bold').text('Printable 7-Day Healthy Ageing Tracker', 40, 50);
+    doc.fillColor(TEXT_MUTED).fontSize(9.5).font('Helvetica').text('Consistency creates transformation. Print this page or use it digitally to check off your daily core lifestyle medicine habits.', 40, 75, { width: 515, lineGap: 3 });
 
     // Tracker Table Header
-    let tableY = 120;
+    let tableY = 110;
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     
     // Header Row
-    doc.roundedRect(40, tableY, 515, 30, 6).fill(TEAL_DARK);
-    doc.fillColor('#ffffff').fontSize(10).font('Helvetica-Bold').text('Daily Core Habit', 50, tableY + 10);
+    doc.roundedRect(40, tableY, 515, 26, 4).fill(TEAL_DARK);
+    doc.fillColor('#ffffff').fontSize(9.5).font('Helvetica-Bold').text('Daily Core Habit', 50, tableY + 8);
     
     days.forEach((day, idx) => {
-      doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold').text(day, 290 + (idx * 36), tableY + 10, { width: 32, align: 'center' });
+      doc.fillColor('#ffffff').fontSize(8.5).font('Helvetica-Bold').text(day, 290 + (idx * 36), tableY + 8, { width: 32, align: 'center' });
     });
-    tableY += 30;
+    tableY += 26;
 
     const habits = [
       { title: 'Morning Sunlight & Water', desc: '500ml water + 10m outdoor light' },
@@ -264,27 +255,27 @@ function createHealthyAgingPDF(outputPath) {
 
     habits.forEach((habit, idx) => {
       const rowBg = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
-      doc.rect(40, tableY, 515, 42).fill(rowBg);
-      doc.rect(40, tableY, 515, 42).strokeColor('#e2e8f0').lineWidth(0.5).stroke();
+      doc.rect(40, tableY, 515, 38).fill(rowBg);
+      doc.rect(40, tableY, 515, 38).strokeColor('#e2e8f0').lineWidth(0.5).stroke();
 
-      doc.fillColor(TEAL_DARK).fontSize(9.5).font('Helvetica-Bold').text(habit.title, 50, tableY + 8);
-      doc.fillColor(TEXT_MUTED).fontSize(8.5).font('Helvetica').text(habit.desc, 50, tableY + 23);
+      doc.fillColor(TEAL_DARK).fontSize(9).font('Helvetica-Bold').text(habit.title, 50, tableY + 6);
+      doc.fillColor(TEXT_MUTED).fontSize(8).font('Helvetica').text(habit.desc, 50, tableY + 20);
 
       // Checkboxes for each day
       days.forEach((_, dIdx) => {
         const boxX = 298 + (dIdx * 36);
-        doc.roundedRect(boxX, tableY + 12, 16, 16, 3).strokeColor('#cbd5e1').lineWidth(1.2).stroke();
+        doc.roundedRect(boxX, tableY + 10, 15, 15, 3).strokeColor('#cbd5e1').lineWidth(1).stroke();
       });
 
-      tableY += 42;
+      tableY += 38;
     });
 
     // Encouragement Box
-    doc.roundedRect(40, tableY + 25, 515, 95, 8).fill(SAGE_BG).strokeColor('#bbf7d0').lineWidth(1).stroke();
-    doc.fillColor(TEAL_DARK).fontSize(12).font('Helvetica-Bold').text('🏆 The 80/20 Rule for Long-Term Success', 55, tableY + 40);
-    doc.fillColor(TEXT_DARK).fontSize(9.5).font('Helvetica').text(
+    doc.roundedRect(40, tableY + 20, 515, 80, 6).fill(SAGE_BG).strokeColor('#bbf7d0').lineWidth(1).stroke();
+    doc.fillColor(TEAL_DARK).fontSize(11).font('Helvetica-Bold').text('[NOTE] The 80/20 Rule for Long-Term Success', 55, tableY + 33);
+    doc.fillColor(TEXT_DARK).fontSize(9).font('Helvetica').text(
       'Aim for progress, not perfection. Checking off 4-5 habits daily produces noticeable improvements in energy, mood, and sleep within 14 days. Celebrate small wins and stay consistent!',
-      55, tableY + 60, { width: 485, lineGap: 3 }
+      55, tableY + 52, { width: 485, lineGap: 2.5 }
     );
 
 
@@ -292,11 +283,11 @@ function createHealthyAgingPDF(outputPath) {
     // PAGE 5: BOTANICAL SCIENCE & RESOURCES
     // ==========================================
     doc.addPage();
-    addHeader(5);
+    addHeader();
     addFooter(5);
 
-    doc.fillColor(TEAL_DARK).fontSize(20).font('Helvetica-Bold').text('Botanical Science & Recommended Resources', 40, 55);
-    doc.fillColor(TEXT_MUTED).fontSize(10).font('Helvetica').text('Nurturing your skin and body with bio-active native ingredients accelerates repair and protects against environmental stressors.', 40, 82, { width: 515, lineGap: 3 });
+    doc.fillColor(TEAL_DARK).fontSize(18).font('Helvetica-Bold').text('Botanical Science & Recommended Resources', 40, 50);
+    doc.fillColor(TEXT_MUTED).fontSize(9.5).font('Helvetica').text('Nurturing your skin and body with bio-active native ingredients accelerates repair and protects against environmental stressors.', 40, 75, { width: 515, lineGap: 3 });
 
     // Section: Botanical Highlights
     const botanicals = [
@@ -314,38 +305,37 @@ function createHealthyAgingPDF(outputPath) {
       }
     ];
 
-    let botY = 130;
-    doc.fillColor(TEAL_DARK).fontSize(13).font('Helvetica-Bold').text('Australian Native Super-Ingredients:', 40, botY);
-    botY += 20;
+    let botY = 115;
+    doc.fillColor(TEAL_DARK).fontSize(12).font('Helvetica-Bold').text('Australian Native Super-Ingredients:', 40, botY);
+    botY += 18;
 
     botanicals.forEach((b) => {
-      doc.roundedRect(40, botY, 515, 62, 6).fill('#fafafa').strokeColor('#e5e7eb').lineWidth(0.75).stroke();
-      doc.fillColor(TEAL_MAIN).fontSize(10.5).font('Helvetica-Bold').text(b.name, 52, botY + 10);
-      doc.fillColor(TEXT_DARK).fontSize(9).font('Helvetica').text(b.desc, 52, botY + 26, { width: 490, lineGap: 2 });
-      botY += 72;
+      doc.roundedRect(40, botY, 515, 58, 6).fill('#fafafa').strokeColor('#e5e7eb').lineWidth(0.75).stroke();
+      doc.fillColor(TEAL_MAIN).fontSize(10).font('Helvetica-Bold').text(b.name, 52, botY + 8);
+      doc.fillColor(TEXT_DARK).fontSize(8.5).font('Helvetica').text(b.desc, 52, botY + 24, { width: 490, lineGap: 2 });
+      botY += 66;
     });
 
     // Final CTA Box
-    doc.roundedRect(40, botY + 20, 515, 230, 10).fill(TEAL_DARK);
+    doc.roundedRect(40, botY + 15, 515, 210, 8).fill(TEAL_DARK);
 
-    doc.fillColor('#ffffff').fontSize(18).font('Helvetica-Bold').text('Continue Your Journey with Us', 60, botY + 45, { align: 'center' });
-    doc.fillColor(TEAL_LIGHT).fontSize(10.5).font('Helvetica').text(
+    doc.fillColor('#ffffff').fontSize(16).font('Helvetica-Bold').text('Continue Your Journey with Us', 60, botY + 35, { width: 475, align: 'center' });
+    doc.fillColor(TEAL_LIGHT).fontSize(9.5).font('Helvetica').text(
       'Explore our evidence-based platform for research articles, health recipes, natural remedies, and trusted Australian botanical products.',
-      70, botY + 75, { width: 455, align: 'center', lineGap: 4 }
+      70, botY + 60, { width: 455, align: 'center', lineGap: 3 }
     );
 
-    // Callout buttons text inside box
     const links = [
-      '📚 Read Articles: lifestylemedicinegateway.com/articles',
-      '🌿 Natural Remedies: lifestylemedicinegateway.com/natural-remedies',
-      '🥗 Healthy Recipes: lifestylemedicinegateway.com/recipes',
-      '🛍️ Marketplace Store: lifestylemedicinegateway.com/products'
+      '• Read Articles: lifestylemedicinegateway.com/articles',
+      '• Natural Remedies: lifestylemedicinegateway.com/natural-remedies',
+      '• Healthy Recipes: lifestylemedicinegateway.com/recipes',
+      '• Marketplace Store: lifestylemedicinegateway.com/products'
     ];
 
-    let linkY = botY + 125;
+    let linkY = botY + 110;
     links.forEach((linkText) => {
-      doc.fillColor('#ffffff').fontSize(10).font('Helvetica-Bold').text(linkText, 80, linkY, { align: 'center' });
-      linkY += 22;
+      doc.fillColor('#ffffff').fontSize(9.5).font('Helvetica-Bold').text(linkText, 80, linkY, { width: 435, align: 'center' });
+      linkY += 20;
     });
 
     doc.end();
