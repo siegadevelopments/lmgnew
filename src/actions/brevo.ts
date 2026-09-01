@@ -65,7 +65,7 @@ export async function subscribeToBrevo(formData: FormData) {
               <p>Welcome to Lifestyle Medicine Gateway! As promised, here is your Healthy Aging Starter Kit.</p>
               <p>This evidence-based guide will help you improve your energy, sleep, mobility, and long-term wellbeing using the principles of lifestyle medicine.</p>
               <div style="margin: 30px 0;">
-                <a href="https://lifestylemedicinegateway.com/guides/healthy-aging" style="background-color: #0f766e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Download Your Free Guide</a>
+                <a href="https://lifestylemedicinegateway.com/Healthy_Ageing_Starter_Kit.pdf" style="background-color: #0f766e; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Download Your Free PDF Guide</a>
               </div>
               <p>Over the next few days, we'll be sending you some of our best tips on nutrition, sleep, and stress management.</p>
               <p>To your health,<br/>The Lifestyle Medicine Gateway Team</p>

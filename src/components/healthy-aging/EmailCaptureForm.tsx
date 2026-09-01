@@ -62,14 +62,24 @@ export function EmailCaptureForm({ buttonText = "Get Instant Access" }: EmailCap
 
   if (isSuccess) {
     return (
-      <div className="rounded-lg bg-green-50 p-6 flex flex-col items-center justify-center text-center space-y-3 border border-green-200">
-        <CheckCircle2 className="w-10 h-10 text-green-600" />
+      <div className="rounded-xl bg-teal-50 p-6 flex flex-col items-center justify-center text-center space-y-4 border border-teal-200 shadow-sm animate-in fade-in zoom-in duration-300">
+        <CheckCircle2 className="w-12 h-12 text-teal-600" />
         <div className="space-y-1">
-          <h4 className="font-semibold text-green-800 text-lg">You're on the list!</h4>
-          <p className="text-green-700 text-sm">
-            Check your inbox for the Healthy Aging Starter Kit.
+          <h4 className="font-bold text-teal-900 text-xl">You're All Set!</h4>
+          <p className="text-teal-800 text-sm">
+            Your Healthy Ageing Starter Kit PDF is ready. We've also emailed a copy to your inbox!
           </p>
         </div>
+        <a
+          href="/Healthy_Ageing_Starter_Kit.pdf"
+          download="Healthy_Ageing_Starter_Kit.pdf"
+          className="inline-flex items-center justify-center gap-2 w-full h-12 px-6 bg-teal-700 hover:bg-teal-800 text-white font-bold rounded-lg transition-colors shadow-md text-base"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Download Free PDF Guide
+        </a>
       </div>
     );
   }

@@ -45,8 +45,8 @@ export function HealthyAgingHero() {
               ))}
             </ul>
 
-            {/* Stats row */}
-            <div className="flex flex-wrap gap-6 pt-4">
+            {/* Stats row & Direct PDF Link */}
+            <div className="flex flex-wrap gap-6 pt-4 items-center">
               {stats.map((stat, i) => (
                 <div key={i} className="flex items-center gap-3 bg-white/80 backdrop-blur px-4 py-3 rounded-xl border border-gray-100 shadow-sm">
                   <stat.icon className="w-5 h-5 text-teal-600" />
@@ -56,6 +56,19 @@ export function HealthyAgingHero() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            <div className="pt-2">
+              <a
+                href="/Healthy_Ageing_Starter_Kit.pdf"
+                download="Healthy_Ageing_Starter_Kit.pdf"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-teal-800 hover:bg-teal-900 text-white font-bold text-sm shadow-md transition-all border border-teal-700"
+              >
+                <svg className="w-4 h-4 text-teal-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Download PDF Guide Directly (21 KB)
+              </a>
             </div>
           </div>
 
