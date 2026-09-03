@@ -3,13 +3,35 @@
 import { useEffect, useState, useMemo } from "react";
 import Head from "next/head";
 import { cn } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
+import { 
+  Loader2, 
+  CheckCircle2, 
+  Circle, 
+  ChevronDown, 
+  Search, 
+  Filter, 
+  RotateCcw, 
+  Sparkles, 
+  Target, 
+  TrendingUp, 
+  Calendar, 
+  Check, 
+  Layers, 
+  Award, 
+  ArrowRight,
+  Maximize2,
+  Minimize2,
+  CheckSquare
+} from "lucide-react";
 
 export default function MarketingPlan90() {
   const [tasks, setTasks] = useState<Record<string, boolean>>({});
   const [openWeeks, setOpenWeeks] = useState<Record<string, boolean>>({ w1: true });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [activeMonth, setActiveMonth] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "completed">("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Fetch initial state from DB
   useEffect(() => {
@@ -29,7 +51,7 @@ export default function MarketingPlan90() {
     loadState();
   }, []);
 
-  // Save state to DB whenever tasks change (debounced or directly)
+  // Save state to DB
   const saveStateToDB = async (newState: Record<string, boolean>) => {
     setSaving(true);
     try {
@@ -55,8 +77,18 @@ export default function MarketingPlan90() {
     setOpenWeeks(prev => ({ ...prev, [weekId]: !prev[weekId] }));
   };
 
+  const expandAll = () => {
+    const allWeeks: Record<string, boolean> = {};
+    Object.keys(PLAN_DATA).forEach(w => { allWeeks[w] = true; });
+    setOpenWeeks(allWeeks);
+  };
+
+  const collapseAll = () => {
+    setOpenWeeks({});
+  };
+
   const resetAll = () => {
-    if (!window.confirm("Reset all checkboxes? This cannot be undone.")) return;
+    if (!window.confirm("Reset all task checkboxes? This action cannot be undone.")) return;
     const newState = {};
     setTasks(newState);
     saveStateToDB(newState);
@@ -67,11 +99,10 @@ export default function MarketingPlan90() {
     let total = 0;
     let done = 0;
     
-    // We count tasks by matching taskId prefix
     Object.keys(PLAN_DATA).forEach(weekId => {
       if (weekIds.includes(weekId)) {
-        PLAN_DATA[weekId].categories.forEach(cat => {
-          cat.tasks.forEach(t => {
+        PLAN_DATA[weekId].categories.forEach((cat: any) => {
+          cat.tasks.forEach((t: any) => {
             total++;
             if (tasks[t.id]) done++;
           });
@@ -82,245 +113,527 @@ export default function MarketingPlan90() {
     return { done, total, pct: total > 0 ? Math.round((done / total) * 100) : 0 };
   };
 
-  const overall = getProgress(Object.keys(PLAN_DATA));
-  const m1 = getProgress(["w1", "w2", "w3", "w4"]);
-  const m2 = getProgress(["w5", "w6", "w7", "w8"]);
-  const m3 = getProgress(["w9", "w10", "w11", "w12"]);
+  const overall = useMemo(() => getProgress(Object.keys(PLAN_DATA)), [tasks]);
+  const m1 = useMemo(() => getProgress(["w1", "w2", "w3", "w4"]), [tasks]);
+  const m2 = useMemo(() => getProgress(["w5", "w6", "w7", "w8"]), [tasks]);
+  const m3 = useMemo(() => getProgress(["w9", "w10", "w11", "w12"]), [tasks]);
+
+  const filteredMonths = useMemo(() => {
+    if (activeMonth === "all") return MONTHS;
+    return MONTHS.filter(m => m.id === activeMonth);
+  }, [activeMonth]);
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-[#0d1117] text-white">
-        <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+      <div className="flex h-screen w-full flex-col items-center justify-center bg-slate-950 text-white">
+        <div className="relative flex items-center justify-center">
+          <div className="h-16 w-16 rounded-full border-4 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+          <Sparkles className="absolute h-6 w-6 text-emerald-400 animate-pulse" />
+        </div>
+        <p className="mt-4 text-sm font-medium text-slate-400">Loading 90-Day Strategy Dashboard...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-[#e6edf3] font-sans">
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-emerald-500/30 selection:text-emerald-300">
       <Head>
+        <title>90-Day Marketing Plan | Lifestyle Medicine Gateway</title>
         <meta name="robots" content="noindex, nofollow" />
       </Head>
 
-      <style dangerouslySetInnerHTML={{ __html: `
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
-        .syne-font { font-family: 'Syne', sans-serif; }
-      `}} />
-
-      {/* HEADER */}
-      <div className="relative overflow-hidden border-b border-[#2a3441] bg-gradient-to-br from-[#0d1117] via-[#1a2332] to-[#0d1a12] px-6 pb-8 pt-10 text-center">
-        <div className="absolute -left-1/2 -top-1/2 h-[200%] w-[200%] pointer-events-none" style={{
-          background: "radial-gradient(ellipse at 30% 50%, rgba(88,166,255,0.06) 0%, transparent 50%), radial-gradient(ellipse at 70% 50%, rgba(63,185,80,0.06) 0%, transparent 50%)"
-        }} />
-        
-        <div className="relative z-10 mx-auto max-w-3xl">
-          <span className="syne-font mb-4 inline-block rounded-full border border-green-500/30 bg-green-500/15 px-4 py-1 text-[11px] font-semibold uppercase tracking-widest text-[#3fb950]">
-            Full Funnel Strategy
-          </span>
-          <h1 className="syne-font mb-2 text-4xl font-extrabold leading-tight md:text-5xl" style={{
-            background: "linear-gradient(135deg, #e6edf3 0%, #58a6ff 50%, #3fb950 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text"
-          }}>
-            90-Day Marketing Plan
-          </h1>
-          <p className="mb-7 text-sm text-[#8b949e]">Lifestyle Medicine Gateway — Australia | Starting From Scratch</p>
-
-          <div className="mx-auto max-w-[600px] rounded-xl border border-[#2a3441] bg-[#161b22] p-5 text-left shadow-xl">
-            <div className="mb-3 flex items-center justify-between">
-              <span className="syne-font text-[13px] font-semibold uppercase tracking-wider text-[#8b949e]">Overall Progress</span>
-              <div className="flex items-center gap-3">
-                {saving && <Loader2 className="h-4 w-4 animate-spin text-green-500" />}
-                <span className="syne-font text-2xl font-extrabold text-[#3fb950]">{overall.done} / {overall.total}</span>
-              </div>
-            </div>
-            <div className="mb-4 h-2.5 overflow-hidden rounded-lg bg-[#2a3441]">
-              <div 
-                className="h-full rounded-lg bg-gradient-to-r from-[#58a6ff] to-[#3fb950] transition-all duration-500" 
-                style={{ width: `${overall.pct}%` }} 
-              />
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="rounded-lg border border-blue-500/20 bg-blue-500/10 p-2.5 text-center">
-                <span className="syne-font block text-xl font-extrabold text-[#58a6ff]">{m1.pct}%</span>
-                <span className="text-[11px] uppercase tracking-wider text-[#8b949e]">Month 1</span>
-              </div>
-              <div className="rounded-lg border border-green-500/20 bg-green-500/10 p-2.5 text-center">
-                <span className="syne-font block text-xl font-extrabold text-[#3fb950]">{m2.pct}%</span>
-                <span className="text-[11px] uppercase tracking-wider text-[#8b949e]">Month 2</span>
-              </div>
-              <div className="rounded-lg border border-orange-500/20 bg-orange-500/10 p-2.5 text-center">
-                <span className="syne-font block text-xl font-extrabold text-[#f0883e]">{m3.pct}%</span>
-                <span className="text-[11px] uppercase tracking-wider text-[#8b949e]">Month 3</span>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* AMBIENT BACKGROUND GLOWS */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-emerald-600/10 blur-3xl" />
+        <div className="absolute top-1/3 -right-40 h-96 w-96 rounded-full bg-cyan-600/10 blur-3xl" />
+        <div className="absolute bottom-10 left-1/3 h-96 w-96 rounded-full bg-purple-600/10 blur-3xl" />
       </div>
 
-      {/* MAIN CONTAINER */}
-      <div className="mx-auto max-w-[900px] p-4 md:p-8">
-        
-        {/* Render Months */}
-        {MONTHS.map((month) => (
-          <div key={month.id} className="mb-12">
+      <div className="relative z-10">
+        {/* HEADER SECTION */}
+        <header className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-xl pt-10 pb-8 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto">
             
-            {/* Month Header */}
-            <div className={cn(
-              "relative mb-6 flex items-center gap-4 overflow-hidden rounded-xl border-l-4 p-5 md:p-6",
-              month.colorClass
-            )}>
-              <div className="absolute inset-0 bg-gradient-to-br from-current to-transparent opacity-[0.06]" />
-              <div className="syne-font flex-shrink-0 text-5xl font-extrabold opacity-40 leading-none">{month.num}</div>
-              <div className="z-10 text-white">
-                <h2 className="syne-font mb-1 text-xl font-extrabold text-[#e6edf3]">{month.title}</h2>
-                <div className="text-[13px] italic opacity-80">"{month.subtitle}"</div>
-                <div className="mt-1 text-xs text-[#8b949e]">{month.goal}</div>
+            {/* TOP BAR BRANDING */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400 mb-3">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>Full Funnel Execution Plan</span>
+                </div>
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white">
+                  90-Day Marketing Plan
+                </h1>
+                <p className="mt-1.5 text-sm sm:text-base text-slate-400">
+                  Lifestyle Medicine Gateway — Australia | Launch & Scaled Growth Strategy
+                </p>
+              </div>
+
+              {/* SAVE / RESET STATUS BADGE */}
+              <div className="flex items-center gap-3 self-start md:self-auto">
+                {saving && (
+                  <span className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-400 animate-pulse">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    Saving...
+                  </span>
+                )}
+                <button 
+                  onClick={resetAll}
+                  className="flex items-center gap-1.5 rounded-lg border border-slate-700/80 bg-slate-800/50 px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-red-400 hover:border-red-500/40 hover:bg-red-500/10 transition-all duration-200"
+                  title="Reset all checked items"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  <span>Reset Progress</span>
+                </button>
               </div>
             </div>
 
-            {/* Weeks */}
-            {month.weeks.map(weekId => {
-              const weekData = PLAN_DATA[weekId];
-              const wProgress = getProgress([weekId]);
-              const isOpen = !!openWeeks[weekId];
-              const isAllDone = wProgress.total > 0 && wProgress.done === wProgress.total;
-
-              return (
-                <div key={weekId} className="mb-4 overflow-hidden rounded-xl border border-[#2a3441] bg-[#161b22]">
-                  {/* Week Header */}
+            {/* STRATEGY KPI SUMMARY CARDS */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              
+              {/* OVERALL PROGRESS */}
+              <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-lg backdrop-blur-md">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Overall Progress</span>
+                  <Award className="h-5 w-5 text-emerald-400" />
+                </div>
+                <div className="flex items-baseline justify-between">
+                  <span className="text-3xl font-black text-emerald-400">{overall.pct}%</span>
+                  <span className="text-xs font-semibold text-slate-400">{overall.done} / {overall.total} Tasks</span>
+                </div>
+                <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-800">
                   <div 
-                    onClick={() => toggleWeek(weekId)}
-                    className="flex cursor-pointer select-none items-center justify-between gap-3 p-4 transition-colors hover:bg-[#1c2330] md:p-5"
+                    className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-400 transition-all duration-500"
+                    style={{ width: `${overall.pct}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* MONTH 1 */}
+              <div 
+                onClick={() => setActiveMonth("m1")}
+                className={cn(
+                  "relative cursor-pointer overflow-hidden rounded-2xl border p-5 shadow-lg transition-all duration-200 backdrop-blur-md",
+                  activeMonth === "m1" ? "border-cyan-500 bg-cyan-950/30 ring-1 ring-cyan-500/50" : "border-slate-800 bg-slate-900/80 hover:border-slate-700"
+                )}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-cyan-400">Month 1 · Foundation</span>
+                  <span className="text-xs font-extrabold text-cyan-400">{m1.pct}%</span>
+                </div>
+                <div className="text-xl font-bold text-white mb-1">Weeks 1 – 4</div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800 mt-3">
+                  <div className="h-full rounded-full bg-cyan-400 transition-all duration-500" style={{ width: `${m1.pct}%` }} />
+                </div>
+                <div className="mt-2 text-[11px] text-slate-400">{m1.done} of {m1.total} tasks completed</div>
+              </div>
+
+              {/* MONTH 2 */}
+              <div 
+                onClick={() => setActiveMonth("m2")}
+                className={cn(
+                  "relative cursor-pointer overflow-hidden rounded-2xl border p-5 shadow-lg transition-all duration-200 backdrop-blur-md",
+                  activeMonth === "m2" ? "border-emerald-500 bg-emerald-950/30 ring-1 ring-emerald-500/50" : "border-slate-800 bg-slate-900/80 hover:border-slate-700"
+                )}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">Month 2 · Growth</span>
+                  <span className="text-xs font-extrabold text-emerald-400">{m2.pct}%</span>
+                </div>
+                <div className="text-xl font-bold text-white mb-1">Weeks 5 – 8</div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800 mt-3">
+                  <div className="h-full rounded-full bg-emerald-400 transition-all duration-500" style={{ width: `${m2.pct}%` }} />
+                </div>
+                <div className="mt-2 text-[11px] text-slate-400">{m2.done} of {m2.total} tasks completed</div>
+              </div>
+
+              {/* MONTH 3 */}
+              <div 
+                onClick={() => setActiveMonth("m3")}
+                className={cn(
+                  "relative cursor-pointer overflow-hidden rounded-2xl border p-5 shadow-lg transition-all duration-200 backdrop-blur-md",
+                  activeMonth === "m3" ? "border-amber-500 bg-amber-950/30 ring-1 ring-amber-500/50" : "border-slate-800 bg-slate-900/80 hover:border-slate-700"
+                )}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-amber-400">Month 3 · Scale</span>
+                  <span className="text-xs font-extrabold text-amber-400">{m3.pct}%</span>
+                </div>
+                <div className="text-xl font-bold text-white mb-1">Weeks 9 – 12</div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800 mt-3">
+                  <div className="h-full rounded-full bg-amber-400 transition-all duration-500" style={{ width: `${m3.pct}%` }} />
+                </div>
+                <div className="mt-2 text-[11px] text-slate-400">{m3.done} of {m3.total} tasks completed</div>
+              </div>
+
+            </div>
+          </div>
+        </header>
+
+        {/* STICKY CONTROL & FILTER BAR */}
+        <div className="sticky top-0 z-30 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-md py-3 px-4 sm:px-6 lg:px-8 shadow-md">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3">
+            
+            {/* MONTH FILTER TABS */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
+              <button
+                onClick={() => setActiveMonth("all")}
+                className={cn(
+                  "whitespace-nowrap rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all duration-150",
+                  activeMonth === "all"
+                    ? "bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20"
+                    : "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white border border-slate-800"
+                )}
+              >
+                All Months (12 Weeks)
+              </button>
+              <button
+                onClick={() => setActiveMonth("m1")}
+                className={cn(
+                  "whitespace-nowrap rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all duration-150",
+                  activeMonth === "m1"
+                    ? "bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20"
+                    : "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white border border-slate-800"
+                )}
+              >
+                Month 1: Foundation
+              </button>
+              <button
+                onClick={() => setActiveMonth("m2")}
+                className={cn(
+                  "whitespace-nowrap rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all duration-150",
+                  activeMonth === "m2"
+                    ? "bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/20"
+                    : "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white border border-slate-800"
+                )}
+              >
+                Month 2: Growth
+              </button>
+              <button
+                onClick={() => setActiveMonth("m3")}
+                className={cn(
+                  "whitespace-nowrap rounded-lg px-3.5 py-1.5 text-xs font-bold transition-all duration-150",
+                  activeMonth === "m3"
+                    ? "bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20"
+                    : "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white border border-slate-800"
+                )}
+              >
+                Month 3: Conversion
+              </button>
+            </div>
+
+            {/* SEARCH & CONTROLS */}
+            <div className="flex items-center gap-2">
+              {/* SEARCH INPUT */}
+              <div className="relative flex-1 md:w-64">
+                <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
+                <input
+                  type="text"
+                  placeholder="Search tasks..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full rounded-lg border border-slate-800 bg-slate-900 py-1.5 pl-9 pr-3 text-xs text-slate-200 placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs"
                   >
-                    <div className="flex min-w-0 flex-1 items-center gap-3">
-                      <span className={cn(
-                        "syne-font flex-shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider",
-                        month.badgeClass
-                      )}>
-                        {weekData.badge}
-                      </span>
-                      <span className="syne-font truncate text-sm font-bold text-[#e6edf3]">
-                        {weekData.title}
-                      </span>
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* STATUS FILTER */}
+              <div className="flex items-center rounded-lg border border-slate-800 bg-slate-900 p-0.5">
+                <button
+                  onClick={() => setFilterStatus("all")}
+                  className={cn(
+                    "rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors",
+                    filterStatus === "all" ? "bg-slate-800 text-emerald-400" : "text-slate-400 hover:text-slate-200"
+                  )}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setFilterStatus("pending")}
+                  className={cn(
+                    "rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors",
+                    filterStatus === "pending" ? "bg-slate-800 text-amber-400" : "text-slate-400 hover:text-slate-200"
+                  )}
+                >
+                  Pending
+                </button>
+                <button
+                  onClick={() => setFilterStatus("completed")}
+                  className={cn(
+                    "rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors",
+                    filterStatus === "completed" ? "bg-slate-800 text-emerald-400" : "text-slate-400 hover:text-slate-200"
+                  )}
+                >
+                  Done
+                </button>
+              </div>
+
+              {/* EXPAND / COLLAPSE */}
+              <button
+                onClick={expandAll}
+                className="hidden sm:flex items-center gap-1 rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-400 hover:bg-slate-800 hover:text-white"
+                title="Expand All Weeks"
+              >
+                <Maximize2 className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={collapseAll}
+                className="hidden sm:flex items-center gap-1 rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-400 hover:bg-slate-800 hover:text-white"
+                title="Collapse All Weeks"
+              >
+                <Minimize2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        {/* MAIN DASHBOARD CONTENT */}
+        <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+          
+          {filteredMonths.map((month) => (
+            <div key={month.id} className="mb-14">
+              
+              {/* MONTH BANNER HEADER */}
+              <div className={cn(
+                "relative overflow-hidden rounded-2xl border p-6 md:p-8 mb-8 backdrop-blur-md shadow-xl",
+                month.bannerBorderClass
+              )}>
+                <div className="absolute inset-0 bg-slate-900/90" />
+                <div className={cn("absolute -right-10 -bottom-10 h-64 w-64 rounded-full blur-3xl opacity-20", month.glowBgClass)} />
+                
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  <div className="flex items-start gap-5">
+                    <div className={cn("syne-font text-5xl md:text-6xl font-black opacity-30 leading-none", month.targetColorClass)}>
+                      {month.num}
                     </div>
-                    <div className="flex flex-shrink-0 items-center gap-2">
-                      <span className={cn(
-                        "whitespace-nowrap rounded-full border border-[#2a3441] bg-[#1c2330] px-2.5 py-0.5 text-[11px] font-semibold text-[#8b949e]",
-                        isAllDone && "border-green-500 bg-[#1a4a2a] text-green-500"
-                      )}>
-                        {wProgress.done} / {wProgress.total}
-                      </span>
-                      <span className={cn(
-                        "text-[#6e7681] transition-transform duration-300",
-                        isOpen && "rotate-180"
-                      )}>
-                        ▼
-                      </span>
+                    <div>
+                      <div className={cn("inline-block rounded-full px-3 py-0.5 text-xs font-bold uppercase tracking-wider mb-2", month.badgeClass)}>
+                        {month.goal}
+                      </div>
+                      <h2 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+                        {month.title}
+                      </h2>
+                      <p className="mt-1 text-sm italic text-slate-400">"{month.subtitle}"</p>
                     </div>
                   </div>
+                </div>
+              </div>
 
-                  {/* Week Body */}
-                  {isOpen && (
-                    <div className="border-t border-[#2a3441] px-4 pb-5 md:px-5">
-                      {weekData.categories.map((cat, cIdx) => (
-                        <div key={cIdx} className="mt-4">
-                          <div className="mb-2 flex items-center gap-2 border-b border-[#2a3441] pb-1.5">
-                            <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full" style={{ background: cat.color }} />
-                            <span className="syne-font text-[11px] font-bold uppercase tracking-wider text-[#6e7681]">
-                              {cat.name}
-                            </span>
+              {/* WEEKS GRID / ACCORDIONS */}
+              <div className="space-y-4">
+                {month.weeks.map(weekId => {
+                  const weekData = PLAN_DATA[weekId];
+                  const wProgress = getProgress([weekId]);
+                  const isOpen = !!openWeeks[weekId];
+                  const isAllDone = wProgress.total > 0 && wProgress.done === wProgress.total;
+
+                  // Filter tasks inside categories if searchQuery or status filter active
+                  const processedCategories = weekData.categories.map((cat: any) => {
+                    const filteredTasks = cat.tasks.filter((t: any) => {
+                      const matchesSearch = !searchQuery || 
+                        t.text.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                        (t.note && t.note.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                        cat.name.toLowerCase().includes(searchQuery.toLowerCase());
+                      
+                      const isDone = !!tasks[t.id];
+                      const matchesStatus = filterStatus === "all" || 
+                        (filterStatus === "completed" && isDone) ||
+                        (filterStatus === "pending" && !isDone);
+
+                      return matchesSearch && matchesStatus;
+                    });
+                    return { ...cat, tasks: filteredTasks };
+                  }).filter((cat: any) => cat.tasks.length > 0);
+
+                  // If search filter yields 0 tasks in this week and user is searching, hide week
+                  if ((searchQuery || filterStatus !== "all") && processedCategories.length === 0) {
+                    return null;
+                  }
+
+                  return (
+                    <div 
+                      key={weekId}
+                      className={cn(
+                        "overflow-hidden rounded-2xl border transition-all duration-200 shadow-md",
+                        isOpen ? "border-slate-700/80 bg-slate-900/90" : "border-slate-800/80 bg-slate-900/50 hover:border-slate-700/60 hover:bg-slate-900/70"
+                      )}
+                    >
+                      {/* WEEK HEADER TILE */}
+                      <div 
+                        onClick={() => toggleWeek(weekId)}
+                        className="flex cursor-pointer select-none items-center justify-between gap-4 p-4 sm:p-5 transition-colors"
+                      >
+                        <div className="flex items-center gap-3.5 min-w-0">
+                          <span className={cn(
+                            "flex-shrink-0 rounded-lg px-2.5 py-1 text-xs font-black uppercase tracking-wider",
+                            month.badgeClass
+                          )}>
+                            {weekData.badge}
+                          </span>
+                          <h3 className="text-base sm:text-lg font-bold text-white truncate">
+                            {weekData.title}
+                          </h3>
+                        </div>
+
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          {/* PROGRESS COUNTER PILL */}
+                          <div className={cn(
+                            "flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold transition-all",
+                            isAllDone
+                              ? "border-emerald-500/40 bg-emerald-500/20 text-emerald-400"
+                              : "border-slate-800 bg-slate-800/80 text-slate-300"
+                          )}>
+                            {isAllDone && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />}
+                            <span>{wProgress.done} / {wProgress.total}</span>
                           </div>
-                          
-                          <div>
-                            {cat.tasks.map(task => {
-                              const isCompleted = !!tasks[task.id];
-                              return (
-                                <div 
-                                  key={task.id}
-                                  onClick={() => toggleTask(task.id)}
-                                  className={cn(
-                                    "mb-1 flex cursor-pointer items-start gap-3 rounded-lg p-2.5 transition-colors hover:bg-[#1c2330]",
-                                    isCompleted && "opacity-50"
-                                  )}
-                                >
-                                  <div className={cn(
-                                    "mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border-2 border-[#2a3441] transition-colors",
-                                    isCompleted && "border-green-500 bg-green-500"
-                                  )}>
-                                    {isCompleted && <span className="text-[10px] font-black text-[#0d1117]">✓</span>}
-                                  </div>
-                                  <div>
-                                    <div className={cn(
-                                      "text-[13.5px] leading-relaxed transition-colors",
-                                      isCompleted ? "text-[#6e7681] line-through" : "text-[#e6edf3]"
-                                    )}>
-                                      {task.text}
-                                    </div>
-                                    {task.note && (
-                                      <div className="mt-0.5 text-[11.5px] italic text-[#8b949e]">
-                                        {task.note}
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
+
+                          {/* CHEVRON TOGGLE */}
+                          <div className={cn(
+                            "rounded-full p-1 text-slate-400 transition-transform duration-200",
+                            isOpen && "rotate-180 text-white"
+                          )}>
+                            <ChevronDown className="h-5 w-5" />
                           </div>
                         </div>
-                      ))}
+                      </div>
 
-                      {/* Deliverables */}
-                      {weekData.deliverables && (
-                        <div className="mt-4 rounded-lg border border-[#2a3441] bg-[#1c2330] p-3.5 md:p-4">
-                          <div className="syne-font mb-2 text-[11px] font-bold uppercase tracking-wider text-[#8b949e]">
-                            ✅ {weekData.badge} Deliverables
+                      {/* WEEK CONTENT BODY */}
+                      {isOpen && (
+                        <div className="border-t border-slate-800/80 p-4 sm:p-6 space-y-6 bg-slate-950/40">
+                          
+                          {/* CATEGORIES GRID */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {processedCategories.map((cat: any, cIdx: number) => (
+                              <div 
+                                key={cIdx} 
+                                className="rounded-xl border border-slate-800/80 bg-slate-900/60 p-4 backdrop-blur-sm"
+                              >
+                                {/* CATEGORY TITLE BAR */}
+                                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-800/80">
+                                  <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ backgroundColor: cat.color }} />
+                                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-300">
+                                    {cat.name}
+                                  </h4>
+                                </div>
+
+                                {/* TASKS LIST */}
+                                <div className="space-y-2">
+                                  {cat.tasks.map((task: any) => {
+                                    const isCompleted = !!tasks[task.id];
+                                    return (
+                                      <div 
+                                        key={task.id}
+                                        onClick={() => toggleTask(task.id)}
+                                        className={cn(
+                                          "group flex cursor-pointer items-start gap-3 rounded-lg p-2.5 transition-all duration-150 border",
+                                          isCompleted 
+                                            ? "border-transparent bg-slate-950/40 opacity-60" 
+                                            : "border-slate-800/50 bg-slate-900/80 hover:border-slate-700 hover:bg-slate-800/60"
+                                        )}
+                                      >
+                                        {/* CHECKBOX */}
+                                        <div className="mt-0.5 flex-shrink-0">
+                                          {isCompleted ? (
+                                            <div className="flex h-4 w-4 items-center justify-center rounded bg-emerald-500 text-slate-950 shadow-sm shadow-emerald-500/30">
+                                              <Check className="h-3 w-3 stroke-[3]" />
+                                            </div>
+                                          ) : (
+                                            <div className="h-4 w-4 rounded border-2 border-slate-600 group-hover:border-emerald-400 transition-colors" />
+                                          )}
+                                        </div>
+
+                                        {/* TASK CONTENT */}
+                                        <div className="min-w-0 flex-1">
+                                          <p className={cn(
+                                            "text-xs sm:text-sm leading-relaxed transition-colors",
+                                            isCompleted ? "text-slate-500 line-through" : "text-slate-200 font-medium"
+                                          )}>
+                                            {task.text}
+                                          </p>
+                                          {task.note && (
+                                            <span className="mt-1 inline-block rounded bg-slate-800/90 px-2 py-0.5 text-[11px] italic text-emerald-400/90">
+                                              💡 {task.note}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                          {weekData.deliverables.map((del, dIdx) => (
-                            <div key={dIdx} className="flex items-center gap-2 py-0.5 text-[12.5px] text-[#8b949e]">
-                              <span className="flex-shrink-0 text-green-500">→</span>
-                              {del}
+
+                          {/* DELIVERABLES CALLOUT CARD */}
+                          {weekData.deliverables && (
+                            <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-4 sm:p-5">
+                              <div className="flex items-center gap-2 mb-3">
+                                <Award className="h-4 w-4 text-emerald-400" />
+                                <h4 className="text-xs font-extrabold uppercase tracking-wider text-emerald-400">
+                                  {weekData.badge} Key Deliverables
+                                </h4>
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {weekData.deliverables.map((del: string, dIdx: number) => (
+                                  <div key={dIdx} className="flex items-center gap-2.5 text-xs text-slate-300">
+                                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
+                                    <span>{del}</span>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                          ))}
+                          )}
+
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
-              );
-            })}
-
-            {/* End of Month Targets */}
-            {month.targets && (
-              <div className="mt-6 grid grid-cols-2 gap-2.5 rounded-xl border border-[#2a3441] bg-[#1c2330] p-4 sm:grid-cols-3 md:gap-3 md:p-5">
-                <div className="syne-font col-span-full mb-1 text-[12px] font-bold uppercase tracking-wider text-[#8b949e]">
-                  🎯 Month {month.id.replace('m', '')} End Targets
-                </div>
-                {month.targets.map((t, tIdx) => (
-                  <div key={tIdx} className="rounded-lg border border-[#2a3441] bg-[#161b22] p-3 text-center">
-                    <div className="mb-1 text-[11px] uppercase tracking-wider text-[#6e7681]">{t.metric}</div>
-                    <div className={cn("syne-font text-[15px] font-bold", month.targetColorClass)}>{t.value}</div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
-            )}
-          </div>
-        ))}
 
-        <button 
-          onClick={resetAll}
-          className="syne-font mx-auto mb-10 block rounded-lg border border-[#2a3441] bg-transparent px-6 py-2.5 text-[12px] font-semibold uppercase tracking-wider text-[#8b949e] transition-colors hover:border-red-500 hover:text-red-500"
-        >
-          Reset All Checkboxes
-        </button>
+              {/* MONTH END TARGETS */}
+              {month.targets && (
+                <div className="mt-6 rounded-2xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-md">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Target className="h-4 w-4 text-slate-400" />
+                    <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
+                      Month {month.id.replace('m', '')} Target Key Performance Indicators (KPIs)
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                    {month.targets.map((t, tIdx) => (
+                      <div key={tIdx} className="rounded-xl border border-slate-800 bg-slate-950/60 p-3.5 text-center">
+                        <div className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-1">
+                          {t.metric}
+                        </div>
+                        <div className={cn("text-base sm:text-lg font-black", month.targetColorClass)}>
+                          {t.value}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
+            </div>
+          ))}
+
+        </main>
       </div>
     </div>
   );
 }
 
 // -------------------------------------------------------------
-// DATA DEFINITIONS (Extracted from the raw HTML structure)
+// DATA DEFINITIONS
 // -------------------------------------------------------------
 
 const MONTHS = [
@@ -329,28 +642,30 @@ const MONTHS = [
     num: "01",
     title: "Build The Foundation",
     subtitle: "You can't market on a broken base",
-    goal: "Weeks 1–4 · Awareness · Setup Everything From Scratch",
-    colorClass: "bg-[#1a3a4a] border-[#58a6ff] text-[#58a6ff]",
-    badgeClass: "bg-blue-500/15 text-blue-500",
-    targetColorClass: "text-[#58a6ff]",
+    goal: "Weeks 1–4 · Setup Everything From Scratch",
+    bannerBorderClass: "border-cyan-500/30 bg-gradient-to-r from-cyan-950/40 via-slate-900 to-slate-900",
+    glowBgClass: "bg-cyan-500",
+    badgeClass: "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30",
+    targetColorClass: "text-cyan-400",
     weeks: ["w1", "w2", "w3", "w4"],
     targets: [
       { metric: "Social Followers", value: "500–1,000" },
       { metric: "Email Subscribers", value: "100–200" },
       { metric: "Website Visitors", value: "500–1,000" },
       { metric: "Warm Ad Audience", value: "500–1,000" },
-      { metric: "Product Pages Done", value: "Top 5" },
+      { metric: "Product Pages", value: "Top 5 Complete" },
     ]
   },
   {
     id: "m2",
     num: "02",
-    title: "Grow the Audience and Warm the Leads",
+    title: "Grow the Audience and Warm Leads",
     subtitle: "Turn strangers into people who know, like, and trust you",
-    goal: "Weeks 5–8 · Engagement · Nurture and Build",
-    colorClass: "bg-[#1a3a2a] border-[#3fb950] text-[#3fb950]",
-    badgeClass: "bg-green-500/15 text-green-500",
-    targetColorClass: "text-[#3fb950]",
+    goal: "Weeks 5–8 · Nurture & Build Community",
+    bannerBorderClass: "border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-900",
+    glowBgClass: "bg-emerald-500",
+    badgeClass: "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30",
+    targetColorClass: "text-emerald-400",
     weeks: ["w5", "w6", "w7", "w8"],
     targets: [
       { metric: "Social Followers", value: "1,500–3,000" },
@@ -365,18 +680,19 @@ const MONTHS = [
     num: "03",
     title: "Drive Conversions and Scale What Works",
     subtitle: "Turn warm audiences into buyers and buyers into repeat customers",
-    goal: "Weeks 9–12 · Conversion · Bottom of Funnel",
-    colorClass: "bg-[#3a2a1a] border-[#f0883e] text-[#f0883e]",
-    badgeClass: "bg-orange-500/15 text-orange-500",
-    targetColorClass: "text-[#f0883e]",
+    goal: "Weeks 9–12 · Conversion & Bottom Funnel Scaling",
+    bannerBorderClass: "border-amber-500/30 bg-gradient-to-r from-amber-950/40 via-slate-900 to-slate-900",
+    glowBgClass: "bg-amber-500",
+    badgeClass: "bg-amber-500/20 text-amber-300 border border-amber-500/30",
+    targetColorClass: "text-amber-400",
     weeks: ["w9", "w10", "w11", "w12"],
     targets: [
       { metric: "Social Followers", value: "3,000–6,000" },
       { metric: "Email Subscribers", value: "500–1,000" },
       { metric: "Website Traffic", value: "3,000–6,000" },
-      { metric: "Conv. Rate", value: "1.5–3%" },
+      { metric: "Conversion Rate", value: "1.5–3%" },
       { metric: "Monthly Revenue", value: "$3,000–$6,000" },
-      { metric: "ROAS", value: "3x–5x" },
+      { metric: "Ad ROAS", value: "3x–5x" },
     ]
   }
 ];
@@ -387,7 +703,7 @@ const PLAN_DATA: Record<string, any> = {
     title: "Audit and Setup Everything",
     categories: [
       {
-        name: "Website and E-Commerce", color: "#58a6ff",
+        name: "Website and E-Commerce", color: "#38bdf8",
         tasks: [
           { id: "w1-c1-t1", text: "Install Microsoft Clarity for heatmaps and session recordings on the store", note: "Free tool — go to clarity.microsoft.com" },
           { id: "w1-c1-t2", text: "Set up Google Analytics 4 with proper e-commerce tracking" },
@@ -398,7 +714,7 @@ const PLAN_DATA: Record<string, any> = {
         ]
       },
       {
-        name: "Social Media Setup", color: "#bc8cff",
+        name: "Social Media Setup", color: "#c084fc",
         tasks: [
           { id: "w1-c2-t1", text: "Audit existing Facebook and Instagram profiles — photo, bio, links, post history" },
           { id: "w1-c2-t2", text: "Create or optimize profiles on Facebook, Instagram, and TikTok" },
@@ -407,7 +723,7 @@ const PLAN_DATA: Record<string, any> = {
         ]
       },
       {
-        name: "Email Marketing Setup", color: "#f0883e",
+        name: "Email Marketing Setup", color: "#fb923c",
         tasks: [
           { id: "w1-c3-t1", text: "Set up Klaviyo or Mailchimp account — Klaviyo recommended for e-commerce" },
           { id: "w1-c3-t2", text: "Create email opt-in form and embed on homepage and blog pages" },
@@ -418,7 +734,7 @@ const PLAN_DATA: Record<string, any> = {
         ]
       },
       {
-        name: "SEO Foundation", color: "#3fb950",
+        name: "SEO Foundation", color: "#4ade80",
         tasks: [
           { id: "w1-c4-t1", text: "Install Yoast SEO on WordPress if not already installed" },
           { id: "w1-c4-t2", text: "Do keyword research for Australian health and wellness market using Google Keyword Planner or Ubersuggest" },
@@ -439,7 +755,7 @@ const PLAN_DATA: Record<string, any> = {
     title: "Build the Content Engine",
     categories: [
       {
-        name: "Content Strategy", color: "#58a6ff",
+        name: "Content Strategy", color: "#38bdf8",
         tasks: [
           { id: "w2-c1-t1", text: "Define 5 content pillars: Natural Remedies, Healthy Eating, Mental Wellness, Movement and Body, Product Education" },
           { id: "w2-c1-t2", text: "Create monthly content calendar — 4 to 6 social posts per week, 3 to 4 reels per week, 2 blogs per week, 1 email per week" },
@@ -447,7 +763,7 @@ const PLAN_DATA: Record<string, any> = {
         ]
       },
       {
-        name: "Reels and Video", color: "#3fb950",
+        name: "Reels and Video", color: "#4ade80",
         tasks: [
           { id: "w2-c2-t1", text: "Film or edit Reel 1: '3 natural remedies for anxiety you can start today'" },
           { id: "w2-c2-t2", text: "Film or edit Reel 2: 'Why Celtic sea salt is better than regular salt'" },
@@ -456,7 +772,7 @@ const PLAN_DATA: Record<string, any> = {
         ]
       },
       {
-        name: "Graphic Design", color: "#f0883e",
+        name: "Graphic Design", color: "#fb923c",
         tasks: [
           { id: "w2-c3-t1", text: "Design lead magnet PDF in Canva — clean, branded, and valuable" },
           { id: "w2-c3-t2", text: "Create branded Canva templates for social posts — static images and story templates" },
@@ -464,7 +780,7 @@ const PLAN_DATA: Record<string, any> = {
         ]
       },
       {
-        name: "Blog Writing", color: "#bc8cff",
+        name: "Blog Writing", color: "#c084fc",
         tasks: [
           { id: "w2-c4-t1", text: "Draft first SEO blog: 'Best Natural Supplements for Anxiety in Australia 2026' — link to relevant products", note: "Target 800 to 1,500 words with one primary keyword" },
           { id: "w2-c4-t2", text: "Draft second SEO blog: 'What Is Lifestyle Medicine and Why It's Changing Healthcare in Australia'" }
@@ -483,7 +799,7 @@ const PLAN_DATA: Record<string, any> = {
     title: "Launch Organic Social and Blog",
     categories: [
       {
-        name: "Publishing", color: "#58a6ff",
+        name: "Publishing", color: "#38bdf8",
         tasks: [
           { id: "w3-c1-t1", text: "Publish Week 3 social posts daily — minimum 4 posts this week" },
           { id: "w3-c1-t2", text: "Publish 3 reels this week — hook, value, CTA format strictly followed" },
@@ -493,7 +809,7 @@ const PLAN_DATA: Record<string, any> = {
         ]
       },
       {
-        name: "Reel Production This Week", color: "#3fb950",
+        name: "Reel Production This Week", color: "#4ade80",
         tasks: [
           { id: "w3-c2-t1", text: "Film or edit Reel 4: 'Morning routine for better gut health'" },
           { id: "w3-c2-t2", text: "Film or edit Reel 5: '5 signs your body needs more magnesium'" },
@@ -502,7 +818,7 @@ const PLAN_DATA: Record<string, any> = {
         ]
       },
       {
-        name: "Blog SEO Checklist for Every Post", color: "#f0883e",
+        name: "Blog SEO Checklist for Every Post", color: "#fb923c",
         tasks: [
           { id: "w3-c3-t1", text: "Each blog is 800 to 1,500 words targeting one primary keyword" },
           { id: "w3-c3-t2", text: "Each blog includes 2 to 3 internal links to products or other blogs" },
@@ -523,7 +839,7 @@ const PLAN_DATA: Record<string, any> = {
     title: "Review, Optimize, and Ads Foundation",
     categories: [
       {
-        name: "Performance Review", color: "#58a6ff",
+        name: "Performance Review", color: "#38bdf8",
         tasks: [
           { id: "w4-c1-t1", text: "Review which reels got the most views and saves in Weeks 1 to 3" },
           { id: "w4-c1-t2", text: "Review which social posts got the most engagement" },
@@ -532,7 +848,7 @@ const PLAN_DATA: Record<string, any> = {
         ]
       },
       {
-        name: "Meta Ads — Awareness Setup Only", color: "#f0883e",
+        name: "Meta Ads — Awareness Setup Only", color: "#fb923c",
         tasks: [
           { id: "w4-c2-t1", text: "Create Page Like campaign to grow Facebook and Instagram following", note: "Goal is audience building NOT selling yet" },
           { id: "w4-c2-t2", text: "Boost top performing reel from Week 3 — budget $5 to $10 AUD per day" },
@@ -541,7 +857,7 @@ const PLAN_DATA: Record<string, any> = {
         ]
       },
       {
-        name: "Product Page Round 1", color: "#3fb950",
+        name: "Product Page Round 1", color: "#4ade80",
         tasks: [
           { id: "w4-c3-t1", text: "Rewrite product titles for top 5 products to include keywords" },
           { id: "w4-c3-t2", text: "Expand product descriptions — benefits not just features, add 'why buy this' section" },
@@ -555,7 +871,7 @@ const PLAN_DATA: Record<string, any> = {
     title: "Deepen Content and Introduce Lead Gen",
     categories: [
       {
-        name: "Content Upgrade", color: "#3fb950",
+        name: "Content Upgrade", color: "#4ade80",
         tasks: [
           { id: "w5-c1-t1", text: "Double down on reel formats that performed best in Month 1 — create 3 more of the winning format" },
           { id: "w5-c1-t2", text: "Stop posting content formats that got zero traction — cut them from calendar" },
@@ -565,7 +881,7 @@ const PLAN_DATA: Record<string, any> = {
         ]
       },
       {
-        name: "Lead Magnet Campaign", color: "#58a6ff",
+        name: "Lead Magnet Campaign", color: "#38bdf8",
         tasks: [
           { id: "w5-c2-t1", text: "Launch Meta Lead Gen Ad — target Australian women 30 to 65 interested in health and natural medicine", note: "Budget: $10 to $15 AUD per day — target CPL: $2 to $5 AUD" },
           { id: "w5-c2-t2", text: "Create ad creative — short video reel previewing the lead magnet and its benefits" },
@@ -573,7 +889,7 @@ const PLAN_DATA: Record<string, any> = {
         ]
       },
       {
-        name: "Product Content", color: "#f0883e",
+        name: "Product Content", color: "#fb923c",
         tasks: [
           { id: "w5-c3-t1", text: "Create 'What's in my morning wellness routine' post featuring store products" },
           { id: "w5-c3-t2", text: "Create 'Honest review' style content for one specific product — castor oil or Celtic sea salt" },
@@ -587,7 +903,7 @@ const PLAN_DATA: Record<string, any> = {
     title: "Email Nurture and Community Building",
     categories: [
       {
-        name: "Email Nurture Sequence — Emails 4 to 10", color: "#3fb950",
+        name: "Email Nurture Sequence — Emails 4 to 10", color: "#4ade80",
         tasks: [
           { id: "w6-c1-t1", text: "Write Email 4: 'The Truth About Chronic Disease and What Lifestyle Medicine Says' — educational, builds authority" },
           { id: "w6-c1-t2", text: "Write Email 5: 'Our Top 5 Products for Gut Health' — soft product introduction" },
@@ -600,7 +916,7 @@ const PLAN_DATA: Record<string, any> = {
         ]
       },
       {
-        name: "Facebook Community", color: "#bc8cff",
+        name: "Facebook Community", color: "#c084fc",
         tasks: [
           { id: "w6-c2-t1", text: "Create Facebook Group: 'Lifestyle Medicine Community Australia'" },
           { id: "w6-c2-t2", text: "Invite all email subscribers to join the group via email broadcast" },
@@ -615,7 +931,7 @@ const PLAN_DATA: Record<string, any> = {
     title: "Launch Retargeting Ads and SEO Push",
     categories: [
       {
-        name: "Meta Retargeting Campaigns", color: "#f0883e",
+        name: "Meta Retargeting Campaigns", color: "#fb923c",
         tasks: [
           { id: "w7-c1-t1", text: "Launch Retargeting Campaign 1 — Website Visitors: target last 30 days no purchase, 10% discount code ad — $10 AUD/day" },
           { id: "w7-c1-t2", text: "Launch Retargeting Campaign 2 — Video Viewers: target 50% video watches last 30 days, testimonial ad — $10 AUD/day" },
@@ -624,7 +940,7 @@ const PLAN_DATA: Record<string, any> = {
         ]
       },
       {
-        name: "Google SEO Push", color: "#3fb950",
+        name: "Google SEO Push", color: "#4ade80",
         tasks: [
           { id: "w7-c2-t1", text: "Publish Blog 3: 'Best Organic Supplements to Buy Online in Australia' — high commercial intent keyword" },
           { id: "w7-c2-t2", text: "Publish Blog 4: 'Where to Buy Celtic Sea Salt in Australia' — product specific search intent" },
@@ -640,7 +956,7 @@ const PLAN_DATA: Record<string, any> = {
     title: "Vendor Marketing and Affiliate Push",
     categories: [
       {
-        name: "Vendor Recruitment", color: "#3fb950",
+        name: "Vendor Recruitment", color: "#4ade80",
         tasks: [
           { id: "w8-c1-t1", text: "Improve the existing 'Sell With Us' page — clear benefits, process, and CTA for vendors" },
           { id: "w8-c1-t2", text: "Write blog: 'Why Selling on Lifestyle Medicine Gateway Makes Sense for Australian Health Brands'" },
@@ -649,7 +965,7 @@ const PLAN_DATA: Record<string, any> = {
         ]
       },
       {
-        name: "Youngevity and Young Living Affiliate Push", color: "#bc8cff",
+        name: "Youngevity and Young Living Affiliate Push", color: "#c084fc",
         tasks: [
           { id: "w8-c2-t1", text: "Create dedicated content around Youngevity products with 20% off offer featured prominently" },
           { id: "w8-c2-t2", text: "Write blog: 'How to Get 20% Off Premium Health Supplements in Australia'" },
@@ -663,7 +979,7 @@ const PLAN_DATA: Record<string, any> = {
     title: "Full Conversion Campaign Launch",
     categories: [
       {
-        name: "Meta Conversion Campaigns", color: "#f0883e",
+        name: "Meta Conversion Campaigns", color: "#fb923c",
         tasks: [
           { id: "w9-c1-t1", text: "Launch Campaign 1 — Cold Audience Conversion: Australian women 30–65, health interests, lookalike audience — $20 to $30 AUD/day", note: "Landing page: direct to best selling low price point product — castor oil or Celtic sea salt" },
           { id: "w9-c1-t2", text: "Launch Campaign 2 — Cart Abandonment Retargeting: added to cart no purchase last 14 days, 10% discount code — $10 AUD/day" },
@@ -673,7 +989,7 @@ const PLAN_DATA: Record<string, any> = {
         ]
       },
       {
-        name: "Abandoned Cart Email Sequence", color: "#3fb950",
+        name: "Abandoned Cart Email Sequence", color: "#4ade80",
         tasks: [
           { id: "w9-c2-t1", text: "Set up Cart Email 1: 1 hour after abandonment — 'Did something go wrong? Your cart is waiting'" },
           { id: "w9-c2-t2", text: "Set up Cart Email 2: 24 hours after — 'Still thinking about it? Here's 10% off'" },
@@ -688,7 +1004,7 @@ const PLAN_DATA: Record<string, any> = {
     title: "E-Commerce Conversion Rate Optimization",
     categories: [
       {
-        name: "Product Page Round 2", color: "#f0883e",
+        name: "Product Page Round 2", color: "#fb923c",
         tasks: [
           { id: "w10-c1-t1", text: "Add customer reviews and ratings to every product page — number one conversion driver for health products" },
           { id: "w10-c1-t2", text: "Add FAQ section to each product page answering the most common customer objections" },
@@ -697,7 +1013,7 @@ const PLAN_DATA: Record<string, any> = {
         ]
       },
       {
-        name: "Checkout Optimization", color: "#58a6ff",
+        name: "Checkout Optimization", color: "#38bdf8",
         tasks: [
           { id: "w10-c2-t1", text: "Reduce checkout to as few steps as possible — remove unnecessary fields" },
           { id: "w10-c2-t2", text: "Add trust badges to checkout page — secure payment, money back guarantee, Australian owned" },
@@ -707,7 +1023,7 @@ const PLAN_DATA: Record<string, any> = {
         ]
       },
       {
-        name: "Data Analysis", color: "#3fb950",
+        name: "Data Analysis", color: "#4ade80",
         tasks: [
           { id: "w10-c3-t1", text: "Review Microsoft Clarity recordings — identify where people drop off before purchasing" },
           { id: "w10-c3-t2", text: "Check Google Analytics checkout funnel report — identify which step has the highest exit rate" },
@@ -721,7 +1037,7 @@ const PLAN_DATA: Record<string, any> = {
     title: "Influencer Outreach and UGC Campaign",
     categories: [
       {
-        name: "Micro Influencer Campaign", color: "#bc8cff",
+        name: "Micro Influencer Campaign", color: "#c084fc",
         tasks: [
           { id: "w11-c1-t1", text: "Identify 10 to 15 Australian health and wellness micro influencers on Instagram and TikTok — 5,000 to 50,000 followers" },
           { id: "w11-c1-t2", text: "Send outreach DM or email to top 10 influencers — offer free products in exchange for honest review reel" },
@@ -731,7 +1047,7 @@ const PLAN_DATA: Record<string, any> = {
         ]
       },
       {
-        name: "User Generated Content", color: "#f0883e",
+        name: "User Generated Content", color: "#fb923c",
         tasks: [
           { id: "w11-c2-t1", text: "Email existing customer list asking for a photo or video with their product and a branded hashtag" },
           { id: "w11-c2-t2", text: "Offer 10% discount on next order as thank you for UGC submission" },
@@ -746,7 +1062,7 @@ const PLAN_DATA: Record<string, any> = {
     title: "Full Review, Report, and Plan Month 4",
     categories: [
       {
-        name: "Social Media Review", color: "#f0883e",
+        name: "Social Media Review", color: "#fb923c",
         tasks: [
           { id: "w12-c1-t1", text: "Report follower growth Month 1 vs Month 3 — target 3,000 to 6,000 total" },
           { id: "w12-c1-t2", text: "Identify top 3 performing content formats and topics — double down on these in Month 4" },
@@ -754,7 +1070,7 @@ const PLAN_DATA: Record<string, any> = {
         ]
       },
       {
-        name: "Email and SEO Review", color: "#3fb950",
+        name: "Email and SEO Review", color: "#4ade80",
         tasks: [
           { id: "w12-c2-t1", text: "Report total email subscribers — target 500 to 1,000" },
           { id: "w12-c2-t2", text: "Report email open rate — target 30 to 35% and click through rate — target 3 to 5%" },
@@ -764,7 +1080,7 @@ const PLAN_DATA: Record<string, any> = {
         ]
       },
       {
-        name: "Paid Ads and E-Commerce Review", color: "#58a6ff",
+        name: "Paid Ads and E-Commerce Review", color: "#38bdf8",
         tasks: [
           { id: "w12-c3-t1", text: "Report total ad spend and ROAS — target 3x to 5x by end of Month 3" },
           { id: "w12-c3-t2", text: "Report cost per purchase and cart abandonment recovery rate" },
