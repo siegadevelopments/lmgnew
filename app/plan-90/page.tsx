@@ -33,17 +33,36 @@ export default function MarketingPlan90() {
   const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "completed">("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Fetch initial state from DB
+  const STORAGE_KEY = "lmg_marketing_plan_90_tasks";
+
+  // Fetch initial state from LocalStorage & DB API
   useEffect(() => {
     async function loadState() {
+      let localState: Record<string, boolean> = {};
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          localState = JSON.parse(saved);
+          setTasks(localState);
+        }
+      } catch (e) {
+        console.error("Failed to parse local storage:", e);
+      }
+
       try {
         const res = await fetch("/api/plan-90");
         if (res.ok) {
           const data = await res.json();
-          if (data.state) setTasks(data.state);
+          if (data.state && Object.keys(data.state).length > 0) {
+            const merged = { ...localState, ...data.state };
+            setTasks(merged);
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+            } catch (e) {}
+          }
         }
       } catch (err) {
-        console.error("Failed to load marketing plan state:", err);
+        console.error("Failed to load marketing plan state from DB:", err);
       } finally {
         setLoading(false);
       }
@@ -51,8 +70,14 @@ export default function MarketingPlan90() {
     loadState();
   }, []);
 
-  // Save state to DB
+  // Save state to LocalStorage & DB
   const saveStateToDB = async (newState: Record<string, boolean>) => {
+    // 1. Instant local persistence
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
+    } catch (e) {}
+
+    // 2. Cloud DB sync
     setSaving(true);
     try {
       await fetch("/api/plan-90", {
@@ -91,6 +116,9 @@ export default function MarketingPlan90() {
     if (!window.confirm("Reset all task checkboxes? This action cannot be undone.")) return;
     const newState = {};
     setTasks(newState);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (e) {}
     saveStateToDB(newState);
   };
 
