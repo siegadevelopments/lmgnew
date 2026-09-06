@@ -23,6 +23,7 @@
 ### Social Media & Product Links
 - All product links in generated social media content MUST be absolute URLs formatted as `https://www.lifestylemedicinegateway.com/products/[slug]`.
 - Do NOT use relative routes like `/products/...` or incorrect `/shop/...` routes in captions or scheduled post data.
+- NEVER cross-promote or mix products from different vendors/brands in a single social post (e.g., Founder's Formula video/post must only link to Founder's Formula products, not unrelated products like ceremonial cacao).
 - Refer to [.agents/rules/social_media_product_links.md](file:///Users/ernestsiega/Documents/projects/lmgnew/.agents/rules/social_media_product_links.md) for full specifications.
 
 ### Image Generation

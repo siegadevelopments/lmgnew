@@ -253,7 +253,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }),
     });
 
+    let vendorStoreName = "";
+    if (selectedVendorId) {
+      const { data: vProfile } = await supabase
+        .from("vendor_profiles")
+        .select("store_name")
+        .eq("id", selectedVendorId)
+        .single();
+      if (vProfile?.store_name) {
+        vendorStoreName = vProfile.store_name;
+      }
+    } else if (products && products.length > 0 && products[0].brand) {
+      vendorStoreName = products[0].brand;
+    }
+
+    const vendorPromptRule = vendorStoreName ? `
+CRITICAL VENDOR & BRAND MATCHING RULE:
+You are generating social media posts SPECIFICALLY for the vendor/brand: "${vendorStoreName}".
+- EVERY product link, product mention, and product feature MUST ONLY be for products belonging to "${vendorStoreName}".
+- NEVER mention, feature, or link to products from any other vendor or brand.
+- If promoting a video (e.g., "Founders Formula Introduction") or an article, NEVER pair it with an unrelated product from a different vendor (such as "Pure Ceremonial Cacao").
+- All product URLs MUST strictly be for products belonging to "${vendorStoreName}".
+` : `
+CRITICAL BRAND ALIGNMENT RULE:
+- Each post MUST feature products exclusively from a SINGLE brand or vendor at a time.
+- DO NOT mix products, videos, or articles from different brands/vendors within the same post (e.g., NEVER feature a product from Brand A in a post about Brand B).
+- Always ensure the product link in the caption matches the exact brand/vendor being discussed.
+`;
+
     const generationPrompt = `${AUDIENCE_PROMPT}
+
+${vendorPromptRule}
 
 TASK: Generate exactly ${totalPostsCount} social media posts for the following schedule.
 SCHEDULE: ${scheduleText}
@@ -265,6 +295,7 @@ DISTRIBUTION STRATEGY:
 - Mix educational articles (40%), product features (40%), and recipes/videos (20%).
 - Ensure content rotates logically across the selected days.
 - Focus on building trust early and converting towards the end of the batch.
+- Strictly adhere to the VENDOR & BRAND MATCHING RULE above.
 
 POST TYPES TO ROTATE:
 1. "Did You Know?" — Educational hook with article link
