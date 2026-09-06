@@ -214,6 +214,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           id: p.id,
           title: p.title,
           slug: p.slug,
+          url: `https://www.lifestylemedicinegateway.com/products/${p.slug}`,
           price: p.price,
           excerpt: (p.excerpt || "").substring(0, 100),
           category: p.category,
@@ -226,6 +227,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           id: r.id,
           title: r.title,
           slug: r.slug,
+          url: `https://www.lifestylemedicinegateway.com/recipes/${r.slug}`,
           excerpt: (r.excerpt || "").substring(0, 100),
           image: r.image_url,
         })),
@@ -244,6 +246,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             id: v.id,
             title: v.title,
             slug: v.embed_url,
+            url: v.embed_url,
             excerpt: (v.description || "").substring(0, 100),
             image: image,
           };
@@ -274,12 +277,12 @@ POST TYPES TO ROTATE:
 
 REQUIREMENTS FOR EACH POST:
 - "title": short topic title (e.g. "5 Gut-Friendly Foods for Perimenopause")
-- "facebook": Engaging Facebook caption with conversational tone, story hook, emojis, the actual article/product link from the content above, and STRICTLY 2-3 hashtags max. DO NOT write literal placeholder strings like "{source_url}" or "Title:" or "Link:". Write the actual readable post copy.
-- "instagram": High-engagement Instagram caption with emojis, line breaks (\\n), CTA to visit link in bio or the actual website link from the content above, and STRICTLY 3-5 relevant hashtags at the end. DO NOT write literal placeholder strings like "{source_url}" or "Title:" or "Link:".
-- "pinterest": STRICT RULE - Must be CONCISE and UNDER 450 CHARACTERS total (including title, description, actual website link, and hashtags) so it never breaches Pinterest's 500-char limit. Start with a catchy Pin Title, brief description, actual CTA link, and 2-3 targeted hashtags. DO NOT write literal placeholder strings like "{source_url}" or "Title:" or "Link:".
+- "facebook": Engaging Facebook caption with conversational tone, story hook, emojis, the actual working product/article link (e.g. https://www.lifestylemedicinegateway.com/products/slug), and STRICTLY 2-3 hashtags max. DO NOT write literal placeholder strings like "{source_url}" or "Title:" or "Link:". Write the actual readable post copy including the direct product link.
+- "instagram": High-engagement Instagram caption with emojis, line breaks (\n), call to action including the product URL (https://www.lifestylemedicinegateway.com/products/slug), and STRICTLY 3-5 relevant hashtags at the end. DO NOT write literal placeholder strings like "{source_url}" or "Title:" or "Link:".
+- "pinterest": STRICT RULE - Must be CONCISE and UNDER 450 CHARACTERS total (including title, description, actual product website link, and hashtags) so it never breaches Pinterest's 500-char limit. Start with a catchy Pin Title, brief description, actual CTA product link (https://www.lifestylemedicinegateway.com/products/slug), and 2-3 targeted hashtags. DO NOT write literal placeholder strings like "{source_url}" or "Title:" or "Link:".
 - "source_type": "article" | "product" | "recipe" | "video" | "custom"
 - "source_id": the id from the content above (as string), or null for custom
-- "source_url": For articles/recipes/products use relative URL like "/articles/slug" or "/shop/product-slug". For videos, use the full absolute YouTube URL provided in the slug field.
+- "source_url": MUST BE A FULL ABSOLUTE URL starting with "https://www.lifestylemedicinegateway.com". For products use "https://www.lifestylemedicinegateway.com/products/slug". For articles use "https://www.lifestylemedicinegateway.com/articles/slug". For recipes use "https://www.lifestylemedicinegateway.com/recipes/slug". For videos use the full YouTube URL.
 - "image_url": the image URL from the source content, or null
 - "time_slot": "morning" | "midday" | "evening"
 
@@ -353,12 +356,35 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
       const imageUrl = post.image_url || null;
       const sourceType = post.source_type || "custom";
       const sourceId = post.source_id ? String(post.source_id) : null;
-      const sourceUrl = post.source_url || null;
+      
+      // Format 100% valid absolute URL
+      const rawSourceUrl = post.source_url || (post.slug ? (sourceType === "product" ? `https://www.lifestylemedicinegateway.com/products/${post.slug}` : `https://www.lifestylemedicinegateway.com/${sourceType}s/${post.slug}`) : null);
+      let sourceUrl = rawSourceUrl;
+      if (sourceUrl && !sourceUrl.startsWith("http://") && !sourceUrl.startsWith("https://")) {
+        let cleanPath = sourceUrl.replace(/^\/shop\//, "/products/");
+        if (!cleanPath.startsWith("/")) cleanPath = `/${cleanPath}`;
+        sourceUrl = `https://www.lifestylemedicinegateway.com${cleanPath}`;
+      } else if (sourceUrl && sourceUrl.includes("/shop/")) {
+        sourceUrl = sourceUrl.replace("/shop/", "/products/");
+      }
 
       const cleanCaptionText = (rawText: string) => {
         let text = rawText || "";
         // Remove literal placeholder template tags
         text = text.replace(/\{source_url\}/gi, sourceUrl || "");
+        
+        // Auto-fix relative or /shop/ URLs inside captions to be full working /products/ URLs
+        text = text.replace(/https?:\/\/www\.lifestylemedicinegateway\.com\/shop\//gi, "https://www.lifestylemedicinegateway.com/products/");
+        text = text.replace(/(?<=^|\s)\/products\/([a-zA-Z0-9_-]+)/g, "https://www.lifestylemedicinegateway.com/products/$1");
+        text = text.replace(/(?<=^|\s)\/shop\/([a-zA-Z0-9_-]+)/g, "https://www.lifestylemedicinegateway.com/products/$1");
+        
+        // Append source URL if missing from caption
+        if (sourceUrl && sourceType === "product" && !text.includes(sourceUrl)) {
+          text = `${text}\n\n👉 Shop Now: ${sourceUrl}`;
+        } else if (sourceUrl && sourceType === "article" && !text.includes(sourceUrl)) {
+          text = `${text}\n\n📖 Read Full Article: ${sourceUrl}`;
+        }
+
         // Remove structural labels at the start of text or lines
         text = text.replace(/^(Title|Caption|Link|Description|Post):\s*/gmi, "");
         return text.trim();

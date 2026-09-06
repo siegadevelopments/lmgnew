@@ -20,5 +20,10 @@
 - **Database Access**: Prefer using the Supabase client via the `@supabase/supabase-js` library. Use `SUPABASE_SERVICE_ROLE_KEY` (where secure/necessary) for backend migrations or bypassing RLS.
 - **Storage Strategy**: Fallback to Supabase Storage only if Cloudflare R2 uploads explicitly fail, but R2 should always be the default target.
 
+### Social Media & Product Links
+- All product links in generated social media content MUST be absolute URLs formatted as `https://www.lifestylemedicinegateway.com/products/[slug]`.
+- Do NOT use relative routes like `/products/...` or incorrect `/shop/...` routes in captions or scheduled post data.
+- Refer to [.agents/rules/social_media_product_links.md](file:///Users/ernestsiega/Documents/projects/lmgnew/.agents/rules/social_media_product_links.md) for full specifications.
+
 ### Image Generation
 - Do not include watermarks when generating images for the content manager.
