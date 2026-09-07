@@ -2617,9 +2617,8 @@ export function AdminContentTab({ vendors, userId }: { vendors: any[]; userId?: 
                 )}
               </div>
             ) : imageUrl && (
-              <div className="aspect-video w-full rounded-xl overflow-hidden border bg-slate-950 flex items-center justify-center relative">
-                <img src={imageUrl} className="absolute inset-0 w-full h-full object-cover opacity-30 blur-md scale-110" alt="" aria-hidden="true" />
-                <img src={imageUrl} className="relative z-10 w-full h-full object-contain" alt="Preview" />
+              <div className="w-full max-h-[700px] rounded-xl overflow-hidden border bg-muted/40 flex items-center justify-center p-2">
+                <img src={imageUrl} className="max-h-[680px] w-auto max-w-full object-contain rounded-lg block" alt="Preview" />
               </div>
             )}
             <div className="space-y-4">

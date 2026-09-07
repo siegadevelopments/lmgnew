@@ -37,21 +37,11 @@ function RecipeContent() {
         </div>
 
         {recipe.image_url && (
-          <div className="mt-8 overflow-hidden rounded-2xl border border-border shadow-sm relative aspect-video bg-slate-950 flex items-center justify-center">
-            <Image
+          <div className="mt-8 w-full overflow-hidden rounded-2xl border border-border shadow-sm bg-muted/40 flex items-center justify-center">
+            <img
               src={recipe.image_url}
-              alt=""
-              fill
-              className="object-cover opacity-30 blur-xl pointer-events-none scale-110"
-              aria-hidden="true"
-            />
-            <Image
-              src={recipe.image_url}
-              alt={recipe.title}
-              fill
-              style={{ objectFit: 'contain' }}
-              className="relative z-10"
-              sizes="(max-width: 1024px) 100vw, 896px"
+              alt={decodeEntities(recipe.title || "")}
+              className="w-full h-auto max-h-[900px] object-contain rounded-2xl block"
             />
           </div>
         )}
