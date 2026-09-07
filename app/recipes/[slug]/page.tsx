@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { recipeBySlugQueryOptions } from "@/lib/queries";
+import { recipeBySlugQueryOptions, Recipe } from "@/lib/queries";
 import { decodeEntities } from "@/lib/utils";
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
@@ -14,7 +14,7 @@ function RecipeContent() {
   const params = useParams();
   const slug = params?.slug as string;
   const { data: recipes } = useSuspenseQuery(recipeBySlugQueryOptions(slug));
-  const recipe = recipes?.[0];
+  const recipe = (recipes as Recipe[])?.[0];
 
   if (!recipe) return <div className="p-20 text-center">Recipe not found</div>;
 

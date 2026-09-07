@@ -212,10 +212,25 @@ export const recipesQueryOptions = () =>
     },
   });
 
+export interface Recipe {
+  id: string | number;
+  title: string;
+  slug: string;
+  image_url?: string | null;
+  prep_time?: number | null;
+  cook_time?: number | null;
+  excerpt?: string | null;
+  content?: string | null;
+  tags?: string[] | null;
+  created_at?: string;
+  updated_at?: string;
+  author_id?: string | null;
+}
+
 export const recipeBySlugQueryOptions = (slug: string) =>
   queryOptions({
     queryKey: ["recipes", "bySlug", "v4", slug],
-    queryFn: async () => {
+    queryFn: async (): Promise<Recipe[]> => {
       try {
         const decodedSlug = decodeURIComponent(slug);
         
