@@ -36,7 +36,7 @@ serve(async (req: Request) => {
     const body = await req.json().catch(() => null);
     if (!body) throw new Error("Invalid JSON body");
 
-    const { prompt, folder = "ai-thumbnails", author_id, no_watermark, aspect_ratio = "16:9" } = body;
+    const { prompt, folder = "ai-thumbnails", author_id, no_watermark = true, aspect_ratio = "16:9" } = body;
     if (!prompt) throw new Error("Prompt is required");
 
     const truncatedPrompt = typeof prompt === 'string' ? prompt.substring(0, 1000) : "Wellness lifestyle";

@@ -27,4 +27,5 @@
 - Refer to [.agents/rules/social_media_product_links.md](file:///Users/ernestsiega/Documents/projects/lmgnew/.agents/rules/social_media_product_links.md) for full specifications.
 
 ### Image Generation
-- Do not include watermarks when generating images for the content manager.
+- Do NOT include watermarks, logos, or author text stamps when generating images for recipes, articles, or the content manager.
+- Refer to [.agents/rules/no_watermarks_on_images.md](file:///Users/ernestsiega/Documents/projects/lmgnew/.agents/rules/no_watermarks_on_images.md) for full specifications.

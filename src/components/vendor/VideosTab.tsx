@@ -153,7 +153,8 @@ export function VideosTab({ videos, setVideos, userId }: Props) {
       const { data, error } = await supabase.functions.invoke("generate-ai-image", {
         body: { 
           prompt: `${form.title} ${form.description || ""}`.trim(),
-          author_id: userId
+          author_id: userId,
+          no_watermark: true
         },
       });
       if (error) throw error;

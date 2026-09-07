@@ -478,7 +478,8 @@ function AdminDashboardContent() {
       const { data, error } = await supabase.functions.invoke("generate-ai-image", {
         body: {
           prompt: `${productForm.title} ${cleanDesc}`.trim(),
-          author_id: productForm.vendor_id
+          author_id: productForm.vendor_id,
+          no_watermark: true
         },
       });
 
