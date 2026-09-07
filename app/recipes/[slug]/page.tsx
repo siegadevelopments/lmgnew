@@ -37,12 +37,20 @@ function RecipeContent() {
         </div>
 
         {recipe.image_url && (
-          <div className="mt-8 overflow-hidden rounded-2xl border border-border shadow-sm relative aspect-video">
+          <div className="mt-8 overflow-hidden rounded-2xl border border-border shadow-sm relative aspect-video bg-slate-950 flex items-center justify-center">
+            <Image
+              src={recipe.image_url}
+              alt=""
+              fill
+              className="object-cover opacity-30 blur-xl pointer-events-none scale-110"
+              aria-hidden="true"
+            />
             <Image
               src={recipe.image_url}
               alt={recipe.title}
               fill
-              style={{ objectFit: 'cover' }}
+              style={{ objectFit: 'contain' }}
+              className="relative z-10"
               sizes="(max-width: 1024px) 100vw, 896px"
             />
           </div>

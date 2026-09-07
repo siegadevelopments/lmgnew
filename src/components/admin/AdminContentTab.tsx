@@ -2617,8 +2617,9 @@ export function AdminContentTab({ vendors, userId }: { vendors: any[]; userId?: 
                 )}
               </div>
             ) : imageUrl && (
-              <div className="aspect-video w-full rounded-xl overflow-hidden border">
-                <img src={imageUrl} className="w-full h-full object-cover" alt="Preview" />
+              <div className="aspect-video w-full rounded-xl overflow-hidden border bg-slate-950 flex items-center justify-center relative">
+                <img src={imageUrl} className="absolute inset-0 w-full h-full object-cover opacity-30 blur-md scale-110" alt="" aria-hidden="true" />
+                <img src={imageUrl} className="relative z-10 w-full h-full object-contain" alt="Preview" />
               </div>
             )}
             <div className="space-y-4">
@@ -2773,9 +2774,9 @@ export function AdminContentTab({ vendors, userId }: { vendors: any[]; userId?: 
                         }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className="h-10 w-10 rounded overflow-hidden bg-muted shrink-0 flex items-center justify-center">
+                          <div className="h-10 w-10 rounded overflow-hidden bg-slate-950 shrink-0 flex items-center justify-center">
                             {recipe.image_url && !recipe.needsImage ? (
-                              <img src={recipe.image_url} className="h-full w-full object-cover" />
+                              <img src={recipe.image_url} className="h-full w-full object-contain" />
                             ) : (
                               <Utensils className="h-5 w-5 text-muted-foreground/50" />
                             )}

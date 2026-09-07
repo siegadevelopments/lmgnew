@@ -52,16 +52,25 @@ export function FeaturedRecipesSection() {
                   href={`/recipes/${recipe.slug}`}
                   className="flex-none w-[42%] sm:w-auto group block rounded-2xl border border-border bg-card p-4 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-card"
                 >
-                  <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
+                  <div className="relative aspect-square overflow-hidden rounded-xl bg-slate-950 flex items-center justify-center">
                     {recipe.image_url && (
-                      <Image
-                        src={recipe.image_url}
-                        alt={recipe.title}
-                        fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        loading="lazy"
-                        sizes="(max-width: 768px) 42vw, 25vw"
-                      />
+                      <>
+                        <Image
+                          src={recipe.image_url}
+                          alt=""
+                          fill
+                          className="object-cover opacity-30 blur-md pointer-events-none scale-110"
+                          aria-hidden="true"
+                        />
+                        <Image
+                          src={recipe.image_url}
+                          alt={recipe.title}
+                          fill
+                          className="object-contain relative z-10 transition-transform duration-500 group-hover:scale-105"
+                          loading="lazy"
+                          sizes="(max-width: 768px) 42vw, 25vw"
+                        />
+                      </>
                     )}
                     {(recipe.prep_time || recipe.cook_time) && (
                       <div className="absolute bottom-2 right-2 rounded-full bg-background/90 px-2 py-1 text-xs font-semibold backdrop-blur-sm">

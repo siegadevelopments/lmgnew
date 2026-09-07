@@ -203,16 +203,25 @@ function RecipeCard({ recipe }: { recipe: any }) {
       href={`/recipes/${recipe.slug}`}
       className="group flex flex-col overflow-hidden rounded-xl bg-card border border-border transition-all hover:shadow-card hover:-translate-y-1"
     >
-      <div className="aspect-video overflow-hidden bg-muted relative">
+      <div className="aspect-video overflow-hidden bg-slate-950 relative flex items-center justify-center">
         {recipe.image_url ? (
-          <Image
-            src={recipe.image_url}
-            alt={recipe.title}
-            fill
-            style={{ objectFit: 'cover' }}
-            className="transition-transform duration-500 group-hover:scale-105"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          />
+          <>
+            <Image
+              src={recipe.image_url}
+              alt=""
+              fill
+              className="object-cover opacity-30 blur-lg pointer-events-none scale-110"
+              aria-hidden="true"
+            />
+            <Image
+              src={recipe.image_url}
+              alt={recipe.title}
+              fill
+              style={{ objectFit: 'contain' }}
+              className="relative z-10 transition-transform duration-500 group-hover:scale-105"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            />
+          </>
         ) : (
           <div className="flex h-full items-center justify-center text-muted-foreground/30">
             No Image
