@@ -244,10 +244,9 @@ export default function MediaPackagePage() {
             <a href="#growth" className="rounded-lg px-3 py-1.5 font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">3. Growth</a>
             <a href="#categories" className="rounded-lg px-3 py-1.5 font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">4. Categories</a>
             <a href="#why-join" className="rounded-lg px-3 py-1.5 font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">5. Vendor Benefits</a>
-            <a href="#opportunities" className="rounded-lg px-3 py-1.5 font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">6. Tier Options</a>
-            <a href="#marketing" className="rounded-lg px-3 py-1.5 font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">7. Marketing Engine</a>
-            <a href="#roadmap" className="rounded-lg px-3 py-1.5 font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">8. Roadmap</a>
-            <a href="#requirements" className="rounded-lg px-3 py-1.5 font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">9. Standards</a>
+            <a href="#marketing" className="rounded-lg px-3 py-1.5 font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">6. Marketing Engine</a>
+            <a href="#roadmap" className="rounded-lg px-3 py-1.5 font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">7. Roadmap</a>
+            <a href="#requirements" className="rounded-lg px-3 py-1.5 font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">8. Standards</a>
           </div>
           <Link href="/signup?type=vendor&redirect=/vendor" className="hidden sm:inline-flex">
             <Button size="sm" variant="wellness">Apply Now</Button>
@@ -541,94 +540,7 @@ export default function MediaPackagePage() {
           </div>
         </section>
 
-        {/* Section 6: Vendor Success Tier Opportunities */}
-        <section id="opportunities" className="scroll-mt-32">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <Badge className="bg-wellness/10 text-wellness border-wellness/20 px-3 py-1 text-xs uppercase font-bold tracking-wider mb-3">
-              6. Promotional Packages
-            </Badge>
-            <h2 className="text-3xl font-extrabold sm:text-4xl tracking-tight text-foreground">
-              Vendor Success Opportunities
-            </h2>
-            <p className="mt-3 text-muted-foreground text-sm sm:text-base">
-              Choose the level of visibility and partnership that aligns with your brand's growth targets.
-            </p>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Standard Listing */}
-            <Card className="border-border bg-card flex flex-col justify-between hover:shadow-lg transition-all">
-              <CardContent className="p-8 space-y-6">
-                <div className="space-y-2">
-                  <Badge variant="outline" className="text-xs font-bold">Standard</Badge>
-                  <h3 className="text-2xl font-bold text-foreground">Standard Listing</h3>
-                  <p className="text-xs text-muted-foreground">Ideal for new brands starting out with zero risk.</p>
-                </div>
-                <div className="text-3xl font-black text-foreground">Free <span className="text-xs font-medium text-muted-foreground">/ no listing fee</span></div>
-
-                <ul className="space-y-3 text-xs text-muted-foreground pt-4 border-t border-border">
-                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600 shrink-0" /> Full Vendor Store Profile</li>
-                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600 shrink-0" /> Unlimited Product Catalog Listings</li>
-                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600 shrink-0" /> Direct Website & Brand Link</li>
-                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600 shrink-0" /> Automated Stripe Payouts</li>
-                </ul>
-
-                <Link href="/signup?type=vendor&redirect=/vendor" className="block pt-4">
-                  <Button className="w-full" variant="outline">Get Started Free</Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            {/* Featured Vendor */}
-            <Card className="border-wellness bg-card relative shadow-xl flex flex-col justify-between">
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-wellness text-wellness-dark text-[11px] font-black uppercase tracking-wider px-4 py-1 rounded-full shadow-md">
-                Most Popular
-              </div>
-              <CardContent className="p-8 space-y-6">
-                <div className="space-y-2">
-                  <Badge className="bg-wellness text-wellness-dark text-xs font-bold">Featured</Badge>
-                  <h3 className="text-2xl font-bold text-foreground">Featured Vendor</h3>
-                  <p className="text-xs text-muted-foreground">Maximum homepage visibility and marketing push.</p>
-                </div>
-                <div className="text-3xl font-black text-foreground">Spotlight <span className="text-xs font-medium text-muted-foreground">/ promotional tier</span></div>
-
-                <ul className="space-y-3 text-xs text-muted-foreground pt-4 border-t border-border">
-                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-wellness shrink-0 font-bold" /> Prime Homepage Hero Placement</li>
-                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-wellness shrink-0 font-bold" /> Dedicated Email Newsletter Banner</li>
-                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-wellness shrink-0 font-bold" /> Social Media Reel Feature (IG/YT)</li>
-                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-wellness shrink-0 font-bold" /> Top Category Banner Listing</li>
-                </ul>
-
-                <Link href="/signup?type=vendor&redirect=/vendor" className="block pt-4">
-                  <Button className="w-full" variant="wellness">Apply For Featured Tier</Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            {/* Educational Partner */}
-            <Card className="border-border bg-card flex flex-col justify-between hover:shadow-lg transition-all">
-              <CardContent className="p-8 space-y-6">
-                <div className="space-y-2">
-                  <Badge variant="outline" className="text-xs font-bold">Thought Leadership</Badge>
-                  <h3 className="text-2xl font-bold text-foreground">Educational Partner</h3>
-                  <p className="text-xs text-muted-foreground">Deep content integration and clinical storytelling.</p>
-                </div>
-                <div className="text-3xl font-black text-foreground">Partner <span className="text-xs font-medium text-muted-foreground">/ custom co-branding</span></div>
-
-                <ul className="space-y-3 text-xs text-muted-foreground pt-4 border-t border-border">
-                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600 shrink-0" /> Co-Authored Health Research Articles</li>
-                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600 shrink-0" /> Product Recipe Spotlights</li>
-                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600 shrink-0" /> Founder Video & Podcast Interview</li>
-                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-600 shrink-0" /> Practitioner Co-Webinar Opportunities</li>
-                </ul>
-
-                <Link href="/contact" className="block pt-4">
-                  <Button className="w-full" variant="outline">Contact Partner Team</Button>
-                </Link>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
 
         {/* Section 7: Live Marketplace Metrics */}
         <section className="scroll-mt-32">
