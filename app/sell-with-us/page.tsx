@@ -79,7 +79,7 @@ export default function SellWithUsPage() {
             </p>
             
             <div className="mt-12 flex flex-wrap justify-center gap-4 sm:gap-6">
-              <Link href="/signup">
+              <Link href="/signup?type=vendor&redirect=/vendor">
                 <Button
                   size="lg"
                   className="bg-wellness text-wellness-dark hover:bg-wellness-light h-14 px-10 text-lg font-bold shadow-[0_20px_50px_rgba(107,142,35,0.3)] transition-all hover:scale-105 active:scale-95"
@@ -363,7 +363,7 @@ export default function SellWithUsPage() {
               Our marketing team works with you to create blog features, social highlights, and
               exclusive spotlights to ensure your brand gets the attention it deserves.
             </p>
-            <Link href="/signup">
+            <Link href="/signup?type=vendor&redirect=/vendor">
               <Button
                 size="lg"
                 className="bg-wellness text-wellness-dark hover:bg-wellness-light h-16 px-16 text-2xl font-black shadow-[0_20px_50px_rgba(107,142,35,0.4)] transition-all hover:scale-105 active:scale-95"

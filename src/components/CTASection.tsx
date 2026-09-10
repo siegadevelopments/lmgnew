@@ -17,7 +17,7 @@ export function CTASection() {
           curated wellness items.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-          <Link href="/signup">
+          <Link href="/signup?type=vendor&redirect=/vendor">
             <Button
               variant="hero"
               size="lg"
