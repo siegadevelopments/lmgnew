@@ -121,7 +121,7 @@ function SignupForm() {
                   className={cn(
                     "flex items-center justify-center gap-2 py-2 px-3 text-xs font-bold rounded-lg transition-all duration-200",
                     isVendor
-                      ? "bg-wellness text-wellness-foreground shadow-sm"
+                      ? "bg-blue-600 text-white shadow-sm"
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
@@ -201,7 +201,7 @@ function SignupForm() {
                   className={cn(
                     "w-full font-bold h-11 text-sm shadow-md transition-all duration-200",
                     isVendor
-                      ? "bg-wellness text-wellness-foreground hover:bg-wellness/90"
+                      ? "bg-blue-600 text-white hover:bg-blue-700"
                       : "bg-primary text-primary-foreground hover:bg-primary/90"
                   )}
                   disabled={isLoading}
@@ -237,7 +237,7 @@ function SignupForm() {
                     href={{ pathname: "/login", query: redirectTo ? { redirect: redirectTo } : {} }}
                     className={cn(
                       "font-semibold hover:underline",
-                      isVendor ? "text-wellness" : "text-primary"
+                      isVendor ? "text-blue-600" : "text-primary"
                     )}
                   >
                     Sign in
@@ -252,7 +252,7 @@ function SignupForm() {
               <div
                 className={cn(
                   "mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full",
-                  isVendor ? "bg-wellness/15 text-wellness" : "bg-primary/10 text-primary"
+                  isVendor ? "bg-blue-600/15 text-blue-600" : "bg-primary/10 text-primary"
                 )}
               >
                 <svg
@@ -275,8 +275,7 @@ function SignupForm() {
                 your {isVendor ? "vendor" : "customer"} account and get started.
               </p>
               <Button
-                className="mt-6"
-                variant={isVendor ? "wellness" : "default"}
+                className={cn("mt-6", isVendor ? "bg-blue-600 text-white hover:bg-blue-700" : "")}
                 onClick={() => router.push("/login")}
               >
                 Go to Login
