@@ -88,13 +88,15 @@ export default function SellWithUsPage() {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
-              <Button
-                variant="outline"
-                size="lg"
-                className="h-14 px-10 text-lg border-white/20 bg-white/5 text-white backdrop-blur-sm hover:bg-white/10 hover:border-white/40 transition-all"
-              >
-                View FAQ
-              </Button>
+              <Link href="/media-package">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="h-14 px-8 text-base font-semibold border-white/20 bg-white/5 text-white backdrop-blur-sm hover:bg-white/10 hover:border-white/40 transition-all"
+                >
+                  View Vendor Media Kit
+                </Button>
+              </Link>
             </div>
 
             {/* Quick Trust Signals */}
