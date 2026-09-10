@@ -142,7 +142,7 @@ export default function MediaPackagePage() {
 
         let avg = "81.05";
         if (prodRes.data && prodRes.data.length > 0) {
-          const prices = prodRes.data.map((p) => Number(p.price)).filter((p) => !isNaN(p) && p > 0);
+          const prices = (prodRes.data as any[]).map((p) => Number(p.price)).filter((p) => !isNaN(p) && p > 0);
           if (prices.length > 0) {
             avg = (prices.reduce((a, b) => a + b, 0) / prices.length).toFixed(2);
           }
