@@ -59,14 +59,7 @@ export function Header() {
     setMobileOpen(false);
   }, [pathname]);
 
-  const handleBecomeVendor = () => {
-    if (user) {
-      router.push("/vendor");
-    } else {
-      router.push("/signup?redirect=/vendor");
-    }
-    setMobileOpen(false);
-  };
+
 
   const handleSignOut = async () => {
     await signOut();
@@ -184,14 +177,15 @@ export function Header() {
               </Button>
             </Link>
           ) : (
-            <Button
-              variant="wellness"
-              size="sm"
-              className="hidden sm:inline-flex"
-              onClick={handleBecomeVendor}
-            >
-              Sell With Us
-            </Button>
+            <Link href="/sell-with-us">
+              <Button
+                variant="wellness"
+                size="sm"
+                className="hidden sm:inline-flex"
+              >
+                Sell With Us
+              </Button>
+            </Link>
           )}
           <Link href="/search">
             <Button
@@ -409,14 +403,15 @@ export function Header() {
               </Button>
             </Link>
           ) : (
-            <Button
-              variant="wellness"
-              size="sm"
-              className="mt-4 w-full"
-              onClick={handleBecomeVendor}
-            >
-              Sell With Us
-            </Button>
+            <Link href="/sell-with-us" onClick={() => setMobileOpen(false)}>
+              <Button
+                variant="wellness"
+                size="sm"
+                className="mt-4 w-full"
+              >
+                Sell With Us
+              </Button>
+            </Link>
           )}
         </nav>
       </div>
