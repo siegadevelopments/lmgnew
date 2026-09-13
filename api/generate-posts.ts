@@ -404,10 +404,12 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
         // Remove literal placeholder template tags
         text = text.replace(/\{source_url\}/gi, sourceUrl || "");
         
-        // Auto-fix relative or /shop/ URLs inside captions to be full working /products/ URLs
-        text = text.replace(/https?:\/\/www\.lifestylemedicinegateway\.com\/shop\//gi, "https://www.lifestylemedicinegateway.com/products/");
+        // Auto-fix relative or /shop/ URLs inside captions to be full working /products/ URLs.
+        // Matches an optional domain (with or without "www.", with or without protocol) so
+        // it still catches links the AI paraphrased without "www." — a gap that let a raw
+        // /shop/ link slip through before.
+        text = text.replace(/(?:https?:\/\/(?:www\.)?lifestylemedicinegateway\.com)?\/shop\/([a-zA-Z0-9_-]+)/gi, "https://www.lifestylemedicinegateway.com/products/$1");
         text = text.replace(/(?<=^|\s)\/products\/([a-zA-Z0-9_-]+)/g, "https://www.lifestylemedicinegateway.com/products/$1");
-        text = text.replace(/(?<=^|\s)\/shop\/([a-zA-Z0-9_-]+)/g, "https://www.lifestylemedicinegateway.com/products/$1");
         
         // Append source URL if missing from caption
         if (sourceUrl && sourceType === "product" && !text.includes(sourceUrl)) {

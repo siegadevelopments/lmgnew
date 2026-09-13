@@ -1445,12 +1445,13 @@ export function AdminMarketingTab() {
 
                           // Auto-fix any /shop/ or relative product links the AI still produced
                           // (per .agents/rules/social_media_product_links.md: links must be full
-                          // absolute /products/ URLs, never /shop/ or relative paths).
+                          // absolute /products/ URLs, never /shop/ or relative paths). Matches an
+                          // optional domain (with or without "www.", with or without protocol) so
+                          // it still catches links the AI paraphrased without "www.".
                           const fixProductLinks = (text: string) => {
                             if (!text) return text;
                             return text
-                              .replace(/https?:\/\/www\.lifestylemedicinegateway\.com\/shop\//gi, "https://www.lifestylemedicinegateway.com/products/")
-                              .replace(/(?<=^|\s)\/shop\/([a-zA-Z0-9_-]+)/g, "https://www.lifestylemedicinegateway.com/products/$1")
+                              .replace(/(?:https?:\/\/(?:www\.)?lifestylemedicinegateway\.com)?\/shop\/([a-zA-Z0-9_-]+)/gi, "https://www.lifestylemedicinegateway.com/products/$1")
                               .replace(/(?<=^|\s)\/products\/([a-zA-Z0-9_-]+)/g, "https://www.lifestylemedicinegateway.com/products/$1");
                           };
                           parsed.facebook = fixProductLinks(parsed.facebook);
