@@ -1353,29 +1353,58 @@ export function AdminMarketingTab() {
                         setEnhancingField("viral");
                         const toastId = toast.loading("AI is crafting a viral post for your selected article...");
                         try {
-                          const fullLink = content.type === "Video" 
-                            ? content.slug 
+                          const fullLink = content.type === "Video"
+                            ? content.slug
                             : `https://www.lifestylemedicinegateway.com/${content.type.toLowerCase()}s/${content.slug}`;
-                          
-                          // Shuffle and pick top 10 products to avoid overflowing prompt
-                          const shuffledProducts = [...allProducts].sort(() => 0.5 - Math.random()).slice(0, 10);
-                          const productsContext = shuffledProducts.map(p => `- ${p.title} (https://www.lifestylemedicinegateway.com/shop/${p.slug}) - ${p.excerpt || ""}`).join('\n');
-                          
+
+                          // Score real products by keyword overlap with this content's title/excerpt/body
+                          // so only topically relevant, actually-existing products are ever offered to
+                          // the AI — never a random or unrelated product.
+                          const STOPWORDS = new Set(["this","that","with","from","your","have","about","into","what","when","where","which","while","their","there","these","those","then","than","them","some","more","most","also","will","just","like","over","under","only","such","each","being","been","were","because","after","before","between","during","against","without","within","upon","could","would","should"]);
+                          const tokenize = (text: string) =>
+                            (text || "")
+                              .toLowerCase()
+                              .replace(/<[^>]*>/g, " ")
+                              .replace(/[^a-z0-9\s]/g, " ")
+                              .split(/\s+/)
+                              .filter((w) => w.length >= 4 && !STOPWORDS.has(w));
+
+                          const contentWords = new Set([
+                            ...tokenize(content.title),
+                            ...tokenize(content.excerpt || ""),
+                            ...tokenize(content.content?.substring(0, 1000) || ""),
+                          ]);
+
+                          const scoredProducts = allProducts
+                            .map((p) => {
+                              const productWords = tokenize(`${p.title} ${p.excerpt || ""}`);
+                              const score = productWords.filter((w) => contentWords.has(w)).length;
+                              return { product: p, score };
+                            })
+                            .filter((sp) => sp.score > 0)
+                            .sort((a, b) => b.score - a.score)
+                            .slice(0, 8)
+                            .map((sp) => sp.product);
+
+                          const productsContext = scoredProducts.map(p => `- ${p.title} (https://www.lifestylemedicinegateway.com/products/${p.slug}) - ${p.excerpt || ""}`).join('\n');
+
+                          const productInstruction = scoredProducts.length > 0
+                            ? `MANDATORY: You MUST select ONE product from the list below that is topically relevant to this content, and organically integrate it, including its exact link. Do NOT invent a product name, price, or link that is not in this list.\nAvailable Products (only these are real):\n${productsContext}`
+                            : `No existing product is closely related to this content. Do NOT mention, invent, or link any product in this post — focus purely on the educational/story content.`;
+
                           const prompt = `Create a viral social media post tailored for Facebook, Instagram, Pinterest, and TikTok about this ${content.type.toLowerCase()}:
-                          
+
                           Title: ${content.title}
                           Excerpt: ${content.excerpt || ""}
                           Content Summary: ${content.content?.replace(/<[^>]*>/g, ' ').substring(0, 1500) || ""}
-                          
-                          MANDATORY: You MUST select one highly relevant product from the following list and organically integrate it into the post, including its link.
-                          Available Products:
-                          ${productsContext}
-                          
-                          PLATFORM-SPECIFIC RULES:
-                          1. FACEBOOK: Engaging, conversational tone with story hook, emojis, call to action with link: ${fullLink} AND the link to the related product you chose. STRICTLY 2-3 hashtags max.
-                          2. INSTAGRAM: High-engagement visual caption, clear formatting with emojis and line breaks (\\n), CTA to click link in bio or visit ${fullLink} and check out the related product. STRICTLY 3-5 relevant hashtags at the end.
-                          3. PINTEREST: STRICT RULE - Must be CONCISE and UNDER 450 CHARACTERS total (including title, description, link, and hashtags) so it never gets rejected by Pinterest's 500-char limit. Start with a catchy Pin Title, brief description, CTA link to ${fullLink} and the related product, and 2-3 targeted hashtags.
-                          4. TIKTOK: A video brief, not just a caption. First line is the on-screen/spoken HOOK (first 3 seconds). Then 2-3 short lines covering the PROBLEM and the EDUCATION/tip to film. End with a soft CTA (e.g. "Follow for practical wellness education." or "Read the full guide on Lifestyle Medicine Gateway.") plus ${fullLink} and the related product link, then STRICTLY 3-5 relevant hashtags.
+
+                          ${productInstruction}
+
+                          PLATFORM-SPECIFIC RULES (include the chosen product's link only if the product instruction above gave you one — otherwise just use ${fullLink}):
+                          1. FACEBOOK: Engaging, conversational tone with story hook, emojis, call to action with link: ${fullLink}${scoredProducts.length > 0 ? " AND the link to the related product you chose" : ""}. STRICTLY 2-3 hashtags max.
+                          2. INSTAGRAM: High-engagement visual caption, clear formatting with emojis and line breaks (\\n), CTA to click link in bio or visit ${fullLink}${scoredProducts.length > 0 ? " and check out the related product" : ""}. STRICTLY 3-5 relevant hashtags at the end.
+                          3. PINTEREST: STRICT RULE - Must be CONCISE and UNDER 450 CHARACTERS total (including title, description, link, and hashtags) so it never gets rejected by Pinterest's 500-char limit. Start with a catchy Pin Title, brief description, CTA link to ${fullLink}${scoredProducts.length > 0 ? " and the related product" : ""}, and 2-3 targeted hashtags.
+                          4. TIKTOK: A video brief, not just a caption. First line is the on-screen/spoken HOOK (first 3 seconds). Then 2-3 short lines covering the PROBLEM and the EDUCATION/tip to film. End with a soft CTA (e.g. "Follow for practical wellness education." or "Read the full guide on Lifestyle Medicine Gateway.") plus ${fullLink}${scoredProducts.length > 0 ? " and the related product link" : ""}, then STRICTLY 3-5 relevant hashtags.
 
                           INSTRUCTIONS:
                           Respond ONLY with a valid JSON object matching this exact structure (no markdown tags, just pure JSON):
@@ -1413,7 +1442,33 @@ export function AdminMarketingTab() {
                             console.error("Failed to parse JSON:", data.result);
                             throw new Error("AI returned invalid format. Try again.");
                           }
-                          
+
+                          // Auto-fix any /shop/ or relative product links the AI still produced
+                          // (per .agents/rules/social_media_product_links.md: links must be full
+                          // absolute /products/ URLs, never /shop/ or relative paths).
+                          const fixProductLinks = (text: string) => {
+                            if (!text) return text;
+                            return text
+                              .replace(/https?:\/\/www\.lifestylemedicinegateway\.com\/shop\//gi, "https://www.lifestylemedicinegateway.com/products/")
+                              .replace(/(?<=^|\s)\/shop\/([a-zA-Z0-9_-]+)/g, "https://www.lifestylemedicinegateway.com/products/$1")
+                              .replace(/(?<=^|\s)\/products\/([a-zA-Z0-9_-]+)/g, "https://www.lifestylemedicinegateway.com/products/$1");
+                          };
+                          parsed.facebook = fixProductLinks(parsed.facebook);
+                          parsed.instagram = fixProductLinks(parsed.instagram);
+                          parsed.pinterest = fixProductLinks(parsed.pinterest);
+                          parsed.tiktok = fixProductLinks(parsed.tiktok);
+
+                          // Flag (don't silently trust) any product link the AI produced that
+                          // doesn't match a real product slug — this catches hallucinated products
+                          // the relevance filtering and prompt instructions didn't prevent.
+                          const combinedText = [parsed.facebook, parsed.instagram, parsed.pinterest, parsed.tiktok].join(" ");
+                          const realSlugs = new Set(allProducts.map((p) => p.slug));
+                          const mentionedSlugs = Array.from(combinedText.matchAll(/\/products\/([a-zA-Z0-9_-]+)/g)).map((m) => m[1]);
+                          const unknownSlugs = [...new Set(mentionedSlugs.filter((slug) => !realSlugs.has(slug)))];
+                          if (unknownSlugs.length > 0) {
+                            toast.error(`Review before approving: AI referenced product link(s) that don't match a real product: ${unknownSlugs.join(", ")}`, { duration: 10000 });
+                          }
+
                           const sourceUrl = content.type === "Video"
                             ? content.slug
                             : `/${content.type.toLowerCase()}s/${content.slug}`;
