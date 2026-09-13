@@ -310,7 +310,6 @@ REQUIREMENTS FOR EACH POST:
 - "title": short topic title (e.g. "5 Gut-Friendly Foods for Perimenopause")
 - "facebook": Engaging Facebook caption with conversational tone, story hook, emojis, the actual working product/article link (e.g. https://www.lifestylemedicinegateway.com/products/slug), and STRICTLY 2-3 hashtags max. DO NOT write literal placeholder strings like "{source_url}" or "Title:" or "Link:". Write the actual readable post copy including the direct product link.
 - "instagram": High-engagement Instagram caption with emojis, line breaks (\n), call to action including the product URL (https://www.lifestylemedicinegateway.com/products/slug), and STRICTLY 3-5 relevant hashtags at the end. DO NOT write literal placeholder strings like "{source_url}" or "Title:" or "Link:".
-- "pinterest": STRICT RULE - Must be CONCISE and UNDER 450 CHARACTERS total (including title, description, actual product website link, and hashtags) so it never breaches Pinterest's 500-char limit. Start with a catchy Pin Title, brief description, actual CTA product link (https://www.lifestylemedicinegateway.com/products/slug), and 2-3 targeted hashtags. DO NOT write literal placeholder strings like "{source_url}" or "Title:" or "Link:".
 - "source_type": "article" | "product" | "recipe" | "video" | "custom"
 - "source_id": the id from the content above (as string), or null for custom
 - "source_url": MUST BE A FULL ABSOLUTE URL starting with "https://www.lifestylemedicinegateway.com". For products use "https://www.lifestylemedicinegateway.com/products/slug". For articles use "https://www.lifestylemedicinegateway.com/articles/slug". For recipes use "https://www.lifestylemedicinegateway.com/recipes/slug". For videos use the full YouTube URL.
@@ -427,11 +426,6 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
       const fbCaption = cleanCaptionText(post.facebook || post.caption);
       // Instagram Version
       const igCaption = cleanCaptionText(post.instagram || post.caption);
-      // Pinterest Version (ensuring < 500 chars)
-      let pinCaption = cleanCaptionText(post.pinterest || post.caption);
-      if (pinCaption.length > 495) {
-        pinCaption = pinCaption.slice(0, 492) + "...";
-      }
 
       return [
         {
@@ -455,18 +449,6 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
           source_id: sourceId,
           source_url: sourceUrl,
           platforms: ["instagram"],
-          scheduled_at: scheduledAtISO,
-          status: "draft",
-        },
-        {
-          title: `${baseTitle} (Pin)`,
-          caption: pinCaption,
-          hashtags: [],
-          image_url: imageUrl,
-          source_type: sourceType,
-          source_id: sourceId,
-          source_url: sourceUrl,
-          platforms: ["pinterest"],
           scheduled_at: scheduledAtISO,
           status: "draft",
         },
@@ -545,8 +527,8 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
     const bufferWarnings: string[] = [];
     if (autoPushBuffer && inserted && inserted.length > 0) {
       // Group inserted post entries by scheduled_at date
-      const groupedBySlot: Record<string, { facebook?: string; instagram?: string; pinterest?: string; imageUrl?: string; scheduledAt: string }> = {};
-      
+      const groupedBySlot: Record<string, { facebook?: string; instagram?: string; imageUrl?: string; scheduledAt: string }> = {};
+
       for (const row of inserted) {
         const key = row.scheduled_at;
         if (!groupedBySlot[key]) {
@@ -555,7 +537,6 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
         const platform = row.platforms?.[0];
         if (platform === "facebook") groupedBySlot[key].facebook = row.caption;
         if (platform === "instagram") groupedBySlot[key].instagram = row.caption;
-        if (platform === "pinterest") groupedBySlot[key].pinterest = row.caption;
       }
 
       // Send each date slot to Buffer
@@ -574,7 +555,6 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
               posts: {
                 facebook: slotData.facebook,
                 instagram: slotData.instagram,
-                pinterest: slotData.pinterest,
               },
             }),
           });
@@ -604,7 +584,7 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
       success: true,
       count: inserted?.length || 0,
       bufferWarnings: bufferWarnings.length > 0 ? bufferWarnings : undefined,
-      message: `Generated ${inserted?.length || 0} posts (FB, IG, Pinterest) across ${numWeeks} weeks & pushed to Buffer!`,
+      message: `Generated ${inserted?.length || 0} posts (FB, IG) across ${numWeeks} weeks & pushed to Buffer!`,
     });
   } catch (error: any) {
     console.error("Generate posts error:", error);

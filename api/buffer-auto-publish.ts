@@ -28,21 +28,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // 1. Fetch available channels to map dynamically
-    // "defaultSubprofileId" does not exist on Buffer's Channel type (confirmed via
-    // GraphQL introspection) — Pinterest board IDs live under the metadata union
-    // instead, as PinterestMetadata.boards[].id.
     const channelQuery = `
       query GetChannels($input: ChannelsInput!) {
         channels(input: $input) {
           id
           service
-          metadata {
-            ... on PinterestMetadata {
-              boards {
-                id
-              }
-            }
-          }
         }
       }
     `;
@@ -73,7 +63,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const platforms = [
       { name: "facebook", text: posts?.facebook },
       { name: "instagram", text: posts?.instagram },
-      { name: "pinterest", text: posts?.pinterest },
       { name: "tiktok", text: posts?.tiktok },
     ];
 
@@ -99,11 +88,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     for (const platform of platforms) {
       let text = platform.text;
       if (!text) continue;
-      
-      // Pinterest strictly enforces a maximum text / caption length of 500 characters
-      if (platform.name === "pinterest" && text.length > 500) {
-        text = text.slice(0, 497) + "...";
-      }
 
       const channel = channels.find((c: any) => c.service === platform.name);
       if (!channel) {
@@ -127,13 +111,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // fails, the warning below will say why — that's the signal to build a
         // real video-asset pipeline instead of pushing an image.
         metadata = { tiktok: {} };
-      } else if (platform.name === "pinterest") {
-        const boardId = channel.metadata?.boards?.[0]?.id;
-        if (!boardId) {
-          errors.push(`${platform.name}: No board found for Pinterest channel.`);
-          continue;
-        }
-        metadata = { pinterest: { boardId: boardId } };
       }
 
       const response = await fetch("https://api.buffer.com", {
