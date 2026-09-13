@@ -1,7 +1,6 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { getMarketingContext } from "./_marketing-context";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -48,11 +47,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const genAI = new GoogleGenerativeAI(geminiKey);
 
-    const BRAND_CONTEXT = `You are writing for Lifestyle Medicine Gateway (LMG), an Australian lifestyle medicine, wellness education, community and marketplace platform.
-
-Follow the LMG marketing strategy below exactly. It is the project's current source of truth for audience, brand voice, content pillars, and platform approach — do not invent a different audience or tone.
-
-${getMarketingContext()}`;
+    const BRAND_CONTEXT = `You are writing for "Lifestyle Medicine Gateway", an Australian wellness marketplace.
+TARGET AUDIENCE: Women aged 40–65 going through menopause/perimenopause. Also partners/daughters who want to help.
+BRAND VOICE: Warm, supportive, empowering but realistic. Australian English. Science-backed but relatable. 2-4 emojis max.
+NEVER use aggressive sales language, medical jargon, or hype.`;
 
     let prompt = "";
 
@@ -66,7 +64,7 @@ ${
 Current title: "${value}"
 ${context ? `Context: ${context}` : ""}`
     : `Generate a catchy, engaging social media post title for a wellness brand. Keep it short (under 10 words).
-${context ? `Topic/context: ${context}` : "Choose a topic from the content pillars above."}`
+${context ? `Topic/context: ${context}` : "Topic: general wellness or menopause support"}`
 }
 
 Return ONLY the improved title text, nothing else.`;
@@ -87,7 +85,7 @@ ${context ? `Context: ${context}` : ""}`
 - A warm call-to-action (CTA)
 If a Link/URL is provided in the context, integrate it directly as the target of the call-to-action (CTA) at the end of the caption (e.g. 'Read more here: [URL]').
 Keep it 150-250 words. Use line breaks for readability.
-${context ? `Topic/Context: ${context}` : "Choose a topic from the content pillars above."}`
+${context ? `Topic/Context: ${context}` : "Topic: general wellness, menopause support, or natural health"}`
 }
 
 Return ONLY the caption text, nothing else.`;
@@ -96,7 +94,7 @@ Return ONLY the caption text, nothing else.`;
       case "hashtags":
         prompt = `${BRAND_CONTEXT}
 
-Generate 5-6 relevant hashtags for a social media post, following the hashtag strategy above.
+Generate 5-6 relevant hashtags for a social media post about wellness/menopause/natural health.
 ${value ? `Current hashtags: ${value}` : ""}
 ${context ? `Post topic: ${context}` : ""}
 
@@ -120,7 +118,7 @@ Return ONLY the plain summary/excerpt text, nothing else.`;
         break;
 
       case "custom":
-        prompt = `${BRAND_CONTEXT}\n\n${value}`;
+        prompt = value;
         break;
 
       default:
