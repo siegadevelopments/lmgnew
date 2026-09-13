@@ -72,8 +72,8 @@ export function HeroSection() {
             variants={itemVariants}
             className="text-4xl font-black leading-tight tracking-tighter text-primary-foreground sm:text-5xl lg:text-7xl text-balance"
           >
-            Small Daily Choices.{" "}
-            <span className="text-wellness-light drop-shadow-sm">A Lifetime of Vitality.</span>
+            Preserving Life Through{" "}
+            <span className="text-wellness-light drop-shadow-sm">Science & Nature</span>
           </motion.h1>
           <motion.p
             variants={itemVariants}
