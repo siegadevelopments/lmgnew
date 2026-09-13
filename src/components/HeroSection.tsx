@@ -46,7 +46,7 @@ export function HeroSection() {
     <section className="relative flex min-h-[540px] items-center overflow-hidden sm:min-h-[600px]">
       <Image
         src={heroBg}
-        alt="Wellness pathway through lush greenery - Lifestyle Medicine Gateway Hero"
+        alt="Preserving Life Through Science & Nature - Lifestyle Medicine Gateway Hero"
         fill
         priority
         fetchPriority="high"
@@ -66,39 +66,36 @@ export function HeroSection() {
             variants={itemVariants}
             className="mb-4 inline-block rounded-full bg-primary/20 px-4 py-1.5 text-xs font-semibold tracking-wide text-primary-foreground"
           >
-            Lifestyle as Medicine
+            The Gateway to Lifelong Health
           </motion.span>
           <motion.h1
             variants={itemVariants}
             className="text-4xl font-black leading-tight tracking-tighter text-primary-foreground sm:text-5xl lg:text-7xl text-balance"
           >
-            Empowering Your{" "}
-            <span className="text-wellness-light drop-shadow-sm">Health Journey</span>
+            Small Daily Choices.{" "}
+            <span className="text-wellness-light drop-shadow-sm">A Lifetime of Vitality.</span>
           </motion.h1>
           <motion.p
             variants={itemVariants}
             className="mt-6 max-w-xl text-base leading-relaxed text-primary-foreground/90 sm:text-lg font-medium"
           >
-            Discover trusted Australian wellness products, practical recipes, and evidence-based guidance to support menopause, gut health, better sleep, and lasting energy.
+            Bridging modern lifestyle medicine and pure natural remedies to protect your health, prevent disease, and extend your quality of life.
           </motion.p>
 
           <motion.div variants={itemVariants} className="mt-8 flex flex-wrap gap-3">
             <Button
-              onClick={() => router.push("/products")}
+              onClick={() => router.push("/vendors")}
               variant="wellness"
               className="rounded-xl px-8 h-12 font-bold text-base shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02]"
             >
-              Shop Products
+              View All Brands
             </Button>
             <Button
-              onClick={() => {
-                const el = document.getElementById("wellness-categories");
-                el?.scrollIntoView({ behavior: "smooth" });
-              }}
+              onClick={() => router.push("/recipes")}
               variant="outline"
               className="rounded-xl px-8 h-12 font-bold text-base bg-transparent border-white text-white hover:bg-white/10 hover:text-white"
             >
-              Browse Categories
+              Read Research & Recipes
             </Button>
           </motion.div>
 
