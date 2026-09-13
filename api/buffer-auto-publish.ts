@@ -28,12 +28,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // 1. Fetch available channels to map dynamically
+    // "defaultSubprofileId" does not exist on Buffer's Channel type (confirmed via
+    // GraphQL introspection) — Pinterest board IDs live under the metadata union
+    // instead, as PinterestMetadata.boards[].id.
     const channelQuery = `
       query GetChannels($input: ChannelsInput!) {
         channels(input: $input) {
           id
           service
-          defaultSubprofileId
+          metadata {
+            ... on PinterestMetadata {
+              boards {
+                id
+              }
+            }
+          }
         }
       }
     `;
@@ -119,9 +128,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // real video-asset pipeline instead of pushing an image.
         metadata = { tiktok: {} };
       } else if (platform.name === "pinterest") {
-        const boardId = channel.defaultSubprofileId;
+        const boardId = channel.metadata?.boards?.[0]?.id;
         if (!boardId) {
-          errors.push(`${platform.name}: No board (subprofile) found for Pinterest channel.`);
+          errors.push(`${platform.name}: No board found for Pinterest channel.`);
           continue;
         }
         metadata = { pinterest: { boardId: boardId } };
