@@ -38,6 +38,12 @@ const PinterestIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+const TikTokIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z" />
+  </svg>
+);
+
 interface ScheduledPost {
   id: string;
   title: string;
@@ -153,7 +159,7 @@ export function AdminMarketingTab() {
     const toastId = toast.loading("Saving to database & pushing to Buffer Queue...");
     
     try {
-      // 1. Save 3 versions to database
+      // 1. Save 4 versions to database
       const insertData = [
         {
           title: manualForm.title || "Facebook Post",
@@ -187,6 +193,17 @@ export function AdminMarketingTab() {
           platforms: ["pinterest"],
           scheduled_at: parseMelbourneTimeToUTC(manualForm.scheduled_at),
           status: "approved",
+        },
+        {
+          title: manualForm.title || "TikTok Post",
+          caption: multiPlatformDraft.tiktok,
+          hashtags: [],
+          image_url: multiPlatformDraft.imageUrl,
+          source_type: "custom",
+          source_url: multiPlatformDraft.sourceUrl,
+          platforms: ["tiktok"],
+          scheduled_at: parseMelbourneTimeToUTC(manualForm.scheduled_at),
+          status: "approved",
         }
       ];
 
@@ -204,6 +221,7 @@ export function AdminMarketingTab() {
             facebook: multiPlatformDraft.facebook,
             instagram: multiPlatformDraft.instagram,
             pinterest: multiPlatformDraft.pinterest,
+            tiktok: multiPlatformDraft.tiktok,
           },
         }),
       });
@@ -220,7 +238,8 @@ export function AdminMarketingTab() {
             // Find post created for this platform in this batch (matching title & platform)
             const postTitle = item.platform === "facebook" ? (manualForm.title || "Facebook Post")
               : item.platform === "instagram" ? (manualForm.title || "Instagram Post")
-              : (manualForm.title || "Pinterest Post");
+              : item.platform === "pinterest" ? (manualForm.title || "Pinterest Post")
+              : (manualForm.title || "TikTok Post");
             await (supabase.from("scheduled_posts") as any)
               .update({ buffer_post_id: item.id })
               .eq("title", postTitle)
@@ -308,6 +327,7 @@ export function AdminMarketingTab() {
     facebook: string;
     instagram: string;
     pinterest: string;
+    tiktok: string;
     imageUrl: string;
     sourceUrl: string;
   } | null>(null);
@@ -315,7 +335,7 @@ export function AdminMarketingTab() {
   // Content Selection states
   const [contentList, setContentList] = useState<{ id: string; title: string; type: string; image_url?: string; slug?: string; excerpt?: string; content?: string }[]>([]);
   const [selectedContentId, setSelectedContentId] = useState<string>("");
-  const [targetPlatform, setTargetPlatform] = useState<"facebook" | "instagram" | "pinterest" | "both" | "all">("all");
+  const [targetPlatform, setTargetPlatform] = useState<"facebook" | "instagram" | "pinterest" | "tiktok" | "both" | "all">("all");
   const [loadingContent, setLoadingContent] = useState(false);
   const [allProducts, setAllProducts] = useState<any[]>([]);
 
@@ -472,7 +492,7 @@ export function AdminMarketingTab() {
   // Generate posts & push directly to Buffer
   async function handleGenerate() {
     setGenerating(true);
-    const toastId = toast.loading("Generating viral AI content & pushing 3 versions (FB, IG, Pin) to Buffer...");
+    const toastId = toast.loading("Generating viral AI content & pushing to Buffer (FB, IG, Pin + TikTok draft)...");
     try {
       const {
         data: { session },
@@ -1265,6 +1285,15 @@ export function AdminMarketingTab() {
                     </Button>
                     <Button
                       type="button"
+                      variant={targetPlatform === "tiktok" ? "secondary" : "ghost"}
+                      size="sm"
+                      className="h-7 text-[10px] px-2 font-bold"
+                      onClick={() => setTargetPlatform("tiktok")}
+                    >
+                      <TikTokIcon className="h-3 w-3 mr-1" /> TikTok
+                    </Button>
+                    <Button
+                      type="button"
                       variant={targetPlatform === "all" || targetPlatform === "both" ? "secondary" : "ghost"}
                       size="sm"
                       className="h-7 text-[10px] px-2 font-bold"
@@ -1332,7 +1361,7 @@ export function AdminMarketingTab() {
                           const shuffledProducts = [...allProducts].sort(() => 0.5 - Math.random()).slice(0, 10);
                           const productsContext = shuffledProducts.map(p => `- ${p.title} (https://www.lifestylemedicinegateway.com/shop/${p.slug}) - ${p.excerpt || ""}`).join('\n');
                           
-                          const prompt = `Create a viral social media post tailored for Facebook, Instagram, and Pinterest about this ${content.type.toLowerCase()}:
+                          const prompt = `Create a viral social media post tailored for Facebook, Instagram, Pinterest, and TikTok about this ${content.type.toLowerCase()}:
                           
                           Title: ${content.title}
                           Excerpt: ${content.excerpt || ""}
@@ -1346,13 +1375,15 @@ export function AdminMarketingTab() {
                           1. FACEBOOK: Engaging, conversational tone with story hook, emojis, call to action with link: ${fullLink} AND the link to the related product you chose. STRICTLY 2-3 hashtags max.
                           2. INSTAGRAM: High-engagement visual caption, clear formatting with emojis and line breaks (\\n), CTA to click link in bio or visit ${fullLink} and check out the related product. STRICTLY 3-5 relevant hashtags at the end.
                           3. PINTEREST: STRICT RULE - Must be CONCISE and UNDER 450 CHARACTERS total (including title, description, link, and hashtags) so it never gets rejected by Pinterest's 500-char limit. Start with a catchy Pin Title, brief description, CTA link to ${fullLink} and the related product, and 2-3 targeted hashtags.
+                          4. TIKTOK: A video brief, not just a caption. First line is the on-screen/spoken HOOK (first 3 seconds). Then 2-3 short lines covering the PROBLEM and the EDUCATION/tip to film. End with a soft CTA (e.g. "Follow for practical wellness education." or "Read the full guide on Lifestyle Medicine Gateway.") plus ${fullLink} and the related product link, then STRICTLY 3-5 relevant hashtags.
 
                           INSTRUCTIONS:
                           Respond ONLY with a valid JSON object matching this exact structure (no markdown tags, just pure JSON):
                           {
                             "facebook": "Facebook post content...",
                             "instagram": "Instagram post content...",
-                            "pinterest": "Pinterest post content..."
+                            "pinterest": "Pinterest post content...",
+                            "tiktok": "TikTok video brief + caption..."
                           }`;
 
                           const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -1411,6 +1442,7 @@ export function AdminMarketingTab() {
                             facebook: parsed.facebook,
                             instagram: parsed.instagram,
                             pinterest: parsed.pinterest,
+                            tiktok: parsed.tiktok,
                             imageUrl: finalImageUrl,
                             sourceUrl
                           });
@@ -1447,7 +1479,7 @@ export function AdminMarketingTab() {
                     />
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
                     <Card className="border-blue-500 shadow-sm">
                       <CardContent className="p-4 space-y-3 text-sm">
                         <div className="flex items-center gap-2 font-bold text-blue-600"><Facebook className="w-4 h-4"/> Facebook</div>
@@ -1478,16 +1510,31 @@ export function AdminMarketingTab() {
                           <span className="w-4 h-4 text-center font-serif leading-4 rounded-full bg-red-600 text-white">P</span> Pinterest
                         </div>
                         <img src={multiPlatformDraft.imageUrl} alt="AI Generated" className="w-full h-32 object-cover rounded-md" />
-                        <Textarea 
-                           className="text-xs" 
-                           rows={8} 
-                           value={multiPlatformDraft.pinterest} 
-                           onChange={(e) => setMultiPlatformDraft({...multiPlatformDraft, pinterest: e.target.value})} 
+                        <Textarea
+                           className="text-xs"
+                           rows={8}
+                           value={multiPlatformDraft.pinterest}
+                           onChange={(e) => setMultiPlatformDraft({...multiPlatformDraft, pinterest: e.target.value})}
                         />
                       </CardContent>
                     </Card>
+                    <Card className="border-slate-700 shadow-sm">
+                      <CardContent className="p-4 space-y-3 text-sm">
+                        <div className="flex items-center gap-2 font-bold text-slate-800"><TikTokIcon className="w-4 h-4"/> TikTok</div>
+                        <img src={multiPlatformDraft.imageUrl} alt="AI Generated" className="w-full h-32 object-cover rounded-md" />
+                        <Textarea
+                           className="text-xs"
+                           rows={8}
+                           value={multiPlatformDraft.tiktok}
+                           onChange={(e) => setMultiPlatformDraft({...multiPlatformDraft, tiktok: e.target.value})}
+                        />
+                        <p className="text-[10px] text-muted-foreground leading-tight">
+                          Video brief for filming, sent to Buffer with the same cover image as the others. TikTok natively needs a real video upload, so check the warning toast after pushing — if Buffer rejects the image, use this brief to film and upload manually instead.
+                        </p>
+                      </CardContent>
+                    </Card>
                   </div>
-                  
+
                   <div className="flex flex-wrap gap-2 pt-4">
                     <Button
                       type="button"
@@ -1884,6 +1931,9 @@ export function AdminMarketingTab() {
                             {post.platforms?.includes("pinterest") && (
                               <PinterestIcon className="h-3.5 w-3.5 text-red-600" />
                             )}
+                            {post.platforms?.includes("tiktok") && (
+                              <TikTokIcon className="h-3.5 w-3.5 text-slate-800" />
+                            )}
                           </div>
                         </div>
                       </div>
@@ -2116,6 +2166,22 @@ export function AdminMarketingTab() {
                       />
                       <PinterestIcon className="h-4 w-4 text-red-600" />
                       <span className="text-sm font-medium">Pinterest</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={editPlatforms.includes("tiktok")}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setEditPlatforms((prev) => [...prev, "tiktok"]);
+                          } else {
+                            setEditPlatforms((prev) => prev.filter((p) => p !== "tiktok"));
+                          }
+                        }}
+                        className="h-4 w-4 rounded border-gray-300 text-slate-800 focus:ring-slate-500"
+                      />
+                      <TikTokIcon className="h-4 w-4 text-slate-800" />
+                      <span className="text-sm font-medium">TikTok</span>
                     </label>
                   </div>
                 </div>

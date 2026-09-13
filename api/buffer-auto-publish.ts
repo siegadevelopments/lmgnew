@@ -65,6 +65,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       { name: "facebook", text: posts?.facebook },
       { name: "instagram", text: posts?.instagram },
       { name: "pinterest", text: posts?.pinterest },
+      { name: "tiktok", text: posts?.tiktok },
     ];
 
     const results = [];
@@ -101,12 +102,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         continue;
       }
 
-      // Prepare metadata requirements for Facebook/Instagram/Pinterest
+      // Prepare metadata requirements per network
       let metadata: any = undefined;
       if (platform.name === "facebook") {
         metadata = { facebook: { type: "post" } };
       } else if (platform.name === "instagram") {
         metadata = { instagram: { type: "post", shouldShareToFeed: true } };
+      } else if (platform.name === "tiktok") {
+        // TikTok's Buffer metadata only takes optional isAiGenerated/title fields
+        // (confirmed via GraphQL introspection of TikTokPostMetadataInput) — no
+        // required privacy settings, those live on the connected TikTok account.
+        // NOTE: this still sends the shared static image as the post asset. TikTok
+        // natively expects a video upload; whether Buffer's API accepts an image
+        // for a TikTok channel is not knowable from the schema alone. If this post
+        // fails, the warning below will say why — that's the signal to build a
+        // real video-asset pipeline instead of pushing an image.
+        metadata = { tiktok: {} };
       } else if (platform.name === "pinterest") {
         const boardId = channel.defaultSubprofileId;
         if (!boardId) {

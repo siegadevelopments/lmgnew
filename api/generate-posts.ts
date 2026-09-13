@@ -285,6 +285,7 @@ REQUIREMENTS FOR EACH POST:
 - "facebook": Engaging Facebook caption with conversational tone, story hook, emojis, the actual working product/article link (e.g. https://www.lifestylemedicinegateway.com/products/slug), and STRICTLY 2-3 hashtags max. DO NOT write literal placeholder strings like "{source_url}" or "Title:" or "Link:". Write the actual readable post copy including the direct product link.
 - "instagram": High-engagement Instagram caption with emojis, line breaks (\n), call to action including the product URL (https://www.lifestylemedicinegateway.com/products/slug), and STRICTLY 3-5 relevant hashtags at the end. DO NOT write literal placeholder strings like "{source_url}" or "Title:" or "Link:".
 - "pinterest": STRICT RULE - Must be CONCISE and UNDER 450 CHARACTERS total (including title, description, actual product website link, and hashtags) so it never breaches Pinterest's 500-char limit. Start with a catchy Pin Title, brief description, actual CTA product link (https://www.lifestylemedicinegateway.com/products/slug), and 2-3 targeted hashtags. DO NOT write literal placeholder strings like "{source_url}" or "Title:" or "Link:".
+- "tiktok": A TikTok caption/video brief, NOT just a caption. First line is the spoken/on-screen HOOK (first 3 seconds). Then 2-3 short lines outlining the PROBLEM and the EDUCATION/tip to cover on camera. End with a soft CTA (e.g. "Follow for practical wellness education." or "Read the full guide on Lifestyle Medicine Gateway.") and the actual link (e.g. https://www.lifestylemedicinegateway.com/products/slug), then STRICTLY 3-5 relevant hashtags. This is a production brief for filming, not just a caption to publish as-is — DO NOT write literal placeholder strings like "{source_url}" or "Title:" or "Link:".
 - "source_type": "article" | "product" | "recipe" | "video" | "custom"
 - "source_id": the id from the content above (as string), or null for custom
 - "source_url": MUST BE A FULL ABSOLUTE URL starting with "https://www.lifestylemedicinegateway.com". For products use "https://www.lifestylemedicinegateway.com/products/slug". For articles use "https://www.lifestylemedicinegateway.com/articles/slug". For recipes use "https://www.lifestylemedicinegateway.com/recipes/slug". For videos use the full YouTube URL.
@@ -404,6 +405,8 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
       if (pinCaption.length > 495) {
         pinCaption = pinCaption.slice(0, 492) + "...";
       }
+      // TikTok Version (video brief + caption)
+      const tiktokCaption = cleanCaptionText(post.tiktok || post.caption);
 
       return [
         {
@@ -439,6 +442,18 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
           source_id: sourceId,
           source_url: sourceUrl,
           platforms: ["pinterest"],
+          scheduled_at: scheduledAtISO,
+          status: "draft",
+        },
+        {
+          title: `${baseTitle} (TikTok)`,
+          caption: tiktokCaption,
+          hashtags: [],
+          image_url: imageUrl,
+          source_type: sourceType,
+          source_id: sourceId,
+          source_url: sourceUrl,
+          platforms: ["tiktok"],
           scheduled_at: scheduledAtISO,
           status: "draft",
         },
@@ -517,8 +532,8 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
     const bufferWarnings: string[] = [];
     if (autoPushBuffer && inserted && inserted.length > 0) {
       // Group inserted post entries by scheduled_at date
-      const groupedBySlot: Record<string, { facebook?: string; instagram?: string; pinterest?: string; imageUrl?: string; scheduledAt: string }> = {};
-      
+      const groupedBySlot: Record<string, { facebook?: string; instagram?: string; pinterest?: string; tiktok?: string; imageUrl?: string; scheduledAt: string }> = {};
+
       for (const row of inserted) {
         const key = row.scheduled_at;
         if (!groupedBySlot[key]) {
@@ -528,6 +543,7 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
         if (platform === "facebook") groupedBySlot[key].facebook = row.caption;
         if (platform === "instagram") groupedBySlot[key].instagram = row.caption;
         if (platform === "pinterest") groupedBySlot[key].pinterest = row.caption;
+        if (platform === "tiktok") groupedBySlot[key].tiktok = row.caption;
       }
 
       // Send each date slot to Buffer
@@ -547,6 +563,7 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
                 facebook: slotData.facebook,
                 instagram: slotData.instagram,
                 pinterest: slotData.pinterest,
+                tiktok: slotData.tiktok,
               },
             }),
           });
@@ -576,7 +593,7 @@ OUTPUT: Return ONLY a valid JSON array of ${totalPostsCount} objects. No markdow
       success: true,
       count: inserted?.length || 0,
       bufferWarnings: bufferWarnings.length > 0 ? bufferWarnings : undefined,
-      message: `Generated ${inserted?.length || 0} posts (FB, IG, Pinterest) across ${numWeeks} weeks & pushed to Buffer!`,
+      message: `Generated ${inserted?.length || 0} posts (FB, IG, Pinterest, TikTok) across ${numWeeks} weeks & pushed to Buffer!`,
     });
   } catch (error: any) {
     console.error("Generate posts error:", error);
