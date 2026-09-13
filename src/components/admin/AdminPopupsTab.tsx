@@ -67,11 +67,27 @@ export function AdminPopupsTab() {
   async function loadPopups() {
     setLoading(true);
     const { data, error } = await supabase
-      .from("popups" as any)
+      .from("popups")
       .select("*")
       .order("created_at", { ascending: false });
     if (error) toast.error("Failed to load popups");
-    else setPopups(data || []);
+    else {
+      // DB columns allow null on legacy rows; the form always writes real
+      // values, so default here rather than loosening Popup to `| null`
+      // everywhere it's used as form state.
+      const normalized: Popup[] = (data || []).map((p) => ({
+        id: p.id,
+        title: p.title,
+        content: p.content,
+        image_url: p.image_url,
+        cta_type: (p.cta_type as "url" | "email") || "url",
+        cta_url: p.cta_url,
+        cta_button_text: p.cta_button_text || "Learn More",
+        is_active: p.is_active ?? false,
+        display_delay: p.display_delay ?? 3000,
+      }));
+      setPopups(normalized);
+    }
     setLoading(false);
   }
 

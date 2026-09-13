@@ -1436,7 +1436,7 @@ export function AdminMarketingTab() {
                           }
 
                           const sourceUrl = content.type === "Video"
-                            ? content.slug
+                            ? content.slug || ""
                             : `/${content.type.toLowerCase()}s/${content.slug}`;
                             
                           let finalImageUrl = content.image_url;

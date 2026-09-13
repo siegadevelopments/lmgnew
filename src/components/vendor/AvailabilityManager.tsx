@@ -9,12 +9,12 @@ import { Loader2, Plus, Trash2, Clock } from "lucide-react";
 
 interface Availability {
   id: string;
-  vendor_id: string;
-  product_id: number;
+  vendor_id: string | null;
+  product_id: number | null;
   day_of_week: number;
   start_time: string;
   end_time: string;
-  slot_duration: number;
+  slot_duration: number | null;
 }
 
 interface Props {

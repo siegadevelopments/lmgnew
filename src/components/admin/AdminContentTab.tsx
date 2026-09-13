@@ -784,9 +784,12 @@ export function AdminContentTab({ vendors, userId }: { vendors: any[]; userId?: 
   };
 
   const handlePublish = async (id: any) => {
+    // Only ever called for articles/recipes/natural_remedies (see the button's
+    // render guard below) — "media" is unreachable here, but included in
+    // activeType's type, so the argument itself needs the cast.
     const targetTable = activeType === "natural_remedies" ? "articles" : activeType;
     try {
-      const { error } = await (supabase.from(targetTable) as any)
+      const { error } = await (supabase.from(targetTable as any) as any)
         .update({ status: "published" })
         .eq("id", id);
 
@@ -1726,7 +1729,7 @@ export function AdminContentTab({ vendors, userId }: { vendors: any[]; userId?: 
     if (itemToDelete.embed_url) urlsToCleanup.push(itemToDelete.embed_url);
     if (itemToDelete.thumbnail_url) urlsToCleanup.push(itemToDelete.thumbnail_url);
 
-    const targetTable = activeType === "natural_remedies" ? "articles" : activeType;
+    const targetTable = activeType === "natural_remedies" ? "articles" : activeType === "media" ? "gallery_items" : activeType;
     const { error } = await (supabase.from(targetTable) as any).delete().eq("id", id);
     if (error) toast.error("Failed to delete");
     else {

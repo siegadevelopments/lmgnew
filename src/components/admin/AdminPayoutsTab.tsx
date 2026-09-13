@@ -49,9 +49,9 @@ export function AdminPayoutsTab() {
           ...vendor,
           pendingBalance: totalPending,
         };
-      }).filter(v => v.pendingBalance > 0);
+      }).filter((v: any) => v.pendingBalance > 0);
 
-      setVendors(vendorsWithBalances.sort((a, b) => b.pendingBalance - a.pendingBalance));
+      setVendors(vendorsWithBalances.sort((a: any, b: any) => b.pendingBalance - a.pendingBalance));
     } catch (err: any) {
       console.error("Error loading payouts:", err);
       setError(err.message || "Failed to load payout data");
