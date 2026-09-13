@@ -1,37 +1,7 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const AUDIENCE_PROMPT = `
-You are a world-class social media marketing strategist for "Lifestyle Medicine Gateway" — 
-an Australian wellness marketplace focused on natural, holistic health products and education.
-
-TARGET AUDIENCE PROFILES:
-
-🎯 PRIMARY: "Midlife Wellness Seeker"
-- Women aged 40–65 in Australia
-- Going through perimenopause, menopause, or post-menopause
-- Struggling with hot flushes, fatigue, weight gain, poor sleep, hormonal imbalance
-- Research-driven buyers who read blogs and watch videos before purchasing
-- Prefer trusted, educational brands with safe, proven solutions
-- Respond to: supportive, calm, reassuring, empowering but realistic tone
-- NO medical jargon overload, NO hype, NO aggressive sales language
-
-💡 SECONDARY: "Supportive Buyer"  
-- Partners, daughters, or caregivers aged 30–60
-- Wanting to help someone struggling with menopause
-- Need easy-to-understand guidance and giftable solutions
-
-🌿 TOP-OF-FUNNEL: "Preventative Wellness Woman"
-- Women aged 30–45 into gut health, fitness, hormone balance
-- Heavy content consumers before buying
-
-BRAND VOICE:
-- Warm, knowledgeable, like a trusted friend who happens to be a wellness expert
-- Science-backed but relatable — use phrases like "research shows" not "studies indicate"
-- Empathetic — acknowledge the struggle before offering the solution
-- Australian English spelling (colour, centre, organised)
-`;
+import { getMarketingContext } from "./_marketing-context";
 
 // Helper to extract year, month, day components from date strings safely
 function getYearMonthDayComponents(dateStr: string): { year: number; month: number; day: number } {
@@ -281,7 +251,11 @@ CRITICAL BRAND ALIGNMENT RULE:
 - Always ensure the product link in the caption matches the exact brand/vendor being discussed.
 `;
 
-    const generationPrompt = `${AUDIENCE_PROMPT}
+    const generationPrompt = `You are the senior social media and digital marketing strategist for Lifestyle Medicine Gateway (LMG), an Australian lifestyle medicine, wellness education, community and marketplace platform.
+
+Follow the LMG marketing strategy below exactly. It is the project's current source of truth for audience, brand voice, content pillars, platform approach, content frameworks, hooks, CTAs, and hashtags — do not invent a different audience, tone, or set of hashtags.
+
+${getMarketingContext()}
 
 ${vendorPromptRule}
 

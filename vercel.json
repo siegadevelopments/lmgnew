@@ -4,5 +4,13 @@
       "path": "/api/cron-publish",
       "schedule": "0 0 * * *"
     }
-  ]
+  ],
+  "functions": {
+    "api/generate-posts.ts": {
+      "includeFiles": "marketing/social/**"
+    },
+    "api/ai-enhance.ts": {
+      "includeFiles": "marketing/social/**"
+    }
+  }
 }
