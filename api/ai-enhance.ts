@@ -128,10 +128,9 @@ Return ONLY the plain summary/excerpt text, nothing else.`;
     // Try models with fallback
     const MODELS = [
       "gemini-2.5-flash",
-      "gemini-2.5-pro",
-      "gemini-2.0-flash",
-      "gemini-1.5-flash",
-      "gemini-1.5-pro"
+      "gemini-3.5-flash",
+      "gemini-flash-latest",
+      "gemini-3.1-flash-lite"
     ];
     let result = "";
     const modelErrors: Record<string, string> = {};
@@ -154,9 +153,11 @@ Return ONLY the plain summary/excerpt text, nothing else.`;
         if (
           errMsg.includes("429") ||
           errMsg.includes("quota") ||
-          errMsg.includes("Too Many Requests")
+          errMsg.includes("Too Many Requests") ||
+          errMsg.includes("503") ||
+          errMsg.includes("high demand")
         ) {
-          await new Promise((resolve) => setTimeout(resolve, 3000));
+          await new Promise((resolve) => setTimeout(resolve, 2000));
         }
       }
     }

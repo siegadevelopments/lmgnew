@@ -321,6 +321,13 @@ export function AdminMarketingTab() {
   const [vendorProducts, setVendorProducts] = useState<{ id: number; title: string }[]>([]);
   const [selectedProductIds, setSelectedProductIds] = useState<number[]>([]);
 
+  // Viral post: admin-chosen vendor products (override the automatic topic matching)
+  type PickerProduct = { id: number; title: string; slug: string; excerpt: string | null };
+  const [pickerVendorId, setPickerVendorId] = useState<string>("");
+  const [pickerProducts, setPickerProducts] = useState<PickerProduct[]>([]);
+  const [pickerSearch, setPickerSearch] = useState("");
+  const [pickedProducts, setPickedProducts] = useState<PickerProduct[]>([]);
+
   useEffect(() => {
     loadPosts();
     loadSourceContent();
@@ -345,6 +352,25 @@ export function AdminMarketingTab() {
     }
   }, [selectedVendorId]);
 
+  useEffect(() => {
+    if (!pickerVendorId) {
+      setPickerProducts([]);
+      return;
+    }
+    setPickerSearch("");
+    supabase
+      .from("products")
+      .select("id, title, slug, excerpt")
+      .eq("vendor_id", pickerVendorId)
+      .eq("status", "published")
+      .order("title")
+      .limit(500)
+      .then(({ data, error }) => {
+        if (error) toast.error("Failed to load vendor products");
+        setPickerProducts((data || []) as PickerProduct[]);
+      });
+  }, [pickerVendorId]);
+
   async function loadVendorProducts(vendorId: string) {
     try {
       const { data } = await supabase.from("products").select("id, title").eq("vendor_id", vendorId).eq("status", "published");
@@ -362,7 +388,7 @@ export function AdminMarketingTab() {
         supabase.from("articles").select("id, title, image_url, slug, excerpt, content").order("created_at", { ascending: false }).limit(20),
         supabase.from("recipes").select("id, title, image_url, slug, excerpt, content").order("created_at", { ascending: false }).limit(20),
         supabase.from("videos").select("id, title, thumbnail_url, embed_url, description").order("created_at", { ascending: false }).limit(20),
-        supabase.from("products").select("id, title, slug, excerpt, image_url").eq("status", "published").limit(50),
+        supabase.from("products").select("id, title, slug, excerpt, image_url").eq("status", "published").limit(1000),
       ]);
 
       const combined = [
@@ -1343,7 +1369,7 @@ export function AdminMarketingTab() {
                             ...tokenize(content.content?.substring(0, 1000) || ""),
                           ]);
 
-                          const scoredProducts = allProducts
+                          const autoMatchedProducts = allProducts
                             .map((p) => {
                               const productWords = tokenize(`${p.title} ${p.excerpt || ""}`);
                               const score = productWords.filter((w) => contentWords.has(w)).length;
@@ -1354,9 +1380,13 @@ export function AdminMarketingTab() {
                             .slice(0, 8)
                             .map((sp) => sp.product);
 
+                          const scoredProducts = pickedProducts.length > 0 ? pickedProducts : autoMatchedProducts;
+
                           const productsContext = scoredProducts.map(p => `- ${p.title} (https://www.lifestylemedicinegateway.com/products/${p.slug}) - ${p.excerpt || ""}`).join('\n');
 
-                          const productInstruction = scoredProducts.length > 0
+                          const productInstruction = pickedProducts.length > 0
+                            ? `MANDATORY: The admin has chosen the product(s) below to feature. Weave ${pickedProducts.length > 1 ? "each of them" : "it"} in naturally, including the exact link${pickedProducts.length > 1 ? "s" : ""}. Do NOT invent a product name, price, or link that is not in this list, and do not make health claims about the product beyond what its description states.\nChosen Products:\n${productsContext}`
+                            : scoredProducts.length > 0
                             ? `MANDATORY: You MUST select ONE product from the list below that is topically relevant to this content, and organically integrate it, including its exact link. Do NOT invent a product name, price, or link that is not in this list.\nAvailable Products (only these are real):\n${productsContext}`
                             : `No existing product is closely related to this content. Do NOT mention, invent, or link any product in this post — focus purely on the educational/story content.`;
 
@@ -1398,7 +1428,7 @@ export function AdminMarketingTab() {
                           });
 
                           const data = await response.json();
-                          if (!response.ok || data.error) throw new Error(data.error || "Generation failed");
+                          if (!response.ok || data.error) throw new Error([data.error, data.suggestion].filter(Boolean).join(" — ") || "Generation failed");
 
                           let parsed: any;
                           try {
@@ -1428,7 +1458,7 @@ export function AdminMarketingTab() {
                           // doesn't match a real product slug — this catches hallucinated products
                           // the relevance filtering and prompt instructions didn't prevent.
                           const combinedText = [parsed.facebook, parsed.instagram, parsed.tiktok].join(" ");
-                          const realSlugs = new Set(allProducts.map((p) => p.slug));
+                          const realSlugs = new Set([...allProducts, ...pickedProducts].map((p) => p.slug));
                           const mentionedSlugs = Array.from(combinedText.matchAll(/\/products\/([a-zA-Z0-9_-]+)/g)).map((m) => m[1]);
                           const unknownSlugs = [...new Set(mentionedSlugs.filter((slug) => !realSlugs.has(slug)))];
                           if (unknownSlugs.length > 0) {
@@ -1484,6 +1514,72 @@ export function AdminMarketingTab() {
                       Generate Viral Post
                     </Button>
                   </div>
+                </div>
+
+                <div className="space-y-2 border-t border-primary/10 pt-4">
+                  <Label>Feature vendor products (optional)</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Choose products to feature in the post. Leave empty to let the AI pick a relevant product automatically.
+                  </p>
+                  {pickedProducts.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {pickedProducts.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setPickedProducts((prev) => prev.filter((x) => x.id !== p.id))}
+                          className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/20"
+                          title="Remove"
+                        >
+                          {p.title} ✕
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <select
+                      className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none"
+                      value={pickerVendorId}
+                      onChange={(e) => setPickerVendorId(e.target.value)}
+                    >
+                      <option value="">-- Select a vendor --</option>
+                      {vendors.map((v) => (
+                        <option key={v.id} value={v.id}>{v.store_name}</option>
+                      ))}
+                    </select>
+                    <Input
+                      placeholder="Search this vendor's products..."
+                      value={pickerSearch}
+                      disabled={!pickerVendorId}
+                      onChange={(e) => setPickerSearch(e.target.value)}
+                    />
+                  </div>
+                  {pickerVendorId && (
+                    <div className="max-h-48 overflow-y-auto rounded-md border border-input bg-background divide-y">
+                      {pickerProducts
+                        .filter((p) => p.title.toLowerCase().includes(pickerSearch.toLowerCase()))
+                        .map((p) => {
+                          const checked = pickedProducts.some((x) => x.id === p.id);
+                          return (
+                            <label key={p.id} className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm hover:bg-muted/50">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() =>
+                                  setPickedProducts((prev) =>
+                                    checked ? prev.filter((x) => x.id !== p.id) : [...prev, p],
+                                  )
+                                }
+                              />
+                              <span>{p.title}</span>
+                            </label>
+                          );
+                        })}
+                      {pickerProducts.length === 0 && (
+                        <p className="px-3 py-2 text-sm text-muted-foreground">No published products for this vendor.</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
