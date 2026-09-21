@@ -322,7 +322,7 @@ export function AdminMarketingTab() {
   const [selectedProductIds, setSelectedProductIds] = useState<number[]>([]);
 
   // Viral post: admin-chosen vendor products (override the automatic topic matching)
-  type PickerProduct = { id: number; title: string; slug: string; excerpt: string | null };
+  type PickerProduct = { id: number; title: string; slug: string; excerpt: string | null; image_url: string | null };
   const [pickerVendorId, setPickerVendorId] = useState<string>("");
   const [pickerProducts, setPickerProducts] = useState<PickerProduct[]>([]);
   const [pickerSearch, setPickerSearch] = useState("");
@@ -360,7 +360,7 @@ export function AdminMarketingTab() {
     setPickerSearch("");
     supabase
       .from("products")
-      .select("id, title, slug, excerpt")
+      .select("id, title, slug, excerpt, image_url")
       .eq("vendor_id", pickerVendorId)
       .eq("status", "published")
       .order("title")
@@ -1300,7 +1300,7 @@ export function AdminMarketingTab() {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Select Article, Recipe, or Video</Label>
+                    <Label>Select Article, Recipe, or Video (optional if products are chosen)</Label>
                     <select
                       className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none"
                       value={selectedContentId}
@@ -1336,11 +1336,23 @@ export function AdminMarketingTab() {
                     <Button
                       type="button"
                       className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-10"
-                      disabled={!selectedContentId || enhancingField === "viral"}
+                      disabled={(!selectedContentId && pickedProducts.length === 0) || enhancingField === "viral"}
                       onClick={async () => {
-                        const content = contentList.find(c => String(c.id) === selectedContentId);
+                        // With no article/recipe/video chosen, the post is built around the picked products.
+                        const content = contentList.find(c => String(c.id) === selectedContentId)
+                          ?? (pickedProducts.length > 0
+                            ? {
+                                id: "",
+                                type: "Product",
+                                title: pickedProducts.map(p => p.title).join(" + "),
+                                slug: pickedProducts[0].slug,
+                                image_url: pickedProducts[0].image_url || undefined,
+                                excerpt: pickedProducts.map(p => p.excerpt).filter(Boolean).join(" ").substring(0, 300),
+                                content: pickedProducts.map(p => `${p.title}: ${p.excerpt || ""}`).join("\n"),
+                              }
+                            : undefined);
                         if (!content) {
-                          toast.error("Please select an article, recipe, or video first!");
+                          toast.error("Please select an article, recipe, or video, or pick a vendor product first!");
                           return;
                         }
                         
