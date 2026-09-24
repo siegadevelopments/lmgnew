@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/accordion";
 
 // Guide configs — in production, these would come from the database
-const guideConfig: Record<string, {
+export const guideConfig: Record<string, {
   title: string;
   icon: string;
   category: string;

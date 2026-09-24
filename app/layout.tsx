@@ -10,7 +10,7 @@ import { Inter } from 'next/font/google';
 import { ClientOnlyOverlays } from "@/components/ClientOnlyOverlays";
 import type { Metadata, Viewport } from 'next';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
 const SITE_URL = 'https://www.lifestylemedicinegateway.com';
 

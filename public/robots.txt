@@ -10,32 +10,59 @@ Disallow: /signup
 Disallow: /profile
 Disallow: /checkout
 
-# AI Crawlers - explicitly allowed
+# --- AI Search / GEO: explicitly welcomed so this site can be cited and discovered ---
+
+# OpenAI
 User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
 Allow: /
 
 User-agent: ChatGPT-User
 Allow: /
 
-User-agent: Google-Extended
+# Anthropic (Claude)
+User-agent: ClaudeBot
 Allow: /
 
-User-agent: CCBot
+User-agent: Claude-User
 Allow: /
 
-User-agent: anthropic-ai
+User-agent: Claude-SearchBot
 Allow: /
 
-User-agent: Claude-Web
-Allow: /
-
+# Perplexity
 User-agent: PerplexityBot
 Allow: /
 
-User-agent: Bytespider
+User-agent: Perplexity-User
+Allow: /
+
+# Google (Gemini/AI Overviews training)
+User-agent: Google-Extended
+Allow: /
+
+# Apple
+User-agent: Applebot
 Allow: /
 
 User-agent: Applebot-Extended
+Allow: /
+
+# Meta
+User-agent: meta-externalagent
+Allow: /
+
+User-agent: meta-externalfetcher
+Allow: /
+
+# Common Crawl (feeds many AI training sets)
+User-agent: CCBot
+Allow: /
+
+# ByteDance
+User-agent: Bytespider
 Allow: /
 
 Sitemap: https://www.lifestylemedicinegateway.com/sitemap.xml

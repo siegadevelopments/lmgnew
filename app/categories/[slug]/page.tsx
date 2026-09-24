@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/accordion";
 
 // Category config — maps slugs to display info + product filters
-const categoryConfig: Record<string, {
+export const categoryConfig: Record<string, {
   name: string;
   icon: string;
   description: string;

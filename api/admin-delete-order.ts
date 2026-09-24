@@ -7,7 +7,7 @@ import { createClient } from "@supabase/supabase-js";
 // `order_items` tables don't grant DELETE to the logged-in user's role, Postgres reports 0 rows
 // affected rather than an error, so the UI showed "deleted" while the row stayed in the DB.
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Origin", "https://www.lifestylemedicinegateway.com");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 

@@ -3,6 +3,12 @@ import { createClient } from '@supabase/supabase-js';
 
 const SITE_URL = 'https://www.lifestylemedicinegateway.com';
 
+// Regenerate hourly instead of once at build time — without this, a transient Supabase
+// hiccup during `next build` throws here and fails the entire production build (this has
+// happened before), and the sitemap would otherwise never pick up new content without a
+// redeploy.
+export const revalidate = 3600;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -50,15 +56,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return staticPages;
   }
 
-  const supabase = createClient(supabaseUrl, supabaseKey);
-
-  // Fetch dynamic content slugs
-  const [productsRes, articlesRes, recipesRes, vendorsRes] = await Promise.all([
-    supabase.from('products').select('slug, updated_at').eq('status', 'published'),
-    supabase.from('articles').select('slug, updated_at'),
-    supabase.from('recipes').select('slug, updated_at'),
-    supabase.from('vendor_profiles').select('id, store_name, store_slug, updated_at').eq('is_approved', true),
-  ]);
+  // A broken/missing env var or a transient Supabase error must never take the sitemap (or
+  // the build, which prerenders this route) down — degrade to the static page list instead.
+  let productsRes: { data: any[] | null } = { data: null };
+  let articlesRes: { data: any[] | null } = { data: null };
+  let recipesRes: { data: any[] | null } = { data: null };
+  let vendorsRes: { data: any[] | null } = { data: null };
+  try {
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    [productsRes, articlesRes, recipesRes, vendorsRes] = await Promise.all([
+      supabase.from('products').select('slug, updated_at').eq('status', 'published'),
+      supabase.from('articles').select('slug, updated_at'),
+      supabase.from('recipes').select('slug, updated_at'),
+      supabase.from('vendor_profiles').select('id, store_name, store_slug, updated_at').eq('is_approved', true),
+    ]);
+  } catch (err) {
+    console.error('sitemap: failed to fetch dynamic content, falling back to static pages', err);
+    return staticPages;
+  }
 
   const productPages: MetadataRoute.Sitemap = (productsRes.data || []).map((p) => ({
     url: `${SITE_URL}/products/${p.slug}`,
