@@ -31,19 +31,77 @@ serve(async (req: Request) => {
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
-      const orderId = session.metadata?.order_id;
-      const userId = session.metadata?.user_id;
+      const userId = session.metadata?.user_id || null;
 
-      // 1. Update Order Status
-      await supabaseAdmin
+      // Stripe can deliver this event more than once for the same session (retries). Since
+      // the order is created here rather than beforehand, guard against creating it twice.
+      const { data: existingOrder } = await supabaseAdmin
         .from("orders")
-        .update({ payment_status: "paid", status: "confirmed" } as any)
-        .eq("id", orderId);
+        .select("id")
+        .eq("stripe_session_id", session.id)
+        .maybeSingle();
+      if (existingOrder) {
+        return new Response(JSON.stringify({ received: true, already_processed: true }), {
+          headers: { "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
 
-      // 2. Fetch line items with metadata to create bookings
+      // Fetch line items with metadata to create the order, its items, and any bookings
       const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
         expand: ["data.price.product"],
       });
+
+      // 1. Create the order now that payment has actually succeeded. Shipping details were
+      // collected in our own checkout form before payment and carried through as Stripe
+      // session metadata (see create-checkout-session), since no order row existed yet to
+      // hold them.
+      const total = session.amount_total != null ? session.amount_total / 100 : 0;
+      const subtotal = session.amount_subtotal != null ? session.amount_subtotal / 100 : total;
+      const { data: order, error: orderInsertError } = await supabaseAdmin
+        .from("orders")
+        .insert({
+          user_id: userId,
+          status: "confirmed",
+          payment_status: "paid",
+          subtotal,
+          total,
+          first_name: session.metadata?.first_name || "",
+          last_name: session.metadata?.last_name || "",
+          email: session.metadata?.email || session.customer_details?.email || "",
+          phone: session.metadata?.phone || null,
+          address: session.metadata?.address || "",
+          city: session.metadata?.city || "",
+          state: session.metadata?.state || "",
+          zip: session.metadata?.zip || "",
+          stripe_session_id: session.id,
+        } as any)
+        .select()
+        .single();
+
+      if (orderInsertError) throw orderInsertError;
+      const orderId = order.id;
+
+      // 2. Create order items from the paid line items' metadata
+      const orderItems = lineItems.data.map((item) => {
+        const product = item.price?.product as Stripe.Product;
+        const variantIdRaw = product.metadata?.variant_id;
+        return {
+          order_id: orderId,
+          product_id: parseInt(product.metadata?.product_id, 10),
+          product_name: product.name,
+          product_image: product.metadata?.image || null,
+          product_slug: product.metadata?.slug || null,
+          price: (item.amount_total ?? 0) / 100 / (item.quantity || 1),
+          quantity: item.quantity,
+          vendor_id: product.metadata?.vendor_id || null,
+          variant_id: variantIdRaw ? parseInt(variantIdRaw, 10) : null,
+        };
+      });
+      if (orderItems.length > 0) {
+        const { error: itemsInsertError } = await supabaseAdmin.from("order_items").insert(orderItems as any);
+        if (itemsInsertError) console.error("Error inserting order_items:", itemsInsertError);
+      }
 
       const earningsToInsert = [];
 
@@ -109,12 +167,7 @@ serve(async (req: Request) => {
         }
       }
 
-      const { data: order } = await supabaseAdmin
-        .from("orders")
-        .select("*")
-        .eq("id", orderId)
-        .single();
-
+      // `order` was already created above (from the insert), no need to re-fetch it.
       if (order && RESEND_API_KEY) {
         for (const [vendorId, items] of Object.entries(vendorItemsMap)) {
           const { data: vendorProfile } = await supabaseAdmin

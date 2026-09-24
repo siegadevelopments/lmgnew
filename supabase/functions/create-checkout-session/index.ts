@@ -36,44 +36,10 @@ serve(async (req: Request) => {
 
     const { items, success_url, cancel_url, customer_email, shipping_details } = await req.json();
 
-    // 1. Create order
-    const { data: order, error: orderError } = await supabaseClient
-      .from("orders")
-      .insert({
-        user_id: user.id,
-        subtotal: items.reduce((sum: number, item: any) => sum + item.price * item.quantity, 0),
-        total: items.reduce((sum: number, item: any) => sum + item.price * item.quantity, 0),
-        status: "pending",
-        payment_status: "unpaid",
-        first_name: shipping_details.firstName,
-        last_name: shipping_details.lastName,
-        email: customer_email,
-        phone: shipping_details.phone,
-        address: shipping_details.address,
-        city: shipping_details.city,
-        state: shipping_details.state,
-        zip: shipping_details.zip,
-      } as any)
-      .select()
-      .single();
-
-    if (orderError) throw orderError;
-
-    // 2. Create order items
-    const orderItems = items.map((item: any) => ({
-      order_id: order.id,
-      product_id: item.product_id,
-      product_name: item.name,
-      price: item.price,
-      quantity: item.quantity,
-      vendor_id: item.vendor_id,
-      variant_id: item.variant_id,
-      product_image: item.image,
-    }));
-
-    await supabaseClient.from("order_items").insert(orderItems as any);
-
-    // 3. Prepare line items
+    // No "orders" row is created here — an order should only exist once it's actually paid
+    // for. Everything the webhook needs to build the order later (shipping details, per-item
+    // vendor/variant/image info) travels through Stripe's own metadata instead, and the
+    // webhook (checkout.session.completed) does the real insert once payment succeeds.
     const line_items = items.map((item: any) => ({
       price_data: {
         currency: "usd",
@@ -83,6 +49,9 @@ serve(async (req: Request) => {
           metadata: {
             product_id: item.product_id.toString(),
             vendor_id: item.vendor_id || "",
+            variant_id: item.variant_id != null ? item.variant_id.toString() : "",
+            image: item.image || "",
+            slug: item.slug || "",
             booking_start: item.booking?.start_time || "",
             booking_end: item.booking?.end_time || "",
           },
@@ -92,7 +61,6 @@ serve(async (req: Request) => {
       quantity: item.quantity,
     }));
 
-    // 4. Create session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items,
@@ -101,15 +69,17 @@ serve(async (req: Request) => {
       cancel_url: cancel_url,
       customer_email: customer_email,
       metadata: {
-        order_id: order.id,
         user_id: user.id,
+        email: customer_email || "",
+        first_name: shipping_details.firstName || "",
+        last_name: shipping_details.lastName || "",
+        phone: shipping_details.phone || "",
+        address: shipping_details.address || "",
+        city: shipping_details.city || "",
+        state: shipping_details.state || "",
+        zip: shipping_details.zip || "",
       },
     });
-
-    await supabaseClient
-      .from("orders")
-      .update({ stripe_session_id: session.id } as any)
-      .eq("id", order.id);
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

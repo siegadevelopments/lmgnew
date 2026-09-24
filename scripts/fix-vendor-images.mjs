@@ -34,6 +34,18 @@ const VENDORS = [
 
 const norm = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
+// Closer To Nature's DB titles carry a category suffix ("- Fragrance/ Perfume/ Oil (8ml)",
+// "Incense (15g)") that the vendor's own Shopify titles don't have ("Rose", "White Sage 15g").
+// Strip those decorations down to the bare scent name (+ a size hint) so the two can match.
+const SCENT_SUFFIX = /\s*-?\s*fragrance\s*\/?\s*perfume\s*\/?\s*oil\s*\(?\d*\s*ml\)?|\s*incense\b/gi;
+const SIZE_SUFFIX = /\(?\s*\d+\s*(g|ml|kg)\s*\)?/gi;
+function scentKey(title) {
+  const withoutCategory = (title || '').replace(SCENT_SUFFIX, ' ');
+  const sizeMatch = withoutCategory.match(/\d+\s*(g|ml)/i);
+  const bare = withoutCategory.replace(SIZE_SUFFIX, ' ');
+  return { scent: norm(bare), size: sizeMatch ? sizeMatch[0].replace(/\s/g, '').toLowerCase() : null };
+}
+
 async function toR2(url, folder, handle) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
@@ -46,8 +58,11 @@ async function toR2(url, folder, handle) {
   return `https://${R2_DOMAIN}/${key}`;
 }
 
+const onlyVendor = process.argv.find((a) => a.startsWith('--vendor='))?.slice('--vendor='.length);
+
 let totalFixed = 0, totalUnmatched = 0, totalSkippedOk = 0;
 for (const vendor of VENDORS) {
+  if (onlyVendor && vendor.store_name !== onlyVendor) continue;
   console.log(`\n=== ${vendor.store_name} ===`);
   const { data: vp } = await supabase.from('vendor_profiles').select('id').eq('store_name', vendor.store_name).single();
   if (!vp) { console.log('  vendor not found'); continue; }
@@ -55,6 +70,13 @@ for (const vendor of VENDORS) {
   const { data: products } = await supabase.from('products').select('id, title, slug, image_url').eq('vendor_id', vp.id).eq('status', 'published');
   const { products: sourceProducts } = await (await fetch(`${vendor.shop}/products.json?limit=250`)).json();
   const byNormTitle = new Map(sourceProducts.map((p) => [norm(p.title), p]));
+  // Group source products by bare scent name, keeping their size hint, for the fallback match.
+  const byScent = new Map();
+  for (const p of sourceProducts) {
+    const { scent, size } = scentKey(p.title);
+    if (!byScent.has(scent)) byScent.set(scent, []);
+    byScent.get(scent).push({ p, size });
+  }
 
   for (const p of products) {
     // Only touch products whose current image is actually broken.
@@ -69,7 +91,21 @@ for (const vendor of VENDORS) {
     }
     if (!broken) { totalSkippedOk++; continue; }
 
-    const src = byNormTitle.get(norm(p.title));
+    let src = byNormTitle.get(norm(p.title));
+
+    // Fall back to scent+size matching for titles that differ only by a category
+    // suffix the DB adds and the vendor's own store doesn't use (see scentKey above).
+    if (!src) {
+      const { scent, size } = scentKey(p.title);
+      const candidates = byScent.get(scent) || [];
+      if (candidates.length === 1) {
+        src = candidates[0].p;
+      } else if (candidates.length > 1) {
+        src = (size ? candidates.find((c) => c.size === size) : null)?.p
+          || candidates.find((c) => !c.size)?.p; // prefer the size-less/base listing over a guess
+      }
+    }
+
     const srcImage = src?.images?.[0]?.src;
     if (!src || !srcImage) {
       console.log(`  UNMATCHED: "${p.title}"`);

@@ -340,17 +340,24 @@ function AdminDashboardContent() {
 
   const deleteOrder = async (orderId: string) => {
     try {
-      const { error: itemsError } = await (supabase.from("order_items") as any)
-        .delete()
-        .eq("order_id", orderId);
+      // Deleting via a server route (service-role key) rather than the browser client directly:
+      // a client-side delete blocked by RLS reports success with 0 rows affected instead of an
+      // error, so the order would silently reappear on refresh. See api/admin-delete-order.ts.
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
 
-      if (itemsError) throw itemsError;
-
-      const { error: orderError } = await (supabase.from("orders") as any)
-        .delete()
-        .eq("id", orderId);
-
-      if (orderError) throw orderError;
+      const response = await fetch("/api/admin-delete-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ order_id: orderId }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Failed to delete order");
 
       const deletedOrder = orders.find((o) => o.id === orderId);
       setOrders((prev) => prev.filter((o) => o.id !== orderId));
