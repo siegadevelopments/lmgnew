@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode } from "react";
 
 export interface CartItem {
   id: number | string; // Use variant ID or product ID
@@ -30,8 +30,39 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | null>(null);
 
+const STORAGE_KEY = "lmg_cart";
+
+function loadStoredCart(): CartItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
+  // Cart persists across refreshes via localStorage. Start empty on the server/first
+  // render (SSR has no access to localStorage) and hydrate from storage right after mount.
   const [items, setItems] = useState<CartItem[]>([]);
+  const hydrated = useRef(false);
+
+  useEffect(() => {
+    setItems(loadStoredCart());
+    hydrated.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated.current) return; // avoid clobbering storage with the empty initial state
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    } catch {
+      // Storage unavailable (private browsing, quota, etc.) — cart still works for this session.
+    }
+  }, [items]);
 
   const addItem = useCallback((item: Omit<CartItem, "quantity"> & { quantity?: number }) => {
     const qty = item.quantity || 1;
