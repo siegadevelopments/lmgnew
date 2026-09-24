@@ -6,8 +6,12 @@ export async function publishSocialPost(supabase: any, post: any) {
 
   // 1. Build the full post text
   const fullCaption = `${post.caption}\n\n${(post.hashtags || []).map((h: string) => (h.startsWith("#") ? h : `#${h}`)).join(" ")}`;
+  // source_url is normally a site-relative path (e.g. "/articles/slug"), but for video
+  // content it's already a full external URL (YouTube/embed link) — don't double-prefix it.
   const linkUrl = post.source_url
-    ? `https://lifestylemedicinegateway.com${post.source_url}`
+    ? post.source_url.startsWith("http")
+      ? post.source_url
+      : `https://lifestylemedicinegateway.com${post.source_url}`
     : "https://lifestylemedicinegateway.com";
 
   // 2. Publish to Facebook

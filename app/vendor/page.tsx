@@ -95,7 +95,7 @@ interface Article {
 }
 
 function VendorDashboardContent() {
-  const { user, loading: authLoading, signOut } = useAuth();
+  const { user, role, loading: authLoading, signOut } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeTabParam = searchParams?.get("tab");
@@ -199,12 +199,17 @@ function VendorDashboardContent() {
       const storeName = formData.get("store_name") as string;
       const vendorType = formData.get("vendor_type") as string;
 
-      const { error: profileError } = await (supabase.from("profiles") as any).upsert(
-        { id: user.id, role: "vendor" },
-        { onConflict: "id" },
-      );
+      // Only promote to "vendor" if the account doesn't already hold a higher-privilege
+      // role — an admin (or any future non-customer role) creating a store here must not
+      // have their own role silently downgraded.
+      if (role !== "admin") {
+        const { error: profileError } = await (supabase.from("profiles") as any).upsert(
+          { id: user.id, role: "vendor" },
+          { onConflict: "id" },
+        );
 
-      if (profileError) throw profileError;
+        if (profileError) throw profileError;
+      }
 
       const { data, error } = await (supabase.from("vendor_profiles") as any)
         .insert({

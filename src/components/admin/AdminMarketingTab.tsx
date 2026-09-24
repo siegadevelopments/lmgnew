@@ -1312,7 +1312,10 @@ export function AdminMarketingTab() {
                           setManualForm(prev => ({
                             ...prev,
                             image_url: content.image_url || "",
-                            source_url: `/${content.type.toLowerCase()}s/${content.slug}`,
+                            // Videos store their full YouTube/embed URL in `slug`, not a site-relative
+                            // path — using the generic "/videos/<slug>" pattern here produced a
+                            // malformed link like "/videos/https://youtube.com/...".
+                            source_url: content.type === "Video" ? (content.slug || "") : `/${content.type.toLowerCase()}s/${content.slug}`,
                             title: prev.title || content.title,
                           }));
                         } else {
