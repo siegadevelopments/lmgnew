@@ -70,6 +70,21 @@ Examples:
 
 > How can I sleep better?
 
+### Format requirements:
+
+* Native filmed video only — never a static image or slideshow. TikTok ranks on watch time and completion rate, which a still image cannot generate.
+* Ideal length 30–60 seconds for educational content (42–54 seconds is the sweet spot).
+* Hook must exist as on-screen text within the first second, not spoken word alone — most viewers watch muted.
+* Caption should lead with the topic/keyword in the first 50 characters (TikTok's search reads captions, on-screen text and spoken audio, not just hashtags).
+
+### CTA:
+
+TikTok does not make caption links clickable. Never write out a literal URL — direct people to the link in bio instead (see `cta-library.md`).
+
+### Posting cadence:
+
+3–5 posts per week. One strong, well-made video outperforms several rushed daily posts.
+
 ### Priority:
 
 * Strong first 1–3 seconds
