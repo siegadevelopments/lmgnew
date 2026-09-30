@@ -138,7 +138,7 @@ export function AdminMarketingTab() {
   const [editImageUrl, setEditImageUrl] = useState("");
   const [editScheduledAt, setEditScheduledAt] = useState("");
   const [editSourceUrl, setEditSourceUrl] = useState("");
-  const [editPlatforms, setEditPlatforms] = useState<string[]>(["facebook", "instagram", "tiktok"]);
+  const [editPlatforms, setEditPlatforms] = useState<string[]>(["facebook", "instagram"]);
   const [editStatus, setEditStatus] = useState("draft");
   const [savingEdit, setSavingEdit] = useState(false);
   const [pushingBuffer, setPushingBuffer] = useState(false);
@@ -153,7 +153,9 @@ export function AdminMarketingTab() {
     const toastId = toast.loading("Saving to database & pushing to Buffer Queue...");
     
     try {
-      // 1. Save 3 versions to database
+      // 1. Save 2 versions to database (TikTok auto-create/publish removed —
+      // the pipeline only ever had a static image to push as the TikTok
+      // "video", which gets ~zero reach. See marketing/social/tiktok-strategy.md.)
       const insertData = [
         {
           title: manualForm.title || "Facebook Post",
@@ -177,17 +179,6 @@ export function AdminMarketingTab() {
           scheduled_at: parseMelbourneTimeToUTC(manualForm.scheduled_at),
           status: "approved",
         },
-        {
-          title: manualForm.title || "TikTok Post",
-          caption: multiPlatformDraft.tiktok,
-          hashtags: [],
-          image_url: multiPlatformDraft.imageUrl,
-          source_type: "custom",
-          source_url: multiPlatformDraft.sourceUrl,
-          platforms: ["tiktok"],
-          scheduled_at: parseMelbourneTimeToUTC(manualForm.scheduled_at),
-          status: "approved",
-        }
       ];
 
       const { error: dbError } = await (supabase.from("scheduled_posts") as any).insert(insertData);
@@ -203,7 +194,6 @@ export function AdminMarketingTab() {
           posts: {
             facebook: multiPlatformDraft.facebook,
             instagram: multiPlatformDraft.instagram,
-            tiktok: multiPlatformDraft.tiktok,
           },
         }),
       });
@@ -219,8 +209,7 @@ export function AdminMarketingTab() {
           if (item.platform && item.id) {
             // Find post created for this platform in this batch (matching title & platform)
             const postTitle = item.platform === "facebook" ? (manualForm.title || "Facebook Post")
-              : item.platform === "instagram" ? (manualForm.title || "Instagram Post")
-              : (manualForm.title || "TikTok Post");
+              : (manualForm.title || "Instagram Post");
             await (supabase.from("scheduled_posts") as any)
               .update({ buffer_post_id: item.id })
               .eq("title", postTitle)
@@ -304,7 +293,6 @@ export function AdminMarketingTab() {
   const [multiPlatformDraft, setMultiPlatformDraft] = useState<{
     facebook: string;
     instagram: string;
-    tiktok: string;
     imageUrl: string;
     sourceUrl: string;
   } | null>(null);
@@ -312,7 +300,7 @@ export function AdminMarketingTab() {
   // Content Selection states
   const [contentList, setContentList] = useState<{ id: string; title: string; type: string; image_url?: string; slug?: string; excerpt?: string; content?: string }[]>([]);
   const [selectedContentId, setSelectedContentId] = useState<string>("");
-  const [targetPlatform, setTargetPlatform] = useState<"facebook" | "instagram" | "tiktok" | "both" | "all">("all");
+  const [targetPlatform, setTargetPlatform] = useState<"facebook" | "instagram" | "both" | "all">("all");
   const [loadingContent, setLoadingContent] = useState(false);
   const [allProducts, setAllProducts] = useState<any[]>([]);
 
@@ -495,7 +483,7 @@ export function AdminMarketingTab() {
   // Generate posts & push directly to Buffer
   async function handleGenerate() {
     setGenerating(true);
-    const toastId = toast.loading("Generating viral AI content & pushing to Buffer (FB, IG + TikTok draft)...");
+    const toastId = toast.loading("Generating viral AI content & pushing to Buffer (FB, IG)...");
     try {
       const {
         data: { session },
@@ -1279,15 +1267,6 @@ export function AdminMarketingTab() {
                     </Button>
                     <Button
                       type="button"
-                      variant={targetPlatform === "tiktok" ? "secondary" : "ghost"}
-                      size="sm"
-                      className="h-7 text-[10px] px-2 font-bold"
-                      onClick={() => setTargetPlatform("tiktok")}
-                    >
-                      <TikTokIcon className="h-3 w-3 mr-1" /> TikTok
-                    </Button>
-                    <Button
-                      type="button"
                       variant={targetPlatform === "all" || targetPlatform === "both" ? "secondary" : "ghost"}
                       size="sm"
                       className="h-7 text-[10px] px-2 font-bold"
@@ -1405,7 +1384,7 @@ export function AdminMarketingTab() {
                             ? `MANDATORY: You MUST select ONE product from the list below that is topically relevant to this content, and organically integrate it, including its exact link. Do NOT invent a product name, price, or link that is not in this list.\nAvailable Products (only these are real):\n${productsContext}`
                             : `No existing product is closely related to this content. Do NOT mention, invent, or link any product in this post — focus purely on the educational/story content.`;
 
-                          const prompt = `Create a viral social media post tailored for Facebook, Instagram, and TikTok about this ${content.type.toLowerCase()}:
+                          const prompt = `Create a viral social media post tailored for Facebook and Instagram about this ${content.type.toLowerCase()}:
 
                           Title: ${content.title}
                           Excerpt: ${content.excerpt || ""}
@@ -1416,14 +1395,12 @@ export function AdminMarketingTab() {
                           PLATFORM-SPECIFIC RULES (include the chosen product's link only if the product instruction above gave you one — otherwise just use ${fullLink}):
                           1. FACEBOOK: Engaging, conversational tone with story hook, emojis, call to action with link: ${fullLink}${scoredProducts.length > 0 ? " AND the link to the related product you chose" : ""}. STRICTLY 2-3 hashtags max.
                           2. INSTAGRAM: High-engagement visual caption, clear formatting with emojis and line breaks (\\n), CTA to click link in bio or visit ${fullLink}${scoredProducts.length > 0 ? " and check out the related product" : ""}. STRICTLY 3-5 relevant hashtags at the end.
-                          3. TIKTOK: A video brief, not just a caption. First line is the on-screen/spoken HOOK (first 3 seconds). Then 2-3 short lines covering the PROBLEM and the EDUCATION/tip to film. End with a soft CTA (e.g. "Follow for practical wellness education." or "Read the full guide on Lifestyle Medicine Gateway.") plus ${fullLink}${scoredProducts.length > 0 ? " and the related product link" : ""}, then STRICTLY 3-5 relevant hashtags.
 
                           INSTRUCTIONS:
                           Respond ONLY with a valid JSON object matching this exact structure (no markdown tags, just pure JSON):
                           {
                             "facebook": "Facebook post content...",
-                            "instagram": "Instagram post content...",
-                            "tiktok": "TikTok video brief + caption..."
+                            "instagram": "Instagram post content..."
                           }`;
 
                           const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -1467,12 +1444,11 @@ export function AdminMarketingTab() {
                           };
                           parsed.facebook = fixProductLinks(parsed.facebook);
                           parsed.instagram = fixProductLinks(parsed.instagram);
-                          parsed.tiktok = fixProductLinks(parsed.tiktok);
 
                           // Flag (don't silently trust) any product link the AI produced that
                           // doesn't match a real product slug — this catches hallucinated products
                           // the relevance filtering and prompt instructions didn't prevent.
-                          const combinedText = [parsed.facebook, parsed.instagram, parsed.tiktok].join(" ");
+                          const combinedText = [parsed.facebook, parsed.instagram].join(" ");
                           const realSlugs = new Set([...allProducts, ...pickedProducts].map((p) => p.slug));
                           const mentionedSlugs = Array.from(combinedText.matchAll(/\/products\/([a-zA-Z0-9_-]+)/g)).map((m) => m[1]);
                           const unknownSlugs = [...new Set(mentionedSlugs.filter((slug) => !realSlugs.has(slug)))];
@@ -1507,7 +1483,6 @@ export function AdminMarketingTab() {
                           setMultiPlatformDraft({
                             facebook: parsed.facebook,
                             instagram: parsed.instagram,
-                            tiktok: parsed.tiktok,
                             imageUrl: finalImageUrl,
                             sourceUrl
                           });
@@ -1610,16 +1585,16 @@ export function AdminMarketingTab() {
                     />
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Card className="border-blue-500 shadow-sm">
                       <CardContent className="p-4 space-y-3 text-sm">
                         <div className="flex items-center gap-2 font-bold text-blue-600"><Facebook className="w-4 h-4"/> Facebook</div>
                         <img src={multiPlatformDraft.imageUrl} alt="AI Generated" className="w-full h-32 object-cover rounded-md" />
-                        <Textarea 
-                           className="text-xs" 
-                           rows={8} 
-                           value={multiPlatformDraft.facebook} 
-                           onChange={(e) => setMultiPlatformDraft({...multiPlatformDraft, facebook: e.target.value})} 
+                        <Textarea
+                           className="text-xs"
+                           rows={8}
+                           value={multiPlatformDraft.facebook}
+                           onChange={(e) => setMultiPlatformDraft({...multiPlatformDraft, facebook: e.target.value})}
                         />
                       </CardContent>
                     </Card>
@@ -1627,27 +1602,12 @@ export function AdminMarketingTab() {
                       <CardContent className="p-4 space-y-3 text-sm">
                         <div className="flex items-center gap-2 font-bold text-pink-600"><Instagram className="w-4 h-4"/> Instagram</div>
                         <img src={multiPlatformDraft.imageUrl} alt="AI Generated" className="w-full h-32 object-cover rounded-md" />
-                        <Textarea 
-                           className="text-xs" 
-                           rows={8} 
-                           value={multiPlatformDraft.instagram} 
-                           onChange={(e) => setMultiPlatformDraft({...multiPlatformDraft, instagram: e.target.value})} 
-                        />
-                      </CardContent>
-                    </Card>
-                    <Card className="border-slate-700 shadow-sm">
-                      <CardContent className="p-4 space-y-3 text-sm">
-                        <div className="flex items-center gap-2 font-bold text-slate-800"><TikTokIcon className="w-4 h-4"/> TikTok</div>
-                        <img src={multiPlatformDraft.imageUrl} alt="AI Generated" className="w-full h-32 object-cover rounded-md" />
                         <Textarea
                            className="text-xs"
                            rows={8}
-                           value={multiPlatformDraft.tiktok}
-                           onChange={(e) => setMultiPlatformDraft({...multiPlatformDraft, tiktok: e.target.value})}
+                           value={multiPlatformDraft.instagram}
+                           onChange={(e) => setMultiPlatformDraft({...multiPlatformDraft, instagram: e.target.value})}
                         />
-                        <p className="text-[10px] text-muted-foreground leading-tight">
-                          Video brief for filming, sent to Buffer with the same cover image as the others. TikTok natively needs a real video upload, so check the warning toast after pushing — if Buffer rejects the image, use this brief to film and upload manually instead.
-                        </p>
                       </CardContent>
                     </Card>
                   </div>
@@ -2264,22 +2224,6 @@ export function AdminMarketingTab() {
                       />
                       <Instagram className="h-4 w-4 text-pink-600" />
                       <span className="text-sm font-medium">Instagram</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={editPlatforms.includes("tiktok")}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setEditPlatforms((prev) => [...prev, "tiktok"]);
-                          } else {
-                            setEditPlatforms((prev) => prev.filter((p) => p !== "tiktok"));
-                          }
-                        }}
-                        className="h-4 w-4 rounded border-gray-300 text-slate-800 focus:ring-slate-500"
-                      />
-                      <TikTokIcon className="h-4 w-4 text-slate-800" />
-                      <span className="text-sm font-medium">TikTok</span>
                     </label>
                   </div>
                 </div>

@@ -1,6 +1,7 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { getMarketingContext } from "./_marketing-context";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "https://www.lifestylemedicinegateway.com");
@@ -47,10 +48,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const genAI = new GoogleGenerativeAI(geminiKey);
 
-    const BRAND_CONTEXT = `You are writing for "Lifestyle Medicine Gateway", an Australian wellness marketplace.
-TARGET AUDIENCE: Women aged 40–65 going through menopause/perimenopause. Also partners/daughters who want to help.
-BRAND VOICE: Warm, supportive, empowering but realistic. Australian English. Science-backed but relatable. 2-4 emojis max.
-NEVER use aggressive sales language, medical jargon, or hype.`;
+    // Was previously a hardcoded persona (menopause-only, women 40-65) that had
+    // drifted from marketing/social/audience.md — LMG's actual audience spans
+    // healthy ageing, gut health, sleep/stress and wellness shoppers too, not
+    // just menopause. Now grounded in the real knowledge base (audience, brand
+    // voice, content pillars, platform rules, hooks, CTAs) so every AI-assisted
+    // field — including the "custom" field the admin's "Generate Viral Post"
+    // and per-field "Improve" flows use — matches it, not a narrower persona.
+    const BRAND_CONTEXT = `You are the senior social media strategist for Lifestyle Medicine Gateway (LMG), an Australian lifestyle medicine, wellness education, community and marketplace platform.
+
+Ground your writing in the LMG marketing knowledge base below. Use Australian English throughout.
+
+${getMarketingContext()}`;
 
     let prompt = "";
 
@@ -64,7 +73,7 @@ ${
 Current title: "${value}"
 ${context ? `Context: ${context}` : ""}`
     : `Generate a catchy, engaging social media post title for a wellness brand. Keep it short (under 10 words).
-${context ? `Topic/context: ${context}` : "Topic: general wellness or menopause support"}`
+${context ? `Topic/context: ${context}` : "Topic: general lifestyle medicine and wellness"}`
 }
 
 Return ONLY the improved title text, nothing else.`;
@@ -85,7 +94,7 @@ ${context ? `Context: ${context}` : ""}`
 - A warm call-to-action (CTA)
 If a Link/URL is provided in the context, integrate it directly as the target of the call-to-action (CTA) at the end of the caption (e.g. 'Read more here: [URL]').
 Keep it 150-250 words. Use line breaks for readability.
-${context ? `Topic/Context: ${context}` : "Topic: general wellness, menopause support, or natural health"}`
+${context ? `Topic/Context: ${context}` : "Topic: general lifestyle medicine, wellness and natural health"}`
 }
 
 Return ONLY the caption text, nothing else.`;
@@ -94,7 +103,7 @@ Return ONLY the caption text, nothing else.`;
       case "hashtags":
         prompt = `${BRAND_CONTEXT}
 
-Generate 5-6 relevant hashtags for a social media post about wellness/menopause/natural health.
+Generate 5-6 relevant hashtags for a social media post about lifestyle medicine, wellness and natural health (per hashtag-strategy.md above).
 ${value ? `Current hashtags: ${value}` : ""}
 ${context ? `Post topic: ${context}` : ""}
 
@@ -118,7 +127,12 @@ Return ONLY the plain summary/excerpt text, nothing else.`;
         break;
 
       case "custom":
-        prompt = value;
+        // "custom" is what the admin's "Generate Viral Post" flow (and any other
+        // fully-custom prompt from the frontend) sends — it previously bypassed
+        // BRAND_CONTEXT entirely (prompt = value), so viral posts had zero
+        // audience/brand-voice/platform grounding. Now prepended like every
+        // other field.
+        prompt = `${BRAND_CONTEXT}\n\n${value}`;
         break;
 
       default:

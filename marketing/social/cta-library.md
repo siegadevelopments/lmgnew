@@ -38,6 +38,15 @@
 * Discover the brand behind this product.
 * Meet more wellness businesses in the LMG community.
 
+## TIKTOK (LINK IN BIO ONLY)
+
+TikTok does not make links in captions clickable. Never write out a literal URL in a TikTok caption or brief — use one of these instead:
+
+* Link in bio for the full guide.
+* Full breakdown at the link in bio.
+* Follow for practical wellness education.
+* Link in bio to read the rest on Lifestyle Medicine Gateway.
+
 ## CTA RULE
 
 Do not use a hard sales CTA on every post.
