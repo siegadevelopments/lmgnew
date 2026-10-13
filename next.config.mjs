@@ -112,6 +112,19 @@ const nextConfig = {
   poweredByHeader: false,
   compress: true,
   transpilePackages: ['react-quill-new', 'dompurify'],
+  // The site was migrated from WordPress/WooCommerce; these map old addresses that search
+  // engines and old social posts still use to their current pages. Specific rules come first
+  // (Next.js uses the first match). Targets were checked against the live database: the old
+  // fudge recipe and the pillow speaker no longer exist, so they go to their listing pages.
+  redirects: async () => [
+    { source: '/understanding-depression-a-whole-body-holistic-perspective', destination: '/articles/understanding-depression-a-whole-body-holistic-perspective', permanent: true },
+    { source: '/wprm_print/healthy-chocolate-fudge', destination: '/recipes', permanent: true },
+    { source: '/product/under-pillow-bone-conduction-sleep-speaker-bluetooth-5-4-white-noise-tf-card-led-display-timerpink', destination: '/products', permanent: true },
+    { source: '/wprm_print/:slug', destination: '/recipes/:slug', permanent: true },
+    { source: '/product/:slug', destination: '/products/:slug', permanent: true },
+    { source: '/shop', destination: '/products', permanent: true },
+    { source: '/shop/:slug', destination: '/products/:slug', permanent: true },
+  ],
   headers: async () => [
     {
       source: '/(.*)',
