@@ -1,36 +1,23 @@
+import { cache } from 'react';
 import type { Metadata } from 'next';
-import { createClient } from '@supabase/supabase-js';
+import { notFound } from 'next/navigation';
+import { getVendorBySlug, getVendorProducts } from '@/lib/server-data';
+import { ServerHydrate } from '@/components/ServerHydrate';
 
 const SITE_URL = 'https://www.lifestylemedicinegateway.com';
 
-// UUID v4 regex
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-async function getVendor(slug: string) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!supabaseUrl || !supabaseKey) return null;
-
-  const supabase = createClient(supabaseUrl, supabaseKey);
-
-  // Try by store_slug first, then fallback to UUID
-  if (!UUID_RE.test(slug)) {
-    const { data } = await supabase
-      .from('vendor_profiles')
-      .select('store_name, store_description, store_logo_url, store_slug')
-      .eq('store_slug', slug)
-      .single();
-    if (data) return data;
+// Shared by generateMetadata and the layout so each request queries once. Returns undefined (not
+// null) when the lookup itself fails, so an outage never gets a vendor page marked noindex/404.
+const loadVendor = cache(async (slug: string) => {
+  try {
+    const vendor = await getVendorBySlug(slug);
+    const products = vendor ? await getVendorProducts(vendor.id) : [];
+    return { vendor, products };
+  } catch (err) {
+    console.error("vendor layout: server lookup failed for", slug, err);
+    return undefined;
   }
-
-  // Fallback: query by id (UUID)
-  const { data } = await supabase
-    .from('vendor_profiles')
-    .select('store_name, store_description, store_logo_url, store_slug')
-    .eq('id', slug)
-    .single();
-  return data;
-}
+});
 
 export async function generateMetadata({
   params,
@@ -38,15 +25,21 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const vendor = await getVendor(slug);
+  const loaded = await loadVendor(slug);
 
-  if (!vendor) {
+  if (loaded && !loaded.vendor) {
     return {
-      title: 'Vendor Not Found — Lifestyle Medicine Gateway',
+      title: { absolute: 'Vendor Not Found — Lifestyle Medicine Gateway' },
       description: 'The vendor you are looking for could not be found.',
+      robots: { index: false, follow: false },
     };
   }
+  const vendor = loaded?.vendor;
+  if (!vendor) {
+    return { title: { absolute: 'Vendor — Lifestyle Medicine Gateway' }, alternates: { canonical: `${SITE_URL}/vendors/${slug}` } };
+  }
 
+  // `absolute` so the root layout's "%s | Lifestyle Medicine Gateway" template isn't applied twice.
   const title = `${vendor.store_name} — Wellness Vendor | Lifestyle Medicine Gateway`;
   const description =
     vendor.store_description?.slice(0, 160) ||
@@ -54,7 +47,7 @@ export async function generateMetadata({
   const canonicalSlug = vendor.store_slug || slug;
 
   return {
-    title,
+    title: { absolute: title },
     description,
     openGraph: {
       title: `${vendor.store_name} | Lifestyle Medicine Gateway`,
@@ -83,9 +76,29 @@ export async function generateMetadata({
     alternates: {
       canonical: `${SITE_URL}/vendors/${canonicalSlug}`,
     },
+    robots: { index: true, follow: true },
   };
 }
 
-export default function VendorSlugLayout({ children }: { children: React.ReactNode }) {
-  return children;
+// The vendor and their products are seeded into the React Query cache so the (client) vendor page
+// renders real content during SSR; a slug matching no vendor returns a real 404.
+export default async function VendorSlugLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const loaded = await loadVendor(slug);
+  if (loaded && !loaded.vendor) notFound();
+
+  const entries: React.ComponentProps<typeof ServerHydrate>['entries'] = loaded?.vendor
+    ? [
+        [['vendor', slug], loaded.vendor],
+        [['products', 'vendor', loaded.vendor.id], loaded.products],
+      ]
+    : [];
+
+  return <ServerHydrate entries={entries}>{children}</ServerHydrate>;
 }

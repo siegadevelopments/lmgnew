@@ -100,6 +100,16 @@ export const productsQueryOptions = () =>
   });
 
 
+// Homepage "New arrivals" — five products. Own key (not the full products list) so the server can
+// seed just these five into the cache without a half-populated ["products","list"] entry.
+export const newArrivalsQueryOptions = () =>
+  queryOptions({
+    queryKey: ["products", "new-arrivals", "v1"],
+    staleTime: 10 * 1000,
+    gcTime: 2 * 60 * 1000,
+    queryFn: async () => ((await productsQueryOptions().queryFn!(undefined as any)) as any[]).slice(0, 5),
+  });
+
 export const productBySlugQueryOptionsV2 = (slug: string) =>
   queryOptions({
     queryKey: ["products", "bySlug", "v3", slug],
@@ -153,6 +163,29 @@ export const productBySlugQueryOptionsV2 = (slug: string) =>
   });
 
 // --- Categories ---
+
+export const trustStatsQueryOptions = () =>
+  queryOptions({
+    queryKey: ["trust-stats", "v1"],
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const [vendorsRes, productsRes, reviewsRes] = await Promise.all([
+        supabase.from("vendor_profiles").select("id", { count: "exact", head: true }).eq("is_approved", true).eq("is_live", true),
+        supabase.from("products").select("id", { count: "exact", head: true }).eq("status", "published"),
+        supabase.from("reviews").select("rating"),
+      ]);
+      const reviews = reviewsRes.data || [];
+      return {
+        vendors: vendorsRes.count || 0,
+        products: productsRes.count || 0,
+        rating:
+          reviews.length > 0
+            ? (reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length).toFixed(1)
+            : "5.0",
+        reviewCount: reviews.length,
+      };
+    },
+  });
 
 export const categoriesQueryOptions = () =>
   queryOptions({

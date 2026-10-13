@@ -68,8 +68,11 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  // Relative canonical: resolved against metadataBase + the current page's path, so any page that
+  // doesn't set its own canonical points at itself. It used to be the absolute homepage URL, which
+  // every page inherited — telling search engines that all those pages were duplicates of "/".
   alternates: {
-    canonical: SITE_URL,
+    canonical: './',
   },
   icons: {
     icon: '/favicon.ico',

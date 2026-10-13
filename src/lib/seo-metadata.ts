@@ -39,6 +39,8 @@ export function buildMetadata(opts: {
     title,
     description: desc,
     alternates: { canonical: url },
+    // Explicit so a page's indexability never depends on what a parent layout happens to set.
+    robots: { index: true, follow: true },
     openGraph: {
       title,
       description: desc,

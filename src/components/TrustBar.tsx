@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { trustStatsQueryOptions } from "@/lib/queries";
 import { motion } from "framer-motion";
 
 interface TrustStat {
@@ -11,39 +11,7 @@ interface TrustStat {
 }
 
 export function TrustBar() {
-  const { data: stats } = useQuery({
-    queryKey: ["trust-stats", "v1"],
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const [vendorsRes, productsRes, reviewsRes] = await Promise.all([
-        supabase
-          .from("vendor_profiles")
-          .select("id", { count: "exact", head: true })
-          .eq("is_approved", true)
-          .eq("is_live", true),
-        supabase
-          .from("products")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "published"),
-        supabase.from("reviews").select("rating"),
-      ]);
-
-      const vendorCount = vendorsRes.count || 0;
-      const productCount = productsRes.count || 0;
-      const reviews = reviewsRes.data || [];
-      const avgRating =
-        reviews.length > 0
-          ? (reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length).toFixed(1)
-          : "5.0";
-
-      return {
-        vendors: vendorCount,
-        products: productCount,
-        rating: avgRating,
-        reviewCount: reviews.length,
-      };
-    },
-  });
+  const { data: stats } = useQuery(trustStatsQueryOptions());
 
   const trustStats: TrustStat[] = [
     {

@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { productsQueryOptions } from "@/lib/queries";
+import { newArrivalsQueryOptions } from "@/lib/queries";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductCard } from "@/components/ProductCard";
 
 export function NewArrivalsSection() {
-  const { data: products, isLoading } = useQuery(productsQueryOptions());
+  const { data: products, isLoading } = useQuery(newArrivalsQueryOptions());
 
   if (!isLoading && (!products || products.length === 0)) return null;
 
