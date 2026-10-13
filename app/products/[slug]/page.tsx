@@ -1,7 +1,7 @@
 'use client'
 
 import { useParams, useRouter, usePathname } from "next/navigation";
-import { sanitizeHtml } from "@/lib/security";
+import { sanitizeHtml, jsonLd } from "@/lib/security";
 import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { productBySlugQueryOptionsV2 } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
@@ -97,12 +97,13 @@ function ProductContent() {
     : (product.stock ?? 100);
 
   const handleAddToCart = async () => {
-    if (!user) {
+    // Guests can buy products; services are booked against an account, so those need a login.
+    if (!user && (product.product_type === "service" || booking)) {
       router.push(`/signup?redirect=${isServiceRoute ? '/services' : '/products'}/${slug}`);
       return;
     }
 
-    if (product.product_type === "service" && booking) {
+    if (user && product.product_type === "service" && booking) {
       // Fetch user profile phone if not set
       if (!customerPhone) {
         const { data: profile } = await (supabase.from("profiles") as any)
@@ -267,7 +268,7 @@ function ProductContent() {
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
+            __html: jsonLd({
               "@context": "https://schema.org",
               "@type": "Product",
               name: product.title,

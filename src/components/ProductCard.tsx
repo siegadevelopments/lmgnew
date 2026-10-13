@@ -37,9 +37,10 @@ export function ProductCard({ product, className }: ProductCardProps) {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!user) {
+    // Guests can shop; only services (which are booked to an account) need a login.
+    if (!user && (product as any).product_type === "service") {
       toast("Please register first", {
-        description: "You need an account to add items to your cart.",
+        description: "You need an account to book a service.",
         action: {
           label: "Register",
           onClick: () =>

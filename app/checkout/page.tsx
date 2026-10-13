@@ -12,18 +12,21 @@ import { useAuth } from "@/hooks/use-auth";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import { calculateShipping, gstIncluded } from "@/lib/checkout-pricing";
 
 export default function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCart();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
-  // --- NEW: Redirect to signup if not logged in ---
+  // Guests can check out. Bookings are the exception: they're tied to an account so the
+  // customer can view and cancel them, so a cart containing one still requires login.
+  const hasBooking = items.some((i) => i.booking);
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (!authLoading && !user && hasBooking) {
       router.push("/signup?redirect=/checkout");
     }
-  }, [authLoading, user, router]);
+  }, [authLoading, user, hasBooking, router]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
@@ -68,9 +71,10 @@ export default function CheckoutPage() {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const shipping = totalPrice > 50 ? 0 : 5.99;
-  const tax = totalPrice * 0.08;
-  const grandTotal = totalPrice + shipping + tax;
+  // Prices are AUD and GST-inclusive, so GST is shown as a component, not added on top.
+  const shipping = calculateShipping(totalPrice, items.length > 0 && items.every((i) => i.booking));
+  const grandTotal = totalPrice + shipping;
+  const gst = gstIncluded(grandTotal);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,7 +88,7 @@ export default function CheckoutPage() {
           body: {
             items,
             customer_email: formData.email,
-            success_url: `${window.location.origin}/profile`, // Redirect to orders after success
+            success_url: `${window.location.origin}/checkout/success`,
             cancel_url: window.location.href,
             shipping_details: formData,
           },
@@ -285,7 +289,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="state">State</Label>
+                    <Label htmlFor="state">State / Territory</Label>
                     <Input
                       id="state"
                       name="state"
@@ -295,7 +299,7 @@ export default function CheckoutPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="zip">ZIP</Label>
+                    <Label htmlFor="zip">Postcode</Label>
                     <Input
                       id="zip"
                       name="zip"
@@ -431,13 +435,13 @@ export default function CheckoutPage() {
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Tax</span>
-                    <span className="font-medium">${tax.toFixed(2)}</span>
+                    <span className="text-muted-foreground">Includes GST</span>
+                    <span className="font-medium">${gst.toFixed(2)}</span>
                   </div>
                 </div>
                 <Separator className="my-4" />
                 <div className="flex justify-between text-base">
-                  <span className="font-semibold">Total</span>
+                  <span className="font-semibold">Total (AUD)</span>
                   <span className="font-bold text-primary">${grandTotal.toFixed(2)}</span>
                 </div>
                 {shipping === 0 && <p className="mt-2 text-xs text-primary">🎉 Free shipping!</p>}
