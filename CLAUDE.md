@@ -48,6 +48,7 @@ LMG is a wellness/lifestyle platform, not a medical provider. Never present cont
 
 ## Working conventions
 
+- **Follow [docs/DEVELOPMENT_STANDARDS.md](docs/DEVELOPMENT_STANDARDS.md) for every code, API, Edge Function, or database change** — auth guards, RLS, XSS/secrets rules, required tests, and the `npm run verify` gate. Read it before starting, and walk its checklist before calling work done.
 - **Inspect before modifying.** Read existing files (app code, `.agents/`, `marketing/social/`) before changing or adding to them. Don't assume filenames — verify them.
 - **Avoid unnecessary rewrites.** Prefer the smallest change that accomplishes the task. Don't restructure existing documentation or code as a side effect of an unrelated task.
 - **No duplication.** If something is already documented (in `.agents/`, `marketing/social/`, or elsewhere), reference it — don't copy it into a new file.

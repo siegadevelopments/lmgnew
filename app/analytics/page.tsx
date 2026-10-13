@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { authHeaders } from "@/lib/auth-headers";
 import {
   BarChart3,
   TrendingUp,
@@ -88,7 +89,7 @@ export default function PublicAnalyticsPage() {
   const fetchAnalytics = async () => {
     try {
       setRefreshing(true);
-      const res = await fetch(`/api/analytics?t=${Date.now()}`, { cache: 'no-store' });
+      const res = await fetch(`/api/analytics?t=${Date.now()}`, { cache: 'no-store', headers: await authHeaders() });
       if (res.ok) {
         const json = await res.json();
         setData(json);

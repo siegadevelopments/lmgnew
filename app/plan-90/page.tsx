@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { authHeaders } from "@/lib/auth-headers";
 import Head from "next/head";
 import { cn } from "@/lib/utils";
 import { 
@@ -50,7 +51,7 @@ export default function MarketingPlan90() {
       }
 
       try {
-        const res = await fetch("/api/plan-90");
+        const res = await fetch("/api/plan-90", { headers: await authHeaders() });
         if (res.ok) {
           const data = await res.json();
           if (data.state && Object.keys(data.state).length > 0) {
@@ -82,7 +83,7 @@ export default function MarketingPlan90() {
     try {
       await fetch("/api/plan-90", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await authHeaders()) },
         body: JSON.stringify({ state: newState }),
       });
     } catch (err) {

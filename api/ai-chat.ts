@@ -1,6 +1,25 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
 
+// Best-effort per-instance rate limit (serverless instances are ephemeral, so this only blunts
+// bursts; put Vercel Firewall / Upstash in front for hard limits).
+const hits = new Map<string, { count: number; reset: number }>();
+const WINDOW_MS = 60_000;
+const MAX_PER_WINDOW = 20;
+
+function rateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = hits.get(ip);
+  if (!entry || entry.reset < now) {
+    if (hits.size > 5000) hits.clear();
+    hits.set(ip, { count: 1, reset: now + WINDOW_MS });
+    return false;
+  }
+  return ++entry.count > MAX_PER_WINDOW;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "https://www.lifestylemedicinegateway.com");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -9,12 +28,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === "OPTIONS") return res.status(200).end();
 
   try {
-    const { content, vendor_id } = req.body;
+    const ip = String(req.headers["x-forwarded-for"] || "unknown").split(",")[0].trim();
+    if (rateLimited(ip)) return res.status(429).json({ error: "Too many requests" });
+
+    const { content, vendor_id } = req.body ?? {};
+    if (typeof content !== "string" || !content.trim() || content.length > 500) {
+      return res.status(400).json({ error: "Invalid message" });
+    }
+    if (vendor_id !== undefined && vendor_id !== null && (typeof vendor_id !== "string" || !UUID_RE.test(vendor_id))) {
+      return res.status(400).json({ error: "Invalid vendor" });
+    }
     const lowerContent = content.toLowerCase();
 
+    // Public endpoint: use the publishable key so RLS applies (the service-role key would also
+    // expose drafts and unpublished content).
     const supabase = createClient(
       process.env.VITE_SUPABASE_URL || "",
-      process.env.SUPABASE_SERVICE_ROLE_KEY || "",
+      process.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
     );
 
     let contextName = "the Marketplace";
@@ -238,6 +268,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({ response: responseText });
   } catch (error: any) {
-    return res.status(500).json({ error: error.message });
+    console.error("ai-chat error:", error);
+    return res.status(500).json({ error: "Something went wrong" });
   }
 }

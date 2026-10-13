@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { jsonLd } from "@/lib/security";
 import { HealthyAgingHero } from "@/components/healthy-aging/HealthyAgingHero";
 import { LifestyleMedicinePillars } from "@/components/healthy-aging/LifestyleMedicinePillars";
 import { WhatYouWillLearn } from "@/components/healthy-aging/WhatYouWillLearn";
@@ -65,7 +66,7 @@ export default function HealthyAgingStarterKitPage() {
       {/* JSON-LD Schema for FAQ */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+        dangerouslySetInnerHTML={{ __html: jsonLd(faqSchema) }}
       />
       
       <HealthyAgingHero />

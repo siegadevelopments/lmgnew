@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { requireUser } from "@/lib/server-auth";
 
 function getSupabaseClient() {
   const rawUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
@@ -14,7 +15,9 @@ function getSupabaseClient() {
   return createClient(supabaseUrl, supabaseKey);
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const denied = await requireUser(req, "admin");
+  if (denied) return denied;
   try {
     const supabase = getSupabaseClient();
     if (!supabase) {
@@ -40,9 +43,14 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const denied = await requireUser(req, "admin");
+  if (denied) return denied;
   try {
     const body = await req.json();
     const { state } = body;
+    if (!state || typeof state !== "object" || Array.isArray(state) || JSON.stringify(state).length > 100_000) {
+      return NextResponse.json({ error: "Invalid state" }, { status: 400 });
+    }
 
     const supabase = getSupabaseClient();
     if (!supabase) {

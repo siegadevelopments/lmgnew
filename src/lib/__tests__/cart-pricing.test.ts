@@ -1,0 +1,41 @@
+import { describe, it, expect } from "vitest";
+import { priceCart, type DbProduct } from "../../../supabase/functions/_shared/cart-pricing";
+
+const product = (over: Partial<DbProduct> = {}): DbProduct => ({
+  id: 1, title: "Tonic", slug: "tonic", price: 30, image_url: "https://x/y.jpg",
+  stock: 10, status: "published", vendor_id: "v1", variants: null, ...over,
+});
+
+describe("priceCart", () => {
+  it("uses the database price, ignoring any client-supplied price (regression)", () => {
+    const r = priceCart([{ product_id: 1, quantity: 2, price: 0.01, name: "hacked" }], [product()]);
+    expect(r).toMatchObject({ ok: true });
+    if (r.ok) {
+      expect(r.items[0].price).toBe(30);
+      expect(r.items[0].name).toBe("Tonic");
+    }
+  });
+  it("uses the variant price and name", () => {
+    const p = product({ variants: [{ id: 5, title: "500ml", price: 45, stock: 3 }] });
+    const r = priceCart([{ product_id: 1, variant_id: 5, quantity: 1 }], [p]);
+    expect(r.ok && r.items[0]).toMatchObject({ price: 45, variant_id: 5, name: "Tonic - 500ml" });
+  });
+  it("rejects unknown variants, unpublished products, and bad quantities", () => {
+    const p = product({ variants: [{ id: 5, price: 45 }] });
+    expect(priceCart([{ product_id: 1, variant_id: 9, quantity: 1 }], [p]).ok).toBe(false);
+    expect(priceCart([{ product_id: 1, quantity: 1 }], [product({ status: "draft" })]).ok).toBe(false);
+    expect(priceCart([{ product_id: 2, quantity: 1 }], [product()]).ok).toBe(false);
+    for (const quantity of [0, -1, 1.5, 100, "x"]) {
+      expect(priceCart([{ product_id: 1, quantity }], [product()]).ok).toBe(false);
+    }
+  });
+  it("rejects insufficient stock and unavailable variants", () => {
+    expect(priceCart([{ product_id: 1, quantity: 11 }], [product()]).ok).toBe(false);
+    const p = product({ variants: [{ id: 5, price: 45, available: false }] });
+    expect(priceCart([{ product_id: 1, variant_id: 5, quantity: 1 }], [p]).ok).toBe(false);
+  });
+  it("rejects empty or non-array carts", () => {
+    expect(priceCart([], [product()]).ok).toBe(false);
+    expect(priceCart(undefined, [product()]).ok).toBe(false);
+  });
+});

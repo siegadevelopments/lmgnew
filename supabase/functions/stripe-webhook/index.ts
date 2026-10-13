@@ -65,6 +65,8 @@ serve(async (req: Request) => {
           status: "confirmed",
           payment_status: "paid",
           subtotal,
+          shipping: (session.total_details?.amount_shipping ?? 0) / 100,
+          tax: 0, // prices are GST-inclusive; nothing is added on top
           total,
           first_name: session.metadata?.first_name || "",
           last_name: session.metadata?.last_name || "",
