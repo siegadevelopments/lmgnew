@@ -1,6 +1,7 @@
 'use client'
 
 import { useParams } from "next/navigation";
+import { jsonLd } from "@/lib/security";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/ProductCard";
@@ -305,7 +306,7 @@ export default function CategoryDetailPage() {
             <script
               type="application/ld+json"
               dangerouslySetInnerHTML={{
-                __html: JSON.stringify({
+                __html: jsonLd({
                   "@context": "https://schema.org",
                   "@type": "FAQPage",
                   mainEntity: config.faqs.map((faq) => ({

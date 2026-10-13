@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import * as crypto from "crypto";
+import { requireUser } from "@/lib/server-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -184,7 +185,9 @@ const demoMetaData = {
   ]
 };
 
-export async function GET() {
+export async function GET(req: Request) {
+  const denied = await requireUser(req, "admin");
+  if (denied) return denied;
   const gaPropertyId = process.env.GA4_PROPERTY_ID;
   const gaClientEmail = process.env.GA4_CLIENT_EMAIL;
   const gaPrivateKey = process.env.GA4_PRIVATE_KEY?.replace(/\\n/g, "\n");

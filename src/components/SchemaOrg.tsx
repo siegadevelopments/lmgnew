@@ -1,3 +1,5 @@
+import { jsonLd } from "@/lib/security";
+
 /**
  * Component to inject JSON-LD structured data.
  * This helps Google and AI search engines understand the site structure and organization.
@@ -133,7 +135,7 @@ export function SchemaOrg({
         <script
           key={i}
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+          dangerouslySetInnerHTML={{ __html: jsonLd(schema) }}
         />
       ))}
     </>

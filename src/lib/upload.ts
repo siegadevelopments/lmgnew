@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { authHeaders } from "@/lib/auth-headers";
 
 /**
  * Uploads a file to either Supabase Storage or Cloudflare R2.
@@ -60,6 +61,7 @@ export async function uploadMedia(
         
         const proxyResponse = await fetch("/api/upload-proxy", {
           method: "POST",
+          headers: await authHeaders(),
           body: formData,
         });
         
