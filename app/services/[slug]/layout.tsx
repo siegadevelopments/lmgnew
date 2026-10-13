@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { productBySlugQueryOptionsV2 } from "@/lib/queries";
+import { getProductBySlug } from "@/lib/server-data";
 import { buildMetadata, notFoundMetadata, toPlainDescription } from "@/lib/seo-metadata";
 
 // Services reuse the product detail page/data (see page.tsx re-export) but live at their own
@@ -11,10 +11,17 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const results = await productBySlugQueryOptionsV2(slug).queryFn!(undefined as any);
-  const service = Array.isArray(results) ? results[0] : undefined;
+  let results: any[] | undefined;
+  try {
+    results = await getProductBySlug(slug);
+  } catch (err) {
+    // A failed lookup must not mark the page noindex — only a confirmed miss does.
+    console.error("service layout: server lookup failed for", slug, err);
+  }
+  const service = results?.[0];
 
-  if (!service) return notFoundMetadata("Service Not Found");
+  if (results && !service) return notFoundMetadata("Service Not Found");
+  if (!service) return buildMetadata({ title: "Service", path: `/services/${slug}` });
 
   return buildMetadata({
     title: service.title,

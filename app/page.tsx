@@ -1,6 +1,14 @@
 import dynamic from "next/dynamic";
 import { HeroSection } from "@/components/HeroSection";
 import { SchemaOrg } from "@/components/SchemaOrg";
+import { ServerHydrate } from "@/components/ServerHydrate";
+import { brandsQueryOptions, newArrivalsQueryOptions, trustStatsQueryOptions } from "@/lib/queries";
+import { getApprovedVendors, getNewArrivals, getTrustStats } from "@/lib/server-data";
+
+// Counters, new arrivals and featured vendors are fetched on the server and seeded into the
+// React Query cache, so they are in the HTML crawlers receive (previously "—" and no vendors until
+// JavaScript ran). Each fetch is independent: a failure just leaves that section to the client.
+export const revalidate = 3600;
 
 const TrustBar = dynamic(() => import("@/components/TrustBar").then((mod) => mod.TrustBar));
 const WellnessCategoryGrid = dynamic(() => import("@/components/WellnessCategoryGrid").then((mod) => mod.WellnessCategoryGrid));
@@ -11,9 +19,27 @@ const TestimonialsSection = dynamic(() => import("@/components/TestimonialsSecti
 const NewsletterSection = dynamic(() => import("@/components/NewsletterSection").then((mod) => mod.NewsletterSection));
 const CTASection = dynamic(() => import("@/components/CTASection").then((mod) => mod.CTASection));
 
-export default function IndexPage() {
+function settled<T>(r: PromiseSettledResult<T>): T | undefined {
+  if (r.status === "fulfilled") return r.value;
+  console.error("homepage: server fetch failed, section falls back to client fetch", r.reason);
+  return undefined;
+}
+
+export default async function IndexPage() {
+  const [stats, arrivals, vendors] = await Promise.allSettled([
+    getTrustStats(),
+    getNewArrivals(5),
+    getApprovedVendors(),
+  ]);
+
   return (
-    <>
+    <ServerHydrate
+      entries={[
+        [trustStatsQueryOptions().queryKey, settled(stats)],
+        [newArrivalsQueryOptions().queryKey, settled(arrivals)],
+        [brandsQueryOptions().queryKey, settled(vendors)],
+      ]}
+    >
       <SchemaOrg 
         type="WebSite"
         name="Lifestyle Medicine Gateway"
@@ -32,6 +58,6 @@ export default function IndexPage() {
       <TestimonialsSection />
       <NewsletterSection />
       <CTASection />
-    </>
+    </ServerHydrate>
   );
 }

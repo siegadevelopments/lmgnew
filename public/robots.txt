@@ -4,7 +4,10 @@
 User-agent: *
 Allow: /
 Disallow: /admin
-Disallow: /vendor
+# Vendor dashboard only. A bare "Disallow: /vendor" is a prefix match and also blocked the public
+# /vendors directory and every /vendors/{slug} page.
+Disallow: /vendor/
+Disallow: /vendor$
 Disallow: /login
 Disallow: /signup
 Disallow: /profile

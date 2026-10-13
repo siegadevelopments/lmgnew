@@ -1,5 +1,7 @@
 import { MetadataRoute } from 'next';
-import { createClient } from '@supabase/supabase-js';
+import { getServerSupabase } from '@/lib/server-data';
+import { categoryConfig } from '@/lib/category-config';
+import { guideConfig } from '@/lib/guide-config';
 
 const SITE_URL = 'https://www.lifestylemedicinegateway.com';
 
@@ -10,27 +12,12 @@ const SITE_URL = 'https://www.lifestylemedicinegateway.com';
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [
     { url: SITE_URL, lastModified: new Date(), changeFrequency: 'daily', priority: 1.0 },
     { url: `${SITE_URL}/products`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
     { url: `${SITE_URL}/categories`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.9 },
-    { url: `${SITE_URL}/categories/menopause-support`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.85 },
-    { url: `${SITE_URL}/categories/healthy-ageing`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.85 },
-    { url: `${SITE_URL}/categories/gut-health`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.85 },
-    { url: `${SITE_URL}/categories/sleep-recovery`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.85 },
-    { url: `${SITE_URL}/categories/stress-management`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.85 },
-    { url: `${SITE_URL}/categories/weight-management`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.85 },
-    { url: `${SITE_URL}/categories/heart-health`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.85 },
-    { url: `${SITE_URL}/categories/brain-health`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.85 },
-    { url: `${SITE_URL}/categories/womens-wellness`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.85 },
     { url: `${SITE_URL}/guides`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
-    { url: `${SITE_URL}/guides/best-menopause-products-australia`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${SITE_URL}/guides/best-gut-health-supplements`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
-    { url: `${SITE_URL}/guides/best-sleep-support-products`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
     { url: `${SITE_URL}/services`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
     { url: `${SITE_URL}/articles`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
     { url: `${SITE_URL}/recipes`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
@@ -51,9 +38,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/refund-policy`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
   ];
 
-  // If Supabase is not configured, return static pages only
-  if (!supabaseUrl || !supabaseKey) {
-    return staticPages;
+  // Category and guide pages come from the same config modules the pages render from, so the
+  // sitemap can never drift from what actually exists.
+  const categoryPages: MetadataRoute.Sitemap = Object.keys(categoryConfig).map((slug) => ({
+    url: `${SITE_URL}/categories/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'weekly' as const,
+    priority: 0.85,
+  }));
+  const guidePages: MetadataRoute.Sitemap = Object.keys(guideConfig).map((slug) => ({
+    url: `${SITE_URL}/guides/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: 'monthly' as const,
+    priority: 0.8,
+  }));
+  const fixedPages = [...staticPages, ...categoryPages, ...guidePages];
+
+  // If Supabase is not configured, return the fixed pages only
+  const supabase = getServerSupabase();
+  if (!supabase) {
+    return fixedPages;
   }
 
   // A broken/missing env var or a transient Supabase error must never take the sitemap (or
@@ -63,20 +67,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let recipesRes: { data: any[] | null } = { data: null };
   let vendorsRes: { data: any[] | null } = { data: null };
   try {
-    const supabase = createClient(supabaseUrl, supabaseKey);
     [productsRes, articlesRes, recipesRes, vendorsRes] = await Promise.all([
-      supabase.from('products').select('slug, updated_at').eq('status', 'published'),
+      supabase.from('products').select('slug, updated_at, product_type').eq('status', 'published'),
       supabase.from('articles').select('slug, updated_at'),
       supabase.from('recipes').select('slug, updated_at'),
       supabase.from('vendor_profiles').select('id, store_name, store_slug, updated_at').eq('is_approved', true),
     ]);
   } catch (err) {
     console.error('sitemap: failed to fetch dynamic content, falling back to static pages', err);
-    return staticPages;
+    return fixedPages;
   }
 
+  // supabase-js reports query failures in `error` rather than throwing; surface them so a bad key
+  // (e.g. disabled legacy API keys) doesn't silently produce a sitemap with no products/vendors.
+  for (const [name, res] of Object.entries({ productsRes, articlesRes, recipesRes, vendorsRes })) {
+    if ((res as any).error) console.error(`sitemap: ${name} query failed`, (res as any).error.message);
+  }
+
+  // Services share the products table but live (and are canonicalised) under /services/.
   const productPages: MetadataRoute.Sitemap = (productsRes.data || []).map((p) => ({
-    url: `${SITE_URL}/products/${p.slug}`,
+    url: `${SITE_URL}/${p.product_type === 'service' ? 'services' : 'products'}/${p.slug}`,
     lastModified: p.updated_at ? new Date(p.updated_at) : new Date(),
     changeFrequency: 'weekly' as const,
     priority: 0.8,
@@ -103,5 +113,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticPages, ...productPages, ...articlePages, ...recipePages, ...vendorPages];
+  return [...fixedPages, ...productPages, ...articlePages, ...recipePages, ...vendorPages];
 }
