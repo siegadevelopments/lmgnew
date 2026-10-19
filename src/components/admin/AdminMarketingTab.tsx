@@ -253,7 +253,7 @@ export function AdminMarketingTab() {
       return;
     }
     setPushingBuffer(true);
-    const toastId = toast.loading("Formatting & pushing 2 versions (FB, IG) to Buffer...");
+    const toastId = toast.loading("Formatting & pushing to Buffer...");
     try {
       const hashtagStr = hashtags
         ? (hashtags.startsWith("#") ? hashtags : hashtags.split(",").map(h => `#${h.trim()}`).join(" "))
@@ -263,24 +263,42 @@ export function AdminMarketingTab() {
       const fbText = `${caption}${cleanLink}${hashtagStr ? `\n\n${hashtagStr}` : ""}`;
       const igText = `${caption}\n.\n.\n.\n${hashtagStr || "#LifestyleMedicine #HealthyLiving #Wellness"}`;
 
-      const res = await fetch("/api/buffer-create-ideas", {
+      // buffer-create-ideas was removed when buffer-auto-publish replaced it;
+      // this button kept calling it and got a 404 HTML page back.
+      const posts: Record<string, string> = {};
+      if (editPlatforms.includes("facebook")) posts.facebook = fbText;
+      if (editPlatforms.includes("instagram")) posts.instagram = igText;
+      if (Object.keys(posts).length === 0) throw new Error("Select at least one platform (Facebook or Instagram)");
+
+      const res = await fetch("/api/buffer-auto-publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title,
-          posts: {
-            facebook: fbText,
-            instagram: igText,
-          },
+          imageUrl: editImageUrl || null,
+          scheduledAt: editScheduledAt ? parseMelbourneTimeToUTC(editScheduledAt) : undefined,
+          posts,
         }),
       });
 
-      const data = await res.json();
+      const data = await readApiJson(res, "Buffer push");
       if (!res.ok || data.error) {
         throw new Error(data.error || "Failed to push to Buffer");
       }
 
-      toast.success("Pushed 2 versions (Facebook, Instagram) to Buffer Ideas!", { id: toastId });
+      // Link the Buffer post to this scheduled post when it maps one-to-one.
+      if (selectedPost && data.results?.length === 1 && data.results[0].id) {
+        await (supabase.from("scheduled_posts") as any)
+          .update({ buffer_post_id: data.results[0].id })
+          .eq("id", selectedPost.id);
+      }
+
+      const pushed = (data.results || []).map((r: any) => r.platform).join(", ");
+      if (data.warnings?.length) {
+        toast.error(`Pushed ${pushed || "nothing"}. Buffer warnings: ${data.warnings.join(" | ")}`, { id: toastId, duration: 8000 });
+      } else {
+        toast.success(`Pushed to Buffer (${pushed})!`, { id: toastId });
+      }
+      await loadPosts();
     } catch (err: any) {
       console.error("Buffer Push Error:", err);
       toast.error(err.message || "Failed to push to Buffer", { id: toastId });
