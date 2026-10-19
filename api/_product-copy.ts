@@ -84,6 +84,19 @@ ${productList}
 
 ${fieldRules[field]}
 ${currentValue ? `\nCurrent draft (improve it, but keep it about the product; drop anything unrelated):\n"${currentValue}"\n` : ""}
-Rules: Australian English. Use only facts in the product description; never invent features, prices, statistics or testimonials. Wellness language only ("may help", "can be part of") — never claim to cure, treat or prevent disease. Never output placeholders like "[Insert URL here]".
+Rules: Plain text only — no Markdown (no **bold**, *italics*, # headings or bullet asterisks); emojis and line breaks are fine. Refer to the product naturally (e.g. "these microfibre cloths") rather than repeating its full catalogue name with colours and pack size. Australian English. Use only facts in the product description; never invent features, prices, statistics or testimonials. Wellness language only ("may help", "can be part of") — never claim to cure, treat or prevent disease. Never output placeholders like "[Insert URL here]".
 Return ONLY the ${field} text, nothing else.`;
+}
+
+/**
+ * Social platforms render Markdown literally, so "**Product**" shows the
+ * asterisks in the post. Strip bold/italic/heading markers but keep hashtags.
+ */
+export function toPlainText(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/gs, "$1")
+    .replace(/__(.+?)__/gs, "$1")
+    .replace(/(^|[^\w*])\*(?!\s)([^*\n]+?)\*(?!\w)/g, "$1$2")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^\s*[*-]\s+/gm, "• ");
 }
