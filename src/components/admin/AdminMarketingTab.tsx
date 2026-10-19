@@ -349,6 +349,16 @@ export function AdminMarketingTab() {
   const [pickerSearch, setPickerSearch] = useState("");
   const [pickedProducts, setPickedProducts] = useState<PickerProduct[]>([]);
 
+  // A picked product's photo is the default post image (falls back to the
+  // selected article/recipe/video image, then empty) whenever the picks change.
+  useEffect(() => {
+    const productImage = pickedProducts.find((p) => p.image_url)?.image_url;
+    const contentImage = contentList.find((c) => String(c.id) === selectedContentId)?.image_url;
+    setManualForm((prev) => ({ ...prev, image_url: productImage || contentImage || "" }));
+    // Only re-run when the picked products change, not on every content/selection change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickedProducts]);
+
   useEffect(() => {
     loadPosts();
     loadSourceContent();
@@ -1356,7 +1366,7 @@ export function AdminMarketingTab() {
                         if (content) {
                           setManualForm(prev => ({
                             ...prev,
-                            image_url: content.image_url || "",
+                            image_url: pickedProducts.find((p) => p.image_url)?.image_url || content.image_url || "",
                             // Videos store their full YouTube/embed URL in `slug`, not a site-relative
                             // path — using the generic "/videos/<slug>" pattern here produced a
                             // malformed link like "/videos/https://youtube.com/...".
@@ -1548,7 +1558,8 @@ COMPLIANCE: Wellness language only ("may support", "can be part of"). Never clai
                             ? content.slug || ""
                             : `/${content.type.toLowerCase()}s/${content.slug}`;
                             
-                          let finalImageUrl = content.image_url;
+                          // Featured products: their photo beats the article/recipe image.
+                          let finalImageUrl = pickedProducts.find((p) => p.image_url)?.image_url || content.image_url;
                           
                           // Fallback to YouTube thumbnail if it's a video and has a YouTube URL
                           if (!finalImageUrl && content.type === "Video" && content.slug?.includes("youtube.com/watch?v=")) {
