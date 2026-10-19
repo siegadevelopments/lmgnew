@@ -4,6 +4,7 @@ import {
   mentionsProduct,
   parseFramework,
   sanitizeProducts,
+  toPlainText,
 } from "../../../api/_product-copy";
 
 const cloths = {
@@ -44,5 +45,16 @@ describe("product copy prompts", () => {
     expect(prompt).toContain(cloths.url);
     expect(prompt).toContain("PAS");
     expect(prompt).not.toContain("Current draft");
+  });
+
+  it("strips Markdown but keeps hashtags and plain asterisk-free text", () => {
+    expect(toPlainText("Meet our **Microfibre Cloths (Yellow & White - 2 Pack)**!")).toBe(
+      "Meet our Microfibre Cloths (Yellow & White - 2 Pack)!",
+    );
+    expect(toPlainText("So *easy* to use")).toBe("So easy to use");
+    expect(toPlainText("## Why it works\n* Reusable\n#CleanHome #Australia")).toBe(
+      "Why it works\n• Reusable\n#CleanHome #Australia",
+    );
+    expect(toPlainText("5 * 3 = 15")).toBe("5 * 3 = 15");
   });
 });

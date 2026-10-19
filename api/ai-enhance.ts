@@ -2,7 +2,7 @@ import { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getMarketingContext } from "./_marketing-context.js";
-import { buildProductPrompt, mentionsProduct, parseFramework, sanitizeProducts } from "./_product-copy.js";
+import { buildProductPrompt, mentionsProduct, parseFramework, sanitizeProducts, toPlainText } from "./_product-copy.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "https://www.lifestylemedicinegateway.com");
@@ -174,6 +174,8 @@ Return ONLY the plain summary/excerpt text, nothing else.`;
           .replace(/^["']|["']$/g, "")
           .replace(/^```[\s\S]*?\n|```$/g, "")
           .trim();
+        // Posts go to Facebook/Instagram as-is, where Markdown shows literally.
+        result = toPlainText(result);
         // Off-topic product copy (general wellness instead of the product): try the next model.
         if (productMode && field !== "hashtags" && !mentionsProduct(result, products)) {
           modelErrors[modelName] = "Response did not mention the selected product";
