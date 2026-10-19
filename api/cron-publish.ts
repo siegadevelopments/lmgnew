@@ -1,6 +1,6 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
-import { publishSocialPost } from "./_publish-helper";
+import { publishSocialPost } from "./_publish-helper.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "https://www.lifestylemedicinegateway.com");
