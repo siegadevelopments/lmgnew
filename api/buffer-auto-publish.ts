@@ -2,6 +2,19 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 const BUFFER_ORGANIZATION_ID = "687880bd75ffe60432da70c6";
 
+// Buffer sometimes answers with an HTML error page (outage, rate limit, gateway
+// error). response.json() then throws a bare "Unexpected token '<'" that hides
+// the real cause, so surface the HTTP status and a snippet instead.
+async function readBufferJson(response: Response, step: string): Promise<any> {
+  const raw = await response.text();
+  try {
+    return JSON.parse(raw);
+  } catch {
+    const snippet = raw.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 120);
+    throw new Error(`Buffer ${step} returned HTTP ${response.status} instead of JSON${snippet ? `: ${snippet}` : ""}`);
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "https://www.lifestylemedicinegateway.com");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -46,7 +59,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
     });
     
-    const channelData = await channelRes.json();
+    const channelData = await readBufferJson(channelRes, "channel lookup");
     
     if (channelData.errors && channelData.errors.length > 0) {
       console.error("Buffer API Error (Channels):", channelData.errors);
@@ -130,7 +143,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }),
       });
 
-      const data = await response.json();
+      const data = await readBufferJson(response, `${platform.name} post`);
       
       if (data.errors && data.errors.length > 0) {
         errors.push(`${platform.name}: ${data.errors[0].message}`);
