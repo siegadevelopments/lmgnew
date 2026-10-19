@@ -97,6 +97,7 @@ Keep it 150-250 words. Use line breaks for readability.
 ${context ? `Topic/Context: ${context}` : "Topic: general lifestyle medicine, wellness and natural health"}`
 }
 
+Stay strictly on the product/topic named in the context. If the context lists product(s), the caption must be about them (use only the facts given; never invent features, prices or claims) and include the exact product link. If a "Copywriting framework" is given, structure the caption with it: AIDA = Attention, Interest, Desire, Action; PAS = Problem, Agitate, Solution. Never output placeholders such as "[Insert URL here]" — use the real link or omit it.
 Return ONLY the caption text, nothing else.`;
         break;
 
