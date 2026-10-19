@@ -509,7 +509,16 @@ export function AdminMarketingTab() {
         }),
       });
 
-      const data = await response.json();
+      const raw = await response.text();
+      let data: any;
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        // Non-JSON body = the platform (not our handler) answered, e.g. a Vercel timeout/crash page.
+        throw new Error(
+          `Server returned HTTP ${response.status} instead of JSON — the generate-posts function likely timed out or crashed. Try fewer weeks/days, then check the Vercel function logs.`
+        );
+      }
       if (!response.ok) throw new Error(data.suggestion || data.error || "Generation failed");
 
       if (data.bufferWarnings && data.bufferWarnings.length > 0) {

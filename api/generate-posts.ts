@@ -1,7 +1,7 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { getMarketingContext } from "./_marketing-context";
+import { getMarketingContext } from "./_marketing-context.js";
 
 // Was previously a hardcoded persona (menopause-only, women 40-65) that had
 // drifted from marketing/social/audience.md — LMG's actual audience spans
