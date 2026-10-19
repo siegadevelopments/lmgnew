@@ -121,6 +121,17 @@ const parseMelbourneTimeToUTC = (datetimeStr: string): string => {
   return finalDate.toISOString();
 };
 
+// Vercel returns an HTML error page (not JSON) when a function times out or
+// crashes; report that clearly instead of "Unexpected token '<'".
+async function readApiJson(res: Response, label: string): Promise<any> {
+  const raw = await res.text();
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new Error(`${label} failed: server returned HTTP ${res.status} instead of JSON (function timed out or crashed — check Vercel logs).`);
+  }
+}
+
 export function AdminMarketingTab() {
   const [posts, setPosts] = useState<ScheduledPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -198,7 +209,7 @@ export function AdminMarketingTab() {
         }),
       });
 
-      const data = await res.json();
+      const data = await readApiJson(res, "Buffer push (posts already saved to the database)");
       if (!res.ok || data.error) {
         throw new Error(data.error || "Database saved, but failed to push to Buffer API");
       }
@@ -631,7 +642,7 @@ export function AdminMarketingTab() {
       }),
     });
 
-    const data = await res.json();
+    const data = await readApiJson(res, "Buffer push");
     if (!res.ok || data.error) {
       throw new Error(data.error || "Failed to push to Buffer");
     }
