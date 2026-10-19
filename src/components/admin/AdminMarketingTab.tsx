@@ -871,15 +871,6 @@ export function AdminMarketingTab() {
               : field === "hashtags"
                 ? fresh(manualForm.caption) || fresh(manualForm.title)
                 : fresh(manualForm.title),
-            // Ground the field in what the post is actually about (chosen products /
-            // source content) so it never falls back to generic wellness copy.
-            ...(pickedProducts.length > 0
-              ? [
-                  `This post is about the following product(s) — write ONLY about them, using only facts below:\n${pickedProducts
-                    .map((p) => `- ${p.title} (https://www.lifestylemedicinegateway.com/products/${p.slug}) ${p.excerpt || ""}`)
-                    .join("\n")}`,
-                ]
-              : []),
             ...(manualForm.source_url
               ? [`Link/URL: ${manualForm.source_url.startsWith("http") ? manualForm.source_url : `https://www.lifestylemedicinegateway.com${manualForm.source_url}`}`]
               : []),
@@ -887,6 +878,13 @@ export function AdminMarketingTab() {
           ]
             .filter(Boolean)
             .join("\n\n"),
+          // Picked products switch the API to a product-first prompt (see api/_product-copy.ts).
+          products: pickedProducts.map((p) => ({
+            title: p.title,
+            url: `https://www.lifestylemedicinegateway.com/products/${p.slug}`,
+            description: p.excerpt || "",
+          })),
+          framework: copyFramework,
         }),
       });
 

@@ -2,6 +2,7 @@ import { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getMarketingContext } from "./_marketing-context.js";
+import { buildProductPrompt, mentionsProduct, parseFramework, sanitizeProducts } from "./_product-copy.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "https://www.lifestylemedicinegateway.com");
@@ -63,7 +64,20 @@ ${getMarketingContext()}`;
 
     let prompt = "";
 
-    switch (field) {
+    // Picked marketplace products make this a product post: use a product-first
+    // prompt instead of the generic wellness-brand ones below.
+    const products = sanitizeProducts(req.body.products);
+    const productMode = products.length > 0 && (field === "title" || field === "caption" || field === "hashtags");
+
+    if (productMode) {
+      prompt = buildProductPrompt({
+        brandContext: BRAND_CONTEXT,
+        field,
+        products,
+        framework: parseFramework(req.body.framework),
+        currentValue: typeof value === "string" ? value.slice(0, 3000) : "",
+      });
+    } else switch (field) {
       case "title":
         prompt = `${BRAND_CONTEXT}
 
@@ -160,6 +174,12 @@ Return ONLY the plain summary/excerpt text, nothing else.`;
           .replace(/^["']|["']$/g, "")
           .replace(/^```[\s\S]*?\n|```$/g, "")
           .trim();
+        // Off-topic product copy (general wellness instead of the product): try the next model.
+        if (productMode && field !== "hashtags" && !mentionsProduct(result, products)) {
+          modelErrors[modelName] = "Response did not mention the selected product";
+          result = "";
+          continue;
+        }
         break;
       } catch (err: any) {
         const errMsg = err.message || "Unknown error";
