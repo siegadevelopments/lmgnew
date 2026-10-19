@@ -840,6 +840,16 @@ export function AdminMarketingTab() {
   // AI Enhance a field
   async function aiEnhance(field: "title" | "caption" | "hashtags") {
     setEnhancingField(field);
+    // With products picked, existing text that never mentions them (e.g. a leftover generic
+    // draft) must not steer the AI — treat it as empty so it writes fresh about the products.
+    const productTokens = pickedProducts.flatMap((p) =>
+      p.title.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter((w) => w.length >= 4),
+    );
+    const mentionsProduct = (text: string) => {
+      const t = (text || "").toLowerCase();
+      return productTokens.some((w) => t.includes(w));
+    };
+    const fresh = (text: string) => (pickedProducts.length === 0 || mentionsProduct(text) ? text : "");
     try {
       const {
         data: { session },
@@ -854,13 +864,13 @@ export function AdminMarketingTab() {
         },
         body: JSON.stringify({
           field,
-          value: manualForm[field],
+          value: fresh(manualForm[field]),
           context: [
             field === "title"
-              ? manualForm.caption
+              ? fresh(manualForm.caption)
               : field === "hashtags"
-                ? manualForm.caption || manualForm.title
-                : manualForm.title,
+                ? fresh(manualForm.caption) || fresh(manualForm.title)
+                : fresh(manualForm.title),
             // Ground the field in what the post is actually about (chosen products /
             // source content) so it never falls back to generic wellness copy.
             ...(pickedProducts.length > 0
