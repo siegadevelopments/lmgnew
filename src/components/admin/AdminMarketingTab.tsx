@@ -290,6 +290,10 @@ export function AdminMarketingTab() {
     source_url: "",
   });
   
+  // Copywriting framework applied to every viral post
+  const [copyFramework, setCopyFramework] = useState<"AIDA" | "PAS">("AIDA");
+  const [generatingDraftImage, setGeneratingDraftImage] = useState(false);
+
   const [multiPlatformDraft, setMultiPlatformDraft] = useState<{
     facebook: string;
     instagram: string;
@@ -1323,6 +1327,18 @@ export function AdminMarketingTab() {
                       ))}
                     </select>
                   </div>
+                  <div className="space-y-2">
+                    <Label>Copywriting framework</Label>
+                    <select
+                      className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none"
+                      value={copyFramework}
+                      onChange={(e) => setCopyFramework(e.target.value as "AIDA" | "PAS")}
+                    >
+                      <option value="AIDA">AIDA — Attention, Interest, Desire, Action</option>
+                      <option value="PAS">PAS — Problem, Agitate, Solution</option>
+                    </select>
+                    <p className="text-xs text-muted-foreground">Applied to every generated post (Facebook and Instagram).</p>
+                  </div>
                   <div className="flex items-end">
                     <Button
                       type="button"
@@ -1393,6 +1409,14 @@ export function AdminMarketingTab() {
                             ? `MANDATORY: You MUST select ONE product from the list below that is topically relevant to this content, and organically integrate it, including its exact link. Do NOT invent a product name, price, or link that is not in this list.\nAvailable Products (only these are real):\n${productsContext}`
                             : `No existing product is closely related to this content. Do NOT mention, invent, or link any product in this post — focus purely on the educational/story content.`;
 
+                          const copyInstruction = `COPYWRITING: Write persuasive, benefit-led copy using the ${
+                                copyFramework === "PAS"
+                                  ? "PAS framework — PROBLEM (name a specific, relatable frustration our audience feels, in their words), AGITATE (make the cost of leaving it unresolved felt, empathetically — never fear-mongering or shaming), SOLUTION (present the product as a sensible, practical part of the answer)"
+                                  : "AIDA framework — ATTENTION (a scroll-stopping first line: a specific hook, question or surprising truth), INTEREST (an insight or relatable situation that earns the next line), DESIRE (concrete benefits and how it fits into daily life, using only what the product description supports), ACTION (one clear call to action with the product link)"
+                              }.
+Best practice: lead with the reader's need, not the product; one idea per post; short sentences and line breaks; concrete over vague; talk to \"you\"; warm, credible Australian English. Tailor language, concerns and examples to the target audience in the marketing knowledge base above (audience.md, brand-voice.md, cta-library.md). For articles, recipes and videos, the "solution" or "desire" is the content itself (drive the click to the link); only mention a product if the product instruction above says to.
+COMPLIANCE: Wellness language only ("may support", "can be part of"). Never claim to cure, treat or prevent disease, guarantee results, or invent testimonials, statistics, prices or features that are not in the source content.`;
+
                           const prompt = `Create a viral social media post tailored for Facebook and Instagram about this ${content.type.toLowerCase()}:
 
                           Title: ${content.title}
@@ -1400,6 +1424,8 @@ export function AdminMarketingTab() {
                           Content Summary: ${content.content?.replace(/<[^>]*>/g, ' ').substring(0, 1500) || ""}
 
                           ${productInstruction}
+
+                          ${copyInstruction}
 
                           PLATFORM-SPECIFIC RULES (include the chosen product's link only if the product instruction above gave you one — otherwise just use ${fullLink}):
                           1. FACEBOOK: Engaging, conversational tone with story hook, emojis, call to action with link: ${fullLink}${scoredProducts.length > 0 ? " AND the link to the related product you chose" : ""}. STRICTLY 2-3 hashtags max.
@@ -1619,6 +1645,36 @@ export function AdminMarketingTab() {
                         />
                       </CardContent>
                     </Card>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={generatingDraftImage}
+                      onClick={async () => {
+                        if (!multiPlatformDraft) return;
+                        setGeneratingDraftImage(true);
+                        const imgToast = toast.loading("Generating an image from this post...");
+                        try {
+                          const prompt = `Social media image for this wellness post: ${multiPlatformDraft.facebook.replace(/https?:\/\/\S+/g, "").replace(/#\w+/g, "")}`.substring(0, 1000);
+                          const { data, error } = await supabase.functions.invoke("generate-ai-image", {
+                            body: { prompt, folder: "ai-social", no_watermark: true, aspect_ratio: "1:1" },
+                          });
+                          if (error || data?.error || !data?.url) throw new Error(data?.error || error?.message || "Image generation failed");
+                          setMultiPlatformDraft((d) => (d ? { ...d, imageUrl: data.url } : d));
+                          toast.success("Image generated from your post content", { id: imgToast });
+                        } catch (err: any) {
+                          toast.error(err.message || "Image generation failed", { id: imgToast });
+                        } finally {
+                          setGeneratingDraftImage(false);
+                        }
+                      }}
+                    >
+                      {generatingDraftImage ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                      Generate image from this content
+                    </Button>
+                    <p className="text-xs text-muted-foreground">Replaces the current image. Re-click for another variation.</p>
                   </div>
 
                   <div className="flex flex-wrap gap-2 pt-4">
