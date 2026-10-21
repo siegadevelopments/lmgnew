@@ -5,7 +5,7 @@ import path from "path";
 // server-data imports the mock list from queries, which pulls in the browser Supabase client.
 vi.mock("@/lib/queries", () => ({ globalMockProductsList: [] }));
 
-const { withRetry, ServerDataError, matchesKeywords, clearSharedResults } = await import("@/lib/server-data");
+const { withRetry, ServerDataError, clearSharedResults } = await import("@/lib/server-data");
 
 beforeEach(() => {
   clearSharedResults();
@@ -49,14 +49,6 @@ describe("withRetry", () => {
   it("treats a successful empty result as data, not failure", async () => {
     const run = vi.fn().mockResolvedValue({ data: [], error: null });
     await expect(withRetry("t", run, [0, 0])).resolves.toEqual([]);
-  });
-});
-
-describe("matchesKeywords", () => {
-  it("matches title, category or excerpt case-insensitively", () => {
-    expect(matchesKeywords({ title: "Menopause Relief", category: null, excerpt: "" }, ["menopause"])).toBe(true);
-    expect(matchesKeywords({ title: "Cream", category: "Herbal", excerpt: "For HOT FLASH relief" }, ["hot flash"])).toBe(true);
-    expect(matchesKeywords({ title: "Cream", category: "Herbal", excerpt: "Skin care" }, ["menopause"])).toBe(false);
   });
 });
 

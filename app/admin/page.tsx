@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, Suspense } from "react";
+import { WellnessCategoryPicker } from "@/components/WellnessCategoryPicker";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -163,6 +164,8 @@ function AdminDashboardContent() {
     category: "Supplements",
     product_type: "physical" as "physical" | "service" | "digital",
     vendor_id: "",
+    // null = not reviewed (left untouched on save); see WellnessCategoryPicker
+    wellness_categories: null as string[] | null,
   });
   const [generatingProductDesc, setGeneratingProductDesc] = useState(false);
   const [generatingProductImg, setGeneratingProductImg] = useState(false);
@@ -563,6 +566,10 @@ function AdminDashboardContent() {
         vendor_id: productForm.vendor_id,
         updated_at: new Date().toISOString(),
       };
+      // Only written once someone has chosen, so saving an unreviewed product keeps it NULL.
+      if (productForm.wellness_categories !== null && productForm.product_type !== "service") {
+        payload.wellness_categories = productForm.wellness_categories;
+      }
 
       if (editingProductId) {
         const { data, error } = await (supabase.from("products") as any)
@@ -618,6 +625,7 @@ function AdminDashboardContent() {
         category: "Supplements",
         product_type: "physical",
         vendor_id: "",
+        wellness_categories: null,
       });
     } catch (err: any) {
       console.error("Save Product Error:", err);
@@ -639,6 +647,7 @@ function AdminDashboardContent() {
       category: p.category || "Supplements",
       product_type: p.product_type || "physical",
       vendor_id: p.vendor_id || "",
+      wellness_categories: Array.isArray(p.wellness_categories) ? p.wellness_categories : null,
     });
     setEditingProductId(p.id);
     setShowProductForm(true);
@@ -1209,6 +1218,7 @@ function AdminDashboardContent() {
                         category: "Supplements",
                         product_type: "physical",
                         vendor_id: "",
+                        wellness_categories: null,
                       });
                       setShowProductForm(true);
                     }}
@@ -1315,6 +1325,13 @@ function AdminDashboardContent() {
                           <option value="digital">Digital Download</option>
                         </select>
                       </div>
+
+                      {productForm.product_type !== "service" && (
+                        <WellnessCategoryPicker
+                          value={productForm.wellness_categories}
+                          onChange={(wellness_categories) => setProductForm({ ...productForm, wellness_categories })}
+                        />
+                      )}
 
                       {productForm.product_type !== "service" && (
                         <div className="space-y-2">

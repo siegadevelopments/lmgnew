@@ -25,7 +25,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ sl
   const config = guideConfig[slug];
   if (!config) notFound();
 
-  const products = await getGuideProducts(config.keywords);
+  const products = await getGuideProducts(config.categorySlug, config.keywords);
 
   return (
     <div className="bg-background min-h-screen">

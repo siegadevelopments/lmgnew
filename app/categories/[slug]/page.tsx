@@ -24,7 +24,7 @@ export default async function CategoryDetailPage({ params }: { params: Promise<{
   const config = categoryConfig[slug];
   if (!config) notFound();
 
-  const products = await getCategoryProducts(config.keywords);
+  const products = await getCategoryProducts(slug, config.keywords);
 
   const relatedCats = config.relatedCategories
     .map(s => ({ slug: s, ...categoryConfig[s] }))
