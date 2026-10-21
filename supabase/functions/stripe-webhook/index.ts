@@ -149,11 +149,13 @@ serve(async (req: Request) => {
     await insertAll("order_items", buildOrderItems(orderId, lineItems));
 
     const vendorIds = [...new Set(lineItems.map((i) => i.product.metadata.vendor_id).filter(Boolean))] as string[];
-    const vendors: Record<string, { commission_rate: number | null; representative_email: string | null; store_name: string | null }> = {};
+    const vendors: Record<string, { commission_rate: number | null; store_name: string | null }> = {};
     if (vendorIds.length > 0) {
+      // vendor_profiles has no email column (an earlier version asked for representative_email,
+      // which made this query fail): vendor emails come from their auth account below.
       const { data, error } = await supabaseAdmin
         .from("vendor_profiles")
-        .select("id, commission_rate, representative_email, store_name")
+        .select("id, commission_rate, store_name")
         .in("id", vendorIds);
       if (error) throw error;
       for (const v of data ?? []) vendors[v.id] = v;
@@ -183,8 +185,11 @@ serve(async (req: Request) => {
             <td style="padding: 10px 0; text-align: right;">$${(i.amount_total / 100).toFixed(2)}</td>
           </tr>`)
         .join("");
-      await attempt(`Vendor email ${vendorId}`, () =>
-        sendEmail(vendors[vendorId]?.representative_email ?? "", `New Order Received - ${ref}`, `
+      await attempt(`Vendor email ${vendorId}`, async () => {
+        // A vendor profile's id is the vendor's auth user id (same lookup as confirm-booking).
+        const { data: vendorUser, error: vendorUserError } = await supabaseAdmin.auth.admin.getUserById(vendorId);
+        if (vendorUserError) throw vendorUserError;
+        await sendEmail(vendorUser?.user?.email ?? "", `New Order Received - ${ref}`, `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
             <h1 style="color: #10b981;">New Order for Your Store!</h1>
             <p>Hello,</p>
@@ -214,8 +219,8 @@ serve(async (req: Request) => {
                style="display: inline-block; background: #10b981; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0;">
               Manage Fulfilment
             </a>
-          </div>`),
-      );
+          </div>`);
+      });
     }
 
     for (const item of lineItems.filter((i) => i.product.metadata.booking_start)) {
