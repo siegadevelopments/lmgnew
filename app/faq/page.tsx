@@ -25,7 +25,7 @@ export default function FAQPage() {
     {
       question: "How do I track my order?",
       answer:
-        "Once your order ships, you'll receive a tracking number via email. You can also view your order history in your account dashboard.",
+        "When the brand ships your order, they add a tracking number, which you can see in your account under Orders, along with your order history.",
     },
     {
       question: "What is your return policy?",

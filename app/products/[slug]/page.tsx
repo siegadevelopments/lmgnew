@@ -1,6 +1,7 @@
 'use client'
 
 import { useParams, useRouter, usePathname } from "next/navigation";
+import { FREE_SHIPPING_THRESHOLD } from "@/lib/checkout-pricing";
 import { fetchMyProfile } from "@/lib/profile-reads";
 import { sanitizeHtml, jsonLd } from "@/lib/security";
 import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
@@ -455,7 +456,7 @@ function ProductContent() {
                 <div className="flex flex-col items-center text-center p-3 rounded-xl bg-wellness-muted">
                   <span className="text-lg">🚚</span>
                   <span className="mt-1 text-[10px] font-medium text-muted-foreground">Free Shipping</span>
-                  <span className="text-[10px] text-muted-foreground">Over $100</span>
+                  <span className="text-[10px] text-muted-foreground">Over ${FREE_SHIPPING_THRESHOLD}</span>
                 </div>
                 <div className="flex flex-col items-center text-center p-3 rounded-xl bg-wellness-muted">
                   <span className="text-lg">🔒</span>

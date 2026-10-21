@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react";
+import { FREE_SHIPPING_TEXT } from "@/lib/checkout-pricing";
 import { X } from "lucide-react";
 
 const STORAGE_KEY = "lmg-announcement-dismissed";
@@ -27,7 +28,7 @@ export function AnnouncementBar() {
       <div className="mx-auto flex max-w-7xl items-center justify-center px-4 py-2 sm:px-6 lg:px-8">
         <p className="text-center text-xs font-medium sm:text-sm">
           <span className="mr-1.5">🌿</span>
-          Free shipping on orders over $100
+          {FREE_SHIPPING_TEXT}
           <span className="mx-2 hidden sm:inline">|</span>
           <span className="hidden sm:inline">Trusted Australian wellness brands</span>
           <a
