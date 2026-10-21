@@ -136,6 +136,8 @@ Edge Functions import `supabase/functions/_shared/auth.ts`; deploy the whole `su
 
 ## 9. Known open items (track until closed)
 
+- **Migrations in `supabase/migrations/` are not applied automatically.** `20261001_security_hardening.sql` sat unapplied for three weeks (found 2026-10-21; applied via `20261021_apply_security_hardening.sql`). After merging a migration, run it in the SQL Editor and verify it live (e.g. query `pg_policies` / `pg_trigger`).
+- **Signed-in users can read other users' `profiles.phone`.** Anonymous access is limited to `id, full_name, avatar_url, role`. Fix: move the own-phone reads (checkout, profile and product booking pages) to a `get_my_profile()` function, then restrict `phone` for `authenticated` too.
 - **Guest support chat** is still readable/writable by anyone who can reach the table (`chat_conversations` rows with no customer/vendor). Fix: move guest chat behind a server route that issues a per-conversation secret, then drop the open clause in the policy.
 - **Rest of the schema is not in `supabase/migrations/`** — export live RLS policies (`pg_policies`) and audit `profiles`, `orders`, `order_items`, `vendor_profiles`, `bookings`, storage buckets; commit them.
 - `process-inbound-email` inserts content authored by a hard-coded system user id and feeds email text to an LLM — review for prompt-injection and auto-publish status (should land as **draft**).
