@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from "react";
+import { SHIPPING_RULE_TEXT } from "@/lib/checkout-pricing";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { 
@@ -496,7 +497,7 @@ export function GlobalChat() {
       q.includes("dispatch")
     ) {
       return {
-        text: "🚚 Product Delivery & Fulfillment:\n\nAll orders placed on Lifestyle Medicine Gateway are processed within 1–2 business days and delivered directly to your address via standard or express courier services.\n\n• Standard Delivery: 3–5 business days ($5.99 flat rate, or FREE on orders over $50).\n• Express Shipping: 2-day priority delivery available at checkout.\n\nOnce your order ships, you will receive an email notification with your tracking number (and you can view live tracking under My Account -> Orders)!",
+        text: `🚚 Product Delivery & Fulfilment:\n\nEach item is sent directly to your address by the brand that sells it.\n\n• Shipping: ${SHIPPING_RULE_TEXT}.\n• Delivery times depend on the brand and your location.\n\nWhen the brand ships your order, they add a tracking number, which you can see under My Account → Orders.`,
       };
     }
 
