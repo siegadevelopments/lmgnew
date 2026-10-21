@@ -1,6 +1,4 @@
 // @ts-ignore
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-// @ts-ignore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 // @ts-ignore
 import Stripe from "https://esm.sh/stripe@13.10.0?target=deno";
@@ -32,7 +30,9 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { headers: { "Content-Type": "application/json" }, status });
 
 async function sendEmail(to: string, subject: string, html: string) {
-  if (!RESEND_API_KEY || !to) return;
+  // Never skip silently: a missing key or recipient is why an expected email doesn't arrive.
+  if (!RESEND_API_KEY) return console.warn(`Email skipped (RESEND_API_KEY not set): ${subject}`);
+  if (!to) return console.warn(`Email skipped (no recipient address): ${subject}`);
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
@@ -42,7 +42,8 @@ async function sendEmail(to: string, subject: string, html: string) {
 }
 
 async function sendSms(to: string, body: string) {
-  if (!CLICKSEND_USERNAME || !CLICKSEND_API_KEY || !to) return;
+  if (!CLICKSEND_USERNAME || !CLICKSEND_API_KEY) return console.warn("SMS skipped (ClickSend not configured)");
+  if (!to) return console.warn("SMS skipped (no phone number)");
   const res = await fetch("https://rest.clicksend.com/v3/sms/send", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Basic ${btoa(`${CLICKSEND_USERNAME}:${CLICKSEND_API_KEY}`)}` },
@@ -144,7 +145,9 @@ async function handleRefund(charge: Stripe.Charge): Promise<Response> {
   }
 }
 
-serve(async (req: Request) => {
+// Deno's built-in server. The old std@0.168.0 serve() calls Deno.core.runMicrotasks(), which the
+// current Supabase runtime doesn't support ("event loop error" after every request).
+Deno.serve(async (req: Request) => {
   const signature = req.headers.get("stripe-signature");
   if (!signature) return new Response("No signature", { status: 400 });
 
@@ -280,6 +283,7 @@ serve(async (req: Request) => {
         // A vendor profile's id is the vendor's auth user id (same lookup as confirm-booking).
         const { data: vendorUser, error: vendorUserError } = await supabaseAdmin.auth.admin.getUserById(vendorId);
         if (vendorUserError) throw vendorUserError;
+        if (!vendorUser?.user?.email) console.warn(`Vendor ${vendorId} has no login email; order email not sent`);
         await sendEmail(vendorUser?.user?.email ?? "", `New Order Received - ${ref}`, `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
             <h1 style="color: #10b981;">New Order for Your Store!</h1>
