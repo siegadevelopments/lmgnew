@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react";
+import { fetchMyProfile } from "@/lib/profile-reads";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -46,12 +47,8 @@ export default function CheckoutPage() {
   // --- NEW: Auto-populate profile data ---
   useEffect(() => {
     if (user) {
-      supabase
-        .from("profiles")
-        .select("full_name, phone")
-        .eq("id", user.id)
-        .single()
-        .then(({ data }) => {
+      fetchMyProfile()
+        .then((data) => {
           if (data) {
             const profileData = data as any;
             const names = profileData.full_name ? profileData.full_name.split(" ") : [];
@@ -63,7 +60,8 @@ export default function CheckoutPage() {
               phone: prev.phone || profileData.phone || "",
             }));
           }
-        });
+        })
+        .catch((err) => console.error("Failed to load profile for checkout:", err));
     }
   }, [user]);
 
