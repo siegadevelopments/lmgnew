@@ -11,12 +11,20 @@ import { getCategoryProducts } from "@/lib/server-data";
 // users on slow devices) get the full page without running JavaScript. ISR keeps it fresh.
 export const revalidate = 3600;
 
+// Without this the route is fully dynamic: nothing is cached and `revalidate` has no effect.
+// Prebuilding every known slug makes it ISR, so if a later refresh fails (the data helpers throw
+// after retries) visitors and crawlers keep getting the last good page rather than an error.
+// Unknown slugs still render on demand and get a real 404 below.
+export function generateStaticParams() {
+  return Object.keys(categoryConfig).map((slug) => ({ slug }));
+}
+
 export default async function CategoryDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const config = categoryConfig[slug];
   if (!config) notFound();
 
-  const products = await getCategoryProducts(slug, config.keywords);
+  const products = await getCategoryProducts(config.keywords);
 
   const relatedCats = config.relatedCategories
     .map(s => ({ slug: s, ...categoryConfig[s] }))

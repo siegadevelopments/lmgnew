@@ -12,12 +12,20 @@ import { getGuideProducts } from "@/lib/server-data";
 // crawlers see the full guide without running JavaScript. ISR keeps products fresh.
 export const revalidate = 3600;
 
+// Without this the route is fully dynamic: nothing is cached and `revalidate` has no effect.
+// Prebuilding every known slug makes it ISR, so if a later refresh fails (the data helpers throw
+// after retries) visitors and crawlers keep getting the last good page rather than an error.
+// Unknown slugs still render on demand and get a real 404 below.
+export function generateStaticParams() {
+  return Object.keys(guideConfig).map((slug) => ({ slug }));
+}
+
 export default async function GuideDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const config = guideConfig[slug];
   if (!config) notFound();
 
-  const products = await getGuideProducts(slug, config.keywords);
+  const products = await getGuideProducts(config.keywords);
 
   return (
     <div className="bg-background min-h-screen">

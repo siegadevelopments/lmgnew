@@ -6,17 +6,20 @@ import { ServerHydrate } from '@/components/ServerHydrate';
 
 const SITE_URL = 'https://www.lifestylemedicinegateway.com';
 
-// Shared by generateMetadata and the layout so each request queries once. Returns undefined (not
-// null) when the lookup itself fails, so an outage never gets a vendor page marked noindex/404.
+// ISR: rendered on first request, cached, refreshed every five minutes; a failed refresh keeps the
+// last good page. generateStaticParams returning [] opts the route into ISR without prebuilding.
+export const revalidate = 300;
+export function generateStaticParams() {
+  return [];
+}
+
+// Shared by generateMetadata and the layout so each request queries once. A lookup failure throws
+// (after retries) so the response is a 5xx and never a cached "Vendor Not Found"/noindex page; only
+// a successful lookup that finds no vendor returns a real 404.
 const loadVendor = cache(async (slug: string) => {
-  try {
-    const vendor = await getVendorBySlug(slug);
-    const products = vendor ? await getVendorProducts(vendor.id) : [];
-    return { vendor, products };
-  } catch (err) {
-    console.error("vendor layout: server lookup failed for", slug, err);
-    return undefined;
-  }
+  const vendor = await getVendorBySlug(slug);
+  const products = vendor ? await getVendorProducts(vendor.id) : [];
+  return { vendor, products };
 });
 
 export async function generateMetadata({
@@ -25,18 +28,13 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const loaded = await loadVendor(slug);
-
-  if (loaded && !loaded.vendor) {
+  const { vendor } = await loadVendor(slug);
+  if (!vendor) {
     return {
       title: { absolute: 'Vendor Not Found — Lifestyle Medicine Gateway' },
       description: 'The vendor you are looking for could not be found.',
       robots: { index: false, follow: false },
     };
-  }
-  const vendor = loaded?.vendor;
-  if (!vendor) {
-    return { title: { absolute: 'Vendor — Lifestyle Medicine Gateway' }, alternates: { canonical: `${SITE_URL}/vendors/${slug}` } };
   }
 
   // `absolute` so the root layout's "%s | Lifestyle Medicine Gateway" template isn't applied twice.
@@ -90,15 +88,13 @@ export default async function VendorSlugLayout({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const loaded = await loadVendor(slug);
-  if (loaded && !loaded.vendor) notFound();
+  const { vendor, products } = await loadVendor(slug);
+  if (!vendor) notFound();
 
-  const entries: React.ComponentProps<typeof ServerHydrate>['entries'] = loaded?.vendor
-    ? [
-        [['vendor', slug], loaded.vendor],
-        [['products', 'vendor', loaded.vendor.id], loaded.products],
-      ]
-    : [];
+  const entries: React.ComponentProps<typeof ServerHydrate>['entries'] = [
+    [['vendor', slug], vendor],
+    [['products', 'vendor', vendor.id], products],
+  ];
 
   return <ServerHydrate entries={entries}>{children}</ServerHydrate>;
 }

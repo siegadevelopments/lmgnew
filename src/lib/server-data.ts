@@ -6,7 +6,7 @@
 // public data on the server, anonymously (publishable key + RLS, never the service-role key —
 // see docs/DEVELOPMENT_STANDARDS.md §2) so crawlers see it without running JavaScript.
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { globalMockProductsList } from "@/lib/queries";
+import { globalMockProductsList } from "@/lib/queries"; // homepage fallback only
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -37,7 +37,14 @@ export function getServerSupabase(): SupabaseClient | null {
     (k) => !!k && k.length > 20,
   );
   cached = url && key
-    ? createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
+    ? createClient(url, key, {
+        auth: { persistSession: false, autoRefreshToken: false },
+        global: { fetch: fetchWithTimeout },
+        // withRetry below is the single retry layer. postgrest-js's own retry (503/520 only) would
+        // multiply with it, and it also retries our timeout aborts, so a hung database could hold
+        // one render for minutes.
+        db: { retry: false },
+      })
     : null;
   if (!cached) console.error("server-data: no usable Supabase URL/key configured; SSR data disabled");
   return cached;
@@ -45,75 +52,175 @@ export function getServerSupabase(): SupabaseClient | null {
 
 function requireClient(): SupabaseClient {
   const client = getServerSupabase();
-  if (!client) throw new Error("Supabase is not configured on the server");
+  if (!client) throw new ServerDataError("Supabase is not configured on the server");
   return client;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Reliability: timeouts, retries, logging
+//
+// A failed fetch must never look like "no data". Callers render notFound() only for records that
+// genuinely don't exist; when the database can't be reached these helpers throw, so the route
+// errors (5xx) and ISR keeps serving the last good version instead of caching a broken page.
+// ---------------------------------------------------------------------------------------------
+
+/** Thrown when server-side data could not be loaded after all retries. */
+export class ServerDataError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = "ServerDataError";
+  }
+}
+
+export const REQUEST_TIMEOUT_MS = 8000;
+export const RETRY_DELAYS_MS = [300, 1000]; // 3 attempts in total
+
+/** Aborts a hung Supabase request instead of letting it hold the render until the platform kills it. */
+function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+  const signal = init?.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
+  return fetch(input, { ...init, signal });
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+function describeError(err: unknown): string {
+  if (err && typeof err === "object") {
+    const e = err as { message?: string; code?: string; name?: string };
+    return [e.name, e.code, e.message].filter(Boolean).join(" ") || String(err);
+  }
+  return String(err);
+}
+
+/**
+ * Runs a Supabase query with retries. `run` must build a fresh query each call. Supabase returns
+ * errors (network failures included) as `{ error }` rather than throwing, so both are handled.
+ */
+export async function withRetry<T>(
+  label: string,
+  run: () => PromiseLike<{ data: T | null; error: unknown }>,
+  delays: number[] = RETRY_DELAYS_MS,
+): Promise<T | null> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= delays.length; attempt++) {
+    try {
+      const { data, error } = await run();
+      if (!error) {
+        if (attempt > 0) console.warn(`server-data: ${label} succeeded on attempt ${attempt + 1}`);
+        return data;
+      }
+      lastError = error;
+    } catch (err) {
+      lastError = err;
+    }
+    console.error(
+      `server-data: ${label} failed (attempt ${attempt + 1}/${delays.length + 1}): ${describeError(lastError)}`,
+    );
+    if (attempt < delays.length) await sleep(delays[attempt]);
+  }
+  throw new ServerDataError(`${label} failed after ${delays.length + 1} attempts`, { cause: lastError });
+}
+
+/**
+ * Shares one successful result across renders in the same server instance for a short time, so a
+ * build or crawler burst rendering many pages doesn't fire the same query dozens of times. Only
+ * successes are kept; a failure clears the entry so the next render tries again.
+ */
+const SHARED_TTL_MS = 60_000;
+const shared = new Map<string, { at: number; value: Promise<unknown> }>();
+
+function sharedResult<T>(key: string, load: () => Promise<T>): Promise<T> {
+  const hit = shared.get(key);
+  if (hit && Date.now() - hit.at < SHARED_TTL_MS) return hit.value as Promise<T>;
+  const value = load().catch((err) => {
+    if (shared.get(key)?.value === value) shared.delete(key);
+    throw err;
+  });
+  shared.set(key, { at: Date.now(), value });
+  return value;
+}
+
+/** Test hook: clears the shared result cache. */
+export function clearSharedResults() {
+  shared.clear();
 }
 
 // ---------------------------------------------------------------------------------------------
 // Products
 // ---------------------------------------------------------------------------------------------
 
-function matchesKeywords(p: any, keywords: string[]) {
+export function matchesKeywords(p: any, keywords: string[]) {
   const searchText = `${p.title} ${p.category || ""} ${p.excerpt || ""}`.toLowerCase();
   return keywords.some((kw) => searchText.includes(kw.toLowerCase()));
 }
 
-function mockProductsFor(keywords: string[], idPrefix: string) {
-  return globalMockProductsList
-    .filter((m) => keywords.some((kw) => ((m as any).keywords || []).includes(kw.toLowerCase())))
-    .map((m, i) => ({ ...m, id: `${idPrefix}-${i}`, slug: `mock-product-${idPrefix}-${i}` })) as any[];
+function fetchLiveProducts(): Promise<any[]> {
+  return sharedResult("live-products", async () => {
+    const data = await withRetry("live products", () =>
+      requireClient()
+        .from("products")
+        .select(`*, vendor_profiles!inner(store_name, store_logo_url, is_approved, is_live)`)
+        .eq("status", "published")
+        .eq("vendor_profiles.is_approved", true)
+        .eq("vendor_profiles.is_live", true)
+        .neq("product_type", "service"),
+    );
+    return (data as any[]) || [];
+  });
 }
 
-async function fetchLiveProducts() {
-  const { data, error } = await requireClient()
-    .from("products")
-    .select(`*, vendor_profiles!inner(store_name, store_logo_url, is_approved, is_live)`)
-    .eq("status", "published")
-    .eq("vendor_profiles.is_approved", true)
-    .eq("vendor_profiles.is_live", true)
-    .neq("product_type", "service");
-  if (error) throw error;
-  return data || [];
-}
-
-/** Products for /categories/[slug] — same keyword matching + mock fallback the client page used. */
-export async function getCategoryProducts(slug: string, keywords: string[]) {
-  const matched = (await fetchLiveProducts()).filter((p: any) => matchesKeywords(p, keywords));
-  return matched.length > 0 ? matched : mockProductsFor(keywords, `mock-category-${slug}`);
+/** Products for /categories/[slug]. Throws ServerDataError when the database can't be reached. */
+export async function getCategoryProducts(keywords: string[]) {
+  return (await fetchLiveProducts()).filter((p: any) => matchesKeywords(p, keywords));
 }
 
 /** Products for /guides/[slug]; the guide shows at most six recommendations. */
-export async function getGuideProducts(slug: string, keywords: string[]) {
-  const matched = (await fetchLiveProducts()).filter((p: any) => matchesKeywords(p, keywords)).slice(0, 6);
-  return matched.length > 0 ? matched : mockProductsFor(keywords, `mock-guide-${slug}`).slice(0, 6);
+export async function getGuideProducts(keywords: string[]) {
+  return (await getCategoryProducts(keywords)).slice(0, 6);
+}
+
+const LISTING_COLUMNS = `id, vendor_id, title, slug, excerpt, price, image_url, stock, status, created_at, category, product_type, variants,
+       vendor_profiles (store_name, store_logo_url, is_approved, is_live)`;
+
+/** Published products from approved, live vendors — the same rule productsQueryOptions applies. */
+function fetchListingProducts(): Promise<any[]> {
+  return sharedResult("listing-products", async () => {
+    const data = await withRetry("product listing", () =>
+      requireClient().from("products").select(LISTING_COLUMNS).eq("status", "published"),
+    );
+    return ((data as any[]) || []).filter(
+      (p: any) => !p.vendor_profiles || (p.vendor_profiles.is_approved !== false && p.vendor_profiles.is_live !== false),
+    );
+  });
+}
+
+/**
+ * /products listing, newest first. A stable order keeps the server HTML and the first client
+ * render identical; the page applies its interactive sort after hydration.
+ */
+export async function getProductListing() {
+  return [...(await fetchListingProducts())].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+  );
 }
 
 /** Homepage "New arrivals" — mirrors productsQueryOptions (published, approved vendor, shuffled). */
 export async function getNewArrivals(limit = 5) {
-  const { data, error } = await requireClient()
-    .from("products")
-    .select(
-      `id, vendor_id, title, slug, excerpt, price, image_url, stock, status, created_at, category, product_type, variants,
-       vendor_profiles (store_name, store_logo_url, is_approved, is_live)`,
-    )
-    .eq("status", "published");
-  if (error) throw error;
-  const live = (data || []).filter(
-    (p: any) => !p.vendor_profiles || (p.vendor_profiles.is_approved !== false && p.vendor_profiles.is_live !== false),
-  );
+  const live = await fetchListingProducts();
   const pool = live.length > 0 ? live : [...globalMockProductsList];
   return pool.sort(() => Math.random() - 0.5).slice(0, limit);
 }
 
 /** Single product by slug, same selection + approved-vendor rule as productBySlugQueryOptionsV2. */
 export async function getProductBySlug(slug: string) {
-  const { data, error } = await requireClient()
-    .from("products")
-    .select(`*, vendor_profiles (id, store_name, store_logo_url, store_slug, is_approved, is_live)`)
-    .eq("slug", slug)
-    .eq("status", "published")
-    .limit(1);
-  if (error) throw error;
+  const data = (await withRetry(`product ${slug}`, () =>
+    requireClient()
+      .from("products")
+      .select(`*, vendor_profiles (id, store_name, store_logo_url, store_slug, is_approved, is_live)`)
+      .eq("slug", slug)
+      .eq("status", "published")
+      .limit(1),
+  )) as any[] | null;
   if (!data || data.length === 0) return [];
   const filtered = data.filter(
     (p: any) => !p.vendor_profiles || (p.vendor_profiles.is_approved !== false && p.vendor_profiles.is_live !== false),
@@ -128,13 +235,14 @@ export async function getProductBySlug(slug: string) {
 
 /** Approved vendors for /vendors and the homepage — mirrors brandsQueryOptions. */
 export async function getApprovedVendors() {
-  const { data, error } = await requireClient()
-    .from("vendor_profiles")
-    .select("id, store_name, store_description, store_logo_url, store_slug, created_at")
-    .eq("is_approved", true)
-    .order("created_at", { ascending: false })
-    .limit(100);
-  if (error) throw error;
+  const data = await withRetry("approved vendors", () =>
+    requireClient()
+      .from("vendor_profiles")
+      .select("id, store_name, store_description, store_logo_url, store_slug, created_at")
+      .eq("is_approved", true)
+      .order("created_at", { ascending: false })
+      .limit(100),
+  );
   return (data || []) as any[];
 }
 
@@ -143,26 +251,17 @@ const VENDOR_COLUMNS =
 
 /** Vendor by store_slug, falling back to UUID (legacy URLs). Returns null when not found. */
 export async function getVendorBySlug(slug: string) {
-  const client = requireClient();
-  if (!UUID_RE.test(slug)) {
-    const { data, error } = await client.from("vendor_profiles").select(VENDOR_COLUMNS).eq("store_slug", slug).maybeSingle();
-    if (error) throw error;
-    if (data) return data as any;
-  } else {
-    const { data, error } = await client.from("vendor_profiles").select(VENDOR_COLUMNS).eq("id", slug).maybeSingle();
-    if (error) throw error;
-    if (data) return data as any;
-  }
-  return null;
+  const column = UUID_RE.test(slug) ? "id" : "store_slug";
+  const data = await withRetry(`vendor ${slug}`, () =>
+    requireClient().from("vendor_profiles").select(VENDOR_COLUMNS).eq(column, slug).maybeSingle(),
+  );
+  return (data as any) ?? null;
 }
 
 export async function getVendorProducts(vendorId: string) {
-  const { data, error } = await requireClient()
-    .from("products")
-    .select("*")
-    .eq("vendor_id", vendorId)
-    .eq("status", "published");
-  if (error) throw error;
+  const data = await withRetry(`vendor products ${vendorId}`, () =>
+    requireClient().from("products").select("*").eq("vendor_id", vendorId).eq("status", "published"),
+  );
   return (data as any[]) || [];
 }
 

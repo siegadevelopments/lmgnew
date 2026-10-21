@@ -16,16 +16,18 @@ import { buildMetadata, notFoundMetadata, toPlainDescription } from "@/lib/seo-m
 // page's useSuspenseQuery resolves during SSR: title, price, description, vendor and the Product
 // JSON-LD are in the raw HTML. A slug that resolves to no published product returns a real 404.
 
-// Shared by generateMetadata and the layout so each request queries once. Returns undefined (not
-// "missing") when the lookup itself fails, so an outage never gets a page marked noindex/404.
-const loadProduct = cache(async (slug: string) => {
-  try {
-    return await getProductBySlug(slug);
-  } catch (err) {
-    console.error("product layout: server lookup failed for", slug, err);
-    return undefined;
-  }
-});
+// ISR: each product page is rendered on first request and cached, refreshing every five minutes
+// (the client refetches price/stock on load anyway). If a refresh fails, the last good page keeps
+// being served. generateStaticParams returning [] opts the route into ISR without prebuilding.
+export const revalidate = 300;
+export function generateStaticParams() {
+  return [];
+}
+
+// Shared by generateMetadata and the layout so each request queries once. A lookup failure throws
+// (after retries) so the response is a 5xx and never a cached "Product Not Found"/noindex page; only
+// a successful lookup that finds no published product returns a real 404.
+const loadProduct = cache((slug: string) => getProductBySlug(slug));
 
 export async function generateMetadata({
   params,
@@ -33,11 +35,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const results = await loadProduct(slug);
-  const product = results?.[0];
-
-  if (results && !product) return notFoundMetadata("Product Not Found");
-  if (!product) return buildMetadata({ title: "Product", path: `/products/${slug}` });
+  const product = (await loadProduct(slug))[0];
+  if (!product) return notFoundMetadata("Product Not Found");
 
   return buildMetadata({
     title: product.title,
@@ -58,7 +57,7 @@ export default async function ProductSlugLayout({
 }) {
   const { slug } = await params;
   const results = await loadProduct(slug);
-  if (results && results.length === 0) notFound();
+  if (results.length === 0) notFound();
 
   return <ServerHydrate entries={[[productBySlugQueryOptionsV2(slug).queryKey, results]]}>{children}</ServerHydrate>;
 }
