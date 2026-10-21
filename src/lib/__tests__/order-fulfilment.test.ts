@@ -139,6 +139,6 @@ describe("stripe-webhook reads only real vendor_profiles columns", () => {
 
   it("gets the vendor's email from their auth account", () => {
     expect(src).toMatch(/auth\.admin\.getUserById\(vendorId\)/);
-    expect(src).not.toMatch(/representative_email/);
+    expect(src).not.toMatch(/\?\.representative_email/); // code, not the explanatory comment
   });
 });
