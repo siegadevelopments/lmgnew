@@ -9,6 +9,8 @@ import {
   computeRefundReversals,
   escapeHtml,
   formatBookingDate,
+  orderConfirmationEmail,
+  refundEmail,
   shouldFulfil,
   statusAfterRefund,
   type PaidLineItem,
@@ -123,6 +125,15 @@ async function handleRefund(charge: Stripe.Charge): Promise<Response> {
     if (statusError) throw statusError;
 
     const refunded = (total - previous) / 100;
+    await attempt("Customer refund email", () => {
+      const { subject, html } = refundEmail({
+        reference: `LMG-${String(order.id).substring(0, 8).toUpperCase()}`,
+        firstName: order.first_name ?? "",
+        refundedCents: total - previous,
+        full,
+      });
+      return sendEmail(order.email ?? "", subject, html);
+    });
     await attempt("Admin refund notification", async () => {
       const { error: notifError } = await supabaseAdmin.from("notifications").insert({
         recipient_role: "admin",
@@ -318,24 +329,25 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // Customer order confirmation (one email; booking times are listed against their items).
+    await attempt("Customer confirmation email", () => {
+      const { subject, html } = orderConfirmationEmail({
+        reference: ref,
+        firstName: order.first_name ?? "",
+        items: lineItems,
+        subtotalCents: session.amount_subtotal ?? 0,
+        shippingCents: session.total_details?.amount_shipping ?? 0,
+        totalCents: session.amount_total ?? 0,
+        address: { line: order.address ?? "", city: order.city ?? "", state: order.state ?? "", zip: order.zip ?? "" },
+        hasAccount: !!userId,
+      });
+      return sendEmail(order.email, subject, html);
+    });
+
     for (const item of lineItems.filter((i) => i.product.metadata.booking_start)) {
-      const title = item.product.name;
       const when = formatBookingDate(item.product.metadata.booking_start as string);
-      await attempt("Booking email", () =>
-        sendEmail(order.email, `Booking Confirmed: ${title}`, `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-            <h1 style="color: #10b981;">Booking Confirmed!</h1>
-            <p>Hi,</p>
-            <p>Your appointment for <strong>${escapeHtml(title)}</strong> has been successfully scheduled and paid online.</p>
-            <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
-              <p style="margin: 5px 0;"><strong>Date/Time:</strong> ${escapeHtml(when)}</p>
-              <p style="margin: 5px 0;"><strong>Payment Status:</strong> Paid Online</p>
-            </div>
-            <p>Thank you for your purchase!</p>
-          </div>`),
-      );
       await attempt("Booking SMS", () =>
-        sendSms(order.phone ?? "", `LMG: Your booking for ${title} on ${when} is confirmed and paid. Thank you!`),
+        sendSms(order.phone ?? "", `LMG: Your booking for ${item.product.name} on ${when} is confirmed and paid. Thank you!`),
       );
     }
 
