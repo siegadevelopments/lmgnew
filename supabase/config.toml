@@ -1,1 +1,6 @@
 project_id = "usrtaxvjwidfxajbjlpj"
+# Stripe calls this without a Supabase session token; the function authenticates every request
+# itself by verifying the Stripe-Signature header (constructEventAsync). With JWT verification on,
+# Supabase rejects Stripe's deliveries with 401 before the code runs.
+[functions.stripe-webhook]
+verify_jwt = false
