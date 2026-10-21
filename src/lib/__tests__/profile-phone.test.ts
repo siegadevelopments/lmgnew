@@ -40,6 +40,9 @@ describe("profile migrations", () => {
     expect(s).toMatch(/FUNCTION public\.admin_list_profiles\(\)[\s\S]*WHERE public\.is_admin\(\)/);
     expect(s).toMatch(/GRANT EXECUTE ON FUNCTION public\.get_my_profile\(\) TO authenticated;/);
     expect(s).not.toMatch(/TO anon/);
+    // Supabase's default privileges grant new functions to anon; it must be revoked explicitly.
+    expect(s).toMatch(/REVOKE ALL ON FUNCTION public\.get_my_profile\(\) FROM PUBLIC, anon;/);
+    expect(s).toMatch(/REVOKE ALL ON FUNCTION public\.admin_list_profiles\(\) FROM PUBLIC, anon;/);
   });
 
   it("step 2 grants every profiles column except phone", () => {
