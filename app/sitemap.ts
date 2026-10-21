@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next';
-import { getServerSupabase } from '@/lib/server-data';
+import { getNonEmptyCategorySlugs, getServerSupabase } from '@/lib/server-data';
 import { categoryConfig } from '@/lib/category-config';
 import { guideConfig } from '@/lib/guide-config';
 
@@ -40,7 +40,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Category and guide pages come from the same config modules the pages render from, so the
   // sitemap can never drift from what actually exists.
-  const categoryPages: MetadataRoute.Sitemap = Object.keys(categoryConfig).map((slug) => ({
+  // Categories with no products are left out (thin pages); if the count fails, list them all.
+  let categorySlugs = Object.keys(categoryConfig);
+  try {
+    categorySlugs = await getNonEmptyCategorySlugs();
+  } catch (err) {
+    console.error('sitemap: category counts unavailable, listing every category', err);
+  }
+  const categoryPages: MetadataRoute.Sitemap = categorySlugs.map((slug) => ({
     url: `${SITE_URL}/categories/${slug}`,
     lastModified: new Date(),
     changeFrequency: 'weekly' as const,

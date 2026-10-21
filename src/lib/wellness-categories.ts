@@ -25,3 +25,10 @@ export function productInCategory(p: any, categorySlug: string, fallbackKeywords
   if (Array.isArray(p.wellness_categories)) return p.wellness_categories.includes(categorySlug);
   return matchesKeywords(p, fallbackKeywords);
 }
+
+/** Category slugs (in config order) that at least one of the given products belongs to. */
+export function categoriesWithProducts(products: any[]): string[] {
+  return Object.entries(categoryConfig)
+    .filter(([slug, c]) => products.some((p) => productInCategory(p, slug, c.keywords)))
+    .map(([slug]) => slug);
+}

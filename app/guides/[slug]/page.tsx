@@ -10,7 +10,8 @@ import { getGuideProducts } from "@/lib/server-data";
 
 // Server component: recommendations, FAQ answers and JSON-LD are rendered into the HTML so
 // crawlers see the full guide without running JavaScript. ISR keeps products fresh.
-export const revalidate = 3600;
+// Five minutes, matching DATA_REVALIDATE_SECONDS in src/lib/server-data.ts (must be a literal).
+export const revalidate = 300;
 
 // Without this the route is fully dynamic: nothing is cached and `revalidate` has no effect.
 // Prebuilding every known slug makes it ISR, so if a later refresh fails (the data helpers throw

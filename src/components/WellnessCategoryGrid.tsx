@@ -78,7 +78,11 @@ const wellnessCategories = [
   },
 ];
 
-export function WellnessCategoryGrid() {
+export function WellnessCategoryGrid({ visibleSlugs }: { visibleSlugs?: string[] }) {
+  // Categories with no products are hidden; undefined (server count unavailable) shows them all.
+  const categories = visibleSlugs
+    ? wellnessCategories.filter((c) => visibleSlugs.includes(c.slug))
+    : wellnessCategories;
   return (
     <section className="bg-background py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -92,7 +96,7 @@ export function WellnessCategoryGrid() {
         </div>
 
         <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3 lg:gap-4">
-          {wellnessCategories.map((cat, index) => (
+          {categories.map((cat, index) => (
             <motion.div
               key={cat.slug}
               initial={{ opacity: 0, y: 20 }}

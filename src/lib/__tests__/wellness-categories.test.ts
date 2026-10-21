@@ -3,7 +3,7 @@ import { readFileSync } from "fs";
 import path from "path";
 import { categoryConfig } from "@/lib/category-config";
 import { guideConfig } from "@/lib/guide-config";
-import { WELLNESS_CATEGORY_OPTIONS, matchesKeywords, productInCategory } from "@/lib/wellness-categories";
+import { WELLNESS_CATEGORY_OPTIONS, categoriesWithProducts, matchesKeywords, productInCategory } from "@/lib/wellness-categories";
 
 const MIGRATION = path.resolve(
   import.meta.dirname,
@@ -56,5 +56,24 @@ describe("matchesKeywords", () => {
     expect(matchesKeywords({ title: "Menopause Relief", category: null, excerpt: "" }, ["menopause"])).toBe(true);
     expect(matchesKeywords({ title: "Cream", category: "Herbal", excerpt: "For HOT FLASH relief" }, ["hot flash"])).toBe(true);
     expect(matchesKeywords({ title: "Cream", category: "Herbal", excerpt: "Skin care" }, ["menopause"])).toBe(false);
+  });
+});
+
+describe("categoriesWithProducts", () => {
+  it("lists only categories with at least one product, in config order", () => {
+    const products = [
+      { title: "Kava", wellness_categories: ["stress-management", "sleep-recovery"] },
+      { title: "Dishwashing Liquid", wellness_categories: [] },
+      { title: "Daily Probiotic", wellness_categories: null }, // unreviewed: keyword fallback
+    ];
+    const slugs = categoriesWithProducts(products);
+    expect(slugs).toEqual(
+      Object.keys(categoryConfig).filter((s) => ["stress-management", "sleep-recovery", "gut-health"].includes(s)),
+    );
+    expect(slugs).not.toContain("heart-health");
+  });
+
+  it("returns nothing for no products", () => {
+    expect(categoriesWithProducts([])).toEqual([]);
   });
 });
