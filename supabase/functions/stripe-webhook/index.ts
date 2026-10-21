@@ -8,9 +8,11 @@ import {
   buildBookings,
   buildEarnings,
   buildOrderItems,
+  computeRefundReversals,
   escapeHtml,
   formatBookingDate,
   shouldFulfil,
+  statusAfterRefund,
   type PaidLineItem,
 } from "../_shared/order-fulfilment.ts";
 
@@ -58,6 +60,90 @@ async function attempt(label: string, fn: () => Promise<unknown>) {
   }
 }
 
+/**
+ * charge.refunded: reverse the vendors' share of what was refunded and update the order.
+ * Stripe sends the charge's cumulative amount_refunded; orders.refunded_cents records how much
+ * this order has already reversed, so replays and repeated partial refunds never double-count.
+ */
+async function handleRefund(charge: Stripe.Charge): Promise<Response> {
+  const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
+  const paymentIntent = typeof charge.payment_intent === "string" ? charge.payment_intent : charge.payment_intent?.id;
+  if (!paymentIntent) return json({ received: true, refund: "no payment intent" });
+
+  // Orders created by this version store the payment intent; older ones are found via Stripe.
+  let { data: order, error } = await supabaseAdmin.from("orders").select("*").eq("stripe_payment_intent", paymentIntent).maybeSingle();
+  if (error) throw error;
+  if (!order) {
+    const sessions = await stripe.checkout.sessions.list({ payment_intent: paymentIntent, limit: 1 });
+    const sessionId = sessions.data[0]?.id;
+    if (sessionId) {
+      ({ data: order, error } = await supabaseAdmin.from("orders").select("*").eq("stripe_session_id", sessionId).maybeSingle());
+      if (error) throw error;
+      if (order) await supabaseAdmin.from("orders").update({ stripe_payment_intent: paymentIntent }).eq("id", order.id);
+    }
+  }
+  // Not one of our checkout orders (or it was never fulfilled): nothing to reverse.
+  if (!order) return json({ received: true, refund: "no matching order" });
+
+  const previous: number = order.refunded_cents ?? 0;
+  const total = charge.amount_refunded;
+  if (total <= previous) return json({ received: true, refund: "already recorded" });
+
+  // Claim this refund amount first, conditionally, so two deliveries can't both reverse it.
+  const { data: claimed, error: claimError } = await supabaseAdmin
+    .from("orders")
+    .update({ refunded_cents: total })
+    .eq("id", order.id)
+    .eq("refunded_cents", previous)
+    .select("id");
+  if (claimError) throw claimError;
+  if (!claimed || claimed.length === 0) return json({ received: true, refund: "handled by another delivery" });
+
+  try {
+    const { data: earnings, error: earningsError } = await supabaseAdmin
+      .from("vendor_earnings")
+      .select("vendor_id, amount, platform_fee")
+      .eq("order_id", order.id);
+    if (earningsError) throw earningsError;
+
+    const reversals = computeRefundReversals(order.id, (earnings ?? []).map((e: any) => ({
+      vendor_id: e.vendor_id, amount: Number(e.amount), platform_fee: Number(e.platform_fee),
+    })), charge.amount, total, previous);
+    if (reversals.length > 0) {
+      const { error: insertError } = await supabaseAdmin.from("vendor_earnings").insert(reversals as any);
+      if (insertError) throw insertError;
+    }
+
+    const full = total >= charge.amount;
+    const { error: statusError } = await supabaseAdmin
+      .from("orders")
+      .update(statusAfterRefund(order.status, full))
+      .eq("id", order.id);
+    if (statusError) throw statusError;
+
+    const refunded = (total - previous) / 100;
+    await attempt("Admin refund notification", async () => {
+      const { error: notifError } = await supabaseAdmin.from("notifications").insert({
+        recipient_role: "admin",
+        type: "order",
+        title: `↩️ Refund on order #${String(order.id).substring(0, 8)}`,
+        message: `$${refunded.toFixed(2)} refunded${full ? " (full refund)" : ""}. Vendor earnings reversed.`,
+        link: "/admin?tab=orders",
+        metadata: { order_id: order.id, refunded },
+        read: false,
+      });
+      if (notifError) throw notifError;
+    });
+
+    console.log(`Refund of ${total - previous} cents recorded for order ${order.id}`);
+    return json({ received: true, refund: "recorded", reversals: reversals.length });
+  } catch (err) {
+    // Release the claim so Stripe's retry reverses it.
+    await supabaseAdmin.from("orders").update({ refunded_cents: previous }).eq("id", order.id).eq("refunded_cents", total);
+    throw err;
+  }
+}
+
 serve(async (req: Request) => {
   const signature = req.headers.get("stripe-signature");
   if (!signature) return new Response("No signature", { status: 400 });
@@ -75,6 +161,10 @@ serve(async (req: Request) => {
   // 2. Process it. Any failure returns 500 so Stripe retries; every step below is safe to repeat,
   // and a retry completes whatever a previous attempt didn't finish.
   try {
+    if (event.type === "charge.refunded") {
+      return await handleRefund(event.data.object as Stripe.Charge);
+    }
+
     const session = event.data.object as Stripe.Checkout.Session;
     if (!shouldFulfil(event.type, (session as any)?.payment_status)) {
       // Other events, and delayed payments that haven't settled yet (fulfilled later by
@@ -117,6 +207,7 @@ serve(async (req: Request) => {
           state: session.metadata?.state || "",
           zip: session.metadata?.zip || "",
           stripe_session_id: session.id,
+          stripe_payment_intent: typeof session.payment_intent === "string" ? session.payment_intent : null,
         } as any)
         .select()
         .single();
