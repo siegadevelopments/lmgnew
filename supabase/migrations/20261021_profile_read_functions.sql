@@ -8,6 +8,9 @@
 -- get_my_profile():      the caller's own profile (profile, checkout and booking pages).
 -- admin_list_profiles(): every profile, but only for admins (admin user list); empty otherwise.
 --
+-- Supabase grants EXECUTE on new public functions to anon by default, so anon is revoked
+-- explicitly (the functions return nothing to anon anyway, but there's no reason to expose them).
+--
 -- Safe to run more than once.
 -- ============================================================
 
@@ -20,7 +23,7 @@ SET search_path = public
 AS $$
   SELECT * FROM public.profiles WHERE id = auth.uid();
 $$;
-REVOKE ALL ON FUNCTION public.get_my_profile() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.get_my_profile() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.get_my_profile() TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.admin_list_profiles()
@@ -32,5 +35,5 @@ SET search_path = public
 AS $$
   SELECT * FROM public.profiles WHERE public.is_admin();
 $$;
-REVOKE ALL ON FUNCTION public.admin_list_profiles() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.admin_list_profiles() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.admin_list_profiles() TO authenticated;
