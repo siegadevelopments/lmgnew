@@ -64,20 +64,50 @@ export function buildOrderItems(orderId: string, lineItems: PaidLineItem[]) {
   });
 }
 
-/** One earnings row per line item with a vendor; commission defaults to 10%. */
+/**
+ * Splits the order's shipping charge (in cents) across the line items that have a vendor, in
+ * proportion to each item's total. Works in whole cents and gives any rounding remainder to the
+ * last item, so the shares always add up to exactly the shipping charged.
+ */
+export function allocateShipping(lineItems: PaidLineItem[], shippingCents: number): number[] {
+  const vendorItems = lineItems.filter((i) => i.product.metadata.vendor_id);
+  if (shippingCents <= 0 || vendorItems.length === 0) return vendorItems.map(() => 0);
+  const total = vendorItems.reduce((sum, i) => sum + Math.max(0, i.amount_total), 0);
+  const shares = vendorItems.map((i) =>
+    total > 0
+      ? Math.floor((shippingCents * Math.max(0, i.amount_total)) / total)
+      : Math.floor(shippingCents / vendorItems.length),
+  );
+  shares[shares.length - 1] += shippingCents - shares.reduce((a, b) => a + b, 0);
+  return shares;
+}
+
+/**
+ * One earnings row per line item with a vendor. Commission (default 10%) applies to the item
+ * price only. Vendors pay their own postage, so the shipping the customer paid is passed to
+ * them in full (no commission), split by their share of the order (allocateShipping).
+ */
 export function buildEarnings(
   orderId: string,
   lineItems: PaidLineItem[],
   commissionByVendor: Record<string, number | null | undefined>,
+  shippingCents = 0,
 ) {
+  const shipping = allocateShipping(lineItems, shippingCents);
   return lineItems
     .filter((item) => item.product.metadata.vendor_id)
-    .map((item) => {
+    .map((item, idx) => {
       const vendorId = item.product.metadata.vendor_id as string;
       const rate = commissionByVendor[vendorId] ?? 10;
       const itemTotal = item.amount_total / 100;
       const platformFee = itemTotal * (rate / 100);
-      return { vendor_id: vendorId, order_id: orderId, amount: itemTotal - platformFee, platform_fee: platformFee, status: "pending" };
+      return {
+        vendor_id: vendorId,
+        order_id: orderId,
+        amount: itemTotal - platformFee + shipping[idx] / 100,
+        platform_fee: platformFee,
+        status: "pending",
+      };
     });
 }
 
