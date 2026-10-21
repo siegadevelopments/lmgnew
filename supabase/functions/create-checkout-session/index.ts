@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import Stripe from "https://esm.sh/stripe@13.10.0?target=deno";
-import { priceCart } from "../_shared/cart-pricing.ts";
+import { priceCart, safeRedirectUrl } from "../_shared/cart-pricing.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
   httpClient: Stripe.createFetchHttpClient(),
@@ -44,7 +44,7 @@ serve(async (req: Request) => {
     );
     const { data: dbProducts, error: productsError } = await supabaseAdmin
       .from("products")
-      .select("id, title, slug, price, image_url, stock, status, vendor_id, variants")
+      .select("id, title, slug, price, image_url, stock, status, vendor_id, variants, vendor_profiles (is_approved, is_live)")
       .in("id", productIds);
     if (productsError) throw new Error("Could not load products. Please try again.");
 
@@ -110,8 +110,8 @@ serve(async (req: Request) => {
           },
         },
       ],
-      success_url: success_url,
-      cancel_url: cancel_url,
+      success_url: safeRedirectUrl(success_url, "/checkout/success"),
+      cancel_url: safeRedirectUrl(cancel_url, "/checkout"),
       customer_email: customer_email,
       metadata: {
         user_id: user?.id ?? "",

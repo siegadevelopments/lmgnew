@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { priceCart, type DbProduct } from "../../../supabase/functions/_shared/cart-pricing";
+import { priceCart, safeRedirectUrl, type DbProduct } from "../../../supabase/functions/_shared/cart-pricing";
 
 const product = (over: Partial<DbProduct> = {}): DbProduct => ({
   id: 1, title: "Tonic", slug: "tonic", price: 30, image_url: "https://x/y.jpg",
@@ -37,5 +37,36 @@ describe("priceCart", () => {
   it("rejects empty or non-array carts", () => {
     expect(priceCart([], [product()]).ok).toBe(false);
     expect(priceCart(undefined, [product()]).ok).toBe(false);
+  });
+});
+
+describe("store must be approved and live", () => {
+  it("refuses a product from a hidden store (regression: test order bought one)", () => {
+    const r = priceCart([{ product_id: 1, quantity: 1 }], [product({ vendor_profiles: { is_approved: true, is_live: false } })]);
+    expect(r.ok).toBe(false);
+  });
+  it("refuses a product from an unapproved store", () => {
+    const r = priceCart([{ product_id: 1, quantity: 1 }], [product({ vendor_profiles: { is_approved: false, is_live: true } })]);
+    expect(r.ok).toBe(false);
+  });
+  it("allows an approved, live store", () => {
+    const r = priceCart([{ product_id: 1, quantity: 1 }], [product({ vendor_profiles: { is_approved: true, is_live: true } })]);
+    expect(r.ok).toBe(true);
+  });
+});
+
+describe("safeRedirectUrl", () => {
+  it("keeps addresses on this site", () => {
+    expect(safeRedirectUrl("https://www.lifestylemedicinegateway.com/checkout/success", "/x")).toBe(
+      "https://www.lifestylemedicinegateway.com/checkout/success",
+    );
+    expect(safeRedirectUrl("https://lifestylemedicinegateway.com/products/abc?x=1", "/x")).toBe(
+      "https://lifestylemedicinegateway.com/products/abc?x=1",
+    );
+  });
+  it("replaces other sites and junk with the fallback (regression)", () => {
+    for (const bad of ["https://evil.example/phish", "https://lifestylemedicinegateway.com.evil.example/", "javascript:alert(1)", "", null]) {
+      expect(safeRedirectUrl(bad, "/checkout")).toBe("https://www.lifestylemedicinegateway.com/checkout");
+    }
   });
 });
