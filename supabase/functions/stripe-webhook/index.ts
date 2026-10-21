@@ -1,6 +1,4 @@
 // @ts-ignore
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-// @ts-ignore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 // @ts-ignore
 import Stripe from "https://esm.sh/stripe@13.10.0?target=deno";
@@ -11,6 +9,8 @@ import {
   computeRefundReversals,
   escapeHtml,
   formatBookingDate,
+  orderConfirmationEmail,
+  refundEmail,
   shouldFulfil,
   statusAfterRefund,
   type PaidLineItem,
@@ -32,7 +32,9 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { headers: { "Content-Type": "application/json" }, status });
 
 async function sendEmail(to: string, subject: string, html: string) {
-  if (!RESEND_API_KEY || !to) return;
+  // Never skip silently: a missing key or recipient is why an expected email doesn't arrive.
+  if (!RESEND_API_KEY) return console.warn(`Email skipped (RESEND_API_KEY not set): ${subject}`);
+  if (!to) return console.warn(`Email skipped (no recipient address): ${subject}`);
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
@@ -42,7 +44,8 @@ async function sendEmail(to: string, subject: string, html: string) {
 }
 
 async function sendSms(to: string, body: string) {
-  if (!CLICKSEND_USERNAME || !CLICKSEND_API_KEY || !to) return;
+  if (!CLICKSEND_USERNAME || !CLICKSEND_API_KEY) return console.warn("SMS skipped (ClickSend not configured)");
+  if (!to) return console.warn("SMS skipped (no phone number)");
   const res = await fetch("https://rest.clicksend.com/v3/sms/send", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Basic ${btoa(`${CLICKSEND_USERNAME}:${CLICKSEND_API_KEY}`)}` },
@@ -122,6 +125,15 @@ async function handleRefund(charge: Stripe.Charge): Promise<Response> {
     if (statusError) throw statusError;
 
     const refunded = (total - previous) / 100;
+    await attempt("Customer refund email", () => {
+      const { subject, html } = refundEmail({
+        reference: `LMG-${String(order.id).substring(0, 8).toUpperCase()}`,
+        firstName: order.first_name ?? "",
+        refundedCents: total - previous,
+        full,
+      });
+      return sendEmail(order.email ?? "", subject, html);
+    });
     await attempt("Admin refund notification", async () => {
       const { error: notifError } = await supabaseAdmin.from("notifications").insert({
         recipient_role: "admin",
@@ -144,7 +156,9 @@ async function handleRefund(charge: Stripe.Charge): Promise<Response> {
   }
 }
 
-serve(async (req: Request) => {
+// Deno's built-in server. The old std@0.168.0 serve() calls Deno.core.runMicrotasks(), which the
+// current Supabase runtime doesn't support ("event loop error" after every request).
+Deno.serve(async (req: Request) => {
   const signature = req.headers.get("stripe-signature");
   if (!signature) return new Response("No signature", { status: 400 });
 
@@ -280,6 +294,7 @@ serve(async (req: Request) => {
         // A vendor profile's id is the vendor's auth user id (same lookup as confirm-booking).
         const { data: vendorUser, error: vendorUserError } = await supabaseAdmin.auth.admin.getUserById(vendorId);
         if (vendorUserError) throw vendorUserError;
+        if (!vendorUser?.user?.email) console.warn(`Vendor ${vendorId} has no login email; order email not sent`);
         await sendEmail(vendorUser?.user?.email ?? "", `New Order Received - ${ref}`, `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
             <h1 style="color: #10b981;">New Order for Your Store!</h1>
@@ -314,24 +329,25 @@ serve(async (req: Request) => {
       });
     }
 
+    // Customer order confirmation (one email; booking times are listed against their items).
+    await attempt("Customer confirmation email", () => {
+      const { subject, html } = orderConfirmationEmail({
+        reference: ref,
+        firstName: order.first_name ?? "",
+        items: lineItems,
+        subtotalCents: session.amount_subtotal ?? 0,
+        shippingCents: session.total_details?.amount_shipping ?? 0,
+        totalCents: session.amount_total ?? 0,
+        address: { line: order.address ?? "", city: order.city ?? "", state: order.state ?? "", zip: order.zip ?? "" },
+        hasAccount: !!userId,
+      });
+      return sendEmail(order.email, subject, html);
+    });
+
     for (const item of lineItems.filter((i) => i.product.metadata.booking_start)) {
-      const title = item.product.name;
       const when = formatBookingDate(item.product.metadata.booking_start as string);
-      await attempt("Booking email", () =>
-        sendEmail(order.email, `Booking Confirmed: ${title}`, `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-            <h1 style="color: #10b981;">Booking Confirmed!</h1>
-            <p>Hi,</p>
-            <p>Your appointment for <strong>${escapeHtml(title)}</strong> has been successfully scheduled and paid online.</p>
-            <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
-              <p style="margin: 5px 0;"><strong>Date/Time:</strong> ${escapeHtml(when)}</p>
-              <p style="margin: 5px 0;"><strong>Payment Status:</strong> Paid Online</p>
-            </div>
-            <p>Thank you for your purchase!</p>
-          </div>`),
-      );
       await attempt("Booking SMS", () =>
-        sendSms(order.phone ?? "", `LMG: Your booking for ${title} on ${when} is confirmed and paid. Thank you!`),
+        sendSms(order.phone ?? "", `LMG: Your booking for ${item.product.name} on ${when} is confirmed and paid. Thank you!`),
       );
     }
 

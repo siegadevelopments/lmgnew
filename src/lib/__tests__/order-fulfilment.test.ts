@@ -11,6 +11,8 @@ import {
   allocateShipping,
   computeRefundReversals,
   statusAfterRefund,
+  orderConfirmationEmail,
+  refundEmail,
   type PaidLineItem,
 } from "../../../supabase/functions/_shared/order-fulfilment";
 
@@ -194,5 +196,55 @@ describe("statusAfterRefund", () => {
   });
   it("leaves a partially refunded order paid", () => {
     expect(statusAfterRefund("confirmed", false)).toEqual({ status: "confirmed", payment_status: "paid" });
+  });
+});
+
+describe("customer emails", () => {
+  const base = {
+    reference: "LMG-495E4D57",
+    firstName: "Ernest",
+    items: [item({}, { amount_total: 100, quantity: 1 })],
+    subtotalCents: 100,
+    shippingCents: 599,
+    totalCents: 699,
+    address: { line: "1 Test St", city: "Brisbane", state: "QLD", zip: "4000" },
+    hasAccount: true,
+  };
+
+  it("confirms the order with reference, items, shipping, total and address", () => {
+    const { subject, html } = orderConfirmationEmail(base);
+    expect(subject).toBe("Order confirmed: LMG-495E4D57");
+    for (const text of ["Hi Ernest,", "Tonic", "Subtotal: $1.00", "Shipping: $5.99", "Total paid: $6.99 AUD", "1 Test St", "My Account"]) {
+      expect(html).toContain(text);
+    }
+  });
+
+  it("escapes customer and product text", () => {
+    const { html } = orderConfirmationEmail({
+      ...base,
+      firstName: "<b>x</b>",
+      items: [item({}, { product: { name: "<script>alert(1)</script>", metadata: { vendor_id: "v1" } } } as any)],
+      address: { line: '<a href="https://evil.example">x</a>', city: "", state: "", zip: "" },
+    });
+    expect(html).not.toMatch(/<script>|<b>x<\/b>|href="https:\/\/evil/);
+  });
+
+  it("shows free shipping and booking times, and no delivery address for a bookings-only order", () => {
+    const booking = item({ booking_start: "2026-11-03T23:30:00Z", booking_end: "2026-11-04T00:30:00Z" }, { amount_total: 8000, quantity: 1 });
+    const { html } = orderConfirmationEmail({ ...base, items: [booking], shippingCents: 0, subtotalCents: 8000, totalCents: 8000 });
+    expect(html).toContain("Shipping: Free");
+    expect(html).toMatch(/Booking: .*4 November 2026/);
+    expect(html).not.toContain("Delivery address");
+  });
+
+  it("tells guests to keep the email instead of pointing to an account", () => {
+    const { html } = orderConfirmationEmail({ ...base, hasAccount: false });
+    expect(html).not.toContain("My Account");
+    expect(html).toContain("Keep this email");
+  });
+
+  it("confirms full and partial refunds", () => {
+    expect(refundEmail({ reference: "LMG-1", firstName: "", refundedCents: 699, full: true }).html).toContain("$6.99 AUD");
+    expect(refundEmail({ reference: "LMG-1", firstName: "", refundedCents: 300, full: false }).html).toContain("partial refund");
   });
 });

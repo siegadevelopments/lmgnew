@@ -194,3 +194,84 @@ export function statusAfterRefund(currentStatus: string, full: boolean) {
   const notYetShipped = currentStatus === "pending" || currentStatus === "confirmed";
   return { status: notYetShipped ? "cancelled" : currentStatus, payment_status: "refunded" };
 }
+
+// ---------------------------------------------------------------------------------------------
+// Customer emails (Australian English; every customer- or vendor-supplied value is escaped)
+// ---------------------------------------------------------------------------------------------
+
+const money = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+const shell = (body: string) => `
+  <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333; border: 1px solid #eee; border-radius: 10px;">
+    ${body}
+    <p style="margin-top: 24px; font-size: 12px; color: #64748b;">Questions? Reply to this email or contact
+      <a href="mailto:info@lifestylemedicinegateway.com">info@lifestylemedicinegateway.com</a>.</p>
+    <p style="font-size: 12px; color: #64748b;">Lifestyle Medicine Gateway</p>
+  </div>`;
+
+export interface OrderEmailInput {
+  reference: string; // e.g. LMG-495E4D57
+  firstName: string;
+  items: PaidLineItem[];
+  subtotalCents: number;
+  shippingCents: number;
+  totalCents: number;
+  address: { line: string; city: string; state: string; zip: string };
+  hasAccount: boolean;
+}
+
+/** Order confirmation for the customer, sent once payment has succeeded. */
+export function orderConfirmationEmail(o: OrderEmailInput): { subject: string; html: string } {
+  const rows = o.items
+    .map((i) => {
+      const start = i.product.metadata.booking_start;
+      const when = start ? `<br /><span style="font-size: 12px; color: #64748b;">Booking: ${escapeHtml(formatBookingDate(start))}</span>` : "";
+      return `
+        <tr style="border-bottom: 1px solid #e2e8f0;">
+          <td style="padding: 10px 0;">${escapeHtml(i.product.name)}${when}</td>
+          <td style="padding: 10px 0; text-align: center;">${i.quantity ?? 1}</td>
+          <td style="padding: 10px 0; text-align: right;">${money(i.amount_total)}</td>
+        </tr>`;
+    })
+    .join("");
+  const hasPhysical = o.items.some((i) => !i.product.metadata.booking_start);
+  const greeting = o.firstName ? `Hi ${escapeHtml(o.firstName)},` : "Hi,";
+  const html = shell(`
+    <h1 style="color: #10b981;">Thanks for your order</h1>
+    <p>${greeting}</p>
+    <p>We've received your payment for order <strong>${escapeHtml(o.reference)}</strong>.
+      ${hasPhysical ? "Each item is sent directly by the brand that sells it, so items from different brands may arrive separately." : ""}</p>
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+      <thead>
+        <tr style="text-align: left; border-bottom: 2px solid #e2e8f0;">
+          <th style="padding: 10px 0;">Item</th>
+          <th style="padding: 10px 0; text-align: center;">Qty</th>
+          <th style="padding: 10px 0; text-align: right;">Price</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p style="margin: 4px 0; text-align: right;">Subtotal: ${money(o.subtotalCents)}</p>
+    <p style="margin: 4px 0; text-align: right;">Shipping: ${o.shippingCents > 0 ? money(o.shippingCents) : "Free"}</p>
+    <p style="margin: 4px 0; text-align: right;"><strong>Total paid: ${money(o.totalCents)} AUD</strong></p>
+    ${hasPhysical ? `
+    <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0;">
+      <h3 style="margin-top: 0;">Delivery address</h3>
+      <p style="margin: 0;">${escapeHtml(o.address.line)}<br />${escapeHtml(o.address.city)} ${escapeHtml(o.address.state)} ${escapeHtml(o.address.zip)}</p>
+    </div>` : ""}
+    ${o.hasAccount
+      ? `<p>When a brand ships your items, they add a tracking number, which you can see under
+          <a href="https://www.lifestylemedicinegateway.com/profile">My Account → Orders</a>.</p>`
+      : `<p>Keep this email for your records. Your order reference is ${escapeHtml(o.reference)}.</p>`}`);
+  return { subject: `Order confirmed: ${o.reference}`, html };
+}
+
+/** Refund confirmation for the customer. */
+export function refundEmail(o: { reference: string; firstName: string; refundedCents: number; full: boolean }) {
+  const greeting = o.firstName ? `Hi ${escapeHtml(o.firstName)},` : "Hi,";
+  const html = shell(`
+    <h1 style="color: #10b981;">Your refund is on its way</h1>
+    <p>${greeting}</p>
+    <p>We've refunded <strong>${money(o.refundedCents)} AUD</strong> for order <strong>${escapeHtml(o.reference)}</strong>${o.full ? "" : " (a partial refund)"}.</p>
+    <p>It goes back to the card or account you paid with. Depending on your bank, it can take 5–10 business days to appear.</p>`);
+  return { subject: `Refund processed: ${o.reference}`, html };
+}
