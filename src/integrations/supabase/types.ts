@@ -393,6 +393,7 @@ export interface Database {
           images: string[] | null;
           store_category: string | null;
           product_type: string | null;
+          wellness_categories: string[] | null;
         };
         Insert: Partial<Database["public"]["Tables"]["products"]["Row"]>;
         Update: Partial<Database["public"]["Tables"]["products"]["Insert"]>;

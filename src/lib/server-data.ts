@@ -7,6 +7,7 @@
 // see docs/DEVELOPMENT_STANDARDS.md §2) so crawlers see it without running JavaScript.
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { globalMockProductsList } from "@/lib/queries"; // homepage fallback only
+import { productInCategory } from "@/lib/wellness-categories";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -149,11 +150,6 @@ export function clearSharedResults() {
 // Products
 // ---------------------------------------------------------------------------------------------
 
-export function matchesKeywords(p: any, keywords: string[]) {
-  const searchText = `${p.title} ${p.category || ""} ${p.excerpt || ""}`.toLowerCase();
-  return keywords.some((kw) => searchText.includes(kw.toLowerCase()));
-}
-
 function fetchLiveProducts(): Promise<any[]> {
   return sharedResult("live-products", async () => {
     const data = await withRetry("live products", () =>
@@ -169,14 +165,17 @@ function fetchLiveProducts(): Promise<any[]> {
   });
 }
 
-/** Products for /categories/[slug]. Throws ServerDataError when the database can't be reached. */
-export async function getCategoryProducts(keywords: string[]) {
-  return (await fetchLiveProducts()).filter((p: any) => matchesKeywords(p, keywords));
+/**
+ * Products for /categories/[slug]: by wellness_categories once set, keyword matching until then.
+ * Throws ServerDataError when the database can't be reached.
+ */
+export async function getCategoryProducts(categorySlug: string, keywords: string[]) {
+  return (await fetchLiveProducts()).filter((p: any) => productInCategory(p, categorySlug, keywords));
 }
 
-/** Products for /guides/[slug]; the guide shows at most six recommendations. */
-export async function getGuideProducts(keywords: string[]) {
-  return (await getCategoryProducts(keywords)).slice(0, 6);
+/** Products for /guides/[slug] (the guide's category); the guide shows at most six. */
+export async function getGuideProducts(categorySlug: string, keywords: string[]) {
+  return (await getCategoryProducts(categorySlug, keywords)).slice(0, 6);
 }
 
 const LISTING_COLUMNS = `id, vendor_id, title, slug, excerpt, price, image_url, stock, status, created_at, category, product_type, variants,

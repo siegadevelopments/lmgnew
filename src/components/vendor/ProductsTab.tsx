@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { WellnessCategoryPicker } from "@/components/WellnessCategoryPicker";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +34,7 @@ interface Product {
   category?: string;
   store_category?: string;
   product_type?: "physical" | "service" | "digital";
+  wellness_categories?: string[] | null;
 }
 
 interface Props {
@@ -65,6 +67,8 @@ export function ProductsTab({
     brand: "",
     category: vendorType === "services" ? "Services" : "Supplements",
     store_category: "",
+    // null = not reviewed (left untouched on save); see WellnessCategoryPicker
+    wellness_categories: null as string[] | null,
     product_type: (vendorType === "services" ? "service" : "physical") as
       | "physical"
       | "service"
@@ -132,6 +136,10 @@ export function ProductsTab({
         product_type: form.product_type,
         updated_at: new Date().toISOString(),
       };
+      // Only written once someone has chosen, so saving an unreviewed product keeps it NULL.
+      if (form.wellness_categories !== null && form.product_type !== "service") {
+        payload.wellness_categories = form.wellness_categories;
+      }
 
       if (form.video_url) {
         // Simple way to append video, though ideally it should be a separate field
@@ -196,6 +204,7 @@ export function ProductsTab({
         brand: "",
         category: vendorType === "services" ? "Services" : "Supplements",
         store_category: "",
+        wellness_categories: null,
         product_type: vendorType === "services" ? "service" : "physical",
       });
     } catch (err: any) {
@@ -220,6 +229,7 @@ export function ProductsTab({
       category: p.category || "Supplements",
       store_category: p.store_category || "",
       product_type: p.product_type || "physical",
+      wellness_categories: Array.isArray(p.wellness_categories) ? p.wellness_categories : null,
     });
     setEditing(true);
   };
@@ -283,6 +293,7 @@ export function ProductsTab({
                 brand: "",
                 category: vendorType === "services" ? "Services" : "Supplements",
                 store_category: "",
+                wellness_categories: null,
                 product_type: vendorType === "services" ? "service" : "physical",
               });
               setEditing(true);
@@ -389,6 +400,13 @@ export function ProductsTab({
                   ))}
                 </select>
               </div>
+
+              {form.product_type !== "service" && (
+                <WellnessCategoryPicker
+                  value={form.wellness_categories}
+                  onChange={(wellness_categories) => setForm({ ...form, wellness_categories })}
+                />
+              )}
 
               <div className="space-y-2">
                 <Label>Price ($)</Label>
