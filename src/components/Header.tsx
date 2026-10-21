@@ -47,7 +47,11 @@ const learnItems = [
   { to: "/charts" as const, label: "Charts" },
 ];
 
-export function Header() {
+export function Header({ visibleCategorySlugs }: { visibleCategorySlugs?: string[] }) {
+  // Empty categories are hidden; undefined (count unavailable) shows them all.
+  const categoryLinks = visibleCategorySlugs
+    ? shopCategories.filter((c) => visibleCategorySlugs.includes(c.to.replace("/categories/", "")))
+    : shopCategories;
   const [mobileOpen, setMobileOpen] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const { user, role, loading, signOut } = useAuth();
@@ -99,7 +103,7 @@ export function Header() {
               <div className="px-2 py-1.5">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Shop by Wellness Goal</p>
               </div>
-              {shopCategories.map((item) => (
+              {categoryLinks.map((item) => (
                 <DropdownMenuItem key={item.label} asChild>
                   <Link
                     href={item.to}
@@ -322,7 +326,7 @@ export function Header() {
           <p className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Shop by Goal
           </p>
-          {shopCategories.map((item) => (
+          {categoryLinks.map((item) => (
             <Link
               key={item.label}
               href={item.to}

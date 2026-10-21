@@ -90,7 +90,16 @@ const socialLinks = [
   },
 ];
 
-export function Footer() {
+export function Footer({ visibleCategorySlugs }: { visibleCategorySlugs?: string[] }) {
+  // Empty categories are hidden from "Shop by Goal"; undefined (count unavailable) shows them all.
+  const links = visibleCategorySlugs
+    ? {
+        ...footerLinks,
+        "Shop by Goal": footerLinks["Shop by Goal"].filter((l) =>
+          visibleCategorySlugs.includes(l.to.replace("/categories/", "")),
+        ),
+      }
+    : footerLinks;
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [subscribed, setSubscribed] = useState(false);
@@ -238,13 +247,13 @@ export function Footer() {
           </div>
 
           {/* Links */}
-          {Object.entries(footerLinks).map(([title, links]) => (
+          {Object.entries(links).map(([title, sectionLinks]) => (
             <div key={title}>
               <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground">
                 {title}
               </h4>
               <ul className="mt-3 space-y-2">
-                {links.map((link) => (
+                {sectionLinks.map((link) => (
                   <li key={link.label}>
                     <Link
                       href={link.to}
