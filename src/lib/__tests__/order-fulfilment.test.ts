@@ -8,6 +8,7 @@ import {
   buildOrderItems,
   buildEarnings,
   buildBookings,
+  allocateShipping,
   type PaidLineItem,
 } from "../../../supabase/functions/_shared/order-fulfilment";
 
@@ -65,6 +66,33 @@ describe("row builders", () => {
     const [a, b] = buildEarnings("o1", [item({}), item({ vendor_id: "v2" })], { v1: 20 });
     expect(a).toMatchObject({ vendor_id: "v1", amount: 48, platform_fee: 12 });
     expect(b).toMatchObject({ vendor_id: "v2", amount: 54, platform_fee: 6 });
+  });
+
+  it("passes shipping to vendors in full, split by their share of the order", () => {
+    // $40 + $20 of goods, $5.99 shipping: vendor 1 gets 2/3, vendor 2 gets 1/3, no commission.
+    const [a, b] = buildEarnings("o1", [item({}, { amount_total: 4000 }), item({ vendor_id: "v2" }, { amount_total: 2000 })], {}, 599);
+    expect(a.platform_fee).toBeCloseTo(4);
+    expect(b.platform_fee).toBeCloseTo(2);
+    expect(a.amount).toBeCloseTo(36 + 3.99);
+    expect(b.amount).toBeCloseTo(18 + 2.0);
+  });
+
+  it("leaves earnings unchanged when there is no shipping", () => {
+    const [a] = buildEarnings("o1", [item({})], {}, 0);
+    expect(a.amount).toBeCloseTo(54);
+  });
+
+  it("splits shipping in whole cents that add up exactly", () => {
+    const three = [item({}, { amount_total: 1000 }), item({ vendor_id: "v2" }, { amount_total: 1000 }), item({ vendor_id: "v3" }, { amount_total: 1000 })];
+    const shares = allocateShipping(three, 599);
+    expect(shares.reduce((x, y) => x + y, 0)).toBe(599);
+    expect(shares.every((c) => Number.isInteger(c))).toBe(true);
+    expect(shares).toEqual([199, 199, 201]);
+  });
+
+  it("gives no shipping to items without a vendor", () => {
+    const shares = allocateShipping([item({ vendor_id: "" }), item({})], 599);
+    expect(shares).toEqual([599]);
   });
 
   it("creates bookings only for booked items", () => {

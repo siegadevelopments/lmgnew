@@ -159,7 +159,9 @@ serve(async (req: Request) => {
       for (const v of data ?? []) vendors[v.id] = v;
     }
     const commission = Object.fromEntries(Object.entries(vendors).map(([id, v]) => [id, v.commission_rate]));
-    await insertAll("vendor_earnings", buildEarnings(orderId, lineItems, commission));
+    // Vendors pay their own postage, so the shipping charged is passed to them (no commission).
+    const shippingCents = session.total_details?.amount_shipping ?? 0;
+    await insertAll("vendor_earnings", buildEarnings(orderId, lineItems, commission, shippingCents));
     await insertAll("bookings", buildBookings(orderId, userId, lineItems));
 
     // Notifications. All text from customers or vendors is escaped before going into HTML.
