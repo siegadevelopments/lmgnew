@@ -13,6 +13,7 @@ import {
   statusAfterRefund,
   orderConfirmationEmail,
   refundEmail,
+  stockItems,
   type PaidLineItem,
 } from "../../../supabase/functions/_shared/order-fulfilment";
 
@@ -246,5 +247,44 @@ describe("customer emails", () => {
   it("confirms full and partial refunds", () => {
     expect(refundEmail({ reference: "LMG-1", firstName: "", refundedCents: 699, full: true }).html).toContain("$6.99 AUD");
     expect(refundEmail({ reference: "LMG-1", firstName: "", refundedCents: 300, full: false }).html).toContain("partial refund");
+  });
+});
+
+describe("stockItems", () => {
+  it("lists physical items with their variant key and skips bookings", () => {
+    const rows = stockItems([
+      item({ variant_key: "a1b2-uuid", variant_id: "" }, { quantity: 2 }),
+      item({ product_id: "8" }, { quantity: 1 }),
+      item({ booking_start: "2026-11-04T00:00:00Z", booking_end: "2026-11-04T01:00:00Z" }),
+    ]);
+    expect(rows).toEqual([
+      { product_id: 7, variant_key: "a1b2-uuid", quantity: 2 },
+      { product_id: 8, variant_key: null, quantity: 1 },
+    ]);
+  });
+  it("falls back to the numeric variant id for older sessions", () => {
+    expect(stockItems([item({ variant_id: "42" })])[0].variant_key).toBe("42");
+  });
+});
+
+describe("stock, bookings and delete wiring", () => {
+  const root = path.resolve(import.meta.dirname, "../../..");
+  const webhook = readFileSync(path.join(root, "supabase/functions/stripe-webhook/index.ts"), "utf8");
+  const del = readFileSync(path.join(root, "api/admin-delete-order.ts"), "utf8");
+  const mig = readFileSync(path.join(root, "supabase/migrations/20261021_order_stock_adjustment.sql"), "utf8");
+
+  it("reduces stock on fulfilment and restores it on a full refund", () => {
+    expect(webhook).toMatch(/rpc\("adjust_order_stock"[\s\S]*p_restock: false/);
+    expect(webhook).toMatch(/rpc\("adjust_order_stock"[\s\S]*p_restock: true/);
+  });
+  it("cancels bookings on a full refund", () => {
+    expect(webhook).toMatch(/from\("bookings"\)\s*\.update\(\{ status: "cancelled" \}\)/);
+  });
+  it("only the service role can adjust stock", () => {
+    expect(mig).toMatch(/REVOKE ALL ON FUNCTION public\.adjust_order_stock\(uuid, jsonb, boolean\) FROM PUBLIC, anon, authenticated;/);
+  });
+  it("admin delete refuses paid-out orders and removes earnings and bookings", () => {
+    expect(del).toMatch(/\.eq\("status", "paid"\)/);
+    expect(del).toMatch(/\["vendor_earnings", "bookings", "order_items"\]/);
   });
 });
