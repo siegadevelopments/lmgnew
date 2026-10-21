@@ -21,7 +21,8 @@
 --    Remaining gap: signed-in users can still read other users' phone numbers. Closing that
 --    needs the own-phone reads in checkout/profile/product pages moved to a function first.
 --
--- Safe to run more than once. Runs as one transaction in the Supabase SQL Editor.
+-- Safe to run more than once. Runs as one transaction in the Supabase SQL Editor: if any statement
+-- fails, nothing is applied. Sections for tables that don't exist are skipped with a NOTICE.
 -- ============================================================
 
 -- 1. Admin check -------------------------------------------------------------
@@ -61,66 +62,91 @@ CREATE TRIGGER trg_prevent_admin_self_promotion
   BEFORE INSERT OR UPDATE OF role ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.prevent_admin_self_promotion();
 
+-- Sections 3 and 4 only run for tables that exist: the live database is missing some tables
+-- whose creating migrations were never applied either (marketing_plan_state, as of 2026-10-21).
+-- A missing table is skipped with a NOTICE instead of aborting the whole migration.
+
 -- 3. notifications -------------------------------------------------------------
-DROP POLICY IF EXISTS "Allow read notifications" ON public.notifications;
-DROP POLICY IF EXISTS "Allow update notifications" ON public.notifications;
-DROP POLICY IF EXISTS "Read own or admin notifications" ON public.notifications;
-DROP POLICY IF EXISTS "Update own or admin notifications" ON public.notifications;
+DO $$
+BEGIN
+  IF to_regclass('public.notifications') IS NULL THEN
+    RAISE NOTICE 'notifications does not exist, skipped';
+    RETURN;
+  END IF;
+  DROP POLICY IF EXISTS "Allow read notifications" ON public.notifications;
+  DROP POLICY IF EXISTS "Allow update notifications" ON public.notifications;
+  DROP POLICY IF EXISTS "Read own or admin notifications" ON public.notifications;
+  DROP POLICY IF EXISTS "Update own or admin notifications" ON public.notifications;
 
-CREATE POLICY "Read own or admin notifications" ON public.notifications
-  FOR SELECT USING (public.is_admin() OR user_id = auth.uid());
+  CREATE POLICY "Read own or admin notifications" ON public.notifications
+    FOR SELECT USING (public.is_admin() OR user_id = auth.uid());
 
-CREATE POLICY "Update own or admin notifications" ON public.notifications
-  FOR UPDATE USING (public.is_admin() OR user_id = auth.uid())
-  WITH CHECK (public.is_admin() OR user_id = auth.uid());
+  CREATE POLICY "Update own or admin notifications" ON public.notifications
+    FOR UPDATE USING (public.is_admin() OR user_id = auth.uid())
+    WITH CHECK (public.is_admin() OR user_id = auth.uid());
+END $$;
 
 -- 4a. marketing_plan_state -----------------------------------------------------
-DROP POLICY IF EXISTS "Allow public read access to marketing_plan_state" ON public.marketing_plan_state;
-DROP POLICY IF EXISTS "Allow write access to marketing_plan_state" ON public.marketing_plan_state;
-DROP POLICY IF EXISTS "Admins manage marketing_plan_state" ON public.marketing_plan_state;
+DO $$
+BEGIN
+  IF to_regclass('public.marketing_plan_state') IS NULL THEN
+    RAISE NOTICE 'marketing_plan_state does not exist, skipped';
+    RETURN;
+  END IF;
+  DROP POLICY IF EXISTS "Allow public read access to marketing_plan_state" ON public.marketing_plan_state;
+  DROP POLICY IF EXISTS "Allow write access to marketing_plan_state" ON public.marketing_plan_state;
+  DROP POLICY IF EXISTS "Admins manage marketing_plan_state" ON public.marketing_plan_state;
 
-CREATE POLICY "Admins manage marketing_plan_state" ON public.marketing_plan_state
-  FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
+  CREATE POLICY "Admins manage marketing_plan_state" ON public.marketing_plan_state
+    FOR ALL USING (public.is_admin()) WITH CHECK (public.is_admin());
+END $$;
 
 -- 4b. chat ---------------------------------------------------------------------
-DROP POLICY IF EXISTS "Allow all for chat_conversations" ON public.chat_conversations;
-DROP POLICY IF EXISTS "Allow all for chat_messages" ON public.chat_messages;
-DROP POLICY IF EXISTS "Participants and admins access conversations" ON public.chat_conversations;
-DROP POLICY IF EXISTS "Participants and admins access messages" ON public.chat_messages;
+DO $$
+BEGIN
+  IF to_regclass('public.chat_conversations') IS NULL OR to_regclass('public.chat_messages') IS NULL THEN
+    RAISE NOTICE 'chat tables do not exist, skipped';
+    RETURN;
+  END IF;
+  DROP POLICY IF EXISTS "Allow all for chat_conversations" ON public.chat_conversations;
+  DROP POLICY IF EXISTS "Allow all for chat_messages" ON public.chat_messages;
+  DROP POLICY IF EXISTS "Participants and admins access conversations" ON public.chat_conversations;
+  DROP POLICY IF EXISTS "Participants and admins access messages" ON public.chat_messages;
 
-CREATE POLICY "Participants and admins access conversations" ON public.chat_conversations
-  FOR ALL
-  USING (
-    public.is_admin()
-    OR customer_id = auth.uid()
-    OR vendor_id = auth.uid()
-    OR (customer_id IS NULL AND vendor_id IS NULL)   -- guest support chat (known gap)
-  )
-  WITH CHECK (
-    public.is_admin()
-    OR customer_id = auth.uid()
-    OR vendor_id = auth.uid()
-    OR (customer_id IS NULL AND vendor_id IS NULL)
-  );
+  CREATE POLICY "Participants and admins access conversations" ON public.chat_conversations
+    FOR ALL
+    USING (
+      public.is_admin()
+      OR customer_id = auth.uid()
+      OR vendor_id = auth.uid()
+      OR (customer_id IS NULL AND vendor_id IS NULL)   -- guest support chat (known gap)
+    )
+    WITH CHECK (
+      public.is_admin()
+      OR customer_id = auth.uid()
+      OR vendor_id = auth.uid()
+      OR (customer_id IS NULL AND vendor_id IS NULL)
+    );
 
-CREATE POLICY "Participants and admins access messages" ON public.chat_messages
-  FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.chat_conversations c
-      WHERE c.id = chat_messages.conversation_id
-        AND (public.is_admin() OR c.customer_id = auth.uid() OR c.vendor_id = auth.uid()
-             OR (c.customer_id IS NULL AND c.vendor_id IS NULL))
+  CREATE POLICY "Participants and admins access messages" ON public.chat_messages
+    FOR ALL
+    USING (
+      EXISTS (
+        SELECT 1 FROM public.chat_conversations c
+        WHERE c.id = chat_messages.conversation_id
+          AND (public.is_admin() OR c.customer_id = auth.uid() OR c.vendor_id = auth.uid()
+               OR (c.customer_id IS NULL AND c.vendor_id IS NULL))
+      )
     )
-  )
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.chat_conversations c
-      WHERE c.id = chat_messages.conversation_id
-        AND (public.is_admin() OR c.customer_id = auth.uid() OR c.vendor_id = auth.uid()
-             OR (c.customer_id IS NULL AND c.vendor_id IS NULL))
-    )
-  );
+    WITH CHECK (
+      EXISTS (
+        SELECT 1 FROM public.chat_conversations c
+        WHERE c.id = chat_messages.conversation_id
+          AND (public.is_admin() OR c.customer_id = auth.uid() OR c.vendor_id = auth.uid()
+               OR (c.customer_id IS NULL AND c.vendor_id IS NULL))
+      )
+    );
+END $$;
 
 -- 5. profiles: hide phone numbers (and any future column) from anonymous visitors ------
 -- Column allowlist: a column added to profiles later stays hidden from anon until granted here.

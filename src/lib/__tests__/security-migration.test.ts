@@ -28,6 +28,12 @@ describe("20261021_apply_security_hardening.sql", () => {
     expect(grant![1]).not.toMatch(/phone/);
   });
 
+  it("skips tables that don't exist instead of aborting (marketing_plan_state is missing live)", () => {
+    for (const t of ["notifications", "marketing_plan_state", "chat_conversations"]) {
+      expect(sql).toContain(`to_regclass('public.${t}') IS NULL`);
+    }
+  });
+
   it("is safe to re-run: every created policy is dropped first", () => {
     const created = [...sql.matchAll(/CREATE POLICY "([^"]+)" ON (public\.\w+)/g)];
     expect(created.length).toBeGreaterThan(0);
