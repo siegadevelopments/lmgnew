@@ -6,6 +6,7 @@ import "./globals.css";
 import { AnnouncementBar } from "@/components/AnnouncementBar";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { getNonEmptyCategorySlugs } from "@/lib/server-data";
 import { Inter } from 'next/font/google';
 import { ClientOnlyOverlays } from "@/components/ClientOnlyOverlays";
 import type { Metadata, Viewport } from 'next';
@@ -88,12 +89,28 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
-export default function RootLayout({
+// The header and footer hide categories with no products, so every page reads the category list.
+// Five minutes matches DATA_REVALIDATE_SECONDS in src/lib/server-data.ts; without it, pages that
+// reuse the shared in-memory result make no fetch of their own and would keep a build-time menu.
+export const revalidate = 300;
+
+// Never let the menu break a page: if the count can't be fetched, show every category (today's
+// behaviour). The error is logged by server-data.
+async function loadVisibleCategorySlugs(): Promise<string[] | undefined> {
+  try {
+    return await getNonEmptyCategorySlugs();
+  } catch {
+    return undefined;
+  }
+}
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   console.log("LMG RootLayout v1.0.7 Loaded");
+  const visibleCategorySlugs = await loadVisibleCategorySlugs();
   return (
     <html lang="en" className={inter.className}>
       <head>
@@ -123,11 +140,11 @@ export default function RootLayout({
         <Providers>
           <div className="flex flex-col min-h-screen bg-background text-foreground">
             <AnnouncementBar />
-            <Header />
+            <Header visibleCategorySlugs={visibleCategorySlugs} />
             <main className="flex-grow relative">
               {children}
             </main>
-            <Footer />
+            <Footer visibleCategorySlugs={visibleCategorySlugs} />
             <ClientOnlyOverlays />
           </div>
         </Providers>

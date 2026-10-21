@@ -95,6 +95,14 @@ describe("SEO routes", () => {
     expect(read(f)).toMatch(/export const revalidate = 300;/);
   });
 
+  it("root layout hides empty categories in the menus without ever failing the page", () => {
+    const src = read("layout.tsx");
+    expect(src).toMatch(/export const revalidate = 300;/);
+    expect(src).toMatch(/<Header visibleCategorySlugs=\{visibleCategorySlugs\} \/>/);
+    expect(src).toMatch(/<Footer visibleCategorySlugs=\{visibleCategorySlugs\} \/>/);
+    expect(src).toMatch(/catch \{\s*return undefined;/);
+  });
+
   it("/products is a server component that seeds the listing", () => {
     const src = read("products/page.tsx");
     expect(src).not.toMatch(/['"]use client['"]/);
