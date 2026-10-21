@@ -1,7 +1,16 @@
-// @ts-ignore
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// Pay-in-store service bookings. Online-paid bookings go through Stripe Checkout and the
+// stripe-webhook function instead.
+//
+// Security (payment audit, 2026-10-21): this function used to take the service title, provider
+// name, vendor, customer email and phone from the browser and put them, unescaped, into emails
+// and an SMS. Any signed-in user could make the site send branded email to any address and SMS to
+// any number, with any wording. Now only the product, the time slot and a phone number come from
+// the browser; everything else is read from the database or the user's own account, all email
+// text is escaped, and each user is limited to MAX_BOOKINGS_PER_DAY bookings.
 // @ts-ignore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import { escapeHtml, formatBookingDate } from "../_shared/order-fulfilment.ts";
+import { MAX_BOOKINGS_PER_DAY, cleanPhone, validateService, validateSlot } from "../_shared/booking-rules.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,233 +21,178 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const CLICKSEND_USERNAME = Deno.env.get("CLICKSEND_USERNAME");
 const CLICKSEND_API_KEY = Deno.env.get("CLICKSEND_API_KEY");
 const ADMIN_EMAIL = "info@lifestylemedicinegateway.com";
-// Use the same verified sender as notify-admin to avoid Resend domain issues
 const FROM_EMAIL = "LMG Notifications <notifications@lifestylemedicinegateway.com>";
 
-/** Sends a single email via Resend. Logs full response details for debugging. */
-async function sendEmail(to: string[], subject: string, html: string) {
-  if (!RESEND_API_KEY) {
-    console.error("RESEND_API_KEY is not set — email NOT sent to:", to.join(", "));
-    return;
-  }
+const reply = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status });
+
+async function sendEmail(to: string, subject: string, html: string) {
+  if (!RESEND_API_KEY) return console.warn(`Email skipped (RESEND_API_KEY not set): ${subject}`);
+  if (!to) return console.warn(`Email skipped (no recipient address): ${subject}`);
   try {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({ from: FROM_EMAIL, to, subject, html }),
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
+      body: JSON.stringify({ from: FROM_EMAIL, to: [to], subject, html }),
     });
-    const responseText = await res.text();
-    if (!res.ok) {
-      console.error(`[Resend] FAILED to send email to ${to.join(", ")} (HTTP ${res.status}):`, responseText);
-    } else {
-      console.log(`[Resend] Email sent successfully to ${to.join(", ")}. Response:`, responseText);
-    }
+    if (!res.ok) console.error(`[Resend] email to ${to} failed (HTTP ${res.status}):`, await res.text());
   } catch (e) {
-    console.error("[Resend] Fetch error when sending email:", e);
+    console.error("[Resend] fetch error:", e);
   }
 }
 
-serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+async function sendSms(to: string, body: string) {
+  if (!CLICKSEND_USERNAME || !CLICKSEND_API_KEY) return console.warn("SMS skipped (ClickSend not configured)");
+  try {
+    const res = await fetch("https://rest.clicksend.com/v3/sms/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Basic ${btoa(`${CLICKSEND_USERNAME}:${CLICKSEND_API_KEY}`)}` },
+      body: JSON.stringify({ messages: [{ body, to }] }),
+    });
+    if (!res.ok) console.error("SMS failed:", await res.text());
+  } catch (e) {
+    console.error("SMS fetch error:", e);
   }
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    );
+    const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
+    const supabaseUser = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_ANON_KEY") ?? "", {
+      global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
+    });
+    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
+    if (authError || !user) return reply({ error: "Please log in to book a service." }, 401);
 
-    const supabaseUser = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: req.headers.get("Authorization")! } } },
-    );
+    // Only these come from the browser; anything else in the body is ignored.
+    const body = await req.json().catch(() => ({}));
+    const productId = Number(body?.product_id);
+    const startTime = body?.booking?.start_time;
+    const endTime = body?.booking?.end_time;
+    if (!Number.isInteger(productId)) return reply({ error: "This service isn't available for booking." }, 400);
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabaseUser.auth.getUser();
-    if (authError || !user) throw new Error("Unauthorized");
+    const slot = validateSlot(startTime, endTime, new Date());
+    if (!slot.ok) return reply({ error: slot.error }, slot.status);
 
-    const {
-      booking,
-      customer_email,
-      customer_phone,
-      product_id,
-      vendor_id,
-      product_title,
-      vendor_name,
-      payment_method,
-    } = await req.json();
+    const { data: product, error: productError } = await supabaseAdmin
+      .from("products")
+      .select("id, title, status, product_type, vendor_id, vendor_profiles (store_name, is_approved, is_live)")
+      .eq("id", productId)
+      .maybeSingle();
+    if (productError) throw productError;
+    const service = validateService(product as any);
+    if (!service.ok) return reply({ error: service.error }, service.status);
+    const vendorId: string = product!.vendor_id;
+    const storeName: string = (product as any).vendor_profiles?.store_name ?? "the provider";
 
-    console.log(
-      `Creating booking for user ${user.id}, product ${product_id}, payment ${payment_method}`,
-    );
+    // Rate limit: caps how many emails/SMS one account can trigger.
+    const since = new Date(Date.now() - 86400_000).toISOString();
+    const { count: recent, error: recentError } = await supabaseAdmin
+      .from("bookings")
+      .select("id", { count: "exact", head: true })
+      .eq("customer_id", user.id)
+      .gte("created_at", since);
+    if (recentError) throw recentError;
+    if ((recent ?? 0) >= MAX_BOOKINGS_PER_DAY) {
+      return reply({ error: "You've made several bookings today. Please contact us if you need another." }, 429);
+    }
 
-    // 1. Create Booking
+    // No double-booking of the same service.
+    const { count: clashes, error: clashError } = await supabaseAdmin
+      .from("bookings")
+      .select("id", { count: "exact", head: true })
+      .eq("product_id", productId)
+      .neq("status", "cancelled")
+      .lt("start_time", endTime)
+      .gt("end_time", startTime);
+    if (clashError) throw clashError;
+    if ((clashes ?? 0) > 0) return reply({ error: "That time has just been booked. Please choose another." }, 409);
+
+    // The customer's own details: email from their login, phone from their profile, else the
+    // number they typed (validated). Never an address chosen by the browser.
+    const customerEmail = user.email ?? "";
+    const { data: profile } = await supabaseAdmin.from("profiles").select("phone").eq("id", user.id).maybeSingle();
+    const customerPhone = cleanPhone(profile?.phone) ?? cleanPhone(body?.customer_phone);
+
     const { data: bookingData, error: bookingError } = await supabaseAdmin
       .from("bookings")
       .insert({
         customer_id: user.id,
-        product_id: typeof product_id === "string" ? parseInt(product_id) : product_id,
-        vendor_id,
-        start_time: booking.start_time,
-        end_time: booking.end_time,
-        status: payment_method === "store" ? "pending" : "confirmed",
+        product_id: productId,
+        vendor_id: vendorId,
+        start_time: startTime,
+        end_time: endTime,
+        status: "pending", // pay in store; online-paid bookings are created by stripe-webhook
       } as any)
       .select()
       .single();
+    if (bookingError) throw bookingError;
 
-    if (bookingError) {
-      console.error("Booking Error:", bookingError);
-      throw bookingError;
-    }
+    const { data: vendorUser } = await supabaseAdmin.auth.admin.getUserById(vendorId);
+    const vendorEmail = vendorUser?.user?.email ?? "";
+    if (!vendorEmail) console.warn(`Vendor ${vendorId} has no login email; booking email not sent`);
 
-    // 2. Look up vendor's auth email so we can notify them
-    let vendorEmail: string | null = null;
-    try {
-      const { data: vendorAuthUser } = await supabaseAdmin.auth.admin.getUserById(vendor_id);
-      vendorEmail = vendorAuthUser?.user?.email ?? null;
-      console.log("Vendor email:", vendorEmail);
-    } catch (e) {
-      console.error("Could not fetch vendor email:", e);
-    }
-
-    // Shared booking detail block used in all emails
-    const bookingDate = new Date(booking.start_time).toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-    const bookingTime = new Date(booking.start_time).toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    const bookingEndTime = new Date(booking.end_time).toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    const paymentLabel = payment_method === "store" ? "Pay on Store / Clinic" : "Paid Online via Stripe";
-
-    const detailsBlock = `
+    const when = formatBookingDate(startTime);
+    const until = formatBookingDate(endTime);
+    const title = escapeHtml(product!.title);
+    const store = escapeHtml(storeName);
+    const details = `
       <div style="background:#f9fafb;padding:16px 20px;border-radius:10px;margin:20px 0;border:1px solid #e5e7eb;">
-        <p style="margin:6px 0"><strong>Service:</strong> ${product_title}</p>
-        <p style="margin:6px 0"><strong>Provider:</strong> ${vendor_name}</p>
-        <p style="margin:6px 0"><strong>Date:</strong> ${bookingDate}</p>
-        <p style="margin:6px 0"><strong>Time:</strong> ${bookingTime} – ${bookingEndTime}</p>
-        <p style="margin:6px 0"><strong>Payment:</strong> ${paymentLabel}</p>
-        <p style="margin:6px 0"><strong>Status:</strong> ${payment_method === "store" ? "Pending — pay on arrival" : "Confirmed"}</p>
-      </div>
-    `;
+        <p style="margin:6px 0"><strong>Service:</strong> ${title}</p>
+        <p style="margin:6px 0"><strong>Provider:</strong> ${store}</p>
+        <p style="margin:6px 0"><strong>Starts:</strong> ${escapeHtml(when)}</p>
+        <p style="margin:6px 0"><strong>Ends:</strong> ${escapeHtml(until)}</p>
+        <p style="margin:6px 0"><strong>Payment:</strong> Pay at the store or clinic</p>
+        <p style="margin:6px 0"><strong>Status:</strong> Pending, pay on arrival</p>
+      </div>`;
+    const contact = `
+      <p style="margin:6px 0"><strong>Email:</strong> ${escapeHtml(customerEmail)}</p>
+      ${customerPhone ? `<p style="margin:6px 0"><strong>Phone:</strong> ${escapeHtml(customerPhone)}</p>` : ""}`;
 
-    // 3a. Customer confirmation email
-    await sendEmail(
-      [customer_email],
-      `Booking Confirmation: ${product_title}`,
-      `
-        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">
-          <h1 style="color:#10b981;">Booking Confirmed!</h1>
-          <p>Hi,</p>
-          <p>Your appointment for <strong>${product_title}</strong> with <strong>${vendor_name}</strong> has been successfully scheduled.</p>
-          ${detailsBlock}
-          <p>If you need to reschedule or cancel, please visit your profile on our website.</p>
-          <p>Best regards,<br>The LMG Team</p>
+    await sendEmail(customerEmail, `Booking received: ${product!.title}`, `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+        <h1 style="color:#10b981;">Booking received</h1>
+        <p>Hi,</p>
+        <p>Your appointment for <strong>${title}</strong> with <strong>${store}</strong> has been scheduled.</p>
+        ${details}
+        <p>To reschedule or cancel, visit your profile on our website.</p>
+        <p>Best regards,<br>The LMG Team</p>
+      </div>`);
+
+    await sendEmail(vendorEmail, `New booking: ${product!.title}, ${when}`, `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+        <h1 style="color:#10b981;">New appointment booked</h1>
+        <p>Hi ${store},</p>
+        <p>A customer has booked <strong>${title}</strong>.</p>
+        ${details}
+        <div style="background:#fff7ed;padding:16px 20px;border-radius:10px;margin:20px 0;border:1px solid #fed7aa;">
+          <p style="margin:6px 0;font-weight:bold;">Customer contact</p>
+          ${contact}
         </div>
-      `,
-    );
+        <p>Manage it in your <a href="https://www.lifestylemedicinegateway.com/vendor?tab=bookings" style="color:#10b981;">Vendor Dashboard → Bookings</a>.</p>
+      </div>`);
 
-    // 3b. Vendor notification email
-    if (vendorEmail) {
-      await sendEmail(
-        [vendorEmail],
-        `New Booking: ${product_title} — ${bookingDate}`,
-        `
-          <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">
-            <h1 style="color:#10b981;">New Appointment Booked!</h1>
-            <p>Hi ${vendor_name},</p>
-            <p>A customer has just booked your service <strong>${product_title}</strong>. Here are the details:</p>
-            ${detailsBlock}
-            <div style="background:#fff7ed;padding:16px 20px;border-radius:10px;margin:20px 0;border:1px solid #fed7aa;">
-              <p style="margin:6px 0;font-weight:bold;">Customer Contact</p>
-              <p style="margin:6px 0"><strong>Email:</strong> ${customer_email}</p>
-              ${customer_phone ? `<p style="margin:6px 0"><strong>Phone:</strong> ${customer_phone}</p>` : ""}
-            </div>
-            <p>You can view and manage this booking in your <a href="https://www.lifestylemedicinegateway.com/vendor?tab=bookings" style="color:#10b981;">Vendor Dashboard → Bookings</a>.</p>
-            <p>Best regards,<br>The LMG Team</p>
-          </div>
-        `,
-      );
+    await sendEmail(ADMIN_EMAIL, `[New Booking] ${product!.title}, ${when}`, `
+      <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+        <h1 style="color:#6366f1;">New service booking</h1>
+        ${details}
+        <div style="background:#f0fdf4;padding:16px 20px;border-radius:10px;margin:20px 0;border:1px solid #bbf7d0;">
+          <p style="margin:6px 0;font-weight:bold;">Customer</p>
+          ${contact}
+        </div>
+        <p style="margin:6px 0"><strong>Vendor email:</strong> ${escapeHtml(vendorEmail || "N/A")}</p>
+        <p>Manage bookings in the <a href="https://www.lifestylemedicinegateway.com/admin" style="color:#6366f1;">Admin Dashboard</a>.</p>
+      </div>`);
+
+    if (customerPhone) {
+      await sendSms(customerPhone, `LMG: Booking for ${product!.title} on ${when} received. Pay at the store.`);
     }
 
-    // 3c. Admin notification email
-    await sendEmail(
-      [ADMIN_EMAIL],
-      `[New Booking] ${product_title} — ${bookingDate}`,
-      `
-        <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;">
-          <h1 style="color:#6366f1;">New Service Booking</h1>
-          <p>A new booking has been made on Lifestyle Medicine Gateway.</p>
-          ${detailsBlock}
-          <div style="background:#f0fdf4;padding:16px 20px;border-radius:10px;margin:20px 0;border:1px solid #bbf7d0;">
-            <p style="margin:6px 0;font-weight:bold;">Customer Details</p>
-            <p style="margin:6px 0"><strong>Email:</strong> ${customer_email}</p>
-            ${customer_phone ? `<p style="margin:6px 0"><strong>Phone:</strong> ${customer_phone}</p>` : ""}
-          </div>
-          <div style="background:#f0f9ff;padding:16px 20px;border-radius:10px;margin:20px 0;border:1px solid #bae6fd;">
-            <p style="margin:6px 0;font-weight:bold;">Vendor Details</p>
-            <p style="margin:6px 0"><strong>Store:</strong> ${vendor_name}</p>
-            <p style="margin:6px 0"><strong>Email:</strong> ${vendorEmail ?? "N/A"}</p>
-            <p style="margin:6px 0"><strong>Vendor ID:</strong> ${vendor_id}</p>
-          </div>
-          <p>Manage all bookings in the <a href="https://www.lifestylemedicinegateway.com/admin" style="color:#6366f1;">Admin Dashboard</a>.</p>
-        </div>
-      `,
-    );
-
-    // 4. Send SMS to customer via ClickSend
-    if (CLICKSEND_USERNAME && CLICKSEND_API_KEY && customer_phone) {
-      try {
-        const auth = btoa(`${CLICKSEND_USERNAME}:${CLICKSEND_API_KEY}`);
-        const formattedDate = new Date(booking.start_time).toLocaleString("en-US", {
-          month: "short",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-        const smsRes = await fetch("https://rest.clicksend.com/v3/sms/send", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Basic ${auth}`,
-          },
-          body: JSON.stringify({
-            messages: [
-              {
-                body: `LMG: Booking confirmed for ${product_title} on ${formattedDate}. Payment: ${payment_method === "store" ? "Pay on Store" : "Paid"}.`,
-                to: customer_phone,
-              },
-            ],
-          }),
-        });
-        if (!smsRes.ok) console.error("Failed to send SMS:", await smsRes.text());
-      } catch (e) {
-        console.error("SMS fetch error:", e);
-      }
-    }
-
-    return new Response(JSON.stringify({ success: true, booking: bookingData }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    return reply({ success: true, booking: bookingData });
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 400,
-    });
+    console.error("confirm-booking failed:", error?.message ?? error);
+    return reply({ error: "We couldn't complete your booking. Please try again." }, 500);
   }
 });

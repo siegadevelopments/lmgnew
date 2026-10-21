@@ -164,27 +164,29 @@ function ProductContent() {
     if (!booking) return;
     setIsBookingLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("confirm-booking", {
+      // The function reads the service, provider and your email from the database and your
+      // account; only the service, time slot and phone number are sent.
+      const { error } = await supabase.functions.invoke("confirm-booking", {
         body: {
           booking,
-          customer_email: user?.email,
           customer_phone: customerPhone,
           product_id: product.id,
-          vendor_id: product.vendor_id,
-          product_title: product.title,
-          vendor_name: product.vendor_profiles?.store_name,
-          payment_method: "store",
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Show the function's own reason (e.g. "That time has just been booked") rather than
+        // supabase-js's generic "non-2xx status code".
+        const reason = await (error as any).context?.json?.().then((b: any) => b?.error).catch(() => null);
+        throw new Error(reason || error.message);
+      }
 
       toast.success("Booking confirmed! Check your email and SMS for details.");
       setIsPaymentDialogOpen(false);
       router.push("/profile");
     } catch (err: any) {
       console.error("Booking error:", err);
-      toast.error("Failed to confirm booking: " + err.message);
+      toast.error(err.message || "We couldn't complete your booking. Please try again.");
     } finally {
       setIsBookingLoading(false);
     }
