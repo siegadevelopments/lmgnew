@@ -59,11 +59,9 @@ export function VendorLiveStream({ vendorId }: { vendorId: string }) {
       } else {
         setStreamInfo({ ...streamInfo, is_live: newStatus });
         toast.success(newStatus ? "You are now LIVE!" : "Stream ended");
-
-        // Also update vendor_profiles for easy discovery
-        await (supabase.from("vendor_profiles") as any)
-          .update({ is_live: newStatus })
-          .eq("id", vendorId);
+        // Streaming status lives in vendor_streams only. vendor_profiles.is_live is the store's
+        // visibility in the shop (admin-controlled); writing the stream status into it hid a
+        // vendor's whole store every time they ended a stream.
       }
     } catch (err: any) {
       toast.error(err.message || "Failed to update status");

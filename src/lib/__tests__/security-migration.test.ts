@@ -59,3 +59,47 @@ describe("20261021_create_marketing_plan_state_secure.sql", () => {
     expect(mkt).toContain('DROP POLICY IF EXISTS "Allow write access to marketing_plan_state"');
   });
 });
+
+// 2026-10-21 live policy snapshot (supabase/live-security-snapshot.md).
+describe("20261022_tighten_rls.sql", () => {
+  const sql = readFileSync(
+    path.resolve(import.meta.dirname, "../../../supabase/migrations/20261022_tighten_rls.sql"),
+    "utf8",
+  );
+
+  it("account-admin functions are service role only", () => {
+    expect(sql).toMatch(/REVOKE ALL ON FUNCTION public\.admin_update_user_email\(uuid, text\) FROM PUBLIC, anon, authenticated;/);
+    expect(sql).toMatch(/REVOKE ALL ON FUNCTION public\.admin_delete_user\(uuid\) FROM PUBLIC, anon, authenticated;/);
+  });
+
+  it("withdrawal admin access uses is_admin(), not user-editable metadata", () => {
+    expect(sql).toMatch(/DROP POLICY IF EXISTS "Admins can manage all withdrawal requests"/);
+    expect(sql).toMatch(/"Admins manage withdrawal requests"[\s\S]*USING \(public\.is_admin\(\)\)/);
+    expect(sql.replace(/^--.*$/gm, "")).not.toMatch(/user_metadata/);
+  });
+
+  it("browsers can't insert orders or order items", () => {
+    for (const p of ["Anyone can create orders", "Users can create orders", "Anyone can insert order items"]) {
+      expect(sql).toContain(`DROP POLICY IF EXISTS "${p}"`);
+    }
+    expect(sql.replace(/^--.*$/gm, "")).not.toMatch(/ON public\.(orders|order_items)\s+FOR INSERT/);
+  });
+
+  it("store approval, commission and visibility are admin-only", () => {
+    expect(sql).toMatch(/NEW\.is_approved := OLD\.is_approved;/);
+    expect(sql).toMatch(/NEW\.commission_rate := OLD\.commission_rate;/);
+    expect(sql).toMatch(/NEW\.is_live := OLD\.is_live;/);
+  });
+
+  it("anonymous visitors can't read commission or AI settings, or drafts", () => {
+    expect(sql).toMatch(/NOT IN \('commission_rate', 'ai_enabled', 'ai_instructions', 'representative_name'\)/);
+    expect(sql).toMatch(/"Published products are viewable by everyone"[\s\S]*USING \(status = 'published'\)/);
+  });
+});
+
+describe("vendor live stream", () => {
+  it("doesn't write store visibility (vendor_profiles.is_live)", () => {
+    const src = readFileSync(path.resolve(import.meta.dirname, "../../components/vendor/VendorLiveStream.tsx"), "utf8");
+    expect(src).not.toMatch(/from\("vendor_profiles"\)/);
+  });
+});
