@@ -20,6 +20,8 @@ export interface DbProduct {
   status: string;
   vendor_id: string | null;
   variants: unknown;
+  /** The selling store; products from unapproved or hidden (not live) stores can't be bought. */
+  vendor_profiles?: { is_approved: boolean | null; is_live: boolean | null } | null;
 }
 
 export interface PricedItem {
@@ -55,6 +57,11 @@ export function priceCart(clientItems: unknown, products: DbProduct[]): PriceRes
     }
     const product = byId.get(Number(raw.product_id));
     if (!product || product.status !== "published") {
+      return { ok: false, error: "An item in your cart is no longer available." };
+    }
+    // Same rule as the shop: only approved stores that are live. (A test order on 2026-10-21
+    // bought a product from a store that was approved but hidden.)
+    if (product.vendor_profiles && (!product.vendor_profiles.is_approved || product.vendor_profiles.is_live === false)) {
       return { ok: false, error: "An item in your cart is no longer available." };
     }
 
@@ -98,4 +105,26 @@ export function priceCart(clientItems: unknown, products: DbProduct[]): PriceRes
   }
 
   return { ok: true, items };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Redirects after Stripe Checkout
+// ---------------------------------------------------------------------------------------------
+
+export const SITE_URL = "https://www.lifestylemedicinegateway.com";
+const ALLOWED_ORIGINS = [SITE_URL, "https://lifestylemedicinegateway.com", "http://localhost:3000"];
+
+/**
+ * success_url / cancel_url arrive from the browser. Only addresses on this site are used;
+ * anything else falls back, so a crafted checkout link can't send a paying customer to another
+ * site afterwards.
+ */
+export function safeRedirectUrl(candidate: unknown, fallbackPath: string): string {
+  try {
+    const url = new URL(String(candidate ?? ""));
+    if (ALLOWED_ORIGINS.includes(url.origin)) return url.toString();
+  } catch {
+    // not a URL
+  }
+  return `${SITE_URL}${fallbackPath}`;
 }
