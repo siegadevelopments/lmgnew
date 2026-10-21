@@ -119,3 +119,26 @@ describe("stripe-webhook source", () => {
     expect(src).toMatch(/status: 500/);
   });
 });
+
+// Regression: the webhook selected vendor_profiles.representative_email, which doesn't exist, so
+// the query failed and the first real order stopped before vendor earnings were written (and the
+// old webhook silently never sent vendor emails). Columns it reads must exist on the table.
+describe("stripe-webhook reads only real vendor_profiles columns", () => {
+  const root = path.resolve(import.meta.dirname, "../../..");
+  const src = readFileSync(path.join(root, "supabase/functions/stripe-webhook/index.ts"), "utf8");
+  const types = readFileSync(path.join(root, "src/integrations/supabase/types.ts"), "utf8");
+  const row = types.slice(types.indexOf("vendor_profiles: {"), types.indexOf("Insert:", types.indexOf("vendor_profiles: {")));
+
+  it("selects only columns present in the vendor_profiles type", () => {
+    const m = src.match(/from\("vendor_profiles"\)\s*\.select\("([^"]+)"\)/);
+    expect(m).not.toBeNull();
+    for (const col of m![1].split(",").map((c) => c.trim())) {
+      expect(row, `vendor_profiles.${col}`).toMatch(new RegExp(`\\b${col}:`));
+    }
+  });
+
+  it("gets the vendor's email from their auth account", () => {
+    expect(src).toMatch(/auth\.admin\.getUserById\(vendorId\)/);
+    expect(src).not.toMatch(/representative_email/);
+  });
+});
