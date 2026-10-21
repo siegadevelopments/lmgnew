@@ -80,6 +80,21 @@ describe("SEO routes", () => {
     expect(read(f)).not.toMatch(/catch\s*\(/);
   });
 
+  // Pages showing product data must refresh on the same five-minute interval as the data cache
+  // (DATA_REVALIDATE_SECONDS); otherwise edits can take up to two hours to appear.
+  it.each([
+    "page.tsx",
+    "categories/page.tsx",
+    "categories/[slug]/page.tsx",
+    "guides/[slug]/page.tsx",
+    "products/page.tsx",
+    "products/[slug]/layout.tsx",
+    "vendors/page.tsx",
+    "vendors/[slug]/layout.tsx",
+  ])("%s refreshes every five minutes", (f) => {
+    expect(read(f)).toMatch(/export const revalidate = 300;/);
+  });
+
   it("/products is a server component that seeds the listing", () => {
     const src = read("products/page.tsx");
     expect(src).not.toMatch(/['"]use client['"]/);

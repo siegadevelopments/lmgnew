@@ -7,7 +7,7 @@
 // see docs/DEVELOPMENT_STANDARDS.md §2) so crawlers see it without running JavaScript.
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { globalMockProductsList } from "@/lib/queries"; // homepage fallback only
-import { productInCategory } from "@/lib/wellness-categories";
+import { categoriesWithProducts, productInCategory } from "@/lib/wellness-categories";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -76,11 +76,23 @@ export class ServerDataError extends Error {
 export const REQUEST_TIMEOUT_MS = 8000;
 export const RETRY_DELAYS_MS = [300, 1000]; // 3 attempts in total
 
-/** Aborts a hung Supabase request instead of letting it hold the render until the platform kills it. */
+export const DATA_REVALIDATE_SECONDS = 300;
+
+/**
+ * Aborts a hung Supabase request instead of letting it hold the render until the platform kills it.
+ *
+ * `next.revalidate` caps how long Next's data cache keeps a response. Without it the response was
+ * cached for the page's own hour, so a page refreshing on schedule could still render data up to
+ * an hour old (two hours end to end). Pages that show this data set `revalidate = 300` to match,
+ * so admin edits show within about ten minutes. (Set it on the route explicitly: a page that reuses
+ * a shared result below makes no fetch of its own, so the fetch setting alone doesn't reach it.)
+ * (`cache: "no-store"` is not an option: it turns every ISR route back into dynamic rendering.)
+ * Only 200 responses are ever stored, so a failure is never cached.
+ */
 function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
   const signal = init?.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
-  return fetch(input, { ...init, signal });
+  return fetch(input, { ...init, signal, next: { revalidate: DATA_REVALIDATE_SECONDS } } as RequestInit);
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -176,6 +188,14 @@ export async function getCategoryProducts(categorySlug: string, keywords: string
 /** Products for /guides/[slug] (the guide's category); the guide shows at most six. */
 export async function getGuideProducts(categorySlug: string, keywords: string[]) {
   return (await getCategoryProducts(categorySlug, keywords)).slice(0, 6);
+}
+
+/**
+ * Category slugs that currently have at least one product. Empty categories are left out of the
+ * category list, the homepage grid and the sitemap. Throws ServerDataError on failure.
+ */
+export async function getNonEmptyCategorySlugs(): Promise<string[]> {
+  return categoriesWithProducts(await fetchLiveProducts());
 }
 
 const LISTING_COLUMNS = `id, vendor_id, title, slug, excerpt, price, image_url, stock, status, created_at, category, product_type, variants,

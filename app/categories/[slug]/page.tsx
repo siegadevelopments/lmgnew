@@ -9,7 +9,8 @@ import { getCategoryProducts } from "@/lib/server-data";
 
 // Server component: products, FAQs and JSON-LD are rendered into the HTML so crawlers (and
 // users on slow devices) get the full page without running JavaScript. ISR keeps it fresh.
-export const revalidate = 3600;
+// Five minutes, matching DATA_REVALIDATE_SECONDS in src/lib/server-data.ts (must be a literal).
+export const revalidate = 300;
 
 // Without this the route is fully dynamic: nothing is cached and `revalidate` has no effect.
 // Prebuilding every known slug makes it ISR, so if a later refresh fails (the data helpers throw

@@ -3,12 +3,13 @@ import { HeroSection } from "@/components/HeroSection";
 import { SchemaOrg } from "@/components/SchemaOrg";
 import { ServerHydrate } from "@/components/ServerHydrate";
 import { brandsQueryOptions, newArrivalsQueryOptions, trustStatsQueryOptions } from "@/lib/queries";
-import { getApprovedVendors, getNewArrivals, getTrustStats } from "@/lib/server-data";
+import { getApprovedVendors, getNewArrivals, getNonEmptyCategorySlugs, getTrustStats } from "@/lib/server-data";
 
 // Counters, new arrivals and featured vendors are fetched on the server and seeded into the
 // React Query cache, so they are in the HTML crawlers receive (previously "—" and no vendors until
 // JavaScript ran). Each fetch is independent: a failure just leaves that section to the client.
-export const revalidate = 3600;
+// Five minutes, matching DATA_REVALIDATE_SECONDS in src/lib/server-data.ts (must be a literal).
+export const revalidate = 300;
 
 const TrustBar = dynamic(() => import("@/components/TrustBar").then((mod) => mod.TrustBar));
 const WellnessCategoryGrid = dynamic(() => import("@/components/WellnessCategoryGrid").then((mod) => mod.WellnessCategoryGrid));
@@ -26,10 +27,11 @@ function settled<T>(r: PromiseSettledResult<T>): T | undefined {
 }
 
 export default async function IndexPage() {
-  const [stats, arrivals, vendors] = await Promise.allSettled([
+  const [stats, arrivals, vendors, categorySlugs] = await Promise.allSettled([
     getTrustStats(),
     getNewArrivals(5),
     getApprovedVendors(),
+    getNonEmptyCategorySlugs(),
   ]);
 
   return (
@@ -49,7 +51,8 @@ export default async function IndexPage() {
       <HeroSection />
       <TrustBar />
       <div id="wellness-categories">
-        <WellnessCategoryGrid />
+        {/* Empty categories are hidden; if the count fails, every category shows as before. */}
+        <WellnessCategoryGrid visibleSlugs={settled(categorySlugs)} />
       </div>
 
       <NewArrivalsSection />
