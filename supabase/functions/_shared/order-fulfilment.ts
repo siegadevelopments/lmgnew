@@ -99,13 +99,13 @@ export function buildEarnings(
     .map((item, idx) => {
       const vendorId = item.product.metadata.vendor_id as string;
       const rate = commissionByVendor[vendorId] ?? 10;
-      const itemTotal = item.amount_total / 100;
-      const platformFee = itemTotal * (rate / 100);
+      // Whole cents throughout, so stored amounts are exact (was 6.890000000000001).
+      const feeCents = Math.round((item.amount_total * rate) / 100);
       return {
         vendor_id: vendorId,
         order_id: orderId,
-        amount: itemTotal - platformFee + shipping[idx] / 100,
-        platform_fee: platformFee,
+        amount: (item.amount_total - feeCents + shipping[idx]) / 100,
+        platform_fee: feeCents / 100,
         status: "pending",
       };
     });
@@ -126,4 +126,71 @@ export function buildBookings(orderId: string, userId: string | null, lineItems:
         status: "confirmed",
       };
     });
+}
+
+// ---------------------------------------------------------------------------------------------
+// Refunds
+// ---------------------------------------------------------------------------------------------
+
+export interface EarningsRow {
+  vendor_id: string;
+  amount: number; // AUD; reversal rows are negative
+  platform_fee: number;
+}
+
+const cents = (aud: number) => Math.round(aud * 100);
+
+/**
+ * Negative earnings rows that reverse a vendor's share of a refund. vendor_earnings only allows
+ * the statuses "pending" and "paid", so a refund is an offsetting "pending" row rather than a
+ * status change: admin payouts total each vendor's pending rows, so the refund drops out of the
+ * next payout, and if the original earnings were already paid out, it is recovered from it.
+ *
+ * Stripe reports the cumulative amount refunded on the charge; previouslyRefundedCents is what
+ * this order has already reversed, so repeated or replayed refund events never double-count.
+ * A partial refund reverses each vendor's original earnings (and fee) in proportion; a refund
+ * that completes the full amount reverses exactly whatever is still outstanding.
+ */
+export function computeRefundReversals(
+  orderId: string,
+  existing: EarningsRow[],
+  chargeCents: number,
+  refundedCentsTotal: number,
+  previouslyRefundedCents: number,
+) {
+  const delta = refundedCentsTotal - previouslyRefundedCents;
+  if (delta <= 0 || chargeCents <= 0) return [];
+  const full = refundedCentsTotal >= chargeCents;
+
+  const byVendor = new Map<string, { earned: number; feeEarned: number; net: number; netFee: number }>();
+  for (const row of existing) {
+    const v = byVendor.get(row.vendor_id) ?? { earned: 0, feeEarned: 0, net: 0, netFee: 0 };
+    if (row.amount > 0) v.earned += cents(row.amount);
+    if (row.platform_fee > 0) v.feeEarned += cents(row.platform_fee);
+    v.net += cents(row.amount);
+    v.netFee += cents(row.platform_fee);
+    byVendor.set(row.vendor_id, v);
+  }
+
+  const rows = [];
+  for (const [vendorId, v] of byVendor) {
+    const amount = full ? v.net : Math.min(v.net, Math.round((v.earned * delta) / chargeCents));
+    const fee = full ? v.netFee : Math.min(v.netFee, Math.round((v.feeEarned * delta) / chargeCents));
+    if (amount <= 0 && fee <= 0) continue;
+    rows.push({
+      vendor_id: vendorId,
+      order_id: orderId,
+      amount: -Math.max(0, amount) / 100,
+      platform_fee: -Math.max(0, fee) / 100,
+      status: "pending",
+    });
+  }
+  return rows;
+}
+
+/** Order status after a refund: only a full refund changes it, and shipped orders keep theirs. */
+export function statusAfterRefund(currentStatus: string, full: boolean) {
+  if (!full) return { status: currentStatus, payment_status: "paid" };
+  const notYetShipped = currentStatus === "pending" || currentStatus === "confirmed";
+  return { status: notYetShipped ? "cancelled" : currentStatus, payment_status: "refunded" };
 }

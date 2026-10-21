@@ -9,6 +9,8 @@ import {
   buildEarnings,
   buildBookings,
   allocateShipping,
+  computeRefundReversals,
+  statusAfterRefund,
   type PaidLineItem,
 } from "../../../supabase/functions/_shared/order-fulfilment";
 
@@ -140,5 +142,57 @@ describe("stripe-webhook reads only real vendor_profiles columns", () => {
   it("gets the vendor's email from their auth account", () => {
     expect(src).toMatch(/auth\.admin\.getUserById\(vendorId\)/);
     expect(src).not.toMatch(/\?\.representative_email/); // code, not the explanatory comment
+  });
+});
+
+describe("earnings are whole cents", () => {
+  it("stores exact amounts (regression: 6.890000000000001)", () => {
+    const [row] = buildEarnings("o1", [item({}, { amount_total: 100, quantity: 1 })], {}, 599);
+    expect(row.amount).toBe(6.89);
+    expect(row.platform_fee).toBe(0.1);
+  });
+});
+
+describe("computeRefundReversals", () => {
+  // Test order: $1 product + $5.99 shipping, 10% → vendor 6.89, platform 0.10, charge 699c.
+  const earned = [{ vendor_id: "v1", amount: 6.89, platform_fee: 0.1 }];
+
+  it("reverses everything on a full refund", () => {
+    const rows = computeRefundReversals("o1", earned, 699, 699, 0);
+    expect(rows).toEqual([{ vendor_id: "v1", order_id: "o1", amount: -6.89, platform_fee: -0.1, status: "pending" }]);
+  });
+
+  it("reverses in proportion on a partial refund", () => {
+    const two = [{ vendor_id: "v1", amount: 40, platform_fee: 4 }, { vendor_id: "v2", amount: 20, platform_fee: 2 }];
+    const rows = computeRefundReversals("o1", two, 6600, 3300, 0); // half refunded
+    expect(rows.map((r) => [r.vendor_id, r.amount, r.platform_fee])).toEqual([["v1", -20, -2], ["v2", -10, -1]]);
+  });
+
+  it("never double-counts a replayed event", () => {
+    expect(computeRefundReversals("o1", earned, 699, 699, 699)).toEqual([]);
+  });
+
+  it("a later refund completing the total reverses exactly what is left", () => {
+    const first = computeRefundReversals("o1", earned, 699, 233, 0);
+    const after = [...earned, ...first.map((r) => ({ vendor_id: r.vendor_id, amount: r.amount, platform_fee: r.platform_fee }))];
+    const second = computeRefundReversals("o1", after, 699, 699, 233);
+    const net = after.reduce((s, r) => s + Math.round(r.amount * 100), 0) + Math.round(second[0].amount * 100);
+    expect(net).toBe(0);
+  });
+
+  it("only uses statuses the table allows", () => {
+    for (const r of computeRefundReversals("o1", earned, 699, 699, 0)) expect(["pending", "paid"]).toContain(r.status);
+  });
+});
+
+describe("statusAfterRefund", () => {
+  it("cancels an unshipped order on a full refund", () => {
+    expect(statusAfterRefund("confirmed", true)).toEqual({ status: "cancelled", payment_status: "refunded" });
+  });
+  it("keeps a shipped order's status, marks it refunded", () => {
+    expect(statusAfterRefund("delivered", true)).toEqual({ status: "delivered", payment_status: "refunded" });
+  });
+  it("leaves a partially refunded order paid", () => {
+    expect(statusAfterRefund("confirmed", false)).toEqual({ status: "confirmed", payment_status: "paid" });
   });
 });
