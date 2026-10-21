@@ -42,3 +42,20 @@ describe("20261021_apply_security_hardening.sql", () => {
     }
   });
 });
+
+// 20260903 created this table world-readable/writable and was never applied live; the catch-up
+// must create it admin-only and remove the open policies if they ever existed.
+describe("20261021_create_marketing_plan_state_secure.sql", () => {
+  const mkt = readFileSync(
+    path.resolve(import.meta.dirname, "../../../supabase/migrations/20261021_create_marketing_plan_state_secure.sql"),
+    "utf8",
+  );
+
+  it("creates the table with RLS and only the admin policy", () => {
+    expect(mkt).toMatch(/CREATE TABLE IF NOT EXISTS public\.marketing_plan_state/);
+    expect(mkt).toMatch(/ENABLE ROW LEVEL SECURITY/);
+    expect(mkt).toMatch(/CREATE POLICY "Admins manage marketing_plan_state"[\s\S]*USING \(public\.is_admin\(\)\) WITH CHECK \(public\.is_admin\(\)\)/);
+    expect(mkt.match(/CREATE POLICY/g)).toHaveLength(1);
+    expect(mkt).toContain('DROP POLICY IF EXISTS "Allow write access to marketing_plan_state"');
+  });
+});
