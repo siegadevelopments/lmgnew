@@ -49,19 +49,16 @@ export function BookingsTab({ vendorId }: Props) {
   const fetchBookings = async () => {
     setLoading(true);
     try {
-      // Only the customer's name: profiles has no email column (so the old join always failed and
-      // fell back), and phone isn't readable by other users. Vendors get the customer's email and
-      // phone in the booking notification email (confirm-booking edge function).
       const { data, error } = await (supabase
         .from("bookings")
         .select(`
           *,
-          customer:profiles!bookings_customer_id_fkey(full_name),
           product:products!bookings_product_id_fkey(title, price)
         `)
         .eq("vendor_id", vendorId)
         .order("start_time", { ascending: false }) as any);
 
+      let rows: Booking[] = data || [];
       if (error) {
         // Fallback: try without joins if FK aliases aren't set
         const { data: fallback, error: fbError } = await (supabase
@@ -71,10 +68,23 @@ export function BookingsTab({ vendorId }: Props) {
           .order("start_time", { ascending: false }) as any);
 
         if (fbError) throw fbError;
-        setBookings(fallback || []);
-      } else {
-        setBookings(data || []);
+        rows = fallback || [];
       }
+
+      // Customer name, email and phone for this vendor's own bookings only
+      // (supabase/migrations/20261021_vendor_booking_contacts.sql). profiles can't be joined for
+      // these: it has no email column and phone isn't readable by other users. If the function
+      // isn't there yet, bookings still load and show "Guest" as before.
+      const { data: contacts, error: contactsError } = await (supabase as any).rpc("vendor_booking_contacts");
+      if (contactsError) {
+        console.warn("Booking contacts unavailable:", contactsError.message);
+      } else {
+        const byBooking = new Map<string, Booking["customer"]>(
+          (contacts || []).map((c: any) => [c.booking_id, { full_name: c.full_name, email: c.email, phone: c.phone }]),
+        );
+        rows = rows.map((b) => ({ ...b, customer: byBooking.get(String(b.id)) ?? b.customer }));
+      }
+      setBookings(rows);
     } catch (err: any) {
       console.error("Error fetching bookings:", err);
       toast.error("Failed to load bookings");

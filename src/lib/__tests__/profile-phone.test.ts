@@ -48,3 +48,16 @@ describe("profile migrations", () => {
     expect(s).toMatch(/column_name <> 'phone'/);
   });
 });
+
+describe("vendor_booking_contacts()", () => {
+  const s = readFileSync(path.join(ROOT, "supabase/migrations/20261021_vendor_booking_contacts.sql"), "utf8");
+
+  it("returns contacts only for the calling vendor's bookings", () => {
+    expect(s).toMatch(/WHERE b\.vendor_id = auth\.uid\(\);/);
+  });
+
+  it("is not callable anonymously", () => {
+    expect(s).toMatch(/REVOKE ALL ON FUNCTION public\.vendor_booking_contacts\(\) FROM PUBLIC, anon;/);
+    expect(s).toMatch(/GRANT EXECUTE ON FUNCTION public\.vendor_booking_contacts\(\) TO authenticated;/);
+  });
+});
