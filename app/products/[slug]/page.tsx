@@ -1,6 +1,7 @@
 'use client'
 
 import { useParams, useRouter, usePathname } from "next/navigation";
+import { fetchMyProfile } from "@/lib/profile-reads";
 import { sanitizeHtml, jsonLd } from "@/lib/security";
 import { useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { productBySlugQueryOptionsV2 } from "@/lib/queries";
@@ -106,10 +107,7 @@ function ProductContent() {
     if (user && product.product_type === "service" && booking) {
       // Fetch user profile phone if not set
       if (!customerPhone) {
-        const { data: profile } = await (supabase.from("profiles") as any)
-          .select("phone")
-          .eq("id", user.id)
-          .single();
+        const profile = await fetchMyProfile().catch(() => null);
         if (profile?.phone) setCustomerPhone(profile.phone);
       }
       setIsPaymentDialogOpen(true);

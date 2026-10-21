@@ -49,11 +49,14 @@ export function BookingsTab({ vendorId }: Props) {
   const fetchBookings = async () => {
     setLoading(true);
     try {
+      // Only the customer's name: profiles has no email column (so the old join always failed and
+      // fell back), and phone isn't readable by other users. Vendors get the customer's email and
+      // phone in the booking notification email (confirm-booking edge function).
       const { data, error } = await (supabase
         .from("bookings")
         .select(`
           *,
-          customer:profiles!bookings_customer_id_fkey(full_name, email, phone),
+          customer:profiles!bookings_customer_id_fkey(full_name),
           product:products!bookings_product_id_fkey(title, price)
         `)
         .eq("vendor_id", vendorId)

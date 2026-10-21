@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, Suspense } from "react";
+import { adminListProfiles } from "@/lib/profile-reads";
 import { WellnessCategoryPicker } from "@/components/WellnessCategoryPicker";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -199,11 +200,7 @@ function AdminDashboardContent() {
               .select("*")
               .order("created_at", { ascending: false })
               .limit(50),
-            supabase
-              .from("profiles")
-              .select("*")
-              .order("created_at", { ascending: false })
-              .limit(100),
+            adminListProfiles().limit(100),
             supabase.from("newsletter_subscribers").select("id", { count: "exact", head: true }),
             supabase
               .from("vendor_profiles")
@@ -1801,11 +1798,8 @@ function AdminDashboardContent() {
           }}
           onSuccess={() => {
             // Re-fetch users
-            supabase
-              .from("profiles")
-              .select("*")
-              .order("created_at", { ascending: false })
-              .then(({ data }) => {
+            adminListProfiles()
+              .then(({ data }: { data: any[] | null }) => {
                 if (data) setUsers(data);
               });
           }}

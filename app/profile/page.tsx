@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, Suspense } from "react";
+import { fetchMyProfile } from "@/lib/profile-reads";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -88,14 +89,11 @@ function ProfileContent() {
     if (!user) return;
 
     // Fetch profile
-    supabase
-      .from("profiles")
-      .select("full_name, phone, avatar_url")
-      .eq("id", user.id)
-      .single()
-      .then(({ data }) => {
-        if (data) setProfile(data);
-      });
+    fetchMyProfile()
+      .then((data) => {
+        if (data) setProfile({ full_name: data.full_name, phone: data.phone, avatar_url: data.avatar_url });
+      })
+      .catch((err) => console.error("Failed to load profile:", err));
 
     // Fetch orders with items
     supabase
