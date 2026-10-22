@@ -135,3 +135,19 @@ describe("20261022_restrict_content_publishing.sql", () => {
     }
   });
 });
+
+describe("20261022_order_items_vendor_columns.sql", () => {
+  const sql = readFileSync(
+    path.resolve(import.meta.dirname, "../../../supabase/migrations/20261022_order_items_vendor_columns.sql"),
+    "utf8",
+  );
+  it("vendors can change only status and tracking_number", () => {
+    expect(sql).toMatch(/jsonb_populate_record\(OLD, jsonb_build_object\('status', NEW\.status, 'tracking_number', NEW\.tracking_number\)\)/);
+    expect(sql).toMatch(/BEFORE UPDATE ON public\.order_items/);
+  });
+  it("matches the only fields the vendor dashboard updates", () => {
+    const tab = readFileSync(path.resolve(import.meta.dirname, "../../components/vendor/OrdersTab.tsx"), "utf8");
+    const fields = [...tab.matchAll(/updateOrderItem\(item\.id, \{ (\w+):/g)].map((m) => m[1]);
+    expect(new Set(fields)).toEqual(new Set(["tracking_number", "status"]));
+  });
+});
