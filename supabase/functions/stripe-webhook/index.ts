@@ -13,6 +13,7 @@ import {
   refundEmail,
   shouldFulfil,
   statusAfterRefund,
+  stockItems,
   type PaidLineItem,
 } from "../_shared/order-fulfilment.ts";
 
@@ -118,10 +119,35 @@ async function handleRefund(charge: Stripe.Charge): Promise<Response> {
     }
 
     const full = total >= charge.amount;
-    const { error: statusError } = await supabaseAdmin
-      .from("orders")
-      .update(statusAfterRefund(order.status, full))
-      .eq("id", order.id);
+    const after = statusAfterRefund(order.status, full);
+
+    // A full refund of an order that hadn't shipped: put the stock back (once) and cancel its
+    // bookings. Shipped orders keep their stock change; returns are handled by the vendor.
+    if (full && after.status === "cancelled" && order.stripe_session_id) {
+      const items = await stripe.checkout.sessions.listLineItems(order.stripe_session_id, { expand: ["data.price.product"], limit: 100 });
+      const { error: restockError } = await supabaseAdmin.rpc("adjust_order_stock", {
+        p_order_id: order.id,
+        p_items: stockItems(items.data.map((item: any) => ({
+          quantity: item.quantity,
+          amount_total: item.amount_total,
+          product: { name: item.price?.product?.name ?? "", metadata: item.price?.product?.metadata ?? {} },
+        }))),
+        p_restock: true,
+      });
+      if (restockError) throw new Error(`Restock failed: ${restockError.message}`);
+    }
+    if (full) {
+      await attempt("Cancel refunded bookings", async () => {
+        const { error: bookingsError } = await supabaseAdmin
+          .from("bookings")
+          .update({ status: "cancelled" })
+          .eq("order_id", order.id)
+          .in("status", ["pending", "confirmed"]);
+        if (bookingsError) throw bookingsError;
+      });
+    }
+
+    const { error: statusError } = await supabaseAdmin.from("orders").update(after).eq("id", order.id);
     if (statusError) throw statusError;
 
     const refunded = (total - previous) / 100;
@@ -270,6 +296,14 @@ Deno.serve(async (req: Request) => {
     const shippingCents = session.total_details?.amount_shipping ?? 0;
     await insertAll("vendor_earnings", buildEarnings(orderId, lineItems, commission, shippingCents));
     await insertAll("bookings", buildBookings(orderId, userId, lineItems));
+
+    // Reduce stock once per order (the function records it on the order, atomically).
+    const { error: stockError } = await supabaseAdmin.rpc("adjust_order_stock", {
+      p_order_id: orderId,
+      p_items: stockItems(lineItems),
+      p_restock: false,
+    });
+    if (stockError) throw new Error(`Stock adjustment failed: ${stockError.message}`);
 
     // Notifications. All text from customers or vendors is escaped before going into HTML.
     const ref = `LMG-${orderId.substring(0, 8).toUpperCase()}`;

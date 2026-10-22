@@ -27,6 +27,8 @@ export interface DbProduct {
 export interface PricedItem {
   product_id: number;
   variant_id: number | null;
+  /** The variant's id as stored in products.variants (often a UUID); used for stock. */
+  variant_key: string | null;
   name: string;
   price: number; // AUD, GST-inclusive
   quantity: number;
@@ -69,12 +71,14 @@ export function priceCart(clientItems: unknown, products: DbProduct[]): PriceRes
     let name = product.title;
     let stock = product.stock ?? 100;
     let variantId: number | null = null;
+    let variantKey: string | null = null;
 
     if (raw.variant_id != null && raw.variant_id !== "") {
       const variants = Array.isArray(product.variants) ? (product.variants as any[]) : [];
       const variant = variants.find((v) => String(v?.id) === String(raw.variant_id));
       if (!variant) return { ok: false, error: `"${product.title}" option is no longer available.` };
-      variantId = Number(variant.id);
+      variantId = Number.isFinite(Number(variant.id)) ? Number(variant.id) : null;
+      variantKey = String(variant.id);
       const vPrice = Number(variant.price);
       // Same rule the product page uses to pick a displayed price.
       if (vPrice > 0 && vPrice < 10000) price = vPrice;
@@ -94,6 +98,7 @@ export function priceCart(clientItems: unknown, products: DbProduct[]): PriceRes
     items.push({
       product_id: product.id,
       variant_id: variantId,
+      variant_key: variantKey,
       name,
       price,
       quantity: qty,

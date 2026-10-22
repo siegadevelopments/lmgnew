@@ -78,6 +78,7 @@ serve(async (req: Request) => {
             product_id: String(item.product_id),
             vendor_id: item.vendor_id,
             variant_id: item.variant_id != null ? item.variant_id.toString() : "",
+            variant_key: item.variant_key ?? "",
             image: item.image,
             slug: item.slug,
             booking_start: item.booking?.start_time || "",

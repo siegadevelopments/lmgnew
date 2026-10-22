@@ -70,3 +70,12 @@ describe("safeRedirectUrl", () => {
     }
   });
 });
+
+describe("variant keys", () => {
+  it("keeps a UUID variant id as the key (variant_id can't hold it)", () => {
+    const r = priceCart([{ product_id: 1, variant_id: "3f2a9c1e-uuid", quantity: 1 }], [
+      product({ variants: [{ id: "3f2a9c1e-uuid", title: "Large", price: 40, stock: "5" }] }),
+    ]);
+    expect(r.ok && r.items[0]).toMatchObject({ variant_id: null, variant_key: "3f2a9c1e-uuid", price: 40 });
+  });
+});

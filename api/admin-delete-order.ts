@@ -1,7 +1,7 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
 
-// Deletes an order (and its order_items) as an authenticated admin, using the service-role
+// Deletes an order (with its order_items, bookings and pending vendor earnings) as an authenticated admin, using the service-role
 // key so the operation can't be silently no-op'd by a client-side RLS policy. The admin app's
 // own Supabase client previously ran this delete directly from the browser; if the `orders`/
 // `order_items` tables don't grant DELETE to the logged-in user's role, Postgres reports 0 rows
@@ -40,8 +40,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { order_id } = req.body;
     if (!order_id) return res.status(400).json({ error: "order_id is required" });
 
-    const { error: itemsError } = await supabase.from("order_items").delete().eq("order_id", order_id);
-    if (itemsError) return res.status(500).json({ error: itemsError.message });
+    // Vendor earnings and bookings reference the order. Deleting the order used to leave its
+    // earnings behind (or fail on the foreign key), and pending earnings would still be paid out.
+    // An order whose vendor has already been paid can't be deleted: refund it in Stripe instead,
+    // which reverses the earnings against the vendor's next payout.
+    const { count: paidCount, error: paidError } = await supabase
+      .from("vendor_earnings")
+      .select("id", { count: "exact", head: true })
+      .eq("order_id", order_id)
+      .eq("status", "paid");
+    if (paidError) return res.status(500).json({ error: paidError.message });
+    if ((paidCount ?? 0) > 0) {
+      return res.status(409).json({
+        error: "The vendor has already been paid for this order. Refund it in Stripe instead of deleting it.",
+      });
+    }
+
+    for (const table of ["vendor_earnings", "bookings", "order_items"]) {
+      const { error } = await supabase.from(table).delete().eq("order_id", order_id);
+      if (error) return res.status(500).json({ error: `${table}: ${error.message}` });
+    }
 
     const { data: deleted, error: orderError } = await supabase
       .from("orders")

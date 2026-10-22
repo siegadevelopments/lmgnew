@@ -275,3 +275,17 @@ export function refundEmail(o: { reference: string; firstName: string; refundedC
     <p>It goes back to the card or account you paid with. Depending on your bank, it can take 5–10 business days to appear.</p>`);
   return { subject: `Refund processed: ${o.reference}`, html };
 }
+
+/**
+ * Items for adjust_order_stock(): physical items only (bookings are services). Older Stripe
+ * sessions have no variant_key, so the numeric variant_id is used as the key.
+ */
+export function stockItems(lineItems: PaidLineItem[]) {
+  return lineItems
+    .filter((i) => !i.product.metadata.booking_start && i.product.metadata.product_id)
+    .map((i) => ({
+      product_id: parseInt(i.product.metadata.product_id as string, 10),
+      variant_key: i.product.metadata.variant_key || i.product.metadata.variant_id || null,
+      quantity: i.quantity ?? 1,
+    }));
+}
