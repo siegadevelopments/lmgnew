@@ -103,3 +103,35 @@ describe("vendor live stream", () => {
     expect(src).not.toMatch(/from\("vendor_profiles"\)/);
   });
 });
+
+describe("20261022_restrict_content_publishing.sql", () => {
+  const sql = readFileSync(
+    path.resolve(import.meta.dirname, "../../../supabase/migrations/20261022_restrict_content_publishing.sql"),
+    "utf8",
+  );
+  const code = sql.replace(/^--.*$/gm, "");
+
+  it("publishing requires an admin or an approved store, not the self-assignable vendor role", () => {
+    expect(code).toMatch(/public\.is_admin\(\)\s+OR EXISTS \(SELECT 1 FROM public\.vendor_profiles WHERE id = auth\.uid\(\) AND is_approved\)/);
+    expect(code).not.toMatch(/role = 'vendor'/);
+  });
+
+  it("removes the old ownership-only FOR ALL policies", () => {
+    for (const [p, t] of [
+      ["Authors can manage their articles", "articles"],
+      ["Authors can manage their recipes", "recipes"],
+      ["Vendors can manage own galleries", "galleries"],
+      ["Vendors can manage own gallery items", "gallery_items"],
+    ]) {
+      expect(code).toContain(`DROP POLICY IF EXISTS "${p}" ON public.${t};`);
+    }
+    expect(code).not.toMatch(/FOR ALL/);
+  });
+
+  it("creating and editing need can_publish(); deleting your own doesn't", () => {
+    for (const t of ["articles", "recipes", "galleries", "gallery_items"]) {
+      expect(code).toMatch(new RegExp(`ON public\\.${t} FOR INSERT TO authenticated\\s+WITH CHECK \\([\\s\\S]*?can_publish\\(\\)`));
+      expect(code).toMatch(new RegExp(`ON public\\.${t} FOR DELETE TO authenticated`));
+    }
+  });
+});
