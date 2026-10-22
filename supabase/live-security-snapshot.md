@@ -18,9 +18,9 @@ reference for audits, not a migration: don't run it.
 | Notifications insertable by anyone with any link | `20261022_tighten_rls.sql` (site links only) |
 | Vendor live stream wrote `vendor_profiles.is_live`, hiding the store when a stream ended | `VendorLiveStream.tsx` |
 | Any signed-in user could create publicly visible articles, recipes and galleries | `20261022_restrict_content_publishing.sql` (admins and approved stores only) |
+| Vendors could edit any column of their own order lines | `20261022_order_items_vendor_columns.sql` (status and tracking only) |
 
 Still open (lower risk):
-- `Vendors can update their own order items`: no column restriction (a vendor can edit price/quantity on their own order lines; payouts use Stripe amounts, not these).
 - `Auth Upload` on `storage.objects`: any signed-in user can upload to the `media` bucket.
 - Guest support chat (`customer_id` and `vendor_id` both null) readable by anyone.
 - Duplicate policies (bookings, galleries, gallery_items, chat) are harmless but noisy.
