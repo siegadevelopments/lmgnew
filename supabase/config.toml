@@ -4,3 +4,12 @@ project_id = "usrtaxvjwidfxajbjlpj"
 # Supabase rejects Stripe's deliveries with 401 before the code runs.
 [functions.stripe-webhook]
 verify_jwt = false
+
+# Called by a Database Webhook / the email provider, which send a shared secret (x-webhook-secret
+# or ?token=) rather than a Supabase session; the functions check it with requireWebhookSecret().
+# With JWT verification on, a CLI deploy would make every call fail with 401.
+[functions.notify-admin]
+verify_jwt = false
+
+[functions.process-inbound-email]
+verify_jwt = false

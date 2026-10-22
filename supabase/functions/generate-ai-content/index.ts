@@ -1,5 +1,3 @@
-// @ts-ignore
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 import { requireAuth } from "../_shared/auth.ts";
 
@@ -55,7 +53,7 @@ function cleanRawJsonContent(str: string): string {
   return clean;
 }
 
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
