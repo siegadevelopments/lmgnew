@@ -1,6 +1,4 @@
 // @ts-ignore
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-// @ts-ignore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
 const corsHeaders = {
@@ -12,7 +10,7 @@ const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const CLICKSEND_USERNAME = Deno.env.get("CLICKSEND_USERNAME");
 const CLICKSEND_API_KEY = Deno.env.get("CLICKSEND_API_KEY");
 
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
