@@ -1,6 +1,7 @@
 import { cache } from "react";
 import type { Metadata } from "next";
 import { ShopForThisGoal } from "@/components/ShopForThisGoal";
+import { getContentForGoal } from "@/lib/server-data";
 import { recipeBySlugQueryOptions } from "@/lib/queries";
 import { buildMetadata, notFoundMetadata, toPlainDescription } from "@/lib/seo-metadata";
 
@@ -41,11 +42,13 @@ export default async function RecipeSlugLayout({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  let recipe: any;
+  // Server-side client (not the browser one loadRecipe uses), so the block works wherever the
+  // SEO pages do. A failure just leaves the block out; the page itself handles its own loading.
+  let recipe: any = null;
   try {
-    recipe = await loadRecipe(slug);
+    recipe = await getContentForGoal("recipes", slug);
   } catch {
-    recipe = undefined; // the page itself handles loading errors
+    recipe = null;
   }
   return (
     <>

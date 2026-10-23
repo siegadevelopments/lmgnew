@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { matchGoal, guideForCategory, GOAL_TERMS } from "@/lib/goal-matching";
+import { matchGoal, guideForCategory, GOAL_TERMS, pickGoalProducts, isTradeListing } from "@/lib/goal-matching";
 import { categoryConfig } from "@/lib/category-config";
 
 describe("matchGoal", () => {
@@ -27,5 +27,20 @@ describe("matchGoal", () => {
   it("has topic terms for every category, and guides resolve", () => {
     for (const slug of Object.keys(categoryConfig)) expect(GOAL_TERMS[slug]?.length).toBeGreaterThan(0);
     expect(guideForCategory("menopause-support")?.slug).toBe("best-menopause-products-australia");
+  });
+});
+
+describe("pickGoalProducts", () => {
+  it("skips trade listings and pack-size duplicates, prefers categorised products", () => {
+    const picked = pickGoalProducts([
+      { title: "LineLift RX Serum (Salon Only)", wellness_categories: ["healthy-ageing"] },
+      { title: "White Sage + Lavender Incense (180g)", wellness_categories: null },
+      { title: "White Sage + Lavender Incense (15g)", wellness_categories: null },
+      { title: "Magnesium Oil Spray", wellness_categories: ["sleep-recovery"] },
+      { title: "Dishwashing Liquid 20kg", wellness_categories: null },
+    ]);
+    expect(picked.map((p: any) => p.title)).toEqual(["Magnesium Oil Spray", "White Sage + Lavender Incense (180g)"]);
+    expect(isTradeListing("MASK_WHOLESALE_PLUMP & GLOW (SALON ONLY 250ml)")).toBe(true);
+    expect(isTradeListing("Pro-Aging Starter Kit")).toBe(false);
   });
 });

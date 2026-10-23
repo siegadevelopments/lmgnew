@@ -65,3 +65,27 @@ export function guideForCategory(slug: string): { slug: string; title: string } 
   const entry = Object.entries(guideConfig).find(([, g]) => g.categorySlug === slug);
   return entry ? { slug: entry[0], title: entry[1].title } : null;
 }
+
+/** Trade-only listings that shouldn't be recommended to retail shoppers. */
+export const isTradeListing = (title: string) => /wholesale|salon only|\bMASK_|\b\d+\s?kg\b/i.test(title);
+
+/**
+ * Up to `max` products to recommend: retail listings only, one per product (pack sizes like
+ * "(15g)" / "(180g)" count as the same product), explicitly categorised ones first.
+ */
+export function pickGoalProducts<T extends { title: string; wellness_categories?: string[] | null }>(products: T[], max = 4): T[] {
+  const baseName = (t: string) => t.replace(/\s*\([^)]*\)\s*/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
+  const ranked = [...products]
+    .filter((p) => !isTradeListing(p.title))
+    .sort((a, b) => Number(Array.isArray(b.wellness_categories) && b.wellness_categories.length > 0) - Number(Array.isArray(a.wellness_categories) && a.wellness_categories.length > 0));
+  const seen = new Set<string>();
+  const picked: T[] = [];
+  for (const p of ranked) {
+    const key = baseName(p.title);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    picked.push(p);
+    if (picked.length === max) break;
+  }
+  return picked;
+}

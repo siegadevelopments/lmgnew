@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ProductCard } from "@/components/ProductCard";
 import { categoryConfig } from "@/lib/category-config";
-import { guideForCategory, matchGoal } from "@/lib/goal-matching";
+import { guideForCategory, matchGoal, pickGoalProducts } from "@/lib/goal-matching";
 import { getCategoryProducts, getNonEmptyCategorySlugs } from "@/lib/server-data";
 
 // Server-rendered "shop for this goal" block under articles and recipes: matches the page to a
@@ -18,7 +18,7 @@ export async function ShopForThisGoal({ title, body }: { title: string; body: st
   try {
     slug = matchGoal(title, body, await getNonEmptyCategorySlugs());
     if (!slug) return null;
-    products = (await getCategoryProducts(slug, categoryConfig[slug].keywords)).slice(0, MAX_PRODUCTS);
+    products = pickGoalProducts(await getCategoryProducts(slug, categoryConfig[slug].keywords), MAX_PRODUCTS);
   } catch (err) {
     console.error("ShopForThisGoal: skipped", err);
     return null;

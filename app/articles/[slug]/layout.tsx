@@ -1,6 +1,7 @@
 import { cache } from "react";
 import type { Metadata } from "next";
 import { ShopForThisGoal } from "@/components/ShopForThisGoal";
+import { getContentForGoal } from "@/lib/server-data";
 import { articleBySlugQueryOptions } from "@/lib/queries";
 import { buildMetadata, notFoundMetadata, toPlainDescription } from "@/lib/seo-metadata";
 
@@ -44,11 +45,13 @@ export default async function ArticleSlugLayout({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  let article: any;
+  // Server-side client (not the browser one loadArticle uses), so the block works wherever the
+  // SEO pages do. A failure just leaves the block out; the page itself handles its own loading.
+  let article: any = null;
   try {
-    article = await loadArticle(slug);
+    article = await getContentForGoal("articles", slug);
   } catch {
-    article = undefined; // the page itself handles loading errors
+    article = null;
   }
   return (
     <>
