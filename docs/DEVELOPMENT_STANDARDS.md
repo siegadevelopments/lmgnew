@@ -138,7 +138,6 @@ Edge Functions import `supabase/functions/_shared/auth.ts`; deploy the whole `su
 
 - **Migrations in `supabase/migrations/` are not applied automatically.** `20261001_security_hardening.sql` sat unapplied for three weeks (found 2026-10-21; applied via `20261021_apply_security_hardening.sql`). After merging a migration, run it in the SQL Editor and verify it live (e.g. query `pg_policies` / `pg_trigger`).
 - **`profiles.phone` is readable only through `get_my_profile()` / `admin_list_profiles()`** once `20261021_hide_phone_from_signed_in_users.sql` is applied (after the code using `src/lib/profile-reads.ts` is deployed). Don't select `phone` or `*` from `profiles` directly; `src/lib/__tests__/profile-phone.test.ts` enforces this.
-- **Guest support chat** is still readable/writable by anyone who can reach the table (`chat_conversations` rows with no customer/vendor). Fix: move guest chat behind a server route that issues a per-conversation secret, then drop the open clause in the policy.
 - **Live policies are snapshotted, not migrated.** `supabase/live-security-snapshot.md` holds the 2026-10-21 export, its findings, the still-open items, and the query to refresh it. Refresh it after any policy change made outside `supabase/migrations/`.
 - `process-inbound-email` inserts content authored by a hard-coded system user id and feeds email text to an LLM — review for prompt-injection and auto-publish status (should land as **draft**).
 - Edge Functions use `Access-Control-Allow-Origin: *`; restrict to the site origin where browsers are the only callers.
