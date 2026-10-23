@@ -18,6 +18,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
+import { FLAT_SHIPPING_FEE, FREE_SHIPPING_THRESHOLD } from "@/lib/checkout-pricing";
 import { RoiCalculator } from "@/components/vendor/RoiCalculator";
 
 export const metadata = {
@@ -146,7 +147,7 @@ export default function SellWithUsPage() {
                   <h3 className="text-2xl font-bold">No Monthly Fees</h3>
                   <p className="text-muted-foreground leading-relaxed">
                     Zero subscriptions or hidden charges. You only pay a small commission when you
-                    make a sale. No risk, all reward.
+                    make a sale, and the shipping fee customers pay goes to you in full. No risk, all reward.
                   </p>
                 </CardContent>
               </Card>
@@ -334,6 +335,18 @@ export default function SellWithUsPage() {
                 </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground text-base leading-relaxed pb-6">
                   We take privacy seriously. We securely collect payment and shipping information to process orders. As a vendor, you will receive the necessary shipping details to fulfill your orders. You are required to handle this personal data strictly for fulfillment purposes in accordance with our Privacy Policy.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-shipping" className="border rounded-2xl px-6 bg-[#F8FAF8] hover:bg-wellness/5 transition-colors border-border/50">
+                <AccordionTrigger className="text-left font-bold text-lg hover:no-underline py-6">
+                  How does shipping work, and who gets the shipping fee?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground text-base leading-relaxed pb-6">
+                  You send orders directly to your customers and pay your own postage. Customers pay ${FLAT_SHIPPING_FEE.toFixed(2)} shipping
+                  on orders of ${FREE_SHIPPING_THRESHOLD} or less (shipping is free above that), and that fee is added to your earnings in
+                  full, with no commission taken. If an order includes items from several stores, the fee is shared between them in
+                  proportion to each store&apos;s part of the order.
                 </AccordionContent>
               </AccordionItem>
 
