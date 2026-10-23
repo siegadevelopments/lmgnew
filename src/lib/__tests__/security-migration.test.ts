@@ -151,3 +151,27 @@ describe("20261022_order_items_vendor_columns.sql", () => {
     expect(new Set(fields)).toEqual(new Set(["tracking_number", "status"]));
   });
 });
+
+describe("20261023_media_uploads_own_folder.sql", () => {
+  const sql = readFileSync(
+    path.resolve(import.meta.dirname, "../../../supabase/migrations/20261023_media_uploads_own_folder.sql"),
+    "utf8",
+  );
+  it("signed-in users upload only into their own folder; admins anywhere", () => {
+    expect(sql).toMatch(/DROP POLICY IF EXISTS "Auth Upload" ON storage\.objects;/);
+    expect(sql).toMatch(/\(storage\.foldername\(name\)\)\[2\] = auth\.uid\(\)::text OR public\.is_admin\(\)/);
+  });
+  it("every non-admin upload in the app puts the user's id second", () => {
+    const { execSync } = require("child_process");
+    const calls: string[] = execSync(
+      `grep -rhoE 'uploadMedia\\([^,]+, *[^,)]+' app src --include='*.tsx' --include='*.ts'`,
+      { cwd: path.resolve(import.meta.dirname, "../../..") },
+    ).toString().trim().split("\n");
+    const folders = calls.map((c) => c.replace(/^uploadMedia\([^,]+, */, "").trim());
+    const adminOnly = ['"admin_uploads"', '"affiliates"', "`products/${productForm.vendor_id}`"];
+    for (const f of folders) {
+      if (adminOnly.includes(f)) continue;
+      expect(f, f).toMatch(/^`[a-z]+\/\$\{(userId|user\.id)\}/);
+    }
+  });
+});
