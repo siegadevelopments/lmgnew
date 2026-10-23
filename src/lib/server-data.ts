@@ -306,3 +306,15 @@ export async function getTrustStats() {
     reviewCount: reviews.length,
   };
 }
+
+// ---------------------------------------------------------------------------------------------
+// Articles and recipes (for the "shop for this goal" block)
+// ---------------------------------------------------------------------------------------------
+
+/** Title, excerpt and content of an article or recipe by slug; null when not found. */
+export async function getContentForGoal(table: "articles" | "recipes", slug: string) {
+  const data = await withRetry(`${table} ${slug}`, () =>
+    requireClient().from(table).select("title, excerpt, content").eq("slug", slug).limit(1),
+  );
+  return ((data as any[]) || [])[0] ?? null;
+}

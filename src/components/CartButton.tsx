@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { FreeShippingProgress } from "@/components/FreeShippingProgress";
 import Link from "next/link";
 import { useCart } from "@/hooks/use-cart";
 import { Button } from "@/components/ui/button";
@@ -149,7 +150,8 @@ export function CartButton() {
               </div>
             </div>
             <div className="border-t pt-4">
-              <div className="flex items-center justify-between">
+              <FreeShippingProgress subtotal={totalPrice} bookingsOnly={items.every((i) => i.booking)} />
+              <div className="mt-3 flex items-center justify-between">
                 <span className="font-medium">Total</span>
                 <span className="text-lg font-bold">${totalPrice.toFixed(2)}</span>
               </div>

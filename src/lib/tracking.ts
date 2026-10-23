@@ -1,4 +1,15 @@
-export const trackEvent = (eventName: string, params?: Record<string, any>) => {
+// GA4 and the Meta Pixel load deferred (src/components/ClientOnlyOverlays.tsx: first interaction or
+// 3 seconds). An event fired before then used to be dropped silently, e.g. the purchase on the
+// checkout success page when the customer doesn't scroll. Wait for them, up to 20 seconds.
+const TRACKER_WAIT_MS = 20_000;
+const trackersReady = () =>
+  typeof window !== "undefined" && (!!(window as any).gtag || !!(window as any).fbq);
+
+export const trackEvent = (eventName: string, params?: Record<string, any>, waited = 0) => {
+  if (typeof window !== "undefined" && !trackersReady() && waited < TRACKER_WAIT_MS) {
+    setTimeout(() => trackEvent(eventName, params, waited + 500), 500);
+    return;
+  }
   try {
     // 1. Google Analytics (GA4)
     if (typeof window !== "undefined" && (window as any).gtag) {
@@ -112,3 +123,53 @@ export const trackPurchase = (transactionId: string, totalValue: number, items: 
     }))
   });
 };
+
+export const trackBeginCheckout = (value: number, items: { product_id: string | number; name: string; price: number; quantity: number }[]) => {
+  trackEvent("begin_checkout", {
+    value,
+    currency: "AUD",
+    items: items.map((i) => ({ item_id: i.product_id, item_name: i.name, price: i.price, quantity: i.quantity })),
+  });
+};
+
+// The order a visitor is about to pay for, kept until the success page reports it. Stripe sends
+// the customer back to /checkout/success in the same tab after paying.
+const PENDING_PURCHASE_KEY = "lmg_pending_purchase";
+const PENDING_MAX_AGE_MS = 2 * 60 * 60 * 1000;
+
+export interface PendingPurchase {
+  transactionId: string;
+  value: number;
+  items: { product_id: string | number; name: string; price: number; quantity: number }[];
+  savedAt: number;
+}
+
+export const savePendingPurchase = (p: Omit<PendingPurchase, "savedAt">) => {
+  try {
+    localStorage.setItem(PENDING_PURCHASE_KEY, JSON.stringify({ ...p, savedAt: Date.now() }));
+  } catch {
+    // storage blocked: the purchase just isn't tracked
+  }
+};
+
+/** Reports the saved purchase once (refreshing the success page sends nothing). */
+export const reportPendingPurchase = (now = Date.now()): PendingPurchase | null => {
+  let pending: PendingPurchase | null = null;
+  try {
+    const raw = localStorage.getItem(PENDING_PURCHASE_KEY);
+    localStorage.removeItem(PENDING_PURCHASE_KEY);
+    pending = raw ? (JSON.parse(raw) as PendingPurchase) : null;
+  } catch {
+    return null;
+  }
+  if (!pending || !pending.transactionId || now - pending.savedAt > PENDING_MAX_AGE_MS) return null;
+  trackPurchase(
+    pending.transactionId,
+    pending.value,
+    pending.items.map((i) => ({ product_id: i.product_id, title: i.name, price: i.price, quantity: i.quantity })),
+  );
+  return pending;
+};
+
+/** Stripe Checkout URLs contain the session id (cs_live_… / cs_test_…), used as transaction_id. */
+export const checkoutSessionId = (url: string): string | null => url.match(/cs_(?:live|test)_[A-Za-z0-9]+/)?.[0] ?? null;
