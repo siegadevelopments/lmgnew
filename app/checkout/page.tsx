@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { calculateShipping, gstIncluded } from "@/lib/checkout-pricing";
+import { checkoutSessionId, savePendingPurchase, trackBeginCheckout } from "@/lib/tracking";
 
 export default function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCart();
@@ -101,6 +102,12 @@ export default function CheckoutPage() {
       }
 
       if (data?.url) {
+        // Analytics: checkout started now; the purchase is reported on the success page.
+        const trackedItems = items.map((i) => ({ product_id: i.product_id, name: i.name, price: i.price, quantity: i.quantity }));
+        const value = Math.round((totalPrice + shipping) * 100) / 100;
+        trackBeginCheckout(value, trackedItems);
+        const sessionId = checkoutSessionId(data.url);
+        if (sessionId) savePendingPurchase({ transactionId: sessionId, value, items: trackedItems });
         window.location.href = data.url;
       } else {
         throw new Error("Failed to create checkout session");
