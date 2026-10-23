@@ -30,11 +30,12 @@ export const GOAL_TERMS: Record<string, string[]> = {
 };
 
 export const MIN_GOAL_SCORE = 4;
-const TITLE_WEIGHT = 10; // a goal named in the title wins over body mentions
 
 /**
- * The best-matching category slug, or null when nothing matches clearly. Term hits in the
- * title count ten times (a goal named in the title wins); only categories in `eligible` (those with products) are considered.
+ * The best-matching category slug, or null when nothing matches clearly. A goal named in the
+ * title wins outright (body mentions only break ties between title matches); otherwise the body
+ * needs at least MIN_GOAL_SCORE term hits. Only categories in `eligible` (those with products)
+ * are considered.
  */
 export function matchGoal(
   title: string,
@@ -43,15 +44,20 @@ export function matchGoal(
 ): string | null {
   const t = plain(title || "");
   const b = plain(body || "").slice(0, 20000);
-  let best: { slug: string; score: number } | null = null;
-  for (const slug of eligible) {
-    const terms = GOAL_TERMS[slug];
-    if (!terms || !categoryConfig[slug]) continue;
-    let score = 0;
-    for (const term of terms) score += TITLE_WEIGHT * countWord(t, term) + countWord(b, term);
-    if (!best || score > best.score) best = { slug, score };
+  const scored = eligible
+    .filter((slug) => GOAL_TERMS[slug] && categoryConfig[slug])
+    .map((slug) => ({
+      slug,
+      inTitle: GOAL_TERMS[slug].reduce((n, term) => n + countWord(t, term), 0),
+      inBody: GOAL_TERMS[slug].reduce((n, term) => n + countWord(b, term), 0),
+    }));
+  const byTitle = scored.filter((x) => x.inTitle > 0);
+  if (byTitle.length > 0) {
+    byTitle.sort((a, b2) => b2.inTitle - a.inTitle || b2.inBody - a.inBody);
+    return byTitle[0].slug;
   }
-  return best && best.score >= MIN_GOAL_SCORE ? best.slug : null;
+  scored.sort((a, b2) => b2.inBody - a.inBody);
+  return scored[0] && scored[0].inBody >= MIN_GOAL_SCORE ? scored[0].slug : null;
 }
 
 /** The buying guide for a category, if there is one. */
