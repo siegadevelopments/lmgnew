@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { SHIPPING_RULE_TEXT } from "@/lib/checkout-pricing";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -27,6 +27,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useCart } from "@/hooks/use-cart";
 import { supabase } from "@/integrations/supabase/client";
 import { createAdminNotification } from "@/lib/notifications";
+import { getGuestToken, guestChatClient, resetGuestToken } from "@/lib/guest-chat";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -115,7 +116,8 @@ export function GlobalChat() {
   // Guest visitor state
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
-  const [guestSessionId, setGuestSessionId] = useState<string>("");
+  // Signed-out visitors: a secret that makes their support chat private to this browser.
+  const [guestToken, setGuestToken] = useState<string>("");
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -192,12 +194,7 @@ export function GlobalChat() {
   // Initialize or fetch guest session on mount
   useEffect(() => {
     if (typeof window !== "undefined") {
-      let storedId = localStorage.getItem("lmg_support_guest_id");
-      if (!storedId) {
-        storedId = "guest_" + Math.random().toString(36).substring(2, 9) + Date.now();
-        localStorage.setItem("lmg_support_guest_id", storedId);
-      }
-      setGuestSessionId(storedId);
+      setGuestToken(getGuestToken());
 
       const storedInfo = localStorage.getItem("lmg_support_guest_info");
       if (storedInfo) {
@@ -212,6 +209,30 @@ export function GlobalChat() {
     }
   }, []);
 
+  // Chat tables are read and written as the signed-in user, or as this browser's guest (with its
+  // x-guest-token header) for signed-out visitors.
+  const chatDb = useMemo(
+    () => (user ? supabase : guestToken ? guestChatClient(guestToken) : null),
+    [user, guestToken],
+  );
+
+  // Adds a message from the database unless it's already shown. A message shown instantly from
+  // this browser (temp id usr_/guru_) is replaced by its stored copy. Used by realtime and polling.
+  const applyIncoming = (prev: ChatMessage[], newMsg: ChatMessage): ChatMessage[] => {
+    const isDuplicate = prev.some((m) => {
+      if (!m.id.startsWith("usr_") && !m.id.startsWith("guru_")) return m.id === newMsg.id;
+      return m.content === newMsg.content && m.sender_name === newMsg.sender_name;
+    });
+    if (!isDuplicate) return [...prev, newMsg];
+    return prev.map((m) =>
+      (m.id.startsWith("usr_") || m.id.startsWith("guru_")) &&
+      m.content === newMsg.content &&
+      m.sender_name === newMsg.sender_name
+        ? { ...newMsg, products: m.products, options: m.options } // keep product cards shown locally
+        : m,
+    );
+  };
+
   // Fetch active conversation
   const initConversation = async (forceNew = false) => {
     if (forceNew) {
@@ -222,15 +243,19 @@ export function GlobalChat() {
 
     setLoading(true);
     try {
-      const currentGuestEmail = guestEmail || guestSessionId;
-      let query = (supabase.from("chat_conversations" as any) as any)
+      if (!chatDb) {
+        setConversationId(null);
+        setMessages([]);
+        return;
+      }
+      let query = (chatDb.from("chat_conversations" as any) as any)
         .select("*")
         .eq("is_support", true);
 
       if (user) {
         query = query.eq("customer_id", user.id);
-      } else if (currentGuestEmail) {
-        query = query.eq("guest_email", currentGuestEmail);
+      } else if (guestToken) {
+        query = query.eq("guest_token", guestToken);
       } else {
         setConversationId(null);
         setMessages([]);
@@ -257,7 +282,8 @@ export function GlobalChat() {
 
   const fetchMessages = async (convId: string) => {
     try {
-      const { data, error } = await (supabase.from("chat_messages" as any) as any)
+      if (!chatDb) return;
+      const { data, error } = await (chatDb.from("chat_messages" as any) as any)
         .select("*")
         .eq("conversation_id", convId)
         .order("created_at", { ascending: true });
@@ -273,7 +299,7 @@ export function GlobalChat() {
     if (isOpen) {
       initConversation();
     }
-  }, [isOpen, user]);
+  }, [isOpen, user, guestToken]);
 
   // Realtime subscription for incoming messages
   const isOpenRef = useRef(isOpen);
@@ -294,33 +320,7 @@ export function GlobalChat() {
         },
         (payload) => {
           const newMsg = payload.new as ChatMessage;
-          setMessages((prev) => {
-            // Only deduplicate by real DB UUID — ignore temp local IDs (usr_/guru_)
-            const isDuplicate = prev.some((m) => {
-              // If both are real UUIDs, compare directly
-              if (!m.id.startsWith("usr_") && !m.id.startsWith("guru_")) {
-                return m.id === newMsg.id;
-              }
-              // If a temp local message matches content+sender, replace it with the DB version
-              if (m.content === newMsg.content && m.sender_name === newMsg.sender_name) {
-                return true;
-              }
-              return false;
-            });
-
-            if (isDuplicate) {
-              // Replace temp local message with real DB message (to get real ID)
-              return prev.map((m) =>
-                (m.id.startsWith("usr_") || m.id.startsWith("guru_")) &&
-                m.content === newMsg.content &&
-                m.sender_name === newMsg.sender_name
-                  ? newMsg
-                  : m
-              );
-            }
-
-            return [...prev, newMsg];
-          });
+          setMessages((prev) => applyIncoming(prev, newMsg));
 
           if (!isOpenRef.current && (newMsg.sender_type === "admin" || !newMsg.sender_id)) {
             setUnreadCount((c) => c + 1);
@@ -334,6 +334,30 @@ export function GlobalChat() {
     };
   }, [conversationId]);
 
+  // Guests: Realtime can't send the x-guest-token header, so poll for new messages (e.g. an
+  // admin's reply) every few seconds while a conversation exists.
+  useEffect(() => {
+    if (user || !conversationId || !chatDb) return;
+    let lastSeen = new Date(0).toISOString();
+    const poll = async () => {
+      const { data } = await (chatDb.from("chat_messages" as any) as any)
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .gt("created_at", lastSeen)
+        .order("created_at", { ascending: true });
+      for (const row of (data || []) as ChatMessage[]) {
+        if (row.created_at > lastSeen) lastSeen = row.created_at;
+        setMessages((prev) => applyIncoming(prev, row));
+        if (!isOpenRef.current && row.sender_type === "admin" && row.sender_name !== "Health Guru") {
+          setUnreadCount((c) => c + 1);
+        }
+      }
+    };
+    const timer = setInterval(poll, 5000);
+    poll();
+    return () => clearInterval(timer);
+  }, [user, conversationId, chatDb]);
+
   // Auto-scroll message stream
   useEffect(() => {
     if (scrollRef.current) {
@@ -343,9 +367,7 @@ export function GlobalChat() {
 
   // Start fresh conversation (New Chat button)
   const handleStartNewChat = () => {
-    const newGuestId = "guest_" + Math.random().toString(36).substring(2, 9) + Date.now();
-    localStorage.setItem("lmg_support_guest_id", newGuestId);
-    setGuestSessionId(newGuestId);
+    if (!user) setGuestToken(resetGuestToken());
     setConversationId(null);
     setMessages([]);
     toast.success("Started a new chat session with Health Guru!");
@@ -603,20 +625,24 @@ export function GlobalChat() {
 
     try {
       let activeConvId = conversationId;
+      // Normally chatDb; the guest client if we fall back to a guest conversation below.
+      let db: any = chatDb;
+      if (!db) throw new Error("Chat isn't ready yet. Please try again.");
 
       // Create conversation if none exists
       if (!activeConvId) {
         let newConv = null;
         let convErr = null;
         const currentGuestName = guestName || "Guest Visitor";
-        const currentGuestEmail = guestEmail || guestSessionId;
+        const currentGuestEmail = guestEmail || null;
 
         try {
-          const res = await (supabase.from("chat_conversations" as any) as any)
+          const res = await (db.from("chat_conversations" as any) as any)
             .insert({
               customer_id: user?.id || null,
               guest_name: user ? null : currentGuestName,
               guest_email: user ? null : currentGuestEmail,
+              guest_token: user ? null : guestToken,
               is_support: true,
               status: "open",
               last_message_at: new Date().toISOString(),
@@ -632,11 +658,14 @@ export function GlobalChat() {
         if (convErr || !newConv) {
           console.error("Primary conversation insert failed:", convErr);
           // Fallback to purely guest if the user ID is invalid (e.g., deleted from DB but session active)
-          let fallbackRes = await (supabase.from("chat_conversations" as any) as any)
+          const token = guestToken || resetGuestToken();
+          db = guestChatClient(token);
+          let fallbackRes = await (db.from("chat_conversations" as any) as any)
             .insert({
               customer_id: null,
               guest_name: currentGuestName,
               guest_email: currentGuestEmail,
+              guest_token: token,
               is_support: true,
               status: "open",
               last_message_at: new Date().toISOString(),
@@ -670,7 +699,7 @@ export function GlobalChat() {
 
       // Synchronous insert of user message to Database
       try {
-        const { error: userMsgErr } = await (supabase.from("chat_messages" as any) as any).insert({
+        const { error: userMsgErr } = await (db.from("chat_messages" as any) as any).insert({
           conversation_id: activeConvId,
           sender_id: user?.id ? user.id : null,
           sender_type: senderType,
@@ -682,7 +711,7 @@ export function GlobalChat() {
           console.error("Failed to persist user message in DB:", userMsgErr);
         }
 
-        await (supabase.from("chat_conversations" as any) as any)
+        await (db.from("chat_conversations" as any) as any)
           .update({ last_message_at: new Date().toISOString() })
           .eq("id", activeConvId);
       } catch (e) {
@@ -722,7 +751,7 @@ export function GlobalChat() {
 
         // Synchronous persistence of bot response
         try {
-          const { error: botMsgErr } = await (supabase.from("chat_messages" as any) as any).insert({
+          const { error: botMsgErr } = await (db.from("chat_messages" as any) as any).insert({
             conversation_id: activeConvId,
             sender_id: null,
             sender_type: "admin",

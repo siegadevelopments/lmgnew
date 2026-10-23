@@ -22,7 +22,6 @@ reference for audits, not a migration: don't run it.
 
 Still open (lower risk):
 - `Auth Upload` on `storage.objects`: any signed-in user can upload to the `media` bucket.
-- Guest support chat (`customer_id` and `vendor_id` both null) readable by anyone.
 - Duplicate policies (bookings, galleries, gallery_items, chat) are harmless but noisy.
 
 ## Row level security
