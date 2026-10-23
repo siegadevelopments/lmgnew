@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react";
+import { FreeShippingProgress } from "@/components/FreeShippingProgress";
 import { fetchMyProfile } from "@/lib/profile-reads";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -439,6 +440,7 @@ export default function CheckoutPage() {
                       {shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}
                     </span>
                   </div>
+                  <FreeShippingProgress subtotal={totalPrice} bookingsOnly={items.every((i) => i.booking)} />
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Includes GST</span>
                     <span className="font-medium">${gst.toFixed(2)}</span>
@@ -449,7 +451,6 @@ export default function CheckoutPage() {
                   <span className="font-semibold">Total (AUD)</span>
                   <span className="font-bold text-primary">${grandTotal.toFixed(2)}</span>
                 </div>
-                {shipping === 0 && <p className="mt-2 text-xs text-primary">🎉 Free shipping!</p>}
                 <Button type="submit" className="mt-6 w-full" size="lg" disabled={isSubmitting}>
                   {isSubmitting ? (
                     <span className="flex items-center gap-2">
