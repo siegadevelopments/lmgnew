@@ -53,3 +53,12 @@ describe("shipping rule stays consistent", () => {
     expect(chat).not.toMatch(/Express Shipping/i);
   });
 });
+
+describe("vendor-facing shipping copy", () => {
+  it("tells vendors they receive the shipping fee, using the shared amounts", () => {
+    const page = readFileSync(path.resolve(import.meta.dirname, "../../../app/sell-with-us/page.tsx"), "utf8");
+    expect(page).toContain("the shipping fee customers pay goes to you in full");
+    expect(page).toContain("${FLAT_SHIPPING_FEE.toFixed(2)}");
+    expect(page).toContain("${FREE_SHIPPING_THRESHOLD}");
+  });
+});
