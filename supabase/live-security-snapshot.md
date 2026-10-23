@@ -20,9 +20,9 @@ reference for audits, not a migration: don't run it.
 | Any signed-in user could create publicly visible articles, recipes and galleries | `20261022_restrict_content_publishing.sql` (admins and approved stores only) |
 | Vendors could edit any column of their own order lines | `20261022_order_items_vendor_columns.sql` (status and tracking only) |
 | Any signed-in user could upload anywhere in the `media` bucket | `20261023_media_uploads_own_folder.sql` (own folder; admins anywhere) |
+| Every guest support chat readable by anyone | `20261023_guest_chat_token.sql` + `src/lib/guest-chat.ts` (per-browser secret) |
 
 Still open (lower risk):
-- Guest support chat (`customer_id` and `vendor_id` both null) readable by anyone.
 - Duplicate policies (bookings, galleries, gallery_items, chat) are harmless but noisy.
 
 ## Row level security
