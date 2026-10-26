@@ -127,7 +127,9 @@ export function VendorEditDialog({ vendor, isOpen, onClose, onSuccess }: VendorE
         updated_at: new Date().toISOString(),
       };
 
-      await adminUpdateVendorProfile(vendor.id, updateData);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Your session has expired. Please sign in again.");
+      await adminUpdateVendorProfile(session.access_token, vendor.id, updateData);
 
       // Update or insert stream info
       if (formData.mux_stream_key || formData.mux_playback_id) {
