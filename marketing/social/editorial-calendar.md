@@ -115,3 +115,5 @@ IDEA
 The calendar is not simply a list of posts.
 
 It is a record of the marketing campaign.
+
+Each campaign's record (calendar, assets, paid test and results) lives in `marketing/campaigns/`, one file per campaign. For example, `marketing/campaigns/2026-11-founders-formula.md`.

@@ -29,6 +29,10 @@ When creating platform-specific content, additionally consult:
 * `tiktok-strategy.md`
 * `pinterest-strategy.md`
 
+When planning paid ads or putting money behind a post, additionally consult:
+
+* `paid-social.md`
+
 ---
 
 # TASK
