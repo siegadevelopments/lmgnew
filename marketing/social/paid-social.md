@@ -38,6 +38,8 @@ Before scaling spend on a single vendor's product, ask the vendor to share the a
 
 # HOW TO RUN ADS
 
+Admin > Meta Ads on the website applies these rules automatically: it works out break-even from the vendor's commission and Stripe's fees, drafts the copy, creates the ad in Meta switched off, refuses to switch an ad on past the monthly cap, and pauses ads that break the stop rule. The points below still apply when setting ads up by hand in Ads Manager.
+
 * Use Meta Ads Manager, not the "Boost post" button. Boost optimises for likes and comments, not sales.
 * Objective: **Sales**, optimised for the **Purchase** event (the site sends it to the Meta Pixel and GA4).
 * Location: Australia only.

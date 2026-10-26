@@ -130,6 +130,10 @@ Set these **before** deploying the corresponding functions, otherwise they fail 
 | `WEBHOOK_SECRET` | Supabase Edge Function secrets | `notify-admin` — send it as `x-webhook-secret` header (or `?token=`) from the Database Webhook |
 | `INBOUND_EMAIL_SECRET` | Supabase Edge Function secrets | `process-inbound-email` — configure the same value in the email provider's webhook URL (`?token=…`) |
 | `R2_ENDPOINT` (optional) | Vercel | `app/api/upload-proxy` extra allowed host |
+| `META_ADS_TOKEN` | Vercel (server only) | `api/ads-meta.ts`, `api/ads-sync.ts` — Meta System User token with `ads_management`, `ads_read`, `business_management`, `pages_read_engagement` |
+| `META_AD_ACCOUNT_ID` | Vercel | Admin > Meta Ads — the ad account (`act_` prefix optional) |
+| `META_PIXEL_ID` (optional) | Vercel | Admin > Meta Ads — falls back to `NEXT_PUBLIC_META_PIXEL_ID` |
+| `META_INSTAGRAM_USER_ID`, `META_GRAPH_VERSION` (optional) | Vercel | Admin > Meta Ads — Instagram account for ads; Graph API version (default `v23.0`) |
 
 Edge Functions import `supabase/functions/_shared/auth.ts`; deploy the whole `supabase/functions` directory
 (CI or `supabase functions deploy`) so `_shared` is bundled.

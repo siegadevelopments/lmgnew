@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminGalleriesTab } from "@/components/admin/AdminGalleriesTab";
 import { AdminContentTab } from "@/components/admin/AdminContentTab";
 import { AdminMarketingTab } from "@/components/admin/AdminMarketingTab";
+import { AdminAdsTab } from "@/components/admin/AdminAdsTab";
 import { AdminSubscribersTab } from "@/components/admin/AdminSubscribersTab";
 import { AdminPopupsTab } from "@/components/admin/AdminPopupsTab";
 import { AffiliatesTab } from "@/components/admin/AffiliatesTab";
@@ -746,6 +747,7 @@ function AdminDashboardContent() {
     { id: "products", label: `Products (${products.length})`, icon: Package },
     { id: "content", label: "Content Manager", icon: FileText },
     { id: "marketing", label: "Marketing & Buffer", icon: Share2 },
+    { id: "ads", label: "Meta Ads", icon: Megaphone },
     { id: "galleries", label: "Galleries", icon: ImageIcon },
     { id: "affiliates", label: "Affiliates", icon: LinkIcon },
     { id: "popups", label: "Popups", icon: Sparkles },
@@ -1572,6 +1574,15 @@ function AdminDashboardContent() {
                 <p className="text-muted-foreground">Manage social media scheduling and push 3 post versions directly to Buffer.</p>
               </div>
               <AdminMarketingTab />
+            </TabsContent>
+
+            {/* META ADS */}
+            <TabsContent value="ads" className="mt-0 border-0 p-0">
+              <div className="mb-6 flex flex-col gap-1">
+                <h1 className="text-2xl font-bold tracking-tight">Meta Ads</h1>
+                <p className="text-muted-foreground">Generate ads from products, keep spend within a monthly cap, and see which ads pay for themselves.</p>
+              </div>
+              <AdminAdsTab />
             </TabsContent>
 
             {/* MESSAGES */}
