@@ -27,6 +27,11 @@ interface Popup {
   display_delay: number;
 }
 
+/** Pages where the sign-up popup never appears. */
+export const POPUP_QUIET_PREFIXES = ["/checkout", "/review", "/admin", "/vendor", "/profile", "/login", "/signup", "/free-guides", "/plan-90"];
+export const isQuietPage = (pathname: string | null) =>
+  !!pathname && POPUP_QUIET_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+
 export function GlobalPopup() {
   const [popup, setPopup] = useState<Popup | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -49,6 +54,8 @@ export function GlobalPopup() {
 
       // Only skip if not in preview mode
       if (!isPreview && sessionDismissed) return;
+      // Never interrupt buying, reviewing, accounts or dashboards, or offer a guide on its own page.
+      if (!isPreview && isQuietPage(pathname)) return;
 
       const { data, error } = await supabase
         .from("popups" as any)
