@@ -36,27 +36,31 @@ No discount codes are used. The offer is the vendor's own "valued at" price, plu
 
 **Hypothesis:** a Christmas gift set with a clear value offer will get purchases at a lower cost than a lower-priced discovery kit.
 
-**Break-even cost per purchase at the default 10% commission:**
+**Break-even cost per purchase.** Founder's Formula's commission is 25% (confirmed 26 Oct 2026). Stripe fees come out of LMG's share.
 
-| Product | Price | LMG keeps |
-|---|---|---|
-| Gift Set | $120 | $12.00 |
-| Discovery Kit | $89 | $8.90 |
+| Product | Price | 25% commission | After card fee | After Afterpay fee |
+|---|---|---|---|---|
+| Gift Set | $120 | $30.00 | about $27.66 | about $22.50 |
+| Discovery Kit | $89 | $22.25 | about $20.44 | about $16.61 |
 
-Check Founder's Formula's actual commission rate in Admin before launching.
+Working break-even: **$25 per purchase for the Gift Set, $18 for the Discovery Kit.**
 
 **Setup:**
 - Run two ads in Meta Ads Manager: the 2 Nov Gift Set post and the 9 Nov Discovery Kit post.
 - Objective is Sales, optimised for the Purchase event, in Australia only.
 - Spend $5 to $10 a day per ad, from 2 Nov to 15 Nov.
 - On 16 Nov, stop the weaker ad and move its budget to the stronger one until about 10 Dec.
-- Stop rule: stop an ad that has spent about $60 with no purchase.
+- Stop rule: stop the Gift Set ad at about $75 spent with no purchase, and the Discovery Kit ad at about $55.
 
-**Budget:**
-- About $140 to $300 for the test if LMG pays alone.
-- About $500 to $800 for November and December if Founder's Formula co-funds.
+**Budget (LMG pays alone):**
 
-**Vendor co-funding:** not yet agreed. Record the agreed split here.
+| Phase | Dates | Daily | Total |
+|---|---|---|---|
+| Test, both ads | 2 to 15 Nov | $10 per ad | about $280 |
+| Scale the winner | 16 Nov to 10 Dec | $10, raised to $20 only if cost per purchase is under break-even | $250 to $500 |
+| **Cap** | | | **$800** |
+
+**Vendor co-funding:** Founder's Formula declined to share the ad cost (26 Oct 2026). LMG funds the ads alone.
 
 ## Results
 
