@@ -14,9 +14,13 @@ LMG earns a commission on each sale, not the full price. The rest goes to the ve
 
 The default commission is 10% (vendors can have a custom rate, set in the admin vendor settings). So for a product priced at $120, LMG keeps about $12.
 
+Stripe's payment processing fees also come out of LMG's share, because vendor payouts are calculated before fees. At the time of writing, Australian cards cost about 1.7% + $0.30 and Afterpay about 6% + $0.30 (check the Stripe pricing page for current rates).
+
 Before spending, work out the break-even cost per sale:
 
-> Break-even cost per purchase = product price × LMG commission rate
+> Break-even cost per purchase = (product price × LMG commission rate) − payment fee
+
+Use the Afterpay fee for a conservative figure.
 
 If an ad costs more than that to win one sale, it loses LMG money on that sale.
 
@@ -49,7 +53,7 @@ Start small and let results decide where money goes.
 
 1. Pick the two strongest organic posts for different products.
 2. Run both as ads at $5–$10 per day each for about two weeks.
-3. Stop rule: if an ad spends about 5× the break-even cost per purchase with no sale, stop it.
+3. Stop rule: if an ad spends about 3× the break-even cost per purchase with no sale, stop it.
 4. After the test, move the budget to the ad with the lower cost per purchase.
 5. Record spend, purchases, cost per purchase and revenue in the campaign file, then decide: keep, modify, stop or test again (see `experiments.md`).
 
