@@ -31,6 +31,8 @@ export function GlobalPopup() {
   const [popup, setPopup] = useState<Popup | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [email, setEmail] = useState("");
+  const [honeypot, setHoneypot] = useState("");
+  const [guideUrl, setGuideUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const router = useRouter();
@@ -97,18 +99,24 @@ export function GlobalPopup() {
     } else if (popup.cta_type === "email") {
       if (!email) return;
       setIsSubmitting(true);
-      const { error } = await (supabase.from("newsletter_subscribers") as any).upsert(
-        { email },
-        { onConflict: "email" },
-      );
+      // Server sign-up: saves the subscriber (re-subscribing works) and emails the free guide when
+      // the popup's link points at one (e.g. /free-guides/7-day-sleep-reset).
+      const guide = popup.cta_url?.match(/^\/free-guides\/([a-z0-9-]+)/)?.[1] ?? null;
+      const res = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, guide, website: honeypot }),
+      }).catch(() => null);
+      const data = await res?.json().catch(() => ({}));
 
       setIsSubmitting(false);
-      if (error) {
-        toast.error("Failed to subscribe. Please try again.");
+      if (!res?.ok) {
+        toast.error(data?.error || "Failed to subscribe. Please try again.");
       } else {
         setIsSubscribed(true);
-        toast.success("Welcome to the community!");
-        setTimeout(() => handleDismiss(), 3000);
+        setGuideUrl(data?.guideUrl ?? null);
+        toast.success(data?.guideUrl ? "Check your inbox for your guide." : "Welcome to the community!");
+        if (!data?.guideUrl) setTimeout(() => handleDismiss(), 3000);
       }
     }
   };
@@ -162,9 +170,25 @@ export function GlobalPopup() {
                   <div className="bg-emerald-500/10 text-emerald-600 rounded-xl py-4 flex flex-col items-center gap-2 animate-in zoom-in-95">
                     <CheckCircle2 className="h-8 w-8" />
                     <p className="font-bold">You're on the list!</p>
+                    {guideUrl && (
+                      <a href={guideUrl} onClick={handleDismiss} className="text-sm font-semibold underline">
+                        Read your guide now →
+                      </a>
+                    )}
                   </div>
                 ) : (
                   <form onSubmit={handleCTA} className="space-y-3">
+                    {/* Hidden from people; bots tend to fill it in. */}
+                    <input
+                      type="text"
+                      name="website"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      aria-hidden="true"
+                      className="hidden"
+                      value={honeypot}
+                      onChange={(e) => setHoneypot(e.target.value)}
+                    />
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input

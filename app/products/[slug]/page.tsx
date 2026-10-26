@@ -2,6 +2,7 @@
 
 import { useParams, useRouter, usePathname } from "next/navigation";
 import { isTradeListing } from "@/lib/trade";
+import { reviewerLabel } from "@/lib/reviews";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/checkout-pricing";
 import { fetchMyProfile } from "@/lib/profile-reads";
 import { sanitizeHtml, jsonLd } from "@/lib/security";
@@ -198,7 +199,7 @@ function ProductContent() {
     queryFn: async () => {
       const { data } = await supabase
         .from("reviews")
-        .select("id, rating, title, content, created_at, user:profiles(full_name)")
+        .select("id, rating, title, content, created_at, reviewer_name, verified_purchase, user:profiles(full_name)")
         .eq("product_id", product.id)
         .order("created_at", { ascending: false });
       return (data as any[]) || [];
@@ -620,17 +621,24 @@ function ProductContent() {
                         <div key={r.id}>
                           <div className="flex items-center gap-3">
                             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                              {(r.user?.full_name || "?").charAt(0).toUpperCase()}
+                              {reviewerLabel(r).charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <p className="font-semibold text-foreground">{r.user?.full_name || "Anonymous User"}</p>
+                              <p className="font-semibold text-foreground">
+                                {reviewerLabel(r)}
+                                {r.verified_purchase && (
+                                  <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                                    ✓ Verified purchase
+                                  </span>
+                                )}
+                              </p>
                               <div className="flex items-center gap-2">
                                 <div className="flex text-amber-500 text-sm">
                                   {"★".repeat(r.rating)}
                                   {"☆".repeat(5 - r.rating)}
                                 </div>
                                 <span className="text-xs text-muted-foreground">
-                                  {new Date(r.created_at).toLocaleDateString()}
+                                  {new Date(r.created_at).toLocaleDateString("en-AU")}
                                 </span>
                               </div>
                             </div>
