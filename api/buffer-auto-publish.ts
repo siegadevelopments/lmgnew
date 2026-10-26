@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { requireAdmin } from "./_require-admin.js";
 
 const BUFFER_ORGANIZATION_ID = "687880bd75ffe60432da70c6";
 
@@ -22,6 +23,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  // Admins only: this posts to LMG's Facebook and Instagram through Buffer. It had no check, so
+  // anyone who called it directly (CORS only stops other sites' browsers) could queue posts.
+  const denied = await requireAdmin(req);
+  if (denied) return res.status(denied.status).json({ error: denied.error });
 
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
