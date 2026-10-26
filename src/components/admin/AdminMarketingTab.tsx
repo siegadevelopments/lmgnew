@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { authHeaders } from "@/lib/auth-headers";
 import { toast } from "sonner";
 import {
   Sparkles,
@@ -198,7 +199,7 @@ export function AdminMarketingTab() {
       // 2. Push to Buffer API Queue
       const res = await fetch("/api/buffer-auto-publish", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await authHeaders()) },
         body: JSON.stringify({
           imageUrl: multiPlatformDraft.imageUrl,
           scheduledAt: parseMelbourneTimeToUTC(manualForm.scheduled_at),
@@ -272,7 +273,7 @@ export function AdminMarketingTab() {
 
       const res = await fetch("/api/buffer-auto-publish", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await authHeaders()) },
         body: JSON.stringify({
           imageUrl: editImageUrl || null,
           scheduledAt: editScheduledAt ? parseMelbourneTimeToUTC(editScheduledAt) : undefined,
@@ -662,7 +663,7 @@ export function AdminMarketingTab() {
 
     const res = await fetch("/api/buffer-auto-publish", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await authHeaders()) },
       body: JSON.stringify({
         imageUrl: post.image_url,
         scheduledAt: post.scheduled_at,
