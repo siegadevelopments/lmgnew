@@ -1,4 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
+import { retailOnly } from "@/lib/trade";
 import { supabase } from "@/integrations/supabase/client";
 
 const wellnessImages = [
@@ -79,7 +80,8 @@ export const productsQueryOptions = () =>
         if (error) throw error;
         
         // Filter for approved vendors (allow products if vendor is approved, fallback gracefully if is_live is not set)
-        const filtered = (data || []).filter(
+        // Trade listings (wholesale, salon only, bulk) live on /trade, not in retail browsing.
+        const filtered = retailOnly((data || []) as any[]).filter(
           (p: any) => !p.vendor_profiles || (p.vendor_profiles.is_approved !== false && p.vendor_profiles.is_live !== false)
         );
         
@@ -216,10 +218,10 @@ export const featuredProductsQueryOptions = () =>
           .eq("status", "published")
           .eq("vendor_profiles.is_approved", true)
           .eq("vendor_profiles.is_live", true)
-          .limit(4)
+          .limit(16)
           .order("created_at", { ascending: false });
         if (error) throw error;
-        return (data || []) as any[];
+        return retailOnly((data || []) as any[]).slice(0, 4); // trade listings live on /trade
       } catch (err: any) {
         console.error("Error fetching featured products:", err?.message || err);
         return [];

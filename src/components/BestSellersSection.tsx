@@ -1,6 +1,7 @@
 'use client'
 
 import { useQuery } from "@tanstack/react-query";
+import { retailOnly } from "@/lib/trade";
 import { supabase } from "@/integrations/supabase/client";
 import { ProductCard } from "@/components/ProductCard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,7 +30,8 @@ export function BestSellersSection() {
 
       if (error) throw error;
       
-      let allProducts = (data || []) as any[];
+      // Trade listings (wholesale, salon only, bulk) live on /trade, not in retail browsing.
+      let allProducts = retailOnly((data || []) as any[]);
       
       // Fallback realistic mock products if the database is empty
       if (allProducts.length === 0) {
