@@ -210,6 +210,7 @@ describe("wiring", () => {
       expect(src).toMatch(/const denied = await requireAdmin\(req\);\n\s+if \(denied\) return/);
     }
     expect(read("api/_ads-sync.ts")).toMatch(/if \(!isCron\) \{[\s\S]{0,200}requireAdmin\(req\)/);
+    expect(JSON.parse(read("vercel.json")).crons.some((c: any) => c.path === "/api/ads?op=sync")).toBe(true);
     const router = read("api/ads.ts");
     expect(router).toMatch(/return res\.status\(404\)/);
   });
