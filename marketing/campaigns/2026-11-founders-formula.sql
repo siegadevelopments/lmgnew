@@ -13,7 +13,7 @@ select v.title, v.caption, '{}'::text[], v.image_url, 'product', v.source_url, a
 from (values
 
 -- 1. Mon 2 Nov: Gift Set launch -------------------------------------------------------------
-('Nov: Founder''s Formula Gift Set launch (IG)', 'instagram', timestamptz '2026-11-02 19:00+11',
+('Founder''s Formula Gift Set launch (IG)', 'instagram', timestamptz '2026-11-02 19:00+11',
  'https://www.lifestylemedicinegateway.com/marketing/2026-11/founders-formula-gift-box.jpg',
  'https://www.lifestylemedicinegateway.com/products/founders-formula-gift-box',
 $c$Gift sorted for the person whose bathroom shelf is already full.
@@ -31,7 +31,7 @@ https://www.lifestylemedicinegateway.com/products/founders-formula-gift-box
 
 #ChristmasGiftIdeas #AustralianSkincare #NaturalSkincare #FoundersFormula #LifestyleMedicineGateway$c$),
 
-('Nov: Founder''s Formula Gift Set launch (FB)', 'facebook', timestamptz '2026-11-02 19:30+11',
+('Founder''s Formula Gift Set launch (FB)', 'facebook', timestamptz '2026-11-02 19:30+11',
  'https://www.lifestylemedicinegateway.com/marketing/2026-11/founders-formula-gift-box.jpg',
  'https://www.lifestylemedicinegateway.com/products/founders-formula-gift-box',
 $c$Christmas list looking long already? Here's an easy one to tick off early.
@@ -49,7 +49,7 @@ Shop the Gift Set: https://www.lifestylemedicinegateway.com/products/founders-fo
 #ChristmasGiftIdeas #AustralianSkincare$c$),
 
 -- 2. Thu 5 Nov: Kakadu plum (value / education) ---------------------------------------------
-('Nov: Why Kakadu plum (IG)', 'instagram', timestamptz '2026-11-05 19:00+11',
+('Why Kakadu plum (IG)', 'instagram', timestamptz '2026-11-05 19:00+11',
  'https://www.lifestylemedicinegateway.com/marketing/2026-11/kakadu-plum-vitamin-c-serum.jpg',
  'https://www.lifestylemedicinegateway.com/products/wild-harvested-australian-kakadu-plum-vitamin-c-serum',
 $c$Why is Kakadu plum turning up in so much Australian skincare?
@@ -65,7 +65,7 @@ https://www.lifestylemedicinegateway.com/products/wild-harvested-australian-kaka
 
 #KakaduPlum #AustralianSkincare #NaturalSkincare #FoundersFormula$c$),
 
-('Nov: Why Kakadu plum (FB)', 'facebook', timestamptz '2026-11-05 19:30+11',
+('Why Kakadu plum (FB)', 'facebook', timestamptz '2026-11-05 19:30+11',
  'https://www.lifestylemedicinegateway.com/marketing/2026-11/kakadu-plum-vitamin-c-serum.jpg',
  'https://www.lifestylemedicinegateway.com/products/wild-harvested-australian-kakadu-plum-vitamin-c-serum',
 $c$Kakadu plum is a traditional bush food from northern Australia, and it's now one of the most talked-about ingredients in skincare.
@@ -81,7 +81,7 @@ Read more and shop: https://www.lifestylemedicinegateway.com/products/wild-harve
 #KakaduPlum #AustralianSkincare$c$),
 
 -- 3. Mon 9 Nov: Discovery Kit (try before you commit) ---------------------------------------
-('Nov: Discovery Kit, try five (IG)', 'instagram', timestamptz '2026-11-09 19:00+11',
+('Discovery Kit, try five (IG)', 'instagram', timestamptz '2026-11-09 19:00+11',
  'https://www.lifestylemedicinegateway.com/marketing/2026-11/best-sellers-discovery-kit.jpg',
  'https://www.lifestylemedicinegateway.com/products/best-sellers-discovery-kit',
 $c$Not sure which products suit your skin? Try five before you commit.
@@ -101,7 +101,7 @@ https://www.lifestylemedicinegateway.com/products/best-sellers-discovery-kit
 
 #AustralianSkincare #SkincareRoutine #NaturalSkincare #FoundersFormula$c$),
 
-('Nov: Discovery Kit, try five (FB)', 'facebook', timestamptz '2026-11-09 19:30+11',
+('Discovery Kit, try five (FB)', 'facebook', timestamptz '2026-11-09 19:30+11',
  'https://www.lifestylemedicinegateway.com/marketing/2026-11/best-sellers-discovery-kit.jpg',
  'https://www.lifestylemedicinegateway.com/products/best-sellers-discovery-kit',
 $c$Buying full-size skincare without knowing whether it suits you is a gamble. A discovery kit takes the guesswork out.
@@ -121,7 +121,7 @@ Shop the kit: https://www.lifestylemedicinegateway.com/products/best-sellers-dis
 #AustralianSkincare #NaturalSkincare$c$),
 
 -- 4. Fri 13 Nov: Facial oil in warm weather (value / myth) ---------------------------------
-('Nov: Face oil in summer (IG)', 'instagram', timestamptz '2026-11-13 19:00+11',
+('Face oil in summer (IG)', 'instagram', timestamptz '2026-11-13 19:00+11',
  'https://www.lifestylemedicinegateway.com/marketing/2026-11/nourishing-facial-oils.jpg',
  'https://www.lifestylemedicinegateway.com/products/australian-botanicals-nourishing-facial-oils',
 $c$Face oil as the weather warms up? It can work, if you pick the right one.
@@ -137,7 +137,7 @@ https://www.lifestylemedicinegateway.com/products/australian-botanicals-nourishi
 
 #AustralianSkincare #FacialOil #NaturalSkincare #FoundersFormula$c$),
 
-('Nov: Face oil in summer (FB)', 'facebook', timestamptz '2026-11-13 19:30+11',
+('Face oil in summer (FB)', 'facebook', timestamptz '2026-11-13 19:30+11',
  'https://www.lifestylemedicinegateway.com/marketing/2026-11/nourishing-facial-oils.jpg',
  'https://www.lifestylemedicinegateway.com/products/australian-botanicals-nourishing-facial-oils',
 $c$"Won't a face oil make me greasy in summer?" It's a fair question, and the answer depends on the oil.
@@ -153,7 +153,7 @@ Shop now: https://www.lifestylemedicinegateway.com/products/australian-botanical
 #AustralianSkincare #NaturalSkincare$c$),
 
 -- 5. Tue 24 Nov: Gift Set close-up, order early for Christmas ------------------------------
-('Nov: Gift Set, what''s inside (IG)', 'instagram', timestamptz '2026-11-24 19:00+11',
+('Gift Set, what''s inside (IG)', 'instagram', timestamptz '2026-11-24 19:00+11',
  'https://www.lifestylemedicinegateway.com/marketing/2026-11/founders-formula-gift-box-closeup.jpg',
  'https://www.lifestylemedicinegateway.com/products/founders-formula-gift-box',
 $c$One box, three serums, one very happy person on Christmas morning.
@@ -171,7 +171,7 @@ https://www.lifestylemedicinegateway.com/products/founders-formula-gift-box
 
 #ChristmasGiftIdeas #GiftsForHer #AustralianSkincare #FoundersFormula$c$),
 
-('Nov: Gift Set, what''s inside (FB)', 'facebook', timestamptz '2026-11-24 19:30+11',
+('Gift Set, what''s inside (FB)', 'facebook', timestamptz '2026-11-24 19:30+11',
  'https://www.lifestylemedicinegateway.com/marketing/2026-11/founders-formula-gift-box-closeup.jpg',
  'https://www.lifestylemedicinegateway.com/products/founders-formula-gift-box',
 $c$A month to Christmas. If someone on your list loves skincare, this one is worth a look.
@@ -189,7 +189,7 @@ Order early so it arrives well before the big day: https://www.lifestylemedicine
 #ChristmasGiftIdeas #AustralianSkincare$c$),
 
 -- 6. Fri 27 Nov (Black Friday): Discovery Kit close-up, gift under $100 ---------------------
-('Nov: Gift under $100, Discovery Kit (IG)', 'instagram', timestamptz '2026-11-27 19:00+11',
+('Gift under $100, Discovery Kit (IG)', 'instagram', timestamptz '2026-11-27 19:00+11',
  'https://www.lifestylemedicinegateway.com/marketing/2026-11/best-sellers-discovery-kit-closeup.jpg',
  'https://www.lifestylemedicinegateway.com/products/best-sellers-discovery-kit',
 $c$Black Friday shopping for someone who loves skincare? Skip the countdown timers.
@@ -203,7 +203,7 @@ https://www.lifestylemedicinegateway.com/products/best-sellers-discovery-kit
 
 #GiftsUnder100 #ChristmasGiftIdeas #AustralianSkincare #FoundersFormula$c$),
 
-('Nov: Gift under $100, Discovery Kit (FB)', 'facebook', timestamptz '2026-11-27 19:30+11',
+('Gift under $100, Discovery Kit (FB)', 'facebook', timestamptz '2026-11-27 19:30+11',
  'https://www.lifestylemedicinegateway.com/marketing/2026-11/best-sellers-discovery-kit-closeup.jpg',
  'https://www.lifestylemedicinegateway.com/products/best-sellers-discovery-kit',
 $c$Looking for a gift under $100 that doesn't feel like an afterthought?
@@ -221,4 +221,7 @@ where not exists (select 1 from public.scheduled_posts p where p.title = v.title
 
 -- Check: should return 12 rows, all 'draft'.
 select title, platforms, scheduled_at at time zone 'Australia/Melbourne' as melbourne_time, status
-from public.scheduled_posts where title like 'Nov:%' order by scheduled_at, title;
+from public.scheduled_posts
+where scheduled_at >= '2026-11-01' and scheduled_at < '2026-12-01'
+  and image_url like 'https://www.lifestylemedicinegateway.com/marketing/2026-11/%'
+order by scheduled_at, title;
