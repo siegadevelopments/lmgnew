@@ -53,3 +53,11 @@ describe("sign-up wiring", () => {
     expect(api).not.toMatch(/^export (function|const) (?!POST)/m); // route files may only export handlers
   });
 });
+
+describe("popup quiet pages", () => {
+  it("stays off checkout, reviews, accounts, dashboards and the guides", async () => {
+    const { isQuietPage } = await import("@/components/GlobalPopup");
+    for (const p of ["/checkout", "/checkout/success", "/review/abc", "/admin", "/vendor", "/profile", "/free-guides/7-day-sleep-reset"]) expect(isQuietPage(p), p).toBe(true);
+    for (const p of ["/", "/products", "/articles/sound-sleep-routine", "/vendors", "/checkout-guide"]) expect(isQuietPage(p), p).toBe(false);
+  });
+});
