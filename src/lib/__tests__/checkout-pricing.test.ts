@@ -62,3 +62,21 @@ describe("vendor-facing shipping copy", () => {
     expect(page).toContain("${FREE_SHIPPING_THRESHOLD}");
   });
 });
+
+describe("freeShippingProgress", () => {
+  it("asks for a cent more than the gap, because the rule is over the threshold", async () => {
+    const { freeShippingProgress } = await import("../checkout-pricing");
+    expect(freeShippingProgress(37.5)).toEqual({ qualified: false, remaining: 12.51, percent: 75 });
+    expect(freeShippingProgress(50)).toMatchObject({ qualified: false, remaining: 0.01 });
+    expect(calculateShipping(50 + 0.01)).toBe(0); // the suggested amount really unlocks it
+  });
+  it("is complete over the threshold and for bookings-only carts", async () => {
+    const { freeShippingProgress } = await import("../checkout-pricing");
+    expect(freeShippingProgress(50.01)).toEqual({ qualified: true, remaining: 0, percent: 100 });
+    expect(freeShippingProgress(10, true)).toEqual({ qualified: true, remaining: 0, percent: 100 });
+  });
+  it("never shows the bar full before it's earned", async () => {
+    const { freeShippingProgress } = await import("../checkout-pricing");
+    expect(freeShippingProgress(49.99).percent).toBe(99);
+  });
+});

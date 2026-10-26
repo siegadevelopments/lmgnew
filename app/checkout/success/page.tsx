@@ -5,13 +5,16 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/use-cart";
 import { useAuth } from "@/hooks/use-auth";
+import { reportPendingPurchase } from "@/lib/tracking";
 
 export default function CheckoutSuccessPage() {
   const { clearCart } = useCart();
   const { user } = useAuth();
 
-  // Stripe only sends the customer here after payment succeeds, so the cart can be emptied.
+  // Stripe only sends the customer here after payment succeeds, so the cart can be emptied and the
+  // purchase reported to analytics (once: the saved order is removed when reported).
   useEffect(() => {
+    reportPendingPurchase();
     clearCart();
   }, [clearCart]);
 
