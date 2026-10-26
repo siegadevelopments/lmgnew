@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { calculateShipping, gstIncluded } from "@/lib/checkout-pricing";
 import { checkoutSessionId, savePendingPurchase, trackBeginCheckout } from "@/lib/tracking";
+import { getAttribution } from "@/lib/attribution";
 
 export default function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCart();
@@ -91,6 +92,7 @@ export default function CheckoutPage() {
             success_url: `${window.location.origin}/checkout/success`,
             cancel_url: window.location.href,
             shipping_details: formData,
+            attribution: getAttribution(),
           },
         },
       );

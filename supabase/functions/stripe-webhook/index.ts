@@ -16,6 +16,7 @@ import {
   stockItems,
   type PaidLineItem,
 } from "../_shared/order-fulfilment.ts";
+import { attributionFromMetadata } from "../_shared/attribution.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
   httpClient: Stripe.createFetchHttpClient(),
@@ -228,9 +229,7 @@ Deno.serve(async (req: Request) => {
 
     if (!order) {
       const total = session.amount_total != null ? session.amount_total / 100 : 0;
-      const { data, error } = await supabaseAdmin
-        .from("orders")
-        .insert({
+      const orderRow: Record<string, unknown> = {
           user_id: userId,
           status: "confirmed",
           payment_status: "paid",
@@ -248,9 +247,17 @@ Deno.serve(async (req: Request) => {
           zip: session.metadata?.zip || "",
           stripe_session_id: session.id,
           stripe_payment_intent: typeof session.payment_intent === "string" ? session.payment_intent : null,
-        } as any)
-        .select()
-        .single();
+          attribution: attributionFromMetadata(session.metadata),
+      };
+      const insertOrder = (row: Record<string, unknown>) => supabaseAdmin.from("orders").insert(row as any).select().single();
+      let { data, error } = await insertOrder(orderRow);
+      // orders.attribution comes from 20261027_orders_attribution.sql. If that hasn't been run yet,
+      // save the order without it rather than failing the payment.
+      if (error && /attribution/.test(`${error.message ?? ""}`) && (error.code === "PGRST204" || error.code === "42703")) {
+        console.warn("orders.attribution column missing; order saved without attribution");
+        const { attribution: _omit, ...withoutAttribution } = orderRow;
+        ({ data, error } = await insertOrder(withoutAttribution));
+      }
       if (error?.code === "23505") order = await findOrder(); // a concurrent delivery created it
       else if (error) throw error;
       else order = data;
