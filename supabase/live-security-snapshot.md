@@ -21,6 +21,7 @@ reference for audits, not a migration: don't run it.
 | Vendors could edit any column of their own order lines | `20261022_order_items_vendor_columns.sql` (status and tracking only) |
 | Any signed-in user could upload anywhere in the `media` bucket | `20261023_media_uploads_own_folder.sql` (own folder; admins anywhere) |
 | Every guest support chat readable by anyone | `20261023_guest_chat_token.sql` + `src/lib/guest-chat.ts` (per-browser secret) |
+| `popups` had RLS on but no policies: no visitor or admin could read it | `20261027_popups_policies.sql` |
 
 Still open (lower risk):
 - Duplicate policies (bookings, galleries, gallery_items, chat) are harmless but noisy.

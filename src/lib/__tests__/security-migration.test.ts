@@ -175,3 +175,11 @@ describe("20261023_media_uploads_own_folder.sql", () => {
     }
   });
 });
+
+describe("20261027_popups_policies.sql", () => {
+  const sql = readFileSync(path.resolve(import.meta.dirname, "../../../supabase/migrations/20261027_popups_policies.sql"), "utf8");
+  it("visitors read active popups only; admins manage them", () => {
+    expect(sql).toMatch(/FOR SELECT USING \(is_active = true\)/);
+    expect(sql).toMatch(/FOR ALL TO authenticated USING \(public\.is_admin\(\)\) WITH CHECK \(public\.is_admin\(\)\)/);
+  });
+});
