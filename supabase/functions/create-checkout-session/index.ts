@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import Stripe from "https://esm.sh/stripe@13.10.0?target=deno";
 import { priceCart, safeRedirectUrl } from "../_shared/cart-pricing.ts";
 import { checkoutExpiresAt, sessionEmail } from "../_shared/checkout-recovery.ts";
+import { sanitizeAttribution } from "../_shared/attribution.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
   httpClient: Stripe.createFetchHttpClient(),
@@ -30,10 +31,12 @@ Deno.serve(async (req: Request) => {
       data: { user },
     } = await supabaseClient.auth.getUser();
 
-    const { items: clientItems, success_url, cancel_url, customer_email, shipping_details, marketing_consent } =
+    const { items: clientItems, success_url, cancel_url, customer_email, shipping_details, marketing_consent, attribution } =
       await req.json();
     // Only an explicit tick of the (unticked) opt-in box counts as consent.
     const optedIn = marketing_consent === true;
+    // Where the shopper came from (UTM tags, click ids), cleaned to known keys; stored on the order.
+    const attr = sanitizeAttribution(attribution) ?? {};
 
     // Never trust prices/names from the browser: re-read every product from the database and
     // price the cart from that. The client only chooses product, variant, quantity and booking.
@@ -121,6 +124,7 @@ Deno.serve(async (req: Request) => {
       expires_at: checkoutExpiresAt(Date.now()),
       after_expiration: { recovery: { enabled: true } },
       metadata: {
+        ...attr,
         marketing_consent: optedIn ? "yes" : "no",
         user_id: user?.id ?? "",
         email: customer_email || "",

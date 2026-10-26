@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
+import { AttributionCapture } from "@/components/AttributionCapture";
 
 const BackToTop = dynamic(() => import("@/components/BackToTop").then((mod) => mod.BackToTop), { ssr: false });
 const MessengerBubble = dynamic(() => import("@/components/chat/GlobalChat").then((mod) => mod.MessengerBubble), { ssr: false });
@@ -54,6 +55,9 @@ export function ClientOnlyOverlays() {
           </Suspense>
         </>
       )}
+      <Suspense fallback={null}>
+        <AttributionCapture />
+      </Suspense>
       <CacheBuster />
       <BackToTop />
       <AppInstallPopup />
