@@ -46,18 +46,20 @@ No discount codes are used. The offer is the vendor's own "valued at" price, plu
 Working break-even: **$25 per purchase for the Gift Set, $18 for the Discovery Kit.**
 
 **Setup:**
-- Run two ads in Meta Ads Manager: the 2 Nov Gift Set post and the 9 Nov Discovery Kit post.
+- Run two ads in Meta Ads Manager, both starting Tue 3 Nov.
+  - Gift Set: use the existing Facebook post from 2 Nov.
+  - Discovery Kit: its post isn't published until 9 Nov, so create it as a new ad with the same image (`best-sellers-discovery-kit.jpg`) and the Facebook caption.
 - Objective is Sales, optimised for the Purchase event, in Australia only.
-- Spend $5 to $10 a day per ad, from 2 Nov to 15 Nov.
-- On 16 Nov, stop the weaker ad and move its budget to the stronger one until about 10 Dec.
+- Spend $10 a day per ad, from 3 Nov to 16 Nov.
+- On 17 Nov, stop the weaker ad and move its budget to the stronger one until about 10 Dec.
 - Stop rule: stop the Gift Set ad at about $75 spent with no purchase, and the Discovery Kit ad at about $55.
 
 **Budget (LMG pays alone):**
 
 | Phase | Dates | Daily | Total |
 |---|---|---|---|
-| Test, both ads | 2 to 15 Nov | $10 per ad | about $280 |
-| Scale the winner | 16 Nov to 10 Dec | $10, raised to $20 only if cost per purchase is under break-even | $250 to $500 |
+| Test, both ads | 3 to 16 Nov | $10 per ad | about $280 |
+| Scale the winner | 17 Nov to 10 Dec | $10, raised to $20 only if cost per purchase is under break-even | $250 to $500 |
 | **Cap** | | | **$800** |
 
 **Vendor co-funding:** Founder's Formula declined to share the ad cost (26 Oct 2026). LMG funds the ads alone.
