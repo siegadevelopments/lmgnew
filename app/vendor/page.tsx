@@ -22,6 +22,9 @@ import { ChatTab } from "@/components/vendor/ChatTab";
 import { BulkImportTab } from "@/components/vendor/BulkImportTab";
 import { OrdersTab } from "@/components/vendor/OrdersTab";
 import { BookingsTab } from "@/components/vendor/BookingsTab";
+import { VendorPhoneField } from "@/components/vendor/VendorPhoneField";
+import { normalisePhone, PHONE_HELP } from "@/lib/phone";
+import { toast } from "sonner";
 import {
   LayoutDashboard,
   Package,
@@ -198,17 +201,25 @@ function VendorDashboardContent() {
       const formData = new FormData(e.target as HTMLFormElement);
       const storeName = formData.get("store_name") as string;
       const vendorType = formData.get("vendor_type") as string;
+      const phone = normalisePhone(formData.get("phone"));
+      if (!phone) {
+        toast.error(PHONE_HELP);
+        return;
+      }
 
       // Only promote to "vendor" if the account doesn't already hold a higher-privilege
       // role — an admin (or any future non-customer role) creating a store here must not
       // have their own role silently downgraded.
       if (role !== "admin") {
         const { error: profileError } = await (supabase.from("profiles") as any).upsert(
-          { id: user.id, role: "vendor" },
+          { id: user.id, role: "vendor", phone },
           { onConflict: "id" },
         );
 
         if (profileError) throw profileError;
+      } else {
+        const { error: phoneError } = await (supabase.from("profiles") as any).update({ phone }).eq("id", user.id);
+        if (phoneError) throw phoneError;
       }
 
       const { data, error } = await (supabase.from("vendor_profiles") as any)
@@ -234,6 +245,7 @@ function VendorDashboardContent() {
       }
     } catch (err) {
       console.error("Error creating store:", err);
+      toast.error("Couldn't create your store. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -265,6 +277,11 @@ function VendorDashboardContent() {
                 <div className="space-y-2">
                   <Label htmlFor="store_name" className="text-sm font-bold uppercase tracking-wider opacity-70">Business / Store Name</Label>
                   <Input id="store_name" name="store_name" placeholder="e.g. Pure Wellness Co." className="h-12 text-lg shadow-inner bg-background/50" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-sm font-bold uppercase tracking-wider opacity-70">Business Phone</Label>
+                  <Input id="phone" name="phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="e.g. 0412 345 678" className="h-12 text-lg shadow-inner bg-background/50" required />
+                  <p className="text-xs text-muted-foreground">So we can reach you about orders and bookings. Not shown to customers.</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="vendor_type" className="text-sm font-bold uppercase tracking-wider opacity-70">What will you provide?</Label>
@@ -407,6 +424,7 @@ function VendorDashboardContent() {
         )}
 
         <div className="p-4 sm:p-6 lg:p-8">
+          {activeTab !== "settings" && <VendorPhoneField userId={user!.id} mode="prompt" />}
           <Tabs value={activeTab} className="w-full">
             <TabsContent value="analytics" className="mt-0 border-0 p-0">
               <div className="mb-6 flex flex-col gap-1">

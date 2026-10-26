@@ -9,6 +9,7 @@ import { uploadMedia } from "@/lib/upload";
 import { Instagram, Facebook, Twitter, Globe, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { VendorPhoneField } from "@/components/vendor/VendorPhoneField";
 
 import type { VendorProfile } from "../../../app/vendor/page";
 
@@ -53,6 +54,7 @@ export function SettingsTab({ profile, setProfile, userId }: Props) {
 
   return (
     <div className="space-y-6">
+      <VendorPhoneField userId={userId} mode="settings" />
       <Card className="border-border/50">
         <CardHeader>
           <div className="flex items-center gap-2">
