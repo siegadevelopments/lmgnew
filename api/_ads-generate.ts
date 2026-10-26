@@ -12,7 +12,7 @@ import { adCopyPrompt, breakEven, DEFAULT_DAILY_BUDGET_CENTS, parseCopyVariants,
 
 const MODELS = ["gemini-2.5-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export async function generateAd(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   const denied = await requireAdmin(req);
   if (denied) return res.status(denied.status).json({ error: denied.error });

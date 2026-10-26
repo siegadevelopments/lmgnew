@@ -35,7 +35,7 @@ async function uploadImage(cfg: MetaConfig, imageUrl: string): Promise<string> {
   return first.hash;
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export async function metaAction(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   const denied = await requireAdmin(req);
   if (denied) return res.status(denied.status).json({ error: denied.error });

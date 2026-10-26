@@ -166,7 +166,7 @@ export function AdminAdsTab() {
     if (!productId) return toast.error("Choose a product first.");
     setBusy("generate");
     try {
-      const data: Generated = await callApi("/api/ads-generate", { product_id: productId });
+      const data: Generated = await callApi("/api/ads?op=generate", { product_id: productId });
       setGen(data);
       const v = data.variants[0];
       const month = new Date(`${draft.start}T00:00:00Z`).toLocaleDateString("en-AU", { month: "short", year: "numeric", timeZone: "UTC" });
@@ -227,7 +227,7 @@ export function AdminAdsTab() {
   const metaAction = async (c: Campaign, action: "create" | "activate" | "pause") => {
     setBusy(`${action}:${c.id}`);
     try {
-      await callApi("/api/ads-meta", { campaign_id: c.id, action });
+      await callApi("/api/ads?op=meta", { campaign_id: c.id, action });
       toast.success(action === "create" ? "Created in Meta (switched off)." : action === "activate" ? "Ad switched on." : "Ad paused.");
     } catch (err: any) {
       toast.error(err.message);
@@ -240,7 +240,7 @@ export function AdminAdsTab() {
   const syncNow = async () => {
     setBusy("sync");
     try {
-      const r = await callApi("/api/ads-sync", {});
+      const r = await callApi("/api/ads?op=sync", {});
       if (r.errors?.length) toast.warning(r.errors.join(" · ").slice(0, 300));
       else toast.success(`Synced ${r.synced} ad(s). Meta: ${r.meta}.`);
     } catch (err: any) {

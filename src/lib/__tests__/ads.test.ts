@@ -193,16 +193,25 @@ describe("Meta payloads", () => {
 
 describe("wiring", () => {
   it("switching an ad on checks the monthly cap before anything goes ACTIVE", () => {
-    const src = read("api/ads-meta.ts");
+    const src = read("api/_ads-meta.ts");
     expect(src.indexOf("capCheck(")).toBeGreaterThan(0);
     expect(src.indexOf("capCheck(")).toBeLessThan(src.indexOf('status: "ACTIVE"'));
   });
 
   it("the sync runs from the Vercel cron with CRON_SECRET, or for admins", () => {
-    const src = read("api/ads-sync.ts");
+    const src = read("api/_ads-sync.ts");
     expect(src).toMatch(/req\.headers\.authorization === `Bearer \$\{cronSecret\}`/);
     expect(src).toMatch(/!!cronSecret &&/);
-    expect(JSON.parse(read("vercel.json")).crons.some((c: any) => c.path === "/api/ads-sync")).toBe(true);
+  });
+
+  it("every ads operation checks its caller before doing anything", () => {
+    for (const f of ["api/_ads-generate.ts", "api/_ads-meta.ts"]) {
+      const src = read(f);
+      expect(src).toMatch(/const denied = await requireAdmin\(req\);\n\s+if \(denied\) return/);
+    }
+    expect(read("api/_ads-sync.ts")).toMatch(/if \(!isCron\) \{[\s\S]{0,200}requireAdmin\(req\)/);
+    const router = read("api/ads.ts");
+    expect(router).toMatch(/return res\.status\(404\)/);
   });
 
   it("the ads tables are admin-only", () => {

@@ -9,7 +9,7 @@ import { melbourneDate, parseInsights, shouldStopLoss } from "./_ads.js";
 
 const cents = (dollars: unknown) => Math.round((Number(dollars) || 0) * 100);
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export async function syncAds(req: VercelRequest, res: VercelResponse) {
   const cronSecret = process.env.CRON_SECRET;
   const isCron = !!cronSecret && req.headers.authorization === `Bearer ${cronSecret}`;
   if (!isCron) {
