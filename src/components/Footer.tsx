@@ -33,6 +33,7 @@ const footerLinks = {
     { label: "Browse Products", to: "/products" },
     { label: "Services", to: "/services" },
     { label: "Brands", to: "/vendors" },
+    { label: "Trade & Salon", to: "/trade" },
     { label: "Buying Guides", to: "/guides" },
   ],
   Learn: [

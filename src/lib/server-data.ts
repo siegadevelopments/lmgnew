@@ -8,6 +8,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { globalMockProductsList } from "@/lib/queries"; // homepage fallback only
 import { categoriesWithProducts, productInCategory } from "@/lib/wellness-categories";
+import { isTradeListing, retailOnly } from "@/lib/trade";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -173,7 +174,7 @@ function fetchLiveProducts(): Promise<any[]> {
         .eq("vendor_profiles.is_live", true)
         .neq("product_type", "service"),
     );
-    return (data as any[]) || [];
+    return retailOnly((data as any[]) || []); // trade listings live on /trade
   });
 }
 
@@ -213,19 +214,33 @@ function fetchListingProducts(): Promise<any[]> {
   });
 }
 
+/** Retail listing (products page, new arrivals): trade listings live on /trade. */
+const fetchRetailListingProducts = async () => retailOnly(await fetchListingProducts());
+
+/** /trade: trade listings from approved, live stores, grouped by store name. */
+export async function getTradeProducts(): Promise<Record<string, any[]>> {
+  const products = (await fetchListingProducts()).filter((p: any) => isTradeListing(p.title) && p.product_type !== "service");
+  const byStore: Record<string, any[]> = {};
+  for (const p of products) {
+    const store = p.vendor_profiles?.store_name ?? "Other";
+    (byStore[store] ??= []).push(p);
+  }
+  return byStore;
+}
+
 /**
  * /products listing, newest first. A stable order keeps the server HTML and the first client
  * render identical; the page applies its interactive sort after hydration.
  */
 export async function getProductListing() {
-  return [...(await fetchListingProducts())].sort(
+  return [...(await fetchRetailListingProducts())].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   );
 }
 
 /** Homepage "New arrivals" — mirrors productsQueryOptions (published, approved vendor, shuffled). */
 export async function getNewArrivals(limit = 5) {
-  const live = await fetchListingProducts();
+  const live = await fetchRetailListingProducts();
   const pool = live.length > 0 ? live : [...globalMockProductsList];
   return pool.sort(() => Math.random() - 0.5).slice(0, limit);
 }

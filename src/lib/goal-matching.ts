@@ -1,5 +1,6 @@
 import { categoryConfig } from "@/lib/category-config";
 import { guideConfig } from "@/lib/guide-config";
+import { isTradeListing } from "@/lib/trade";
 
 // Matches an article or recipe to the wellness goal (category) it's about, so the page can point
 // readers to relevant products and the buying guide: the "content → product discovery" step of
@@ -66,8 +67,7 @@ export function guideForCategory(slug: string): { slug: string; title: string } 
   return entry ? { slug: entry[0], title: entry[1].title } : null;
 }
 
-/** Trade-only listings that shouldn't be recommended to retail shoppers. */
-export const isTradeListing = (title: string) => /wholesale|salon only|\bMASK_|\b\d+\s?kg\b/i.test(title);
+export { isTradeListing } from "@/lib/trade";
 
 /**
  * Up to `max` products to recommend: retail listings only, one per product (pack sizes like

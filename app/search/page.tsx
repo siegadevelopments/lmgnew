@@ -1,6 +1,7 @@
 'use client'
 
 import { useSearchParams } from "next/navigation";
+import { retailOnly } from "@/lib/trade";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -165,7 +166,8 @@ function SearchContent() {
         ]);
 
         // Process Products
-        const productsList = productsRes.data || [];
+        // Trade listings (wholesale, salon only, bulk) live on /trade, not in retail search.
+        const productsList = retailOnly(productsRes.data || []);
 
         // Process Articles & subcategories (remedies, studies, anecdotes)
         const rawArticles = articlesRes.data || [];

@@ -1,6 +1,7 @@
 'use client'
 
 import { useParams, useRouter, usePathname } from "next/navigation";
+import { isTradeListing } from "@/lib/trade";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/checkout-pricing";
 import { fetchMyProfile } from "@/lib/profile-reads";
 import { sanitizeHtml, jsonLd } from "@/lib/security";
@@ -212,14 +213,16 @@ function ProductContent() {
         .select("*, vendor_profiles(store_name, store_logo_url, is_approved)")
         .eq("status", "published")
         .neq("id", product.id)
-        .limit(6);
+        .limit(18);
 
       if (product.category) {
         query = query.eq("category", product.category);
       }
 
       const { data } = await query;
-      return (data as any[]) || [];
+      // Retail products get retail suggestions; trade listings get other trade listings.
+      const sameKind = ((data as any[]) || []).filter((p) => isTradeListing(p.title) === isTradeListing(product.title));
+      return sameKind.slice(0, 6);
     },
     enabled: !!product.id,
   });
