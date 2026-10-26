@@ -41,7 +41,8 @@ Start with **[marketing/social/marketing-agent.md](../../../marketing/social/mar
 **Read additionally, depending on task:**
 - Platform-specific post: [instagram-strategy.md](../../../marketing/social/instagram-strategy.md), [facebook-strategy.md](../../../marketing/social/facebook-strategy.md), [tiktok-strategy.md](../../../marketing/social/tiktok-strategy.md), or [pinterest-strategy.md](../../../marketing/social/pinterest-strategy.md)
 - Repurposing website content across channels: [content-repurposing.md](../../../marketing/social/content-repurposing.md)
-- Calendar/scheduling work: [editorial-calendar.md](../../../marketing/social/editorial-calendar.md)
+- Calendar/scheduling work: [editorial-calendar.md](../../../marketing/social/editorial-calendar.md); past and current campaign records are in [marketing/campaigns/](../../../marketing/campaigns/)
+- Paid ads, boosting a post, or ad budgets: [paid-social.md](../../../marketing/social/paid-social.md)
 - Hashtags: [hashtag-strategy.md](../../../marketing/social/hashtag-strategy.md)
 - Performance review or proposing a test: [analytics.md](../../../marketing/social/analytics.md), [experiments.md](../../../marketing/social/experiments.md)
 - Orientation / business-model framing: [README.md](../../../marketing/social/README.md)
