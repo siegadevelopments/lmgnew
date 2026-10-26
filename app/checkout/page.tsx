@@ -45,6 +45,8 @@ export default function CheckoutPage() {
     state: "",
     zip: "",
   });
+  // Unticked by default: ticking is the shopper's consent to emails (Spam Act), incl. a cart reminder.
+  const [marketingConsent, setMarketingConsent] = useState(false);
 
   // --- NEW: Auto-populate profile data ---
   useEffect(() => {
@@ -91,6 +93,7 @@ export default function CheckoutPage() {
             success_url: `${window.location.origin}/checkout/success`,
             cancel_url: window.location.href,
             shipping_details: formData,
+            marketing_consent: marketingConsent,
           },
         },
       );
@@ -248,6 +251,16 @@ export default function CheckoutPage() {
                     onChange={handleChange}
                     required
                   />
+                  <label htmlFor="checkout-marketing" className="flex items-start gap-2 pt-1 text-xs text-muted-foreground cursor-pointer">
+                    <input
+                      id="checkout-marketing"
+                      type="checkbox"
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+                      checked={marketingConsent}
+                      onChange={(e) => setMarketingConsent(e.target.checked)}
+                    />
+                    <span>Email me wellness tips and offers, and a reminder if I don't finish checking out. Unsubscribe any time.</span>
+                  </label>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone</Label>
