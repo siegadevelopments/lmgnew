@@ -16,6 +16,7 @@ import {
   stockItems,
   type PaidLineItem,
 } from "../_shared/order-fulfilment.ts";
+import { recoveryEmail, recoverySkipReason, REMINDER_COOLDOWN_DAYS, sessionEmail } from "../_shared/checkout-recovery.ts";
 import { attributionFromMetadata } from "../_shared/attribution.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -183,6 +184,85 @@ async function handleRefund(charge: Stripe.Charge): Promise<Response> {
   }
 }
 
+/**
+ * checkout.session.expired: email a reminder with Stripe's recovery link, when the shopper gave
+ * consent and hasn't bought since. checkout_recoveries holds one row per session, so Stripe's
+ * retries never send twice; a row with neither email_sent_at nor skipped_reason is retried.
+ */
+async function handleExpired(session: Stripe.Checkout.Session): Promise<Response> {
+  const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
+  const email = sessionEmail(session as any);
+  const createdAt = new Date((session.created ?? 0) * 1000).toISOString();
+
+  const { error: claimError } = await supabaseAdmin.from("checkout_recoveries").upsert(
+    { stripe_session_id: session.id, email: email || null, amount_cents: session.amount_total ?? null, session_created_at: createdAt },
+    { onConflict: "stripe_session_id", ignoreDuplicates: true },
+  );
+  if (claimError) throw claimError;
+  const { data: row, error: rowError } = await supabaseAdmin
+    .from("checkout_recoveries")
+    .select("email_sent_at, skipped_reason")
+    .eq("stripe_session_id", session.id)
+    .single();
+  if (rowError) throw rowError;
+  if (row?.email_sent_at || row?.skipped_reason) return json({ received: true, recovery: "already handled" });
+
+  let isSubscriber = false;
+  let purchasedSince = false;
+  let remindedRecently = false;
+  if (email) {
+    const since = new Date(Date.now() - REMINDER_COOLDOWN_DAYS * 86400_000).toISOString();
+    const [sub, paid, reminded] = await Promise.all([
+      supabaseAdmin.from("newsletter_subscribers").select("id").eq("email", email).limit(1),
+      supabaseAdmin.from("orders").select("id").ilike("email", email).eq("payment_status", "paid").gte("created_at", createdAt).limit(1),
+      supabaseAdmin.from("checkout_recoveries").select("stripe_session_id").eq("email", email).gte("email_sent_at", since).limit(1),
+    ]);
+    if (sub.error || paid.error || reminded.error) throw sub.error || paid.error || reminded.error;
+    isSubscriber = (sub.data ?? []).length > 0;
+    purchasedSince = (paid.data ?? []).length > 0;
+    remindedRecently = (reminded.data ?? []).length > 0;
+  }
+
+  const recoveryUrl = (session as any).after_expiration?.recovery?.url as string | undefined;
+  const skip = recoverySkipReason({
+    paymentStatus: session.payment_status,
+    email,
+    recoveryUrl,
+    optedIn: session.metadata?.marketing_consent === "yes",
+    isSubscriber,
+    purchasedSince,
+    remindedRecently,
+  });
+  if (skip) {
+    await supabaseAdmin.from("checkout_recoveries").update({ skipped_reason: skip }).eq("stripe_session_id", session.id);
+    return json({ received: true, recovery: `skipped: ${skip}` });
+  }
+
+  if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY not set; reminder will be retried");
+  const items = await stripe.checkout.sessions.listLineItems(session.id, { limit: 20 });
+  const { subject, html } = recoveryEmail({
+    firstName: session.metadata?.first_name,
+    items: items.data.map((i: any) => ({ name: i.description ?? "Item", quantity: i.quantity ?? 1, amountCents: i.amount_total ?? 0 })),
+    totalCents: session.amount_total ?? 0,
+    recoveryUrl: recoveryUrl!,
+  });
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${RESEND_API_KEY}` },
+    body: JSON.stringify({
+      from: "Lifestyle Medicine Gateway <hello@lifestylemedicinegateway.com>",
+      reply_to: "hello@lifestylemedicinegateway.com",
+      to: [email],
+      subject,
+      html,
+    }),
+  });
+  if (!res.ok) throw new Error(`Reminder email failed: HTTP ${res.status}`);
+
+  await supabaseAdmin.from("checkout_recoveries").update({ email_sent_at: new Date().toISOString() }).eq("stripe_session_id", session.id);
+  return json({ received: true, recovery: "sent" });
+}
+
 // Deno's built-in server. The old std@0.168.0 serve() calls Deno.core.runMicrotasks(), which the
 // current Supabase runtime doesn't support ("event loop error" after every request).
 Deno.serve(async (req: Request) => {
@@ -205,6 +285,9 @@ Deno.serve(async (req: Request) => {
     if (event.type === "charge.refunded") {
       return await handleRefund(event.data.object as Stripe.Charge);
     }
+    if (event.type === "checkout.session.expired") {
+      return await handleExpired(event.data.object as Stripe.Checkout.Session);
+    }
 
     const session = event.data.object as Stripe.Checkout.Session;
     if (!shouldFulfil(event.type, (session as any)?.payment_status)) {
@@ -214,6 +297,14 @@ Deno.serve(async (req: Request) => {
     }
 
     const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
+
+    // A checkout reopened from a reminder's recovery link is a new session. If Stripe didn't carry
+    // our metadata (shipping address, account) across, take it from the original session.
+    const recoveredFrom = (session as any).recovered_from as string | null | undefined;
+    if (recoveredFrom && !session.metadata?.email) {
+      const original = await stripe.checkout.sessions.retrieve(recoveredFrom);
+      session.metadata = { ...(original.metadata ?? {}), ...(session.metadata ?? {}) };
+    }
     const userId = session.metadata?.user_id || null;
 
     // Get or create the order. orders.stripe_session_id is unique, so concurrent deliveries can't
@@ -418,6 +509,16 @@ Deno.serve(async (req: Request) => {
           <p>View details in the <a href="https://www.lifestylemedicinegateway.com/admin?tab=orders">Admin Dashboard</a>.</p>
         </div>`),
     );
+
+    if (recoveredFrom) {
+      await attempt("Record recovered checkout", async () => {
+        const { error } = await supabaseAdmin
+          .from("checkout_recoveries")
+          .update({ recovered_order_id: orderId, recovered_at: new Date().toISOString() })
+          .eq("stripe_session_id", recoveredFrom);
+        if (error) throw error;
+      });
+    }
 
     // Done: later deliveries of this event return immediately.
     const { error: doneError } = await supabaseAdmin.from("orders").update({ processed_at: new Date().toISOString() }).eq("id", orderId);

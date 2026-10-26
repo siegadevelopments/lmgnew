@@ -84,7 +84,8 @@ describe("wiring", () => {
     const fn = read("supabase/functions/create-checkout-session/index.ts");
     expect(fn).toMatch(/const attr = sanitizeAttribution\(attribution\) \?\? \{\};/);
     // Spread first so the order's own metadata (user_id, email...) can never be overwritten.
-    expect(fn).toMatch(/metadata: \{\n\s+\.\.\.attr,\n\s+user_id:/);
+    expect(fn).toMatch(/metadata: \{\n\s+\.\.\.attr,\n/);
+    expect(fn.indexOf("...attr,")).toBeLessThan(fn.indexOf('user_id: user?.id'));
   });
 
   it("the webhook stores attribution and still saves the order if the column is missing", () => {

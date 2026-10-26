@@ -241,6 +241,13 @@ function AdminDashboardContent() {
         }
 
         const vendorProfiles = (vendorsRes.data || []) as any[];
+        // Vendor phones live on profiles.phone, readable by admins only through admin_list_profiles().
+        const phoneById = new Map<string, string>();
+        const vendorIds = vendorProfiles.map((vp) => vp?.id).filter(Boolean);
+        if (vendorIds.length > 0) {
+          const { data: vendorContactRows } = await adminListProfiles().in("id", vendorIds);
+          for (const row of (vendorContactRows || []) as any[]) if (row?.phone) phoneById.set(row.id, row.phone);
+        }
         const vendorsWithEmails = vendorProfiles
           .filter((vp) => vp && vp.id)
           .map((vp) => {
@@ -249,6 +256,7 @@ function AdminDashboardContent() {
             return {
               ...vp,
               email: user?.email || "",
+              phone: phoneById.get(vp.id) || "",
             };
           });
 
@@ -1137,7 +1145,12 @@ function AdminDashboardContent() {
                               key={v.id}
                               className="border-b border-border/50 last:border-0 hover:bg-muted/30"
                             >
-                              <td className="py-4 font-medium">{v.store_name}</td>
+                              <td className="py-4 font-medium">
+                                {v.store_name}
+                                <div className="text-xs font-normal text-muted-foreground">
+                                  {v.email || "No email"} · {v.phone || "No phone"}
+                                </div>
+                              </td>
                               <td className="py-4 hidden sm:table-cell text-muted-foreground text-xs">
                                 {new Date(v.created_at).toLocaleDateString()}
                               </td>

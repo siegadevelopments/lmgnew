@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import Stripe from "https://esm.sh/stripe@13.10.0?target=deno";
 import { priceCart, safeRedirectUrl } from "../_shared/cart-pricing.ts";
+import { checkoutExpiresAt, sessionEmail } from "../_shared/checkout-recovery.ts";
 import { sanitizeAttribution } from "../_shared/attribution.ts";
 
 const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -30,8 +31,10 @@ Deno.serve(async (req: Request) => {
       data: { user },
     } = await supabaseClient.auth.getUser();
 
-    const { items: clientItems, success_url, cancel_url, customer_email, shipping_details, attribution } =
+    const { items: clientItems, success_url, cancel_url, customer_email, shipping_details, marketing_consent, attribution } =
       await req.json();
+    // Only an explicit tick of the (unticked) opt-in box counts as consent.
+    const optedIn = marketing_consent === true;
     // Where the shopper came from (UTM tags, click ids), cleaned to known keys; stored on the order.
     const attr = sanitizeAttribution(attribution) ?? {};
 
@@ -116,8 +119,13 @@ Deno.serve(async (req: Request) => {
       success_url: safeRedirectUrl(success_url, "/checkout/success"),
       cancel_url: safeRedirectUrl(cancel_url, "/checkout"),
       customer_email: customer_email,
+      // Abandoned checkouts: expire after a few hours with a recovery link, which the webhook
+      // (checkout.session.expired) emails to shoppers who opted in. See _shared/checkout-recovery.ts.
+      expires_at: checkoutExpiresAt(Date.now()),
+      after_expiration: { recovery: { enabled: true } },
       metadata: {
         ...attr,
+        marketing_consent: optedIn ? "yes" : "no",
         user_id: user?.id ?? "",
         email: customer_email || "",
         first_name: shipping_details.firstName || "",
@@ -129,6 +137,15 @@ Deno.serve(async (req: Request) => {
         zip: shipping_details.zip || "",
       },
     });
+
+    // Opted-in shoppers join the newsletter list (the same list the site popup fills). Never blocks checkout.
+    const optInEmail = optedIn ? sessionEmail({ customer_email }) : "";
+    if (optInEmail) {
+      const { error: subError } = await supabaseAdmin
+        .from("newsletter_subscribers")
+        .upsert({ email: optInEmail }, { onConflict: "email", ignoreDuplicates: true });
+      if (subError) console.error("Checkout opt-in: newsletter save failed", subError.code);
+    }
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
