@@ -42,3 +42,24 @@ describe("20261101_shopify_import.sql", () => {
     expect(sql).toMatch(/DROP POLICY IF EXISTS "Admins manage shopify stores"/);
   });
 });
+
+const schedule = readFileSync(
+  path.resolve(import.meta.dirname, "../../../supabase/migrations/20261101_shopify_sync_schedule.sql"),
+  "utf8",
+);
+
+describe("20261101_shopify_sync_schedule.sql", () => {
+  it("calls the sync operation daily with the secret read from Vault, never written in the file", () => {
+    expect(schedule).toMatch(/cron\.schedule\(\s*'shopify-stock-sync',\s*'30 19 \* \* \*'/);
+    expect(schedule).toMatch(/import-shopify-catalogue/);
+    expect(schedule).toMatch(/"op": "sync"/);
+    expect(schedule).toMatch(/vault\.decrypted_secrets WHERE name = 'shopify_sync_secret'/);
+    expect(schedule).not.toMatch(/x-webhook-secret',\s*'/); // the header value is a lookup, not a literal
+  });
+
+  it("replaces an existing job instead of failing or doubling up when re-run", () => {
+    expect(schedule).toMatch(/cron\.unschedule\('shopify-stock-sync'\)/);
+    expect(schedule).toMatch(/CREATE EXTENSION IF NOT EXISTS pg_cron/);
+    expect(schedule).toMatch(/CREATE EXTENSION IF NOT EXISTS pg_net/);
+  });
+});

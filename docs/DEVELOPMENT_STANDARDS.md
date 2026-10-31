@@ -134,6 +134,7 @@ Set these **before** deploying the corresponding functions, otherwise they fail 
 | `META_AD_ACCOUNT_ID` | Vercel | Admin > Meta Ads — the ad account (`act_` prefix optional) |
 | `META_PIXEL_ID` (optional) | Vercel | Admin > Meta Ads — falls back to `NEXT_PUBLIC_META_PIXEL_ID` |
 | `META_INSTAGRAM_USER_ID`, `META_GRAPH_VERSION` (optional) | Vercel | Admin > Meta Ads — Instagram account for ads; Graph API version (default `v23.0`) |
+| `SHOPIFY_SYNC_SECRET` | Supabase Edge Function secrets (and the same value in Vault as `shopify_sync_secret`) | `import-shopify-catalogue` `sync` operation, called daily by `pg_cron` — see `supabase/migrations/20261101_shopify_sync_schedule.sql` for the run order |
 
 Edge Functions import `supabase/functions/_shared/auth.ts`; deploy the whole `supabase/functions` directory
 (CI or `supabase functions deploy`) so `_shared` is bundled.
