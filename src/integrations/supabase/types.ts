@@ -394,6 +394,9 @@ export interface Database {
           store_category: string | null;
           product_type: string | null;
           wellness_categories: string[] | null;
+          source_platform: string | null;
+          source_ref: string | null;
+          import_issue: string | null;
         };
         Insert: Partial<Database["public"]["Tables"]["products"]["Row"]>;
         Update: Partial<Database["public"]["Tables"]["products"]["Insert"]>;
@@ -406,6 +409,21 @@ export interface Database {
             referencedColumns: ["id"];
           },
         ];
+      };
+      vendor_shopify_stores: {
+        Row: {
+          vendor_id: string;
+          store_url: string;
+          sync_enabled: boolean;
+          last_synced_at: string | null;
+          last_sync_status: "ok" | "failed" | null;
+          last_sync_message: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Partial<Database["public"]["Tables"]["vendor_shopify_stores"]["Row"]>;
+        Update: Partial<Database["public"]["Tables"]["vendor_shopify_stores"]["Insert"]>;
+        Relationships: [];
       };
       profiles: {
         Row: {

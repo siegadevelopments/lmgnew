@@ -15,6 +15,7 @@ import { AdminGalleriesTab } from "@/components/admin/AdminGalleriesTab";
 import { AdminContentTab } from "@/components/admin/AdminContentTab";
 import { AdminMarketingTab } from "@/components/admin/AdminMarketingTab";
 import { AdminAdsTab } from "@/components/admin/AdminAdsTab";
+import { AdminShopifyImport } from "@/components/admin/AdminShopifyImport";
 import { AdminSubscribersTab } from "@/components/admin/AdminSubscribersTab";
 import { AdminPopupsTab } from "@/components/admin/AdminPopupsTab";
 import { AffiliatesTab } from "@/components/admin/AffiliatesTab";
@@ -1461,6 +1462,8 @@ function AdminDashboardContent() {
                   </CardContent>
                 </Card>
               ) : (
+                <>
+                <AdminShopifyImport vendors={vendors} products={products} setProducts={setProducts} />
                 <Card>
                   <CardContent className="pt-6">
                     {products.length === 0 ? (
@@ -1511,6 +1514,15 @@ function AdminDashboardContent() {
                                   >
                                     {p.status}
                                   </Badge>
+                                  {p.import_issue && (
+                                    <Badge
+                                      variant="destructive"
+                                      className="ml-1.5 text-[10px] font-bold uppercase tracking-tight"
+                                      title={p.import_issue}
+                                    >
+                                      Needs fix
+                                    </Badge>
+                                  )}
                                 </td>
                                 <td className="py-4 text-right">
                                   <div className="flex items-center justify-end gap-1.5">
@@ -1546,6 +1558,7 @@ function AdminDashboardContent() {
                     )}
                   </CardContent>
                 </Card>
+                </>
               )}
             </TabsContent>
 
