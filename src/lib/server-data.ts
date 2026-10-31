@@ -77,15 +77,15 @@ export class ServerDataError extends Error {
 export const REQUEST_TIMEOUT_MS = 8000;
 export const RETRY_DELAYS_MS = [300, 1000]; // 3 attempts in total
 
-export const DATA_REVALIDATE_SECONDS = 300;
+export const DATA_REVALIDATE_SECONDS = 3600;
 
 /**
  * Aborts a hung Supabase request instead of letting it hold the render until the platform kills it.
  *
  * `next.revalidate` caps how long Next's data cache keeps a response. Without it the response was
  * cached for the page's own hour, so a page refreshing on schedule could still render data up to
- * an hour old (two hours end to end). Pages that show this data set `revalidate = 300` to match,
- * so admin edits show within about ten minutes. (Set it on the route explicitly: a page that reuses
+ * an hour old (two hours end to end). Pages that show this data set `revalidate = 3600` to match,
+ * so admin edits show within about two hours at worst (raised from 5 minutes to cut Vercel Active CPU). (Set it on the route explicitly: a page that reuses
  * a shared result below makes no fetch of its own, so the fetch setting alone doesn't reach it.)
  * (`cache: "no-store"` is not an option: it turns every ISR route back into dynamic rendering.)
  * Only 200 responses are ever stored, so a failure is never cached.

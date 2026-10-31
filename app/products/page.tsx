@@ -8,7 +8,7 @@ import { ProductsBrowser } from "@/components/ProductsBrowser";
 // If the fetch fails after retries it throws: the build fails (the previous deployment keeps
 // serving) or, on a scheduled refresh, ISR keeps the last good page.
 // Five minutes, matching DATA_REVALIDATE_SECONDS in src/lib/server-data.ts (must be a literal).
-export const revalidate = 300;
+export const revalidate = 3600;
 
 export default async function ProductsPage() {
   const products = await getProductListing();

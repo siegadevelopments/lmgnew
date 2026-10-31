@@ -16,10 +16,10 @@ import { buildMetadata, notFoundMetadata, toPlainDescription } from "@/lib/seo-m
 // page's useSuspenseQuery resolves during SSR: title, price, description, vendor and the Product
 // JSON-LD are in the raw HTML. A slug that resolves to no published product returns a real 404.
 
-// ISR: each product page is rendered on first request and cached, refreshing every five minutes
+// ISR: each product page is rendered on first request and cached, refreshing every hour
 // (the client refetches price/stock on load anyway). If a refresh fails, the last good page keeps
 // being served. generateStaticParams returning [] opts the route into ISR without prebuilding.
-export const revalidate = 300;
+export const revalidate = 3600;
 export function generateStaticParams() {
   return [];
 }

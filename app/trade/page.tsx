@@ -7,7 +7,7 @@ import { getTradeProducts } from "@/lib/server-data";
 
 // Trade listings (wholesale, salon-only and bulk packs) for salons, clinics and businesses.
 // They're kept out of retail browsing (src/lib/trade.ts) and listed here, grouped by brand.
-export const revalidate = 300; // matches DATA_REVALIDATE_SECONDS in src/lib/server-data.ts
+export const revalidate = 3600; // matches DATA_REVALIDATE_SECONDS in src/lib/server-data.ts
 
 export const metadata: Metadata = buildMetadata({
   title: "Trade & Salon Products",

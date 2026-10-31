@@ -9,7 +9,7 @@ import { buildMetadata, notFoundMetadata } from "@/lib/seo-metadata";
 
 // Free guides (the email sign-up offer). Public and indexable: they're useful content in their
 // own right, and the welcome email links here.
-export const revalidate = 300;
+export const revalidate = 3600;
 
 export function generateStaticParams() {
   return Object.keys(freeGuides).map((slug) => ({ slug }));

@@ -92,7 +92,7 @@ export const viewport: Viewport = {
 // The header and footer hide categories with no products, so every page reads the category list.
 // Five minutes matches DATA_REVALIDATE_SECONDS in src/lib/server-data.ts; without it, pages that
 // reuse the shared in-memory result make no fetch of their own and would keep a build-time menu.
-export const revalidate = 300;
+export const revalidate = 3600;
 
 // Never let the menu break a page: if the count can't be fetched, show every category (today's
 // behaviour). The error is logged by server-data.

@@ -9,7 +9,7 @@ import { getApprovedVendors, getNewArrivals, getNonEmptyCategorySlugs, getTrustS
 // React Query cache, so they are in the HTML crawlers receive (previously "—" and no vendors until
 // JavaScript ran). Each fetch is independent: a failure just leaves that section to the client.
 // Five minutes, matching DATA_REVALIDATE_SECONDS in src/lib/server-data.ts (must be a literal).
-export const revalidate = 300;
+export const revalidate = 3600;
 
 const TrustBar = dynamic(() => import("@/components/TrustBar").then((mod) => mod.TrustBar));
 const WellnessCategoryGrid = dynamic(() => import("@/components/WellnessCategoryGrid").then((mod) => mod.WellnessCategoryGrid));
