@@ -55,6 +55,16 @@ export interface ProductDraft {
 /** The category an imported product starts in; the admin corrects it while reviewing the draft. */
 export const DEFAULT_CATEGORY = "Health & Beauty";
 
+/**
+ * The sanitize-html options used on imported descriptions. Shared so the Edge Function and its
+ * tests run the same rules. (The function adds a rel="noopener noreferrer" transform on links.)
+ */
+export const SANITIZE_OPTIONS = {
+  allowedTags: ["p", "br", "strong", "em", "b", "i", "u", "h2", "h3", "h4", "ul", "ol", "li", "blockquote", "a", "img", "span", "hr"],
+  allowedAttributes: { a: ["href", "target", "rel"], img: ["src", "alt", "width", "height"] },
+  allowedSchemes: ["http", "https", "mailto", "tel"],
+};
+
 const IMAGE_HOSTS = new Set(["cdn.shopify.com"]);
 const INTERNAL_SUFFIXES = [".local", ".internal", ".localhost", ".lan", ".home", ".corp", ".intranet"];
 
@@ -89,6 +99,21 @@ export function parseStoreUrl(input: string): StoreUrlResult {
     return { ok: false, reason: "That address isn't a public website." };
   }
   return { ok: true, origin: `https://${host}` };
+}
+
+/**
+ * Stores often redirect their bare domain to www (or back). That is the only redirect followed:
+ * https, and the same name with or without a leading "www.". Anything else is refused.
+ */
+export function isSameSiteRedirect(fromHost: string, location: string, base: string): boolean {
+  try {
+    const to = new URL(location, base);
+    if (to.protocol !== "https:" || to.username || to.password || to.port) return false;
+    const strip = (h: string) => h.toLowerCase().replace(/^www\./, "");
+    return strip(to.hostname) === strip(fromHost);
+  } catch {
+    return false;
+  }
 }
 
 /** The only page ever requested from a store. */
@@ -149,19 +174,23 @@ export function mapProduct(p: ShopifyProduct, opts: MapOptions): MapResult {
   const title = String(p.title ?? "").trim();
   const name = title || `Product ${p.id}`;
   if (!title) return { ok: false, name, reason: "It has no title." };
+  if (!/^[A-Za-z0-9_-]{1,40}$/.test(String(p.id))) return { ok: false, name, reason: "It has an unexpected id." };
   const source = p.variants ?? [];
   if (source.length === 0) return { ok: false, name, reason: "It has no variants." };
 
-  const variants: LmgVariant[] = source.map((v) => ({
-    id: String(v.id),
-    source_ref: String(v.id),
-    title: String(v.title ?? "Default Title"),
-    price: Number(v.price),
-    stock: opts.startingQuantity,
-    available: v.available !== false,
-  }));
-  const prices = variants.map((v) => v.price as number).filter((n) => Number.isFinite(n) && n > 0);
-  if (prices.length === 0) return { ok: false, name, reason: "It has no usable price." };
+  // A variant without a usable price can't be bought, so it isn't imported.
+  const variants: LmgVariant[] = source
+    .map((v) => ({
+      id: String(v.id),
+      source_ref: String(v.id),
+      title: String(v.title ?? "Default Title"),
+      price: Number(v.price),
+      stock: opts.startingQuantity,
+      available: v.available !== false,
+    }))
+    .filter((v) => Number.isFinite(v.price) && v.price > 0);
+  if (variants.length === 0) return { ok: false, name, reason: "It has no usable price." };
+  const prices = variants.map((v) => v.price as number);
 
   const tags = Array.isArray(p.tags) ? p.tags : String(p.tags ?? "").split(",");
   const ref = String(p.id);
@@ -205,4 +234,18 @@ export function mergeAvailability(
     return { ...v, available };
   });
   return { variants: next, changed };
+}
+
+export interface ExistingImport {
+  import_issue?: string | null;
+}
+
+/**
+ * What a re-import does with a product it has seen before. New products are always inserted as
+ * drafts; an existing product is never touched (so edits survive) unless it is flagged, in which
+ * case only its images are retried.
+ */
+export function planImport(existing: ExistingImport | null): { action: "insert" | "skip" | "retry"; status: "draft" } {
+  if (!existing) return { action: "insert", status: "draft" };
+  return { action: existing.import_issue ? "retry" : "skip", status: "draft" };
 }

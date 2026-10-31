@@ -4,21 +4,19 @@ import {
   collectImageUrls,
   feedUrl,
   isAllowedImageUrl,
+  isSameSiteRedirect,
   mapProduct,
   mergeAvailability,
   parseStoreUrl,
+  planImport,
   rewriteImages,
+  SANITIZE_OPTIONS,
   slugFor,
   type ShopifyProduct,
 } from "../../../supabase/functions/_shared/shopify-import";
 
-// Same shape the Edge Function injects: the real sanitiser, so tests prove the real behaviour.
-const sanitize = (html: string) =>
-  sanitizeHtmlLib(html, {
-    allowedTags: ["p", "br", "strong", "em", "ul", "ol", "li", "a", "img", "h2", "h3"],
-    allowedAttributes: { a: ["href"], img: ["src", "alt"] },
-    allowedSchemes: ["http", "https"],
-  });
+// The exact options the Edge Function sanitises with, so these tests prove the real rules.
+const sanitize = (html: string) => sanitizeHtmlLib(html, SANITIZE_OPTIONS);
 
 const cdn = "https://cdn.shopify.com/s/files/1/0001/products";
 
@@ -143,12 +141,44 @@ describe("mapProduct", () => {
     expect(r.draft.content).not.toMatch(/script|onerror|alert/);
   });
 
+  it("removes javascript: links and iframes as well as scripts", () => {
+    const r = mapProduct(
+      product({ body_html: '<p>Hi</p><a href="javascript:alert(1)">click</a><iframe src="https://evil.example"></iframe><a href="https://ok.example">fine</a>' }),
+      { startingQuantity: 1, sanitize },
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.draft.content).not.toMatch(/javascript:|iframe/i);
+    expect(r.draft.content).toContain("https://ok.example");
+    expect(r.draft.content).toContain("click");
+  });
+
+  it("drops a variant with no usable price and keeps the rest", () => {
+    const r = mapProduct(
+      product({ variants: [{ id: 1, title: "Good", price: "5.00", available: true }, { id: 2, title: "Bad", price: "", available: true }] }),
+      { startingQuantity: 3, sanitize },
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.draft.variants.map((v) => v.id)).toEqual(["1"]);
+  });
+
+  it("skips a product whose id isn't a plain identifier, since the id ends up in storage paths", () => {
+    const r = mapProduct(product({ id: "../../etc" as any }), { startingQuantity: 1, sanitize });
+    expect(r.ok).toBe(false);
+  });
+
   it("slugs are readable and tied to the source id", () => {
     expect(slugFor("Magnesium Glycinate (60s)!", "7001")).toBe("magnesium-glycinate-60s-7001");
   });
 });
 
 describe("images", () => {
+  it("flags relative and protocol-relative description images instead of letting them through", () => {
+    const urls = collectImageUrls(product({ body_html: '<img src="//cdn.shopify.com/a.jpg"><img src="/local.jpg">' }));
+    expect(urls.filter((u) => !isAllowedImageUrl(u))).toEqual(["//cdn.shopify.com/a.jpg", "/local.jpg"]);
+  });
+
   it("collects product, variant and description images once each", () => {
     const urls = collectImageUrls(
       product({ body_html: `<p>See</p><img src="${cdn}/inline.jpg"><img src="${cdn}/front.jpg">` }),
@@ -161,6 +191,35 @@ describe("images", () => {
     const out = rewriteImages(html, { [`${cdn}/inline.jpg`]: "https://media.example.com/p/inline.jpg" });
     expect(out).toContain('src="https://media.example.com/p/inline.jpg"');
     expect(out).toContain(`${cdn}/other.jpg`);
+  });
+});
+
+describe("planImport (re-importing)", () => {
+  it("inserts a new product as a draft", () => {
+    expect(planImport(null)).toEqual({ action: "insert", status: "draft" });
+  });
+  it("leaves an existing product alone so edits survive", () => {
+    expect(planImport({ import_issue: null })).toEqual({ action: "skip", status: "draft" });
+    expect(planImport({})).toEqual({ action: "skip", status: "draft" });
+  });
+  it("retries a flagged product", () => {
+    expect(planImport({ import_issue: "1 image could not be copied" }).action).toBe("retry");
+  });
+});
+
+describe("isSameSiteRedirect", () => {
+  const base = "https://shop.example.com/products.json?limit=250&page=1";
+  it("allows the bare domain <-> www hop over https", () => {
+    expect(isSameSiteRedirect("shop.example.com", "https://www.shop.example.com/products.json", base)).toBe(true);
+    expect(isSameSiteRedirect("www.shop.example.com", "https://shop.example.com/products.json", base)).toBe(true);
+    expect(isSameSiteRedirect("shop.example.com", "/products.json?page=1", base)).toBe(true);
+  });
+  it("refuses another host, http, a port, or a login", () => {
+    expect(isSameSiteRedirect("shop.example.com", "https://evil.example.com/x", base)).toBe(false);
+    expect(isSameSiteRedirect("shop.example.com", "https://shop.myshopify.com/x", base)).toBe(false);
+    expect(isSameSiteRedirect("shop.example.com", "http://shop.example.com/x", base)).toBe(false);
+    expect(isSameSiteRedirect("shop.example.com", "https://shop.example.com:8443/x", base)).toBe(false);
+    expect(isSameSiteRedirect("shop.example.com", "https://u:p@shop.example.com/x", base)).toBe(false);
   });
 });
 

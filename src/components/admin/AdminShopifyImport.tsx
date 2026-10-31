@@ -31,6 +31,7 @@ type StoreRow = {
   last_synced_at: string | null;
   last_sync_status: "ok" | "failed" | null;
   last_sync_message: string | null;
+  created_at: string;
 };
 type Totals = {
   imported: number;
@@ -42,6 +43,9 @@ type Totals = {
 
 const EMPTY: Totals = { imported: 0, existing: 0, retried: 0, flagged: [], skipped: [] };
 const MAX_BATCHES = 400; // a safety stop; a real catalogue is a few dozen batches at most
+
+// The schedule runs daily; more than 36 hours without a sync means it has stopped working.
+const isStale = (iso: string) => Date.now() - new Date(iso).getTime() > 36 * 3600 * 1000;
 
 // A failed function call carries the server's message in the response body.
 async function messageFrom(error: any): Promise<string> {
@@ -296,6 +300,11 @@ export function AdminShopifyImport({
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
+                    {s.sync_enabled && isStale(s.last_synced_at ?? s.created_at) && (
+                      <Badge variant="destructive" className="uppercase" title="No sync in over 36 hours. Check the schedule and the SHOPIFY_SYNC_SECRET setup.">
+                        Stale
+                      </Badge>
+                    )}
                     {s.last_sync_status && (
                       <Badge variant={s.last_sync_status === "ok" ? "outline" : "destructive"} className="uppercase">
                         {s.last_sync_status === "ok" ? "OK" : "Failed"}

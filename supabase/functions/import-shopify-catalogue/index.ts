@@ -23,10 +23,13 @@ import {
   collectImageUrls,
   feedUrl,
   isAllowedImageUrl,
+  isSameSiteRedirect,
   mapProduct,
   mergeAvailability,
   parseStoreUrl,
+  planImport,
   rewriteImages,
+  SANITIZE_OPTIONS,
   type ShopifyProduct,
 } from "../_shared/shopify-import.ts";
 
@@ -39,6 +42,7 @@ const corsHeaders = {
 const BATCH_SIZE = 5; // products per call; image copying is the slow part
 const FEED_PAGE_SIZE = 250; // Shopify's maximum for products.json
 const MAX_FEED_PAGES = 40;
+const SYNC_BUDGET_MS = 100_000; // stop starting new stores near the Edge Function's time limit
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -51,9 +55,7 @@ const env = (name: string) => Deno.env.get(name) ?? "";
 
 const sanitize = (html: string) =>
   sanitizeHtml(html, {
-    allowedTags: ["p", "br", "strong", "em", "b", "i", "u", "h2", "h3", "h4", "ul", "ol", "li", "blockquote", "a", "img", "span", "hr"],
-    allowedAttributes: { a: ["href", "target", "rel"], img: ["src", "alt", "width", "height"] },
-    allowedSchemes: ["http", "https", "mailto", "tel"],
+    ...SANITIZE_OPTIONS,
     transformTags: { a: sanitizeHtml.simpleTransform("a", { rel: "noopener noreferrer" }, true) },
   });
 
@@ -89,12 +91,24 @@ Deno.serve(async (req: Request) => {
 // Shopify feed
 
 async function fetchFeedPage(origin: string, page: number): Promise<ShopifyProduct[]> {
-  const res = await fetch(feedUrl(origin, page), {
-    redirect: "manual", // never follow a redirect to another host
-    headers: { Accept: "application/json", "User-Agent": "LifestyleMedicineGateway-Import/1.0" },
-    signal: AbortSignal.timeout(20000),
-  });
-  if (!res.ok || !(res.headers.get("content-type") ?? "").includes("json")) {
+  let url = feedUrl(origin, page);
+  const host = new URL(origin).hostname;
+  let res: Response | undefined;
+  // Follow at most two redirects, and only the bare-domain <-> www kind (isSameSiteRedirect).
+  for (let hop = 0; hop < 3; hop++) {
+    res = await fetch(url, {
+      redirect: "manual", // redirects are checked by hand, never followed to another host
+      headers: { Accept: "application/json", "User-Agent": "LifestyleMedicineGateway-Import/1.0" },
+      signal: AbortSignal.timeout(20000),
+    });
+    const location = res.headers.get("location");
+    if (res.status >= 300 && res.status < 400 && location && isSameSiteRedirect(host, location, url)) {
+      url = new URL(location, url).toString();
+      continue;
+    }
+    break;
+  }
+  if (!res || !res.ok || !(res.headers.get("content-type") ?? "").includes("json")) {
     throw new Error(`Store feed unavailable (${res.status})`);
   }
   const data = await res.json();
@@ -142,6 +156,11 @@ async function copyProductImages(store: ReturnType<typeof r2>, vendorId: string,
   const failed: string[] = [];
   await Promise.all(
     urls.map(async (url, i) => {
+      // Relative, protocol-relative or off-CDN addresses are flagged, never allowed to throw.
+      if (!isAllowedImageUrl(url)) {
+        failed.push(url);
+        return;
+      }
       const ext = (new URL(url).pathname.split(".").pop() ?? "jpg").replace(/[^a-z0-9]/gi, "").slice(0, 5) || "jpg";
       const copy = await copyImage(store, url, `products/${vendorId}/shopify/${ref}/${i + 1}.${ext}`);
       if (copy) copies[url] = copy;
@@ -183,6 +202,13 @@ async function importBatch(admin: any, body: Record<string, unknown>) {
     return reply({ error: "Couldn't read that store. Check the address is a Shopify store whose products are public." }, 422);
   }
 
+  // A vendor has one linked store. Importing a different one would make the daily sync treat the
+  // old catalogue as gone from the store and mark all of it out of stock.
+  const { data: linked } = await admin.from("vendor_shopify_stores").select("store_url").eq("vendor_id", vendorId).maybeSingle();
+  if (linked && linked.store_url !== store.origin) {
+    return reply({ error: `This vendor is already linked to ${linked.store_url}. A vendor can only have one Shopify store.` }, 409);
+  }
+
   await admin.from("vendor_shopify_stores").upsert(
     { vendor_id: vendorId, store_url: store.origin, updated_at: new Date().toISOString() },
     { onConflict: "vendor_id" },
@@ -207,7 +233,8 @@ async function importBatch(admin: any, body: Record<string, unknown>) {
       .eq("source_ref", d.source_ref)
       .maybeSingle();
 
-    if (found && !found.import_issue) {
+    const plan = planImport(found);
+    if (plan.action === "skip") {
       result.existing += 1; // never overwrite what the admin or vendor has edited
       continue;
     }
@@ -216,7 +243,7 @@ async function importBatch(admin: any, body: Record<string, unknown>) {
     const productImages = (p.images ?? []).map((i) => copies[i.src]).filter(Boolean) as string[];
     const issue = failed.length ? issueText(failed) : null;
 
-    if (found) {
+    if (plan.action === "retry") {
       // A flagged draft: retry only the images, and clear the flag once they all copied.
       const { error } = await admin
         .from("products")
@@ -243,7 +270,7 @@ async function importBatch(admin: any, body: Record<string, unknown>) {
       content: rewriteImages(d.content, copies),
       price: d.price,
       stock: d.stock,
-      status: "draft",
+      status: plan.status,
       brand: d.brand,
       category: d.category,
       tags: d.tags,
@@ -267,23 +294,29 @@ async function importBatch(admin: any, body: Record<string, unknown>) {
   const nextOffset = offset + BATCH_SIZE;
   const next =
     nextOffset < feed.length ? { page, offset: nextOffset } : feed.length >= FEED_PAGE_SIZE && page < MAX_FEED_PAGES ? { page: page + 1, offset: 0 } : null;
-  return reply({ ...result, next, pageProducts: feed.length });
+  return reply({ ...result, next });
 }
 
 // ---------------------------------------------------------------------------------------------
 // op: sync
 
 async function syncStores(admin: any, body: Record<string, unknown>) {
-  let query = admin.from("vendor_shopify_stores").select("vendor_id, store_url").eq("sync_enabled", true);
+  // The schedule syncs stores that have sync on, stalest first. An admin asking for one vendor gets it
+  // synced whatever the switch says.
+  let query = admin.from("vendor_shopify_stores").select("vendor_id, store_url").order("last_synced_at", { ascending: true, nullsFirst: true });
   if (body.vendorId !== undefined) {
     if (!UUID.test(String(body.vendorId))) return reply({ error: "Invalid vendor" }, 400);
     query = query.eq("vendor_id", String(body.vendorId));
+  } else {
+    query = query.eq("sync_enabled", true);
   }
   const { data: stores, error } = await query;
   if (error) throw new Error(error.message);
 
   const outcomes: Array<{ vendor_id: string; status: "ok" | "failed"; message: string }> = [];
+  const deadline = Date.now() + SYNC_BUDGET_MS;
   for (const s of stores ?? []) {
+    if (Date.now() > deadline) break; // the rest are the stalest next run, so none starves
     let status: "ok" | "failed" = "ok";
     let message = "";
     try {
