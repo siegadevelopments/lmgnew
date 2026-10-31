@@ -136,7 +136,6 @@ There is no data on the vendor funnel (applications, live listings, first sales)
 - Whether the store feed exposes quantities, and how Shopify variant fields map to LMG's variant shape.
 - Whether `pg_cron` and `pg_net` are enabled on the Supabase project; if not, the schedule falls back to a Vercel cron entry on an existing router (see KTD5).
 - How many products fit in one function call once images are copied, which sets the batch size.
-- Which id format imported variants should use. Checkout reads `variant.id` both as a string key and, when numeric, as a stock id (`supabase/functions/_shared/cart-pricing.ts`), so confirm what `adjust_order_stock` expects before choosing between Shopify's numeric ids and generated ones (U2).
 
 ### Sources / Research
 
