@@ -1,0 +1,210 @@
+import { describe, expect, it } from "vitest";
+import sanitizeHtmlLib from "sanitize-html";
+import {
+  collectImageUrls,
+  feedUrl,
+  isAllowedImageUrl,
+  mapProduct,
+  mergeAvailability,
+  parseStoreUrl,
+  rewriteImages,
+  slugFor,
+  type ShopifyProduct,
+} from "../../../supabase/functions/_shared/shopify-import";
+
+// Same shape the Edge Function injects: the real sanitiser, so tests prove the real behaviour.
+const sanitize = (html: string) =>
+  sanitizeHtmlLib(html, {
+    allowedTags: ["p", "br", "strong", "em", "ul", "ol", "li", "a", "img", "h2", "h3"],
+    allowedAttributes: { a: ["href"], img: ["src", "alt"] },
+    allowedSchemes: ["http", "https"],
+  });
+
+const cdn = "https://cdn.shopify.com/s/files/1/0001/products";
+
+function product(over: Partial<ShopifyProduct> = {}): ShopifyProduct {
+  return {
+    id: 7001,
+    title: "Magnesium Glycinate",
+    handle: "magnesium-glycinate",
+    body_html: "<p>Gentle <strong>magnesium</strong>.</p>",
+    vendor: "Calm Co",
+    product_type: "Supplements",
+    tags: "sleep, calm",
+    variants: [
+      { id: 91, title: "60 capsules", price: "29.95", available: true },
+      { id: 92, title: "120 capsules", price: "49.95", available: false },
+    ],
+    images: [
+      { id: 1, src: `${cdn}/front.jpg`, variant_ids: [] },
+      { id: 2, src: `${cdn}/back.jpg`, variant_ids: [92] },
+    ],
+    ...over,
+  };
+}
+
+describe("parseStoreUrl", () => {
+  it.each(["https://shop.example.com", "shop.example.com", "https://shop.example.com/", "  Shop.Example.com  "])(
+    "normalises %j to one store address",
+    (input) => {
+      const r = parseStoreUrl(input);
+      expect(r).toEqual({ ok: true, origin: "https://shop.example.com" });
+    },
+  );
+
+  it.each([
+    "http://shop.example.com",
+    "https://127.0.0.1",
+    "https://localhost",
+    "https://10.0.0.5",
+    "https://[::1]",
+    "https://user:pass@shop.example.com",
+    "https://shop.example.com/admin/secrets",
+    "https://shop.example.com:8443",
+    "https://intranet.local",
+    "https://metadata.internal",
+    "https://singlelabel",
+    "",
+  ])("rejects %j", (input) => {
+    const r = parseStoreUrl(input);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reason.length).toBeGreaterThan(0);
+  });
+
+  it("only ever asks for the product feed", () => {
+    expect(feedUrl("https://shop.example.com", 3)).toBe("https://shop.example.com/products.json?limit=250&page=3");
+  });
+});
+
+describe("isAllowedImageUrl", () => {
+  it("accepts Shopify's CDN over https only", () => {
+    expect(isAllowedImageUrl(`${cdn}/a.jpg`)).toBe(true);
+    expect(isAllowedImageUrl("http://cdn.shopify.com/a.jpg")).toBe(false);
+    expect(isAllowedImageUrl("https://evil.example.com/a.jpg")).toBe(false);
+    expect(isAllowedImageUrl("https://cdn.shopify.com.evil.example/a.jpg")).toBe(false);
+    expect(isAllowedImageUrl("data:image/png;base64,AAAA")).toBe(false);
+    expect(isAllowedImageUrl("not a url")).toBe(false);
+  });
+});
+
+describe("mapProduct", () => {
+  it("turns a two-variant product into one draft with both variants and the store's availability", () => {
+    const r = mapProduct(product(), { startingQuantity: 25, sanitize });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.draft.title).toBe("Magnesium Glycinate");
+    expect(r.draft.source_platform).toBe("shopify");
+    expect(r.draft.source_ref).toBe("7001");
+    expect(r.draft.price).toBe(29.95);
+    expect(r.draft.brand).toBe("Calm Co");
+    expect(r.draft.tags).toEqual(["sleep", "calm"]);
+    expect(r.draft.variants).toEqual([
+      { id: "91", source_ref: "91", title: "60 capsules", price: 29.95, stock: 25, available: true },
+      { id: "92", source_ref: "92", title: "120 capsules", price: 49.95, stock: 25, available: false },
+    ]);
+    expect(r.draft.stock).toBe(25);
+  });
+
+  it("keeps a lone 'Default Title' variant so the sync has something to flip", () => {
+    const r = mapProduct(product({ variants: [{ id: 5, title: "Default Title", price: "10.00", available: false }] }), {
+      startingQuantity: 10,
+      sanitize,
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.draft.variants).toHaveLength(1);
+    expect(r.draft.variants[0]).toMatchObject({ title: "Default Title", available: false });
+    expect(r.draft.stock).toBe(0);
+  });
+
+  it("skips, with the product's name and a reason, when title or price is unusable", () => {
+    const noTitle = mapProduct(product({ title: "  " }), { startingQuantity: 1, sanitize });
+    const noPrice = mapProduct(product({ title: "Free thing", variants: [{ id: 1, title: "x", price: "0.00", available: true }] }), {
+      startingQuantity: 1,
+      sanitize,
+    });
+    const noVariants = mapProduct(product({ title: "Empty", variants: [] }), { startingQuantity: 1, sanitize });
+    for (const r of [noTitle, noPrice, noVariants]) {
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.reason).toMatch(/title|price|variant/i);
+    }
+    expect(noPrice.ok === false && noPrice.name).toBe("Free thing");
+  });
+
+  it("keeps the vendor's wording but strips scripts and event handlers", () => {
+    const r = mapProduct(
+      product({ body_html: '<p>Calming blend.</p><script>alert(1)</script><img src="x" onerror="steal()"><p>Take daily.</p>' }),
+      { startingQuantity: 1, sanitize },
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.draft.content).toContain("Calming blend.");
+    expect(r.draft.content).toContain("Take daily.");
+    expect(r.draft.content).not.toMatch(/script|onerror|alert/);
+  });
+
+  it("slugs are readable and tied to the source id", () => {
+    expect(slugFor("Magnesium Glycinate (60s)!", "7001")).toBe("magnesium-glycinate-60s-7001");
+  });
+});
+
+describe("images", () => {
+  it("collects product, variant and description images once each", () => {
+    const urls = collectImageUrls(
+      product({ body_html: `<p>See</p><img src="${cdn}/inline.jpg"><img src="${cdn}/front.jpg">` }),
+    );
+    expect(urls).toEqual([`${cdn}/front.jpg`, `${cdn}/back.jpg`, `${cdn}/inline.jpg`]);
+  });
+
+  it("rewrites every copied image in a description and leaves uncopied ones for the caller to flag", () => {
+    const html = `<p>x</p><img src="${cdn}/inline.jpg" alt="a"><img src='${cdn}/other.jpg'>`;
+    const out = rewriteImages(html, { [`${cdn}/inline.jpg`]: "https://media.example.com/p/inline.jpg" });
+    expect(out).toContain('src="https://media.example.com/p/inline.jpg"');
+    expect(out).toContain(`${cdn}/other.jpg`);
+  });
+});
+
+describe("mergeAvailability (the daily sync)", () => {
+  const lmg = () => [
+    { id: "91", source_ref: "91", title: "60", price: 29.95, stock: 7, available: true },
+    { id: "92", source_ref: "92", title: "120", price: 49.95, stock: 3, available: false },
+    { id: "u-1", title: "Hand added", price: 5, stock: 2 },
+  ];
+
+  it("turns a sold-out variant unavailable and a back-in-stock one available, touching nothing else", () => {
+    const feed = product({
+      variants: [
+        { id: 91, title: "60 capsules RENAMED", price: "99.00", available: false },
+        { id: 92, title: "120", price: "1.00", available: true },
+      ],
+    });
+    const { variants, changed } = mergeAvailability(lmg(), feed);
+    expect(changed).toBe(true);
+    expect(variants[0]).toEqual({ id: "91", source_ref: "91", title: "60", price: 29.95, stock: 7, available: false });
+    expect(variants[1]).toEqual({ id: "92", source_ref: "92", title: "120", price: 49.95, stock: 3, available: true });
+  });
+
+  it("never changes a variant that did not come from Shopify", () => {
+    const { variants } = mergeAvailability(lmg(), product({ variants: [] }));
+    expect(variants[2]).toEqual({ id: "u-1", title: "Hand added", price: 5, stock: 2 });
+  });
+
+  it("marks every imported variant unavailable when the product has left the store", () => {
+    const { variants, changed } = mergeAvailability(lmg(), undefined);
+    expect(changed).toBe(true);
+    expect(variants.filter((v) => v.source_ref).every((v) => v.available === false)).toBe(true);
+    expect(variants).toHaveLength(3);
+  });
+
+  it("reports no change when the store already matches", () => {
+    const feed = product();
+    expect(mergeAvailability(lmg(), feed).changed).toBe(false);
+  });
+
+  it("marks a variant missing from the feed unavailable", () => {
+    const feed = product({ variants: [{ id: 91, title: "60", price: "29.95", available: true }] });
+    const { variants } = mergeAvailability(lmg(), feed);
+    expect(variants[1].available).toBe(false);
+    expect(variants[0].available).toBe(true);
+  });
+});
