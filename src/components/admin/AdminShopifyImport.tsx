@@ -31,6 +31,9 @@ type StoreRow = {
   last_synced_at: string | null;
   last_sync_status: "ok" | "failed" | null;
   last_sync_message: string | null;
+  import_status: "running" | "done" | "failed" | null;
+  import_updated_at: string | null;
+  import_summary: (Totals & { message?: string }) | null;
   created_at: string;
 };
 type Totals = {
@@ -41,8 +44,8 @@ type Totals = {
   skipped: Array<{ name: string; reason: string }>;
 };
 
-const EMPTY: Totals = { imported: 0, existing: 0, retried: 0, flagged: [], skipped: [] };
-const MAX_BATCHES = 400; // a safety stop; a real catalogue is a few dozen batches at most
+const POLL_MS = 4000;
+const STALL_MS = 10 * 60 * 1000; // matches IMPORT_STALL_MS on the server
 
 // The schedule runs daily; more than 36 hours without a sync means it has stopped working.
 const isStale = (iso: string) => Date.now() - new Date(iso).getTime() > 36 * 3600 * 1000;
@@ -70,8 +73,7 @@ export function AdminShopifyImport({
   const [storeUrl, setStoreUrl] = useState("");
   const [vendorId, setVendorId] = useState("");
   const [quantity, setQuantity] = useState("100");
-  const [running, setRunning] = useState(false);
-  const [totals, setTotals] = useState<Totals | null>(null);
+  const [starting, setStarting] = useState(false);
   const [stores, setStores] = useState<StoreRow[]>([]);
   const [busyStore, setBusyStore] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
@@ -108,36 +110,49 @@ export function AdminShopifyImport({
   const publishable = drafts.filter((p) => !p.import_issue);
   const flaggedCount = drafts.length - publishable.length;
 
+  // The import runs on the server and keeps going without this page, so progress is read from the
+  // vendor's store row, which also means it is still there when the admin comes back.
+  const current = stores.find((s) => s.vendor_id === vendorId) || null;
+  const stalled =
+    current?.import_status === "running" &&
+    Date.now() - new Date(current.import_updated_at ?? 0).getTime() > STALL_MS;
+  const running = current?.import_status === "running" && !stalled;
+  const totals = current?.import_summary ?? null;
+
+  useEffect(() => {
+    if (!stores.some((s) => s.import_status === "running")) return;
+    const timer = setInterval(loadStores, POLL_MS);
+    return () => clearInterval(timer);
+  }, [stores, loadStores]);
+
+  // Refresh the product list once, when an import we were watching finishes.
+  const [wasRunning, setWasRunning] = useState(false);
+  useEffect(() => {
+    if (running) setWasRunning(true);
+    else if (wasRunning) {
+      setWasRunning(false);
+      refreshProducts();
+      if (current?.import_status === "done") toast.success("Import finished. Review the drafts below.");
+    }
+  }, [running, wasRunning, refreshProducts, current?.import_status]);
+
   const runImport = async () => {
     if (!storeUrl.trim() || !vendorId) {
       toast.error("Enter the store address and choose the vendor.");
       return;
     }
-    setRunning(true);
-    const acc: Totals = { ...EMPTY, flagged: [], skipped: [] };
-    setTotals(acc);
+    setStarting(true);
     try {
-      let cursor: { page: number; offset: number } | null | undefined;
-      for (let i = 0; i < MAX_BATCHES; i++) {
-        const { data, error }: { data: any; error: any } = await supabase.functions.invoke("import-shopify-catalogue", {
-          body: { op: "import", storeUrl, vendorId, startingQuantity: Number(quantity), cursor },
-        });
-        if (error) throw new Error(await messageFrom(error));
-        acc.imported += data.imported;
-        acc.existing += data.existing;
-        acc.retried += data.retried;
-        acc.flagged.push(...data.flagged);
-        acc.skipped.push(...data.skipped);
-        setTotals({ ...acc, flagged: [...acc.flagged], skipped: [...acc.skipped] });
-        cursor = data.next;
-        if (!cursor) break;
-      }
-      toast.success("Import finished. Review the drafts below.");
+      const { error }: { data: any; error: any } = await supabase.functions.invoke("import-shopify-catalogue", {
+        body: { op: "import", background: true, storeUrl, vendorId, startingQuantity: Number(quantity) },
+      });
+      if (error) throw new Error(await messageFrom(error));
+      toast.success("Import started. It keeps running if you leave this page.");
     } catch (err: any) {
       toast.error(err.message || "Import failed");
     } finally {
-      setRunning(false);
-      await Promise.all([refreshProducts(), loadStores()]);
+      setStarting(false);
+      await Promise.all([loadStores(), refreshProducts()]);
     }
   };
 
@@ -193,7 +208,7 @@ export function AdminShopifyImport({
               placeholder="vendor-store.com"
               value={storeUrl}
               onChange={(e) => setStoreUrl(e.target.value)}
-              disabled={running}
+              disabled={running || starting}
             />
           </div>
           <div className="space-y-1.5">
@@ -205,7 +220,7 @@ export function AdminShopifyImport({
               max={100000}
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
-              disabled={running}
+              disabled={running || starting}
             />
           </div>
           <div className="space-y-1.5 sm:col-span-2">
@@ -214,7 +229,7 @@ export function AdminShopifyImport({
               id="shopify-vendor"
               value={vendorId}
               onChange={(e) => setVendorId(e.target.value)}
-              disabled={running}
+              disabled={running || starting}
               className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
             >
               <option value="">Choose a vendor…</option>
@@ -226,17 +241,27 @@ export function AdminShopifyImport({
             </select>
           </div>
           <div className="flex items-end">
-            <Button onClick={runImport} disabled={running} className="w-full">
-              {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              {running ? "Importing…" : "Import products"}
+            <Button onClick={runImport} disabled={running || starting} className="w-full">
+              {running || starting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {running || starting ? "Importing…" : stalled || current?.import_status === "failed" ? "Run again" : "Import products"}
             </Button>
           </div>
         </div>
 
         {totals && (
           <div className="rounded-lg border border-border/50 bg-muted/30 p-4 text-sm space-y-2">
+            {stalled && (
+              <p className="font-medium text-amber-700">
+                This import hasn't made progress for 10 minutes. Press Run again to continue where it stopped.
+              </p>
+            )}
+            {current?.import_status === "failed" && (
+              <p className="font-medium text-destructive">
+                The import stopped: {totals.message || "unknown error"}. Press Run again to continue.
+              </p>
+            )}
             <p className="font-semibold">
-              {running ? "Importing… " : "Import result: "}
+              {running ? "Importing (you can leave this page)… " : "Import result: "}
               {totals.imported} new draft{totals.imported === 1 ? "" : "s"}, {totals.existing} already imported
               {totals.retried ? `, ${totals.retried} fixed on retry` : ""}.
             </p>

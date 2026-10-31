@@ -4,8 +4,10 @@ import {
   collectImageUrls,
   feedUrl,
   isAllowedImageUrl,
+  isImportRunning,
   isSameSiteRedirect,
   mapProduct,
+  mergeImportTotals,
   mergeAvailability,
   parseStoreUrl,
   planImport,
@@ -207,6 +209,39 @@ describe("planImport (re-importing)", () => {
   });
 });
 
+describe("background import progress", () => {
+  const batch = (over = {}) => ({ imported: 2, existing: 1, retried: 0, flagged: [], skipped: [], ...over });
+
+  it("adds each batch to the totals carried from the batch before", () => {
+    const one = mergeImportTotals(undefined, batch({ skipped: [{ name: "A", reason: "no price" }] }));
+    const two = mergeImportTotals(one, batch({ imported: 3, flagged: [{ name: "B", issue: "image" }] }));
+    expect(two).toEqual({
+      imported: 5,
+      existing: 2,
+      retried: 0,
+      flagged: [{ name: "B", issue: "image" }],
+      skipped: [{ name: "A", reason: "no price" }],
+    });
+  });
+
+  it("copes with a missing or malformed previous total", () => {
+    expect(mergeImportTotals({ imported: "x" as any, flagged: "nope" as any }, batch()).imported).toBe(2);
+  });
+
+  it("caps the listed products so the carried body stays small", () => {
+    const many = Array.from({ length: 250 }, (_, i) => ({ name: `P${i}`, reason: "x" }));
+    expect(mergeImportTotals(undefined, batch({ skipped: many })).skipped).toHaveLength(200);
+  });
+
+  it("treats a running import as stalled after ten minutes without an update", () => {
+    const now = Date.parse("2026-11-01T12:00:00Z");
+    expect(isImportRunning("running", "2026-11-01T11:55:00Z", now)).toBe(true);
+    expect(isImportRunning("running", "2026-11-01T11:45:00Z", now)).toBe(false);
+    expect(isImportRunning("done", "2026-11-01T11:59:00Z", now)).toBe(false);
+    expect(isImportRunning("running", null, now)).toBe(false);
+  });
+});
+
 describe("isSameSiteRedirect", () => {
   const base = "https://shop.example.com/products.json?limit=250&page=1";
   it("allows the bare domain <-> www hop over https", () => {
@@ -280,7 +315,7 @@ const fn = readFileSync(
 describe("import-shopify-catalogue function", () => {
   it("authorises before doing any work: admins, or the schedule's secret for sync only", () => {
     expect(fn).toMatch(/requireAuth\(req, \["admin"\], corsHeaders\)/);
-    expect(fn).toMatch(/op === "sync" && req\.headers\.has\("x-webhook-secret"\)/);
+    expect(fn).toMatch(/\(op === "sync" \|\| \(op === "import" && body\.chained === true\)\) && req\.headers\.has\("x-webhook-secret"\)/);
     expect(fn).toMatch(/requireWebhookSecret\(req, "SHOPIFY_SYNC_SECRET", corsHeaders\)/);
     expect(fn.indexOf("if (denied) return denied;")).toBeLessThan(fn.indexOf("createClient("));
   });

@@ -63,3 +63,19 @@ describe("20261101_shopify_sync_schedule.sql", () => {
     expect(schedule).toMatch(/CREATE EXTENSION IF NOT EXISTS pg_net/);
   });
 });
+
+const progress = readFileSync(
+  path.resolve(import.meta.dirname, "../../../supabase/migrations/20261102_shopify_import_progress.sql"),
+  "utf8",
+);
+
+describe("20261102_shopify_import_progress.sql", () => {
+  it("adds the progress columns to the admin-only store table, safely re-runnable", () => {
+    for (const col of ["import_status", "import_started_at", "import_updated_at", "import_summary"]) {
+      expect(progress).toMatch(new RegExp(`ADD COLUMN IF NOT EXISTS ${col}`));
+    }
+    expect(progress).toMatch(/import_status IN \('running', 'done', 'failed'\)/);
+    expect(progress).toMatch(/ALTER TABLE public\.vendor_shopify_stores/);
+    expect(progress).not.toMatch(/CREATE POLICY|USING \(true\)/i);
+  });
+});

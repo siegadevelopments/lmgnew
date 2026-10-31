@@ -249,3 +249,36 @@ export function planImport(existing: ExistingImport | null): { action: "insert" 
   if (!existing) return { action: "insert", status: "draft" };
   return { action: existing.import_issue ? "retry" : "skip", status: "draft" };
 }
+
+export interface ImportTotals {
+  imported: number;
+  existing: number;
+  retried: number;
+  flagged: Array<{ name: string; issue: string }>;
+  skipped: Array<{ name: string; reason: string }>;
+}
+
+/** Longest list of flagged / skipped products kept in the running summary. */
+export const MAX_LISTED = 200;
+
+/** Adds one batch's result to the totals so far (which a background import carries from batch to batch). */
+export function mergeImportTotals(prev: Partial<ImportTotals> | null | undefined, batch: ImportTotals): ImportTotals {
+  const n = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
+  const list = <T,>(a: unknown, b: T[]): T[] => [...(Array.isArray(a) ? (a as T[]) : []), ...b].slice(0, MAX_LISTED);
+  return {
+    imported: n(prev?.imported) + batch.imported,
+    existing: n(prev?.existing) + batch.existing,
+    retried: n(prev?.retried) + batch.retried,
+    flagged: list(prev?.flagged, batch.flagged),
+    skipped: list(prev?.skipped, batch.skipped),
+  };
+}
+
+/** A running import that has made no progress for this long counts as stalled and can be restarted. */
+export const IMPORT_STALL_MS = 10 * 60 * 1000;
+
+export function isImportRunning(status: string | null | undefined, updatedAt: string | null | undefined, now = Date.now()): boolean {
+  if (status !== "running") return false;
+  const t = updatedAt ? new Date(updatedAt).getTime() : 0;
+  return now - t < IMPORT_STALL_MS;
+}

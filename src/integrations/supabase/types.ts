@@ -418,6 +418,10 @@ export interface Database {
           last_synced_at: string | null;
           last_sync_status: "ok" | "failed" | null;
           last_sync_message: string | null;
+          import_status: "running" | "done" | "failed" | null;
+          import_started_at: string | null;
+          import_updated_at: string | null;
+          import_summary: Json | null;
           created_at: string;
           updated_at: string;
         };

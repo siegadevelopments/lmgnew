@@ -1,9 +1,11 @@
 // import-shopify-catalogue: Admin > Product Catalog > Import from Shopify, and the daily stock sync.
 //
 // Auth model (docs/DEVELOPMENT_STANDARDS.md section 2):
-//   op "import": admins only (requireAuth). Imports one small batch of a vendor's Shopify catalogue
-//                as DRAFT products, copying every image to Cloudflare R2. The admin screen calls it
-//                repeatedly with the returned cursor until it comes back null.
+//   op "import": admins only (requireAuth), with one exception: a background import's own next-batch
+//                call (chained: true) presents the shared secret. Imports one small batch of a vendor's
+//                Shopify catalogue as DRAFT products, copying every image to Cloudflare R2. With
+//                background: true the function triggers the next batch itself and records progress on
+//                vendor_shopify_stores, so it keeps going when the admin closes the page.
 //   op "sync":   the daily schedule (x-webhook-secret = SHOPIFY_SYNC_SECRET) or an admin. Sets each
 //                imported variant's in-stock / out-of-stock flag from the vendor's store and
 //                changes nothing else.
@@ -23,9 +25,12 @@ import {
   collectImageUrls,
   feedUrl,
   isAllowedImageUrl,
+  isImportRunning,
   isSameSiteRedirect,
   mapProduct,
   mergeAvailability,
+  mergeImportTotals,
+  type ImportTotals,
   parseStoreUrl,
   planImport,
   rewriteImages,
@@ -73,7 +78,8 @@ Deno.serve(async (req: Request) => {
   const op = String(body?.op ?? "");
 
   // Authorise before any work. The schedule presents the shared secret; everyone else must be an admin.
-  const viaSecret = op === "sync" && req.headers.has("x-webhook-secret");
+  const viaSecret =
+    (op === "sync" || (op === "import" && body.chained === true)) && req.headers.has("x-webhook-secret");
   const denied = viaSecret ? requireWebhookSecret(req, "SHOPIFY_SYNC_SECRET", corsHeaders) : await requireAuth(req, ["admin"], corsHeaders);
   if (denied) return denied;
   if (op !== "import" && op !== "sync") return reply({ error: "Unknown operation" }, 400);
@@ -209,6 +215,16 @@ async function importBatch(admin: any, body: Record<string, unknown>) {
     return reply({ error: `This vendor is already linked to ${linked.store_url}. A vendor can only have one Shopify store.` }, 409);
   }
 
+  const background = body.background === true;
+  const chained = body.chained === true;
+  if (background && !chained) {
+    // Starting a background import: don't run two for one vendor at once (a stalled one may be restarted).
+    const { data: state } = await admin.from("vendor_shopify_stores").select("import_status, import_updated_at").eq("vendor_id", vendorId).maybeSingle();
+    if (isImportRunning(state?.import_status, state?.import_updated_at)) {
+      return reply({ error: "An import for this vendor is already running." }, 409);
+    }
+  }
+
   await admin.from("vendor_shopify_stores").upsert(
     { vendor_id: vendorId, store_url: store.origin, updated_at: new Date().toISOString() },
     { onConflict: "vendor_id" },
@@ -294,7 +310,56 @@ async function importBatch(admin: any, body: Record<string, unknown>) {
   const nextOffset = offset + BATCH_SIZE;
   const next =
     nextOffset < feed.length ? { page, offset: nextOffset } : feed.length >= FEED_PAGE_SIZE && page < MAX_FEED_PAGES ? { page: page + 1, offset: 0 } : null;
-  return reply({ ...result, next });
+  if (!background) return reply({ ...result, next });
+  return await continueInBackground(admin, { vendorId, storeUrl: store.origin, qty, next, previous: body.totals, batch: result, fresh: !chained });
+}
+
+/** Records progress, then hands the next batch to a fresh invocation so no browser has to stay open. */
+async function continueInBackground(
+  admin: any,
+  a: { vendorId: string; storeUrl: string; qty: number; next: { page: number; offset: number } | null; previous: unknown; batch: ImportTotals; fresh: boolean },
+) {
+  const totals = mergeImportTotals(a.previous as Partial<ImportTotals> | null, a.batch);
+  const now = new Date().toISOString();
+  const progress: Record<string, unknown> = {
+    import_status: a.next ? "running" : "done",
+    import_updated_at: now,
+    import_summary: totals,
+  };
+  if (a.fresh) progress.import_started_at = now;
+  await admin.from("vendor_shopify_stores").update(progress).eq("vendor_id", a.vendorId);
+
+  if (a.next) {
+    const chainBody = { op: "import", chained: true, background: true, storeUrl: a.storeUrl, vendorId: a.vendorId, startingQuantity: a.qty, cursor: a.next, totals };
+    // @ts-ignore EdgeRuntime is provided by the Supabase Edge runtime
+    const keepAlive = typeof EdgeRuntime !== "undefined" ? (p: Promise<unknown>) => EdgeRuntime.waitUntil(p) : (_p: Promise<unknown>) => {};
+    keepAlive(callNextBatch(admin, a.vendorId, chainBody));
+  }
+  return reply({ ...totals, next: a.next, status: a.next ? "running" : "done" });
+}
+
+async function callNextBatch(admin: any, vendorId: string, chainBody: Record<string, unknown>) {
+  let message = "";
+  try {
+    const res = await fetch(`${env("SUPABASE_URL")}/functions/v1/import-shopify-catalogue`, {
+      method: "POST",
+      redirect: "manual",
+      headers: { "Content-Type": "application/json", "x-webhook-secret": env("SHOPIFY_SYNC_SECRET") },
+      body: JSON.stringify(chainBody),
+      signal: AbortSignal.timeout(140000),
+    });
+    if (res.ok) return;
+    const data = await res.json().catch(() => ({}));
+    message = String(data?.error ?? `The next batch failed (${res.status}).`);
+  } catch (err) {
+    console.error("chained batch failed:", (err as Error)?.message);
+    message = "The import stopped before it finished. Run it again to continue.";
+  }
+  const { data: row } = await admin.from("vendor_shopify_stores").select("import_summary").eq("vendor_id", vendorId).maybeSingle();
+  await admin
+    .from("vendor_shopify_stores")
+    .update({ import_status: "failed", import_updated_at: new Date().toISOString(), import_summary: { ...(row?.import_summary ?? {}), message } })
+    .eq("vendor_id", vendorId);
 }
 
 // ---------------------------------------------------------------------------------------------
