@@ -208,3 +208,32 @@ describe("mergeAvailability (the daily sync)", () => {
     expect(variants[0].available).toBe(true);
   });
 });
+
+// The function itself can't run under Vitest (it is Deno code that talks to Shopify and R2), so
+// these guard the rules that keep it safe: who may call it, and that it never follows redirects.
+import { readFileSync } from "fs";
+import path from "path";
+const fn = readFileSync(
+  path.resolve(import.meta.dirname, "../../../supabase/functions/import-shopify-catalogue/index.ts"),
+  "utf8",
+);
+
+describe("import-shopify-catalogue function", () => {
+  it("authorises before doing any work: admins, or the schedule's secret for sync only", () => {
+    expect(fn).toMatch(/requireAuth\(req, \["admin"\], corsHeaders\)/);
+    expect(fn).toMatch(/op === "sync" && req\.headers\.has\("x-webhook-secret"\)/);
+    expect(fn).toMatch(/requireWebhookSecret\(req, "SHOPIFY_SYNC_SECRET", corsHeaders\)/);
+    expect(fn.indexOf("if (denied) return denied;")).toBeLessThan(fn.indexOf("createClient("));
+  });
+
+  it("never follows a redirect off the address it was given", () => {
+    const calls = fn.match(/\bfetch\(/g) ?? [];
+    expect(calls.length).toBeGreaterThan(0);
+    expect((fn.match(/redirect: "manual"/g) ?? []).length).toBe(calls.length);
+  });
+
+  it("only fetches addresses that passed the shared safety checks", () => {
+    expect(fn).toMatch(/parseStoreUrl\(/);
+    expect(fn).toMatch(/if \(!isAllowedImageUrl\(url\)\) return null;/);
+  });
+});

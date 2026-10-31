@@ -13,3 +13,8 @@ verify_jwt = false
 
 [functions.process-inbound-email]
 verify_jwt = false
+
+# Called by the daily schedule with a shared secret (x-webhook-secret = SHOPIFY_SYNC_SECRET), and by
+# admins with their session; the function authorises both itself before doing any work.
+[functions.import-shopify-catalogue]
+verify_jwt = false
