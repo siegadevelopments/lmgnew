@@ -6,9 +6,9 @@ import { ServerHydrate } from '@/components/ServerHydrate';
 
 const SITE_URL = 'https://www.lifestylemedicinegateway.com';
 
-// ISR: rendered on first request, cached, refreshed every five minutes; a failed refresh keeps the
+// ISR: rendered on first request, cached, refreshed every hour; a failed refresh keeps the
 // last good page. generateStaticParams returning [] opts the route into ISR without prebuilding.
-export const revalidate = 300;
+export const revalidate = 3600;
 export function generateStaticParams() {
   return [];
 }
