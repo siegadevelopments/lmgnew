@@ -41,7 +41,7 @@ Rules:
 
 - Every table has RLS **enabled**. Never write `USING (true)` / `WITH CHECK (true)` for UPDATE/DELETE/ALL, and avoid it for SELECT unless the data is genuinely public (published articles, products).
 - Policies must name the role/owner: `auth.uid() = user_id`, `public.is_admin()`, vendor ownership, etc.
-- Role escalation: only admins may set `profiles.role = 'admin'` (trigger in `20261001_security_hardening.sql`). Don't add code paths that let a user write their own role.
+- Role escalation: only admins may set `profiles.role = 'admin'` (trigger in `20261021_apply_security_hardening.sql`). Don't add code paths that let a user write their own role.
 - All schema/policy changes go in `supabase/migrations/` — the live database must be reproducible from the repo (currently it is **not**; most tables predate the migrations folder). When you touch a table, add its RLS to a migration.
 - Migrations are idempotent (`IF NOT EXISTS`, `DROP POLICY IF EXISTS`) and never run locally against production; apply via Supabase dashboard/CI. Don't modify schemas as part of marketing/content work.
 - After applying a policy migration, test as **anon**, **customer**, **vendor**, and **admin** (§6.3).
@@ -141,7 +141,7 @@ Edge Functions import `supabase/functions/_shared/auth.ts`; deploy the whole `su
 
 ## 9. Known open items (track until closed)
 
-- **Migrations in `supabase/migrations/` are not applied automatically.** `20261001_security_hardening.sql` sat unapplied for three weeks (found 2026-10-21; applied via `20261021_apply_security_hardening.sql`). After merging a migration, run it in the SQL Editor and verify it live (e.g. query `pg_policies` / `pg_trigger`).
+- **Migrations in `supabase/migrations/` are not applied automatically.** `20261001_security_hardening.sql` (since removed) sat unapplied for three weeks (found 2026-10-21; applied via `20261021_apply_security_hardening.sql`). After merging a migration, run it in the SQL Editor and verify it live (e.g. query `pg_policies` / `pg_trigger`).
 - **`profiles.phone` is readable only through `get_my_profile()` / `admin_list_profiles()`** once `20261021_hide_phone_from_signed_in_users.sql` is applied (after the code using `src/lib/profile-reads.ts` is deployed). Don't select `phone` or `*` from `profiles` directly; `src/lib/__tests__/profile-phone.test.ts` enforces this.
 - **Live policies are snapshotted, not migrated.** `supabase/live-security-snapshot.md` holds the 2026-10-21 export, its findings, the still-open items, and the query to refresh it. Refresh it after any policy change made outside `supabase/migrations/`.
 - `process-inbound-email` inserts content authored by a hard-coded system user id and feeds email text to an LLM — review for prompt-injection and auto-publish status (should land as **draft**).
