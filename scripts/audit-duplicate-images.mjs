@@ -363,7 +363,7 @@ async function main() {
         console.log(`      ... and ${refs.length - 10} more`);
       }
     }
-    console.log(`\n  🔧 Fix: Run migrate-to-r2 Edge Function or scripts/migrate-to-r2.mjs`);
+    console.log(`\n  🔧 Fix: Run scripts/migrate-to-r2.mjs (the migrate-to-r2 Edge Function was removed)`);
   }
 
   // Orphaned Supabase files
@@ -379,7 +379,7 @@ async function main() {
     if (orphanedSupabase.length > 30) {
       console.log(`    ... and ${orphanedSupabase.length - 30} more`);
     }
-    console.log(`\n  🔧 Fix: Run cleanup-storage Edge Function or delete manually.`);
+    console.log(`\n  🔧 Fix: Delete the orphaned files manually, after checking nothing references them (the cleanup-storage Edge Function was removed).`);
     console.log(`  This will free quota in your Supabase Storage (1GB free tier!)`);
   }
 
@@ -444,7 +444,7 @@ async function main() {
   let step = 1;
   if (staleSupabaseRefs.length > 0) {
     console.log(`  ${step}. MIGRATE ${staleSupabaseRefs.length} DB records from Supabase → R2 URLs`);
-    console.log(`     Run: supabase functions invoke migrate-to-r2`);
+    console.log(`     The migrate-to-r2 Edge Function was removed; use the script below`);
     console.log(`     Or:  Set R2 env vars + node scripts/migrate-to-r2.mjs (DRY_RUN=false)`);
     step++;
   }
@@ -455,7 +455,7 @@ async function main() {
   }
   if (orphanedSupabase.length > 0) {
     console.log(`  ${step}. CLEANUP ${orphanedSupabase.length} orphaned Supabase Storage files`);
-    console.log(`     Run: supabase functions invoke cleanup-storage`);
+    console.log(`     Delete them manually after checking nothing references them (the cleanup-storage Edge Function was removed)`);
     step++;
   }
   if (bodySupabaseRefs.length > 0) {
