@@ -101,15 +101,10 @@ function ArticleContent() {
                 }
 
                 // Determine base domain and main image filename/path from the article's main image_url
-                let baseDomain = "https://usrtaxvjwidfxajbjlpj.supabase.co/storage/v1/object/public/media";
+                // Legacy uploads live on Cloudflare R2; the Supabase Storage copies were archived there.
+                const baseDomain = "https://media.lifestylemedicinegateway.com";
                 let mainImageFileName = "";
                 if (article.image_url) {
-                  if (article.image_url.includes("media.lifestylemedicinegateway.com")) {
-                    baseDomain = "https://media.lifestylemedicinegateway.com";
-                  } else if (article.image_url.includes("supabase.co")) {
-                    baseDomain = "https://usrtaxvjwidfxajbjlpj.supabase.co/storage/v1/object/public/media";
-                  }
-                  
                   // Extract filename from the main image URL
                   const parts = article.image_url.split('/');
                   mainImageFileName = parts[parts.length - 1] || "";
