@@ -63,6 +63,8 @@ describe("SEO routes", () => {
     "guides/[slug]/page.tsx",
     "products/[slug]/layout.tsx",
     "vendors/[slug]/layout.tsx",
+    "articles/[slug]/layout.tsx",
+    "recipes/[slug]/layout.tsx",
   ])("%s opts into ISR", (f) => {
     const src = read(f);
     expect(src).toMatch(/export const revalidate = \d+/);
@@ -91,6 +93,8 @@ describe("SEO routes", () => {
     "products/[slug]/layout.tsx",
     "vendors/page.tsx",
     "vendors/[slug]/layout.tsx",
+    "articles/[slug]/layout.tsx",
+    "recipes/[slug]/layout.tsx",
   ])("%s refreshes every hour", (f) => {
     expect(read(f)).toMatch(/export const revalidate = 3600;/);
   });
