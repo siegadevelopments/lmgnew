@@ -6,8 +6,26 @@ import { recipeBySlugQueryOptions } from "@/lib/queries";
 import { buildMetadata, notFoundMetadata, toPlainDescription } from "@/lib/seo-metadata";
 
 // See app/products/[slug]/layout.tsx for why this exists.
-// Shared by generateMetadata and the layout, so each request fetches once.
-const loadRecipe = cache(async (slug: string) => {
+// ISR: each recipe is rendered on first request and cached, refreshing every hour, so crawlers and
+// readers no longer trigger a server render and Supabase queries on every hit (Vercel Active CPU).
+// generateStaticParams returning [] opts the route into ISR without prebuilding.
+export const revalidate = 3600;
+export function generateStaticParams() {
+  return [];
+}
+
+// Shared by generateMetadata and the layout, so each request fetches once. The exact-slug lookup
+// throws after retries, so a Supabase failure is a 5xx and never a cached "Recipe Not Found"/noindex
+// page. Only when no exact match exists does the older fuzzy matcher run (legacy slug variants).
+const loadContent = cache(async (slug: string) => {
+  let decoded = slug;
+  try {
+    decoded = decodeURIComponent(slug);
+  } catch {
+    // malformed escape: use the slug as given
+  }
+  const exact = await getContentForGoal("recipes", decoded);
+  if (exact) return exact as any;
   const results = await recipeBySlugQueryOptions(slug).queryFn!(undefined as any);
   return Array.isArray(results) ? (results[0] as any) : undefined;
 });
@@ -18,7 +36,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const recipe = await loadRecipe(slug);
+  const recipe = await loadContent(slug);
 
   if (!recipe) return notFoundMetadata("Recipe Not Found");
 
@@ -42,14 +60,8 @@ export default async function RecipeSlugLayout({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  // Server-side client (not the browser one loadRecipe uses), so the block works wherever the
-  // SEO pages do. A failure just leaves the block out; the page itself handles its own loading.
-  let recipe: any = null;
-  try {
-    recipe = await getContentForGoal("recipes", slug);
-  } catch {
-    recipe = null;
-  }
+  // Same cached lookup as generateMetadata, so this adds no extra query.
+  const recipe: any = await loadContent(slug);
   return (
     <>
       {children}

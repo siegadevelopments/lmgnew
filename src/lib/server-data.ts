@@ -326,10 +326,10 @@ export async function getTrustStats() {
 // Articles and recipes (for the "shop for this goal" block)
 // ---------------------------------------------------------------------------------------------
 
-/** Title, excerpt and content of an article or recipe by slug; null when not found. */
+/** Title, excerpt, content and image of an article or recipe by exact slug; null when not found. Throws on a lookup failure. */
 export async function getContentForGoal(table: "articles" | "recipes", slug: string) {
   const data = await withRetry(`${table} ${slug}`, () =>
-    requireClient().from(table).select("title, excerpt, content").eq("slug", slug).limit(1),
+    requireClient().from(table).select("title, excerpt, content, image_url").eq("slug", slug).limit(1),
   );
   return ((data as any[]) || [])[0] ?? null;
 }

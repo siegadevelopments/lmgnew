@@ -9,8 +9,26 @@ import { buildMetadata, notFoundMetadata, toPlainDescription } from "@/lib/seo-m
 // self-referencing canonical URL and unique title/description instead of inheriting the
 // generic site-wide metadata, without touching the client-rendered page.tsx.
 
-// Shared by generateMetadata and the layout, so each request fetches once.
-const loadArticle = cache(async (slug: string) => {
+// ISR: each article is rendered on first request and cached, refreshing every hour, so crawlers and
+// readers no longer trigger a server render and Supabase queries on every hit (Vercel Active CPU).
+// generateStaticParams returning [] opts the route into ISR without prebuilding.
+export const revalidate = 3600;
+export function generateStaticParams() {
+  return [];
+}
+
+// Shared by generateMetadata and the layout, so each request fetches once. The exact-slug lookup
+// throws after retries, so a Supabase failure is a 5xx and never a cached "Article Not Found"/noindex
+// page. Only when no exact match exists does the older fuzzy matcher run (legacy slug variants).
+const loadContent = cache(async (slug: string) => {
+  let decoded = slug;
+  try {
+    decoded = decodeURIComponent(slug);
+  } catch {
+    // malformed escape: use the slug as given
+  }
+  const exact = await getContentForGoal("articles", decoded);
+  if (exact) return exact as any;
   const results = await articleBySlugQueryOptions(slug).queryFn!(undefined as any);
   return Array.isArray(results) ? (results[0] as any) : undefined;
 });
@@ -21,7 +39,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const article = await loadArticle(slug);
+  const article = await loadContent(slug);
 
   if (!article) return notFoundMetadata("Article Not Found");
 
@@ -45,14 +63,8 @@ export default async function ArticleSlugLayout({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  // Server-side client (not the browser one loadArticle uses), so the block works wherever the
-  // SEO pages do. A failure just leaves the block out; the page itself handles its own loading.
-  let article: any = null;
-  try {
-    article = await getContentForGoal("articles", slug);
-  } catch {
-    article = null;
-  }
+  // Same cached lookup as generateMetadata, so this adds no extra query.
+  const article: any = await loadContent(slug);
   return (
     <>
       {children}
