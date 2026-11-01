@@ -16,8 +16,9 @@
 -- Left alone on purpose: 2 Shopify images that already return 404 at the source (Angel-cream-foundation_medium.jpg
 -- and Goddessey-sample-web_100x100.jpg, in one vendor's descriptions), so there is nothing to copy.
 --
--- Run in the SQL Editor (whole file, nothing selected). Safe to run more than once: after the first run no old
--- URL is left to match. Check afterwards (expect 0, 0, 6):
+-- Applied 2026-11-02; no need to run it again. (A second run fails in the SQL Editor with "relation _img_map does not
+-- exist", because the editor does not keep temp tables between statements. Nothing is harmed by that.)
+-- Run in the SQL Editor (whole file, nothing selected). Check afterwards (expect 0, 0, 6):
 --   select count(*) from products where image_url ~ 'cdn\.shopify\.com|wixstatic\.com';
 --   select count(*) from products, unnest(images) u where u ~ 'cdn\.shopify\.com|wixstatic\.com';
 --   select count(*) from products where content ~ 'cdn\.shopify\.com|wixstatic\.com';   -- the 6 products that hold the 2 dead images
