@@ -2,8 +2,8 @@
 -- Adds 12 DRAFT posts (6 ideas x Facebook + Instagram) to the admin Marketing tab.
 -- Nothing is published until an admin approves each draft, which pushes it to Buffer.
 --
--- Before running: merge the PR that adds public/marketing/2026-11/*.jpg and wait for the
--- Vercel deploy, so the image URLs below load (Buffer fetches them at approval time).
+-- Images are hosted on Cloudflare R2 (media.lifestylemedicinegateway.com/marketing/2026-11/), not on
+-- Vercel, so Buffer can fetch them even when the site is down. Buffer fetches them at approval time.
 -- Run once in the Supabase SQL Editor. Re-running is safe: titles that already exist are skipped.
 -- Times are Melbourne (AEDT, +11). Prices and contents checked against the live catalogue on 26 Oct 2026.
 
@@ -14,7 +14,7 @@ from (values
 
 -- 1. Mon 2 Nov: Gift Set launch -------------------------------------------------------------
 ('Founder''s Formula Gift Set launch (IG)', 'instagram', timestamptz '2026-11-02 19:00+11',
- 'https://www.lifestylemedicinegateway.com/marketing/2026-11/founders-formula-gift-box.jpg',
+ 'https://media.lifestylemedicinegateway.com/marketing/2026-11/founders-formula-gift-box.jpg',
  'https://www.lifestylemedicinegateway.com/products/founders-formula-gift-box',
 $c$Gift sorted for the person whose bathroom shelf is already full.
 
@@ -32,7 +32,7 @@ https://www.lifestylemedicinegateway.com/products/founders-formula-gift-box
 #ChristmasGiftIdeas #AustralianSkincare #NaturalSkincare #FoundersFormula #LifestyleMedicineGateway$c$),
 
 ('Founder''s Formula Gift Set launch (FB)', 'facebook', timestamptz '2026-11-02 19:30+11',
- 'https://www.lifestylemedicinegateway.com/marketing/2026-11/founders-formula-gift-box.jpg',
+ 'https://media.lifestylemedicinegateway.com/marketing/2026-11/founders-formula-gift-box.jpg',
  'https://www.lifestylemedicinegateway.com/products/founders-formula-gift-box',
 $c$Christmas list looking long already? Here's an easy one to tick off early.
 
@@ -50,7 +50,7 @@ Shop the Gift Set: https://www.lifestylemedicinegateway.com/products/founders-fo
 
 -- 2. Thu 5 Nov: Kakadu plum (value / education) ---------------------------------------------
 ('Why Kakadu plum (IG)', 'instagram', timestamptz '2026-11-05 19:00+11',
- 'https://www.lifestylemedicinegateway.com/marketing/2026-11/kakadu-plum-vitamin-c-serum.jpg',
+ 'https://media.lifestylemedicinegateway.com/marketing/2026-11/kakadu-plum-vitamin-c-serum.jpg',
  'https://www.lifestylemedicinegateway.com/products/wild-harvested-australian-kakadu-plum-vitamin-c-serum',
 $c$Why is Kakadu plum turning up in so much Australian skincare?
 
@@ -66,7 +66,7 @@ https://www.lifestylemedicinegateway.com/products/wild-harvested-australian-kaka
 #KakaduPlum #AustralianSkincare #NaturalSkincare #FoundersFormula$c$),
 
 ('Why Kakadu plum (FB)', 'facebook', timestamptz '2026-11-05 19:30+11',
- 'https://www.lifestylemedicinegateway.com/marketing/2026-11/kakadu-plum-vitamin-c-serum.jpg',
+ 'https://media.lifestylemedicinegateway.com/marketing/2026-11/kakadu-plum-vitamin-c-serum.jpg',
  'https://www.lifestylemedicinegateway.com/products/wild-harvested-australian-kakadu-plum-vitamin-c-serum',
 $c$Kakadu plum is a traditional bush food from northern Australia, and it's now one of the most talked-about ingredients in skincare.
 
@@ -82,7 +82,7 @@ Read more and shop: https://www.lifestylemedicinegateway.com/products/wild-harve
 
 -- 3. Mon 9 Nov: Discovery Kit (try before you commit) ---------------------------------------
 ('Discovery Kit, try five (IG)', 'instagram', timestamptz '2026-11-09 19:00+11',
- 'https://www.lifestylemedicinegateway.com/marketing/2026-11/best-sellers-discovery-kit.jpg',
+ 'https://media.lifestylemedicinegateway.com/marketing/2026-11/best-sellers-discovery-kit.jpg',
  'https://www.lifestylemedicinegateway.com/products/best-sellers-discovery-kit',
 $c$Not sure which products suit your skin? Try five before you commit.
 
@@ -102,7 +102,7 @@ https://www.lifestylemedicinegateway.com/products/best-sellers-discovery-kit
 #AustralianSkincare #SkincareRoutine #NaturalSkincare #FoundersFormula$c$),
 
 ('Discovery Kit, try five (FB)', 'facebook', timestamptz '2026-11-09 19:30+11',
- 'https://www.lifestylemedicinegateway.com/marketing/2026-11/best-sellers-discovery-kit.jpg',
+ 'https://media.lifestylemedicinegateway.com/marketing/2026-11/best-sellers-discovery-kit.jpg',
  'https://www.lifestylemedicinegateway.com/products/best-sellers-discovery-kit',
 $c$Buying full-size skincare without knowing whether it suits you is a gamble. A discovery kit takes the guesswork out.
 
@@ -122,7 +122,7 @@ Shop the kit: https://www.lifestylemedicinegateway.com/products/best-sellers-dis
 
 -- 4. Fri 13 Nov: Facial oil in warm weather (value / myth) ---------------------------------
 ('Face oil in summer (IG)', 'instagram', timestamptz '2026-11-13 19:00+11',
- 'https://www.lifestylemedicinegateway.com/marketing/2026-11/nourishing-facial-oils.jpg',
+ 'https://media.lifestylemedicinegateway.com/marketing/2026-11/nourishing-facial-oils.jpg',
  'https://www.lifestylemedicinegateway.com/products/australian-botanicals-nourishing-facial-oils',
 $c$Face oil as the weather warms up? It can work, if you pick the right one.
 
@@ -138,7 +138,7 @@ https://www.lifestylemedicinegateway.com/products/australian-botanicals-nourishi
 #AustralianSkincare #FacialOil #NaturalSkincare #FoundersFormula$c$),
 
 ('Face oil in summer (FB)', 'facebook', timestamptz '2026-11-13 19:30+11',
- 'https://www.lifestylemedicinegateway.com/marketing/2026-11/nourishing-facial-oils.jpg',
+ 'https://media.lifestylemedicinegateway.com/marketing/2026-11/nourishing-facial-oils.jpg',
  'https://www.lifestylemedicinegateway.com/products/australian-botanicals-nourishing-facial-oils',
 $c$"Won't a face oil make me greasy in summer?" It's a fair question, and the answer depends on the oil.
 
@@ -154,7 +154,7 @@ Shop now: https://www.lifestylemedicinegateway.com/products/australian-botanical
 
 -- 5. Tue 24 Nov: Gift Set close-up, order early for Christmas ------------------------------
 ('Gift Set, what''s inside (IG)', 'instagram', timestamptz '2026-11-24 19:00+11',
- 'https://www.lifestylemedicinegateway.com/marketing/2026-11/founders-formula-gift-box-closeup.jpg',
+ 'https://media.lifestylemedicinegateway.com/marketing/2026-11/founders-formula-gift-box-closeup.jpg',
  'https://www.lifestylemedicinegateway.com/products/founders-formula-gift-box',
 $c$One box, three serums, one very happy person on Christmas morning.
 
@@ -172,7 +172,7 @@ https://www.lifestylemedicinegateway.com/products/founders-formula-gift-box
 #ChristmasGiftIdeas #GiftsForHer #AustralianSkincare #FoundersFormula$c$),
 
 ('Gift Set, what''s inside (FB)', 'facebook', timestamptz '2026-11-24 19:30+11',
- 'https://www.lifestylemedicinegateway.com/marketing/2026-11/founders-formula-gift-box-closeup.jpg',
+ 'https://media.lifestylemedicinegateway.com/marketing/2026-11/founders-formula-gift-box-closeup.jpg',
  'https://www.lifestylemedicinegateway.com/products/founders-formula-gift-box',
 $c$A month to Christmas. If someone on your list loves skincare, this one is worth a look.
 
@@ -190,7 +190,7 @@ Order early so it arrives well before the big day: https://www.lifestylemedicine
 
 -- 6. Fri 27 Nov (Black Friday): Discovery Kit close-up, gift under $100 ---------------------
 ('Gift under $100, Discovery Kit (IG)', 'instagram', timestamptz '2026-11-27 19:00+11',
- 'https://www.lifestylemedicinegateway.com/marketing/2026-11/best-sellers-discovery-kit-closeup.jpg',
+ 'https://media.lifestylemedicinegateway.com/marketing/2026-11/best-sellers-discovery-kit-closeup.jpg',
  'https://www.lifestylemedicinegateway.com/products/best-sellers-discovery-kit',
 $c$Black Friday shopping for someone who loves skincare? Skip the countdown timers.
 
@@ -204,7 +204,7 @@ https://www.lifestylemedicinegateway.com/products/best-sellers-discovery-kit
 #GiftsUnder100 #ChristmasGiftIdeas #AustralianSkincare #FoundersFormula$c$),
 
 ('Gift under $100, Discovery Kit (FB)', 'facebook', timestamptz '2026-11-27 19:30+11',
- 'https://www.lifestylemedicinegateway.com/marketing/2026-11/best-sellers-discovery-kit-closeup.jpg',
+ 'https://media.lifestylemedicinegateway.com/marketing/2026-11/best-sellers-discovery-kit-closeup.jpg',
  'https://www.lifestylemedicinegateway.com/products/best-sellers-discovery-kit',
 $c$Looking for a gift under $100 that doesn't feel like an afterthought?
 
@@ -223,5 +223,5 @@ where not exists (select 1 from public.scheduled_posts p where p.title = v.title
 select title, platforms, scheduled_at at time zone 'Australia/Melbourne' as melbourne_time, status
 from public.scheduled_posts
 where scheduled_at >= '2026-11-01' and scheduled_at < '2026-12-01'
-  and image_url like 'https://www.lifestylemedicinegateway.com/marketing/2026-11/%'
+  and image_url like 'https://media.lifestylemedicinegateway.com/marketing/2026-11/%'
 order by scheduled_at, title;

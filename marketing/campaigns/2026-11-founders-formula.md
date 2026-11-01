@@ -2,7 +2,7 @@
 
 Single-vendor campaign for Founder's Formula, a Sunshine Coast skincare brand. It is built around Christmas gift buying in November.
 
-- **Captions, images and schedule:** the source is [2026-11-founders-formula.sql](2026-11-founders-formula.sql). Images are in `public/marketing/2026-11/`.
+- **Captions, images and schedule:** the source is [2026-11-founders-formula.sql](2026-11-founders-formula.sql). Images are hosted on Cloudflare R2 at `https://media.lifestylemedicinegateway.com/marketing/2026-11/` (copies also remain in `public/marketing/2026-11/`).
 - **Status:** 12 posts approved and sent to Buffer on 26 Oct 2026.
 - **Paid ads rules:** [paid-social.md](../social/paid-social.md).
 
