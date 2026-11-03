@@ -185,9 +185,21 @@ const demoMetaData = {
   ]
 };
 
+const CACHE_TTL_MS = 5 * 60 * 1000;
+let cached: { at: number; payload: any } | null = null;
+
 export async function GET(req: Request) {
   // Aggregate stats are public (transparency dashboard); config diagnostics are admin-only.
   const isAdmin = (await requireUser(req, "admin")) === null;
+  const refresh = new URL(req.url).searchParams.has("refresh") && isAdmin;
+
+  // Per-instance 5 min cache so public traffic doesn't hit GA4/Meta on every view.
+  if (!refresh && cached && Date.now() - cached.at < CACHE_TTL_MS) {
+    const { debug, ...publicPayload } = cached.payload;
+    return NextResponse.json(isAdmin ? cached.payload : publicPayload, {
+      headers: { "Cache-Control": "no-store" },
+    });
+  }
   const gaPropertyId = process.env.GA4_PROPERTY_ID;
   const gaClientEmail = process.env.GA4_CLIENT_EMAIL;
   const gaPrivateKey = process.env.GA4_PRIVATE_KEY?.replace(/\\n/g, "\n");
@@ -269,7 +281,7 @@ export async function GET(req: Request) {
       totalMonthlyImpressions: (gaData?.pageViews || demoGaData.pageViews) + (metaData?.totalImpressions || demoMetaData.totalImpressions),
       totalEngagements: demoMetaData.postEngagements + Math.round(demoGaData.pageViews * 0.15)
     },
-    debug: !isAdmin ? undefined : {
+    debug: {
       hasGaPropertyId: Boolean(gaPropertyId),
       hasGaClientEmail: Boolean(gaClientEmail),
       hasGaPrivateKey: Boolean(gaPrivateKey),
@@ -280,7 +292,10 @@ export async function GET(req: Request) {
     }
   };
 
-  return NextResponse.json(responsePayload, {
+  cached = { at: Date.now(), payload: responsePayload };
+  const { debug, ...publicPayload } = responsePayload;
+
+  return NextResponse.json(isAdmin ? responsePayload : publicPayload, {
     headers: {
       "Cache-Control": "no-store, no-cache, must-revalidate",
     },
