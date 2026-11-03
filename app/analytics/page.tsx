@@ -85,6 +85,7 @@ export default function PublicAnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [errorStatus, setErrorStatus] = useState<number | null>(null);
 
   const fetchAnalytics = async () => {
     try {
@@ -93,6 +94,9 @@ export default function PublicAnalyticsPage() {
       if (res.ok) {
         const json = await res.json();
         setData(json);
+        setErrorStatus(null);
+      } else {
+        setErrorStatus(res.status);
       }
     } catch (err) {
       console.error('Failed to load public analytics:', err);
@@ -181,7 +185,18 @@ export default function PublicAnalyticsPage() {
           </div>
         ) : !data ? (
           <div className="text-center py-16 bg-card rounded-2xl border border-border p-6">
-            <p className="text-muted-foreground">Unable to load analytics data at this time.</p>
+            <p className="text-muted-foreground">
+              {errorStatus === 401
+                ? 'Please sign in with an admin account to view analytics.'
+                : errorStatus === 403
+                  ? 'Analytics are only available to admin accounts.'
+                  : 'Unable to load analytics data at this time.'}
+            </p>
+            {errorStatus === 401 && (
+              <Button asChild className="mt-4 rounded-xl">
+                <a href="/login">Sign in</a>
+              </Button>
+            )}
           </div>
         ) : (
           <>
@@ -190,14 +205,14 @@ export default function PublicAnalyticsPage() {
               <StatCard
                 title="Total Monthly Audience"
                 value={data.combinedTotals.totalMonthlyAudience.toLocaleString()}
-                change="+18.4% vs last month"
+                change={`${data.googleAnalytics.totalUsers.toLocaleString()} web + ${data.metaInsights.totalReach.toLocaleString()} social`}
                 icon={<Users className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />}
                 subtitle="Google Web + Meta Reach"
               />
               <StatCard
                 title="Total Monthly Impressions"
                 value={data.combinedTotals.totalMonthlyImpressions.toLocaleString()}
-                change="+24.1% vs last month"
+                change={`${data.googleAnalytics.pageViews.toLocaleString()} views + ${data.metaInsights.totalImpressions.toLocaleString()} social`}
                 icon={<Eye className="h-5 w-5 text-blue-600 dark:text-blue-400" />}
                 subtitle="Pageviews & Social Impressions"
               />

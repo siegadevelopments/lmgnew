@@ -186,8 +186,8 @@ const demoMetaData = {
 };
 
 export async function GET(req: Request) {
-  const denied = await requireUser(req, "admin");
-  if (denied) return denied;
+  // Aggregate stats are public (transparency dashboard); config diagnostics are admin-only.
+  const isAdmin = (await requireUser(req, "admin")) === null;
   const gaPropertyId = process.env.GA4_PROPERTY_ID;
   const gaClientEmail = process.env.GA4_CLIENT_EMAIL;
   const gaPrivateKey = process.env.GA4_PRIVATE_KEY?.replace(/\\n/g, "\n");
@@ -269,7 +269,7 @@ export async function GET(req: Request) {
       totalMonthlyImpressions: (gaData?.pageViews || demoGaData.pageViews) + (metaData?.totalImpressions || demoMetaData.totalImpressions),
       totalEngagements: demoMetaData.postEngagements + Math.round(demoGaData.pageViews * 0.15)
     },
-    debug: {
+    debug: !isAdmin ? undefined : {
       hasGaPropertyId: Boolean(gaPropertyId),
       hasGaClientEmail: Boolean(gaClientEmail),
       hasGaPrivateKey: Boolean(gaPrivateKey),
