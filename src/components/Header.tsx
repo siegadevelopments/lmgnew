@@ -395,6 +395,15 @@ export function Header({ visibleCategorySlugs }: { visibleCategorySlugs?: string
               Platform Admin
             </Link>
           )}
+          {!loading && !user && (
+            <Link
+              href="/login"
+              className="rounded-md px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              onClick={() => setMobileOpen(false)}
+            >
+              Sign in
+            </Link>
+          )}
           {!loading && user && (role === "vendor" || role === "admin") ? (
             <Link href="/vendor">
               <Button
