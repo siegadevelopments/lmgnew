@@ -19,6 +19,7 @@ import { useBotProtection } from "@/hooks/use-bot-protection";
 import { HoneypotField } from "@/components/HoneypotField";
 import { User, Store } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LAST_PAGE_KEY, sanitizeReturnPath } from "@/lib/auth-confirm";
 
 function SignupForm() {
   const router = useRouter();
@@ -74,12 +75,22 @@ function SignupForm() {
 
     const redirectUrl = window.location.origin + targetRedirect;
 
+    let storedPage: string | null = null;
+    try {
+      storedPage = localStorage.getItem(LAST_PAGE_KEY);
+    } catch {
+      // ignore - falls back to the homepage
+    }
+    const returnTo = sanitizeReturnPath(redirectTo) ?? sanitizeReturnPath(storedPage);
+
     const { error: authError } = await signUp(
       email,
       password,
       {
         full_name: name,
         requested_role: isVendor ? "vendor" : "customer",
+        // Where to send a customer after they confirm their email (validated again on use).
+        return_to: returnTo,
       },
       redirectUrl,
     );

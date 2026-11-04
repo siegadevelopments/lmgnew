@@ -39,3 +39,37 @@ export function buildConfirmLink(origin: string, tokenHash: string, type: Confir
   const params = new URLSearchParams({ token_hash: tokenHash, type });
   return `${origin}/auth/confirm?${params.toString()}`;
 }
+
+export const LAST_PAGE_KEY = "lmg_last_page";
+const MAX_RETURN_PATH_LENGTH = 512;
+
+/** Pages that should never be remembered as "the page before registering". */
+export function isRememberablePath(path: string): boolean {
+  return !/^\/(signup|login|auth)(\/|\?|$)/.test(path);
+}
+
+/** A stored/metadata return path, accepted only if it is a short same-site path. Otherwise null. */
+export function sanitizeReturnPath(raw: unknown): string | null {
+  if (typeof raw !== "string" || raw.length > MAX_RETURN_PATH_LENGTH) return null;
+  const safe = safeNextPath(raw, "");
+  return safe && isRememberablePath(safe) ? safe : null;
+}
+
+/**
+ * Where to send someone after their signup email is confirmed.
+ * - admin (from the profiles table, which users cannot edit) -> /admin
+ * - vendor (profile role, or the role they asked for at signup) -> /vendor
+ * - otherwise the last page they viewed before registering, then the link's `next`, then "/".
+ * `requestedRole` and `returnTo` come from user-editable metadata, so they only ever pick a
+ * landing page; they never grant access to anything.
+ */
+export function resolvePostConfirmPath(input: {
+  profileRole?: string | null;
+  requestedRole?: unknown;
+  returnTo?: unknown;
+  next?: string | null;
+}): string {
+  if (input.profileRole === "admin") return "/admin";
+  if (input.profileRole === "vendor" || input.requestedRole === "vendor") return "/vendor";
+  return sanitizeReturnPath(input.returnTo) ?? safeNextPath(input.next, "/");
+}

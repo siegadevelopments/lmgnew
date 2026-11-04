@@ -17,7 +17,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/integrations/supabase/client";
-import { resolveOtpType, safeNextPath } from "@/lib/auth-confirm";
+import { resolveOtpType, resolvePostConfirmPath } from "@/lib/auth-confirm";
 import {
   Card,
   CardContent,
@@ -38,19 +38,43 @@ function ConfirmContent() {
 
     const tokenHash = searchParams?.get("token_hash");
     const type = resolveOtpType(searchParams?.get("type"));
-    const next = safeNextPath(searchParams?.get("next"), "/");
+    const next = searchParams?.get("next");
 
     if (!tokenHash || !type) {
       setFailed(true);
       return;
     }
 
-    supabase.auth.verifyOtp({ token_hash: tokenHash, type }).then(({ error }) => {
+    supabase.auth.verifyOtp({ token_hash: tokenHash, type }).then(async ({ data, error }) => {
       if (error) {
         setFailed(true);
         return;
       }
-      router.replace(type === "recovery" ? "/login?type=recovery" : next);
+      if (type === "recovery") {
+        router.replace("/login?type=recovery");
+        return;
+      }
+
+      // Pick the landing page by role. The role in `profiles` is trusted; signup metadata
+      // (requested_role / return_to) is user-editable and only chooses where to land.
+      let profileRole: string | null = null;
+      if (data.user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", data.user.id)
+          .maybeSingle();
+        profileRole = (profile as { role?: string } | null)?.role ?? null;
+      }
+      const meta = data.user?.user_metadata ?? {};
+      router.replace(
+        resolvePostConfirmPath({
+          profileRole,
+          requestedRole: meta.requested_role,
+          returnTo: meta.return_to,
+          next,
+        }),
+      );
     });
   }, [router, searchParams]);
 

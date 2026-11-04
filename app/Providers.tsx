@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "@/hooks/use-auth";
 import { CartProvider } from "@/hooks/use-cart";
 import { Toaster } from "sonner";
+import { LastPageTracker } from "@/components/LastPageTracker";
 import { useState } from "react";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -22,6 +23,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <CartProvider>
+          <LastPageTracker />
           {children}
           <Toaster position="bottom-right" richColors closeButton />
         </CartProvider>
