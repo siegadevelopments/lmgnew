@@ -274,6 +274,10 @@ function SignupForm() {
                 We sent a confirmation link to <strong>{email}</strong>. Click the link to verify
                 your {isVendor ? "vendor" : "customer"} account and get started.
               </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Can&apos;t see it? Check your spam or junk folder, and mark it as &quot;not spam&quot;
+                so future emails reach your inbox.
+              </p>
               <Button
                 className={cn("mt-6", isVendor ? "bg-blue-600 text-white hover:bg-blue-700" : "")}
                 onClick={() => router.push("/login")}
