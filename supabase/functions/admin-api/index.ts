@@ -75,7 +75,12 @@ Deno.serve(async (req: Request) => {
         // auth.admin.resetPasswordForEmail is actually a client-side method but works for admins too if they have the email.
         // Better: just use the client-side resetPasswordForEmail in the frontend, it doesn't need admin privileges!
         // But for "sending" from admin panel, we can use generateLink or just trigger the client method.
-        return new Response(JSON.stringify({ success: true, link: data.properties.action_link }), {
+        return new Response(JSON.stringify({
+          success: true,
+          link: data.properties.action_link,
+          // Lets the client build an own-domain link (/auth/confirm) instead of a supabase.co one.
+          hashed_token: data.properties.hashed_token,
+        }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }

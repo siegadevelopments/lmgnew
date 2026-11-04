@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { buildConfirmLink } from "@/lib/auth-confirm";
 
 export const getResetPasswordHtml = (userName: string, resetLink: string) => {
   const currentYear = new Date().getFullYear();
@@ -73,7 +74,13 @@ export async function sendBrandedResetEmail(email: string, fullName: string) {
   if (linkError) throw linkError;
   if (!linkData?.link) throw new Error("Failed to generate secure reset link. Please contact support.");
 
-  const htmlContent = getResetPasswordHtml(fullName || "Valued Member", linkData.link);
+  // Prefer a link on our own domain (avoids the sender/link domain mismatch that triggers spam
+  // filters). Falls back to the Supabase link if admin-api hasn't been redeployed with hashed_token.
+  const resetLink = linkData.hashed_token
+    ? buildConfirmLink(window.location.origin, linkData.hashed_token, "recovery")
+    : linkData.link;
+
+  const htmlContent = getResetPasswordHtml(fullName || "Valued Member", resetLink);
 
   // 2. Send Custom Email via send-email
   const { error: emailError } = await supabase.functions.invoke("send-email", {
