@@ -136,23 +136,45 @@ async function fetchWebsite(propertyId: string, clientEmail: string, privateKey:
 const GRAPH = "https://graph.facebook.com/v21.0";
 
 /** Fetch one Page insights metric, trying each candidate name until one returns data. */
-async function metaMetric(pageId: string, token: string, candidates: string[], period: "day" | "days_28", sinceTs: number, untilTs: number): Promise<MetaValue[] | null> {
+function redact(text: string): string {
+  return text.replace(/EAA[A-Za-z0-9]+/g, "[token]").replace(/access_token=[^&\s"]+/gi, "access_token=[redacted]").slice(0, 220);
+}
+
+async function metaMetric(pageId: string, token: string, candidates: string[], period: "day" | "days_28", sinceTs: number, untilTs: number, issues: string[]): Promise<MetaValue[] | null> {
   for (const metric of candidates) {
     try {
       const url = `${GRAPH}/${pageId}/insights?metric=${metric}&period=${period}&since=${sinceTs}&until=${untilTs}`;
       const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
-      if (!res.ok) continue;
+      if (!res.ok) {
+        const e = (await res.json().catch(() => null))?.error;
+        issues.push(redact(`${metric} (${period}): HTTP ${res.status}${e?.code ? ` code ${e.code}` : ""}${e?.error_subcode ? `/${e.error_subcode}` : ""} ${e?.message ?? ""}`.trim()));
+        continue;
+      }
       const json = await res.json();
       const values = json?.data?.[0]?.values as MetaValue[] | undefined;
       if (values?.length) return values;
-    } catch {
-      // try the next candidate
+      issues.push(`${metric} (${period}): request succeeded but returned no values`);
+    } catch (err: any) {
+      issues.push(redact(`${metric} (${period}): ${err?.message || String(err)}`));
     }
   }
   return null;
 }
 
-async function fetchSocial(pageId: string, token: string, report: ReportPeriod, chart: ReportPeriod) {
+/** Called only when nothing came back: tells an invalid token apart from missing insights access. */
+async function probeMetaPage(pageId: string, token: string): Promise<string> {
+  try {
+    const res = await fetch(`${GRAPH}/${pageId}?fields=id,name`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+    const json = await res.json().catch(() => null);
+    if (res.ok) return `page lookup OK (${json?.name ?? json?.id}), so the token and page id work and the insights permission or metrics are the problem`;
+    const e = json?.error;
+    return redact(`page lookup failed: HTTP ${res.status}${e?.code ? ` code ${e.code}` : ""} ${e?.message ?? ""}`.trim());
+  } catch (err: any) {
+    return redact(`page lookup failed: ${err?.message || String(err)}`);
+  }
+}
+
+async function fetchSocial(pageId: string, token: string, report: ReportPeriod, chart: ReportPeriod, issues: string[]) {
   const ts = (iso: string, endOfDay = false) => Math.floor(new Date(`${iso}T${endOfDay ? "23:59:59" : "00:00:00"}Z`).getTime() / 1000);
   const [rs, re, cs, ce] = [ts(report.start), ts(report.end, true), ts(chart.start), ts(chart.end, true)];
 
@@ -163,12 +185,12 @@ async function fetchSocial(pageId: string, token: string, report: ReportPeriod, 
   const FOLLOWS = ["page_daily_follows", "page_fan_adds"];
 
   const [reach28, views28, engagements28, follows28, reachDaily, viewsDaily] = await Promise.all([
-    metaMetric(pageId, token, REACH, "days_28", re - 86400, re),
-    metaMetric(pageId, token, VIEWS, "day", rs, re),
-    metaMetric(pageId, token, ENGAGEMENTS, "day", rs, re),
-    metaMetric(pageId, token, FOLLOWS, "day", rs, re),
-    metaMetric(pageId, token, REACH, "day", cs, ce),
-    metaMetric(pageId, token, VIEWS, "day", cs, ce),
+    metaMetric(pageId, token, REACH, "days_28", re - 86400, re, issues),
+    metaMetric(pageId, token, VIEWS, "day", rs, re, issues),
+    metaMetric(pageId, token, ENGAGEMENTS, "day", rs, re, issues),
+    metaMetric(pageId, token, FOLLOWS, "day", rs, re, issues),
+    metaMetric(pageId, token, REACH, "day", cs, ce, issues),
+    metaMetric(pageId, token, VIEWS, "day", cs, ce, issues),
   ]);
 
   const reachSeries = metaDaily(reachDaily);
@@ -178,13 +200,20 @@ async function fetchSocial(pageId: string, token: string, report: ReportPeriod, 
       ? reachSeries.map((r) => ({ date: r.date, label: r.label, reach: r.value, views: viewsSeries.find((v) => v.date === r.date)?.value ?? 0 }))
       : null;
 
-  return {
+  const social = {
     reach: lastMetaValue(reach28),
     views: sumMetaValues(views28),
     engagements: sumMetaValues(engagements28),
     newFollowers: sumMetaValues(follows28),
     daily,
   };
+
+  if (Object.values(social).every((v) => v === null)) {
+    const probe = await probeMetaPage(pageId, token);
+    const unique = [...new Set(issues)];
+    throw new Error(`Meta returned no insights. ${probe}. Attempts: ${unique.slice(0, 6).join(" | ")}`);
+  }
+  return social;
 }
 
 // ---------- handler ----------
@@ -210,6 +239,7 @@ export async function GET(req: Request) {
     let website: Awaited<ReturnType<typeof fetchWebsite>> | null = null;
     let social: Awaited<ReturnType<typeof fetchSocial>> | null = null;
     let gaError: string | null = missingGa.length ? `Missing environment variables: ${missingGa.join(", ")}` : null;
+    const metaIssues: string[] = [];
     let metaError: string | null = missingMeta.length ? `Missing environment variables: ${missingMeta.join(", ")}` : null;
 
     await Promise.all([
@@ -220,7 +250,7 @@ export async function GET(req: Request) {
             .catch((err) => { console.error("Error fetching GA4 data:", err); gaError = err?.message || String(err); }),
       metaError
         ? null
-        : fetchSocial(metaPageId!, metaToken!, report, chart)
+        : fetchSocial(metaPageId!, metaToken!, report, chart, metaIssues)
             .then((m) => { social = m; })
             .catch((err) => { console.error("Error fetching Meta insights:", err); metaError = err?.message || String(err); }),
     ]);
@@ -235,7 +265,7 @@ export async function GET(req: Request) {
       // null sections are shown as "Data temporarily unavailable" — never filled with placeholders.
       website: hasWebsite ? website : null,
       social: hasSocial ? social : null,
-      diagnostics: { gaError, metaError, missingGa, missingMeta },
+      diagnostics: { gaError, metaError, metaIssues: [...new Set(metaIssues)].slice(0, 8), missingGa, missingMeta },
     };
     cache = { at: Date.now(), ttl: hasWebsite || hasSocial ? CACHE_MS : FAILURE_CACHE_MS, payload };
   }
