@@ -39,7 +39,7 @@ for (const line of readFileSync(resolve(__dirname, "../.env.local"), "utf-8").sp
 }
 
 const SUPABASE_URL = env.SUPABASE_URL || env.VITE_SUPABASE_URL;
-const SERVICE_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
+const SERVICE_KEY = env.SUPABASE_SECRET_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
 const R2_CUSTOM_DOMAIN = env.R2_CUSTOM_DOMAIN || "media.lifestylemedicinegateway.com";
 
 // ---------- helpers ----------
