@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -266,6 +267,39 @@ function VendorDashboardContent() {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  // Store creation is for people who registered as a vendor (or already hold a vendor/admin role).
+  // requested_role is user-editable metadata, so this only steers the UI; a store still needs
+  // admin approval before it can publish anything (see 20261022_restrict_content_publishing.sql).
+  const canCreateStore =
+    role === "admin" || role === "vendor" || (user?.user_metadata as any)?.requested_role === "vendor";
+
+  if (!profile && !canCreateStore) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center px-4 py-12">
+        <Card className="w-full max-w-md text-center">
+          <CardHeader>
+            <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Store className="h-7 w-7" />
+            </div>
+            <CardTitle>This is a customer account</CardTitle>
+            <CardDescription>
+              Stores are set up for registered vendors. If you'd like to sell on Lifestyle Medicine
+              Gateway, get in touch and we'll help you get started.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <Button asChild>
+              <Link href="/sell-with-us">Sell with us</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/">Back to home</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
