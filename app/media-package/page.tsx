@@ -127,7 +127,7 @@ export default function MediaPackagePage() {
     async function fetchLiveMetrics() {
       try {
         const [prodRes, vendRes, artRes, recRes, vidRes] = await Promise.all([
-          supabase.from("products").select("id, price", { count: "exact" }),
+          supabase.from("products").select("id, price", { count: "exact" }).eq("status", "published"),
           supabase.from("vendor_profiles").select("id", { count: "exact" }).eq("is_approved", true),
           supabase.from("articles").select("id", { count: "exact" }),
           supabase.from("recipes").select("id", { count: "exact" }),

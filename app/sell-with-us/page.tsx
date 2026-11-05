@@ -102,7 +102,7 @@ export default function SellWithUsPage() {
 
             {/* Quick Trust Signals */}
             <div className="mt-16 flex items-center justify-center gap-8 text-white/40 grayscale opacity-50">
-              <div className="text-sm font-bold tracking-widest uppercase">Trusted By 100+ Wellness Brands</div>
+              <div className="text-sm font-bold tracking-widest uppercase">Australian Wellness Brands Sell With Us</div>
             </div>
           </div>
         </section>
@@ -239,8 +239,8 @@ export default function SellWithUsPage() {
                       <BarChart3 className="h-8 w-8" />
                     </div>
                     <div>
-                      <p className="font-black text-lg">98% Success</p>
-                      <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Vendor Satisfaction</p>
+                      <p className="font-black text-lg">Vendor Dashboard</p>
+                      <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Growth &amp; Order Tools</p>
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">

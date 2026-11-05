@@ -1,8 +1,29 @@
 import { NextResponse } from "next/server";
 import * as crypto from "crypto";
 import { requireUser } from "@/lib/server-auth";
+import {
+  reportPeriods,
+  shapeGaTotals,
+  shapeGaChannels,
+  shapeGaDevices,
+  shapeGaTopPages,
+  shapeGaDaily,
+  mobileShare,
+  sumMetaValues,
+  lastMetaValue,
+  metaDaily,
+  type GaReport,
+  type MetaValue,
+  type ReportPeriod,
+} from "@/lib/analytics-report";
 
 export const dynamic = "force-dynamic";
+
+// Public endpoint that costs Google/Meta API quota: cache the shaped result per server instance.
+const CACHE_MS = 10 * 60 * 1000;
+const FAILURE_CACHE_MS = 60 * 1000;
+const FETCH_TIMEOUT_MS = 8000;
+let cache: { at: number; ttl: number; payload: unknown } | null = null;
 
 // Helper to generate Google OAuth2 Access Token via JWT Service Account credentials
 async function getGa4AccessToken(clientEmail: string, privateKey: string): Promise<string> {
@@ -53,236 +74,174 @@ async function getGa4AccessToken(clientEmail: string, privateKey: string): Promi
   return tokenData.access_token;
 }
 
-// Fetch GA4 Realtime active users (last 30 minutes)
-async function fetchGa4RealtimeData(propertyId: string, accessToken: string): Promise<number> {
-  const endpoint = `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runRealtimeReport`;
 
+// ---------- GA4 (Data API v1beta runReport) ----------
+
+async function runGaReport(propertyId: string, accessToken: string, body: Record<string, unknown>): Promise<GaReport | null> {
   try {
-    const res = await fetch(endpoint, {
+    const res = await fetch(`https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        metrics: [{ name: "activeUsers" }],
-      }),
+      headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
-
-    if (!res.ok) return 0;
-    const json = await res.json();
-    return parseInt(json.rows?.[0]?.metricValues?.[0]?.value || "0", 10);
+    if (!res.ok) {
+      console.error("GA4 runReport failed:", res.status, (await res.text()).slice(0, 300));
+      return null;
+    }
+    return (await res.json()) as GaReport;
   } catch (err) {
-    return 0;
+    console.error("GA4 runReport error:", err);
+    return null;
   }
 }
 
-// Fetch GA4 report data from Google Analytics Data API v1beta
-async function fetchGa4Data(propertyId: string, accessToken: string) {
-  const endpoint = `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`;
+async function fetchWebsite(propertyId: string, clientEmail: string, privateKey: string, report: ReportPeriod, chart: ReportPeriod) {
+  const accessToken = await getGa4AccessToken(clientEmail, privateKey);
+  const range = [{ startDate: report.start, endDate: report.end }];
+  const q = (extra: Record<string, unknown>) => runGaReport(propertyId, accessToken, { dateRanges: range, ...extra });
 
-  const reqBody = {
-    dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
-    metrics: [
-      { name: "activeUsers" },
-      { name: "screenPageViews" },
-      { name: "averageSessionDuration" },
-      { name: "bounceRate" },
-    ],
-  };
-
-  const [res, activeNow] = await Promise.all([
-    fetch(endpoint, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(reqBody),
+  // Independent requests: one failing only blanks its own section.
+  const [totals, channels, devices, pages, daily] = await Promise.all([
+    q({ metrics: [{ name: "activeUsers" }, { name: "sessions" }, { name: "screenPageViews" }, { name: "averageSessionDuration" }] }),
+    q({ dimensions: [{ name: "sessionDefaultChannelGroup" }], metrics: [{ name: "sessions" }, { name: "activeUsers" }], limit: 20 }),
+    q({ dimensions: [{ name: "deviceCategory" }], metrics: [{ name: "activeUsers" }] }),
+    q({
+      dimensions: [{ name: "pagePath" }, { name: "pageTitle" }],
+      metrics: [{ name: "screenPageViews" }, { name: "userEngagementDuration" }],
+      orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
+      limit: 5,
     }),
-    fetchGa4RealtimeData(propertyId, accessToken),
+    runGaReport(propertyId, accessToken, {
+      dateRanges: [{ startDate: chart.start, endDate: chart.end }],
+      dimensions: [{ name: "date" }],
+      metrics: [{ name: "activeUsers" }, { name: "screenPageViews" }],
+      orderBys: [{ dimension: { dimensionName: "date" } }],
+    }),
   ]);
 
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`GA4 runReport failed: ${res.status} ${err}`);
-  }
-
-  const json = await res.json();
-  const values = json.rows?.[0]?.metricValues || [];
-
-  const totalUsers = parseInt(values[0]?.value || "0", 10);
-  const pageViews = parseInt(values[1]?.value || "0", 10);
-  const avgDurationSec = parseFloat(values[2]?.value || "0");
-  const bounceRatePct = (parseFloat(values[3]?.value || "0") * 100).toFixed(1);
-
-  const mins = Math.floor(avgDurationSec / 60);
-  const secs = Math.round(avgDurationSec % 60);
-  const avgSessionDuration = `${mins}m ${secs < 10 ? "0" : ""}${secs}s`;
-
+  const devicesShaped = shapeGaDevices(devices);
   return {
-    totalUsers,
-    pageViews,
-    avgSessionDuration,
-    bounceRate: `${bounceRatePct}%`,
-    activeNow,
+    totals: shapeGaTotals(totals),
+    channels: shapeGaChannels(channels),
+    devices: devicesShaped,
+    mobilePercentage: mobileShare(devicesShaped),
+    topPages: shapeGaTopPages(pages),
+    daily: shapeGaDaily(daily, chart),
   };
 }
 
-// Realistic Demo/Fallback Data when APIs are pending setup
-const demoGaData = {
-  totalUsers: 48920,
-  pageViews: 124850,
-  avgSessionDuration: "2m 45s",
-  bounceRate: "34.2%",
-  trafficOverTime: [
-    { date: "Mon", users: 5400, pageViews: 14200 },
-    { date: "Tue", users: 6200, pageViews: 16800 },
-    { date: "Wed", users: 7100, pageViews: 19500 },
-    { date: "Thu", users: 6800, pageViews: 18100 },
-    { date: "Fri", users: 7900, pageViews: 21300 },
-    { date: "Sat", users: 8400, pageViews: 22400 },
-    { date: "Sun", users: 7120, pageViews: 12550 }
-  ],
-  trafficSources: [
-    { name: "Organic Search", percentage: 48, count: 23480, color: "#10b981" },
-    { name: "Direct", percentage: 26, count: 12720, color: "#3b82f6" },
-    { name: "Social Media", percentage: 18, count: 8800, color: "#8b5cf6" },
-    { name: "Referrals", percentage: 8, count: 3920, color: "#f59e0b" }
-  ],
-  topPages: [
-    { path: "/recipes", title: "Healthy Recipes & Meal Ideas", views: 34200, avgTime: "3m 12s" },
-    { path: "/healthy-aging-starter-kit", title: "Healthy Aging Starter Kit", views: 28900, avgTime: "4m 05s" },
-    { path: "/articles", title: "Evidence-Based Wellness Articles", views: 22100, avgTime: "2m 50s" },
-    { path: "/natural-remedies", title: "Natural Remedies & Herbs", views: 18500, avgTime: "3m 40s" },
-    { path: "/products", title: "Wellness Marketplace", views: 14200, avgTime: "2m 10s" }
-  ],
-  deviceBreakdown: [
-    { device: "Mobile", percentage: 65 },
-    { device: "Desktop", percentage: 30 },
-    { device: "Tablet", percentage: 5 }
-  ]
-};
+// ---------- Meta Graph API ----------
 
-const demoMetaData = {
-  totalReach: 84500,
-  totalImpressions: 162300,
-  postEngagements: 19400,
-  newFollowers: 1280,
-  reachOverTime: [
-    { date: "Mon", reach: 11200, impressions: 21000 },
-    { date: "Tue", reach: 12800, impressions: 24500 },
-    { date: "Wed", reach: 14500, impressions: 28100 },
-    { date: "Thu", reach: 13100, impressions: 25400 },
-    { date: "Fri", reach: 15900, impressions: 30200 },
-    { date: "Sat", reach: 17200, impressions: 33100 },
-    { date: "Sun", reach: 14800, impressions: 27800 }
-  ],
-  engagementBreakdown: [
-    { type: "Post Likes & Reactions", count: 9850, percentage: 51 },
-    { type: "Comments & Shares", count: 5420, percentage: 28 },
-    { type: "Link Clicks", count: 4130, percentage: 21 }
-  ]
-};
+const GRAPH = "https://graph.facebook.com/v21.0";
+
+/** Fetch one Page insights metric, trying each candidate name until one returns data. */
+async function metaMetric(pageId: string, token: string, candidates: string[], period: "day" | "days_28", sinceTs: number, untilTs: number): Promise<MetaValue[] | null> {
+  for (const metric of candidates) {
+    try {
+      const url = `${GRAPH}/${pageId}/insights?metric=${metric}&period=${period}&since=${sinceTs}&until=${untilTs}`;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+      if (!res.ok) continue;
+      const json = await res.json();
+      const values = json?.data?.[0]?.values as MetaValue[] | undefined;
+      if (values?.length) return values;
+    } catch {
+      // try the next candidate
+    }
+  }
+  return null;
+}
+
+async function fetchSocial(pageId: string, token: string, report: ReportPeriod, chart: ReportPeriod) {
+  const ts = (iso: string, endOfDay = false) => Math.floor(new Date(`${iso}T${endOfDay ? "23:59:59" : "00:00:00"}Z`).getTime() / 1000);
+  const [rs, re, cs, ce] = [ts(report.start), ts(report.end, true), ts(chart.start), ts(chart.end, true)];
+
+  // Meta renamed its Page metrics (impressions -> views); try the current names first, then legacy.
+  const REACH = ["page_total_media_view_unique", "page_impressions_unique"];
+  const VIEWS = ["page_media_view", "page_impressions"];
+  const ENGAGEMENTS = ["page_post_engagements"];
+  const FOLLOWS = ["page_daily_follows", "page_fan_adds"];
+
+  const [reach28, views28, engagements28, follows28, reachDaily, viewsDaily] = await Promise.all([
+    metaMetric(pageId, token, REACH, "days_28", re - 86400, re),
+    metaMetric(pageId, token, VIEWS, "day", rs, re),
+    metaMetric(pageId, token, ENGAGEMENTS, "day", rs, re),
+    metaMetric(pageId, token, FOLLOWS, "day", rs, re),
+    metaMetric(pageId, token, REACH, "day", cs, ce),
+    metaMetric(pageId, token, VIEWS, "day", cs, ce),
+  ]);
+
+  const reachSeries = metaDaily(reachDaily);
+  const viewsSeries = metaDaily(viewsDaily);
+  const daily =
+    reachSeries && viewsSeries
+      ? reachSeries.map((r) => ({ date: r.date, label: r.label, reach: r.value, views: viewsSeries.find((v) => v.date === r.date)?.value ?? 0 }))
+      : null;
+
+  return {
+    reach: lastMetaValue(reach28),
+    views: sumMetaValues(views28),
+    engagements: sumMetaValues(engagements28),
+    newFollowers: sumMetaValues(follows28),
+    daily,
+  };
+}
+
+// ---------- handler ----------
 
 export async function GET(req: Request) {
   // Aggregate stats are public (transparency dashboard); config diagnostics are admin-only.
   const isAdmin = (await requireUser(req, "admin")) === null;
+
   const gaPropertyId = process.env.GA4_PROPERTY_ID;
   const gaClientEmail = process.env.GA4_CLIENT_EMAIL;
   const gaPrivateKey = process.env.GA4_PRIVATE_KEY?.replace(/\\n/g, "\n");
-
-  const metaAccessToken = process.env.META_ACCESS_TOKEN;
+  // The Vercel project defines META_PAGE_ACCESS_TOKEN; older docs used META_ACCESS_TOKEN.
+  const metaToken = process.env.META_ACCESS_TOKEN || process.env.META_PAGE_ACCESS_TOKEN;
   const metaPageId = process.env.META_PAGE_ID;
 
-  let gaData = null;
-  let metaData = null;
-  let isGaLive = false;
-  let isMetaLive = false;
+  const missingGa = ["GA4_PROPERTY_ID", "GA4_CLIENT_EMAIL", "GA4_PRIVATE_KEY"].filter((k) => !process.env[k]);
+  const missingMeta = [!metaToken && "META_ACCESS_TOKEN (or META_PAGE_ACCESS_TOKEN)", !metaPageId && "META_PAGE_ID"].filter(Boolean) as string[];
 
-  let gaError: string | null = null;
-  let metaError: string | null = null;
+  let payload = cache && Date.now() - cache.at < cache.ttl ? (cache.payload as any) : null;
 
-  // 1. Fetch Google Analytics 4 Data if credentials are provided
-  if (gaPropertyId && gaClientEmail && gaPrivateKey) {
-    try {
-      const accessToken = await getGa4AccessToken(gaClientEmail, gaPrivateKey);
-      const liveGaMetrics = await fetchGa4Data(gaPropertyId, accessToken);
+  if (!payload) {
+    const { report, chart } = reportPeriods();
+    let website: Awaited<ReturnType<typeof fetchWebsite>> | null = null;
+    let social: Awaited<ReturnType<typeof fetchSocial>> | null = null;
+    let gaError: string | null = missingGa.length ? `Missing environment variables: ${missingGa.join(", ")}` : null;
+    let metaError: string | null = missingMeta.length ? `Missing environment variables: ${missingMeta.join(", ")}` : null;
 
-      gaData = {
-        ...demoGaData,
-        ...liveGaMetrics,
-      };
-      isGaLive = true;
-    } catch (err: any) {
-      console.error("Error fetching GA4 data:", err);
-      gaError = err?.message || String(err);
-    }
-  } else {
-    const missing = [];
-    if (!gaPropertyId) missing.push("GA4_PROPERTY_ID");
-    if (!gaClientEmail) missing.push("GA4_CLIENT_EMAIL");
-    if (!gaPrivateKey) missing.push("GA4_PRIVATE_KEY");
-    gaError = `Missing environment variables: ${missing.join(", ")}`;
+    await Promise.all([
+      gaError
+        ? null
+        : fetchWebsite(gaPropertyId!, gaClientEmail!, gaPrivateKey!, report, chart)
+            .then((w) => { website = w; })
+            .catch((err) => { console.error("Error fetching GA4 data:", err); gaError = err?.message || String(err); }),
+      metaError
+        ? null
+        : fetchSocial(metaPageId!, metaToken!, report, chart)
+            .then((m) => { social = m; })
+            .catch((err) => { console.error("Error fetching Meta insights:", err); metaError = err?.message || String(err); }),
+    ]);
+
+    const hasWebsite = website !== null && Object.values(website as object).some((v) => v !== null);
+    const hasSocial = social !== null && Object.values(social as object).some((v) => v !== null);
+
+    payload = {
+      generatedAt: new Date().toISOString(),
+      period: report,
+      chartPeriod: chart,
+      // null sections are shown as "Data temporarily unavailable" — never filled with placeholders.
+      website: hasWebsite ? website : null,
+      social: hasSocial ? social : null,
+      diagnostics: { gaError, metaError, missingGa, missingMeta },
+    };
+    cache = { at: Date.now(), ttl: hasWebsite || hasSocial ? CACHE_MS : FAILURE_CACHE_MS, payload };
   }
 
-  // 2. Fetch Meta Insights Data if credentials are provided
-  if (metaAccessToken && metaPageId) {
-    try {
-      const metaMetrics = [
-        "page_impressions_unique",
-        "page_post_engagements",
-        "page_views_total",
-        "page_fan_adds"
-      ].join(",");
-
-      const url = `https://graph.facebook.com/v19.0/${metaPageId}/insights?metric=${metaMetrics}&period=day&access_token=${metaAccessToken}`;
-      const res = await fetch(url, { next: { revalidate: 300 } } as RequestInit);
-
-      if (res.ok) {
-        const json = await res.json();
-        metaData = json.data;
-        isMetaLive = true;
-      } else {
-        metaError = `Meta API returned status ${res.status}`;
-      }
-    } catch (err: any) {
-      console.error("Error fetching Meta insights:", err);
-      metaError = err?.message || String(err);
-    }
-  } else {
-    const missing = [];
-    if (!metaAccessToken) missing.push("META_ACCESS_TOKEN");
-    if (!metaPageId) missing.push("META_PAGE_ID");
-    metaError = `Missing environment variables: ${missing.join(", ")}`;
-  }
-
-  const responsePayload = {
-    timestamp: new Date().toISOString(),
-    isLive: isGaLive || isMetaLive,
-    isGaLive,
-    isMetaLive,
-    googleAnalytics: gaData || demoGaData,
-    metaInsights: metaData || demoMetaData,
-    combinedTotals: {
-      totalMonthlyAudience: (gaData?.totalUsers || demoGaData.totalUsers) + (metaData?.totalReach || demoMetaData.totalReach),
-      totalMonthlyImpressions: (gaData?.pageViews || demoGaData.pageViews) + (metaData?.totalImpressions || demoMetaData.totalImpressions),
-      totalEngagements: demoMetaData.postEngagements + Math.round(demoGaData.pageViews * 0.15)
-    },
-    debug: !isAdmin ? undefined : {
-      hasGaPropertyId: Boolean(gaPropertyId),
-      hasGaClientEmail: Boolean(gaClientEmail),
-      hasGaPrivateKey: Boolean(gaPrivateKey),
-      gaError,
-      hasMetaAccessToken: Boolean(metaAccessToken),
-      hasMetaPageId: Boolean(metaPageId),
-      metaError,
-    }
-  };
-
-  return NextResponse.json(responsePayload, {
-    headers: {
-      "Cache-Control": "no-store, no-cache, must-revalidate",
-    },
+  const { diagnostics, ...publicPayload } = payload;
+  return NextResponse.json(isAdmin ? { ...publicPayload, debug: diagnostics } : publicPayload, {
+    headers: { "Cache-Control": "no-store, no-cache, must-revalidate" },
   });
 }

@@ -183,7 +183,7 @@ export const trustStatsQueryOptions = () =>
         rating:
           reviews.length > 0
             ? (reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length).toFixed(1)
-            : "5.0",
+            : null,
         reviewCount: reviews.length,
       };
     },

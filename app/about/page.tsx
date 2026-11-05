@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { getTrustStats } from "@/lib/server-data";
 
 const values = [
   {
@@ -83,19 +84,24 @@ const values = [
   },
 ];
 
-const stats = [
-  { value: "500+", label: "Wellness Products" },
-  { value: "120+", label: "Trusted Vendors" },
-  { value: "10K+", label: "Happy Customers" },
-  { value: "200+", label: "Expert Articles" },
-];
 
 export const metadata = {
   title: "About — Lifestyle Medicine Gateway",
   description: "Learn about Lifestyle Medicine Gateway and our mission to connect people with wellness products and services.",
 };
 
-export default function AboutPage() {
+export const revalidate = 3600;
+
+export default async function AboutPage() {
+  // Live counts only; if the lookup fails the stats strip is simply omitted.
+  const live = await getTrustStats().catch(() => null);
+  const stats = live
+    ? [
+        { value: String(live.products), label: "Published Products" },
+        { value: String(live.vendors), label: "Live Vendors" },
+      ]
+    : [];
+
   return (
     <div>
       {/* Hero */}
@@ -118,10 +124,11 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Stats */}
+      {/* Stats (live counts) */}
+      {stats.length > 0 && (
       <section className="border-b border-border bg-card py-12">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
+          <div className="mx-auto grid max-w-md grid-cols-2 gap-6">
             {stats.map((stat) => (
               <div key={stat.label} className="text-center">
                 <p className="text-3xl font-extrabold text-primary sm:text-4xl">{stat.value}</p>
@@ -131,6 +138,7 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Mission */}
       <section className="py-16 sm:py-20">
