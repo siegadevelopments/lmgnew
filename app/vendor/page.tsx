@@ -211,12 +211,23 @@ function VendorDashboardContent() {
       // role — an admin (or any future non-customer role) creating a store here must not
       // have their own role silently downgraded.
       if (role !== "admin") {
-        const { error: profileError } = await (supabase.from("profiles") as any).upsert(
-          { id: user.id, role: "vendor", phone },
-          { onConflict: "id" },
-        );
+        // Not .upsert(): its ON CONFLICT DO UPDATE reads EXCLUDED.phone, and signed-in users have
+        // no SELECT on profiles.phone, so it fails with a permission error. A plain update
+        // doesn't need read access; insert only if the profile row is somehow missing.
+        const { data: updated, error: profileError } = await (supabase.from("profiles") as any)
+          .update({ role: "vendor", phone })
+          .eq("id", user.id)
+          .select("id");
 
         if (profileError) throw profileError;
+        if (!updated || updated.length === 0) {
+          const { error: insertError } = await (supabase.from("profiles") as any).insert({
+            id: user.id,
+            role: "vendor",
+            phone,
+          });
+          if (insertError) throw insertError;
+        }
       } else {
         const { error: phoneError } = await (supabase.from("profiles") as any).update({ phone }).eq("id", user.id);
         if (phoneError) throw phoneError;
