@@ -140,6 +140,22 @@ function redact(text: string): string {
   return text.replace(/EAA[A-Za-z0-9]+/g, "[token]").replace(/access_token=[^&\s"]+/gi, "access_token=[redacted]").slice(0, 220);
 }
 
+/** Env values pasted into Vercel often carry quotes, spaces or a trailing newline; Meta then says "Cannot parse access token". */
+function cleanToken(raw: string): string {
+  return raw.trim().replace(/^["']+|["']+$/g, "").trim();
+}
+
+/** Plain-English next step for the admin, derived from the failure (never includes the token). */
+function metaHint(token: string, issues: string[], probe: string): string | null {
+  if (!/^EAA/.test(token) || token.length < 60) {
+    return "The configured token does not look like a Meta access token (they start with EAA and are 100+ characters). Check META_PAGE_ACCESS_TOKEN for truncation, quotes or spaces";
+  }
+  const text = `${probe} ${issues.join(" ")}`;
+  if (/code 190\b/.test(text)) return "Meta rejected the token (code 190: expired or revoked). Generate a new Page token, update META_PAGE_ACCESS_TOKEN in Vercel and redeploy";
+  if (/code (10|200)\b/.test(text)) return "The token lacks a permission (code 10/200). It needs pages_read_engagement and read_insights, and the System User needs Full control of the Page";
+  return null;
+}
+
 async function metaMetric(pageId: string, token: string, candidates: string[], period: "day" | "days_28", sinceTs: number, untilTs: number, issues: string[]): Promise<MetaValue[] | null> {
   for (const metric of candidates) {
     try {
@@ -211,7 +227,8 @@ async function fetchSocial(pageId: string, token: string, report: ReportPeriod, 
   if (Object.values(social).every((v) => v === null)) {
     const probe = await probeMetaPage(pageId, token);
     const unique = [...new Set(issues)];
-    throw new Error(`Meta returned no insights. ${probe}. Attempts: ${unique.slice(0, 6).join(" | ")}`);
+    const hint = metaHint(token, unique, probe);
+    throw new Error(`Meta returned no insights. ${hint ? `${hint}. ` : ""}${probe}. Attempts: ${unique.slice(0, 6).join(" | ")}`);
   }
   return social;
 }
@@ -226,7 +243,8 @@ export async function GET(req: Request) {
   const gaClientEmail = process.env.GA4_CLIENT_EMAIL;
   const gaPrivateKey = process.env.GA4_PRIVATE_KEY?.replace(/\\n/g, "\n");
   // The Vercel project defines META_PAGE_ACCESS_TOKEN; older docs used META_ACCESS_TOKEN.
-  const metaToken = process.env.META_ACCESS_TOKEN || process.env.META_PAGE_ACCESS_TOKEN;
+  const rawMetaToken = process.env.META_ACCESS_TOKEN || process.env.META_PAGE_ACCESS_TOKEN;
+  const metaToken = rawMetaToken ? cleanToken(rawMetaToken) : undefined;
   const metaPageId = process.env.META_PAGE_ID;
 
   const missingGa = ["GA4_PROPERTY_ID", "GA4_CLIENT_EMAIL", "GA4_PRIVATE_KEY"].filter((k) => !process.env[k]);
