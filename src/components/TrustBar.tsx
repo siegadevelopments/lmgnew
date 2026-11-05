@@ -15,20 +15,19 @@ export function TrustBar() {
 
   const trustStats: TrustStat[] = [
     {
-      value: stats ? `${stats.vendors}+` : "—",
+      value: stats ? `${stats.vendors}` : "—",
       label: "Trusted Brands",
       icon: "🏪",
     },
     {
-      value: stats ? `${stats.products}+` : "—",
+      value: stats ? `${stats.products}` : "—",
       label: "Products",
       icon: "📦",
     },
-    {
-      value: stats ? `★ ${stats.rating}` : "—",
-      label: stats ? `${stats.reviewCount} Reviews` : "Reviews",
-      icon: "⭐",
-    },
+    // Only shown once real reviews exist; never a placeholder rating.
+    ...(stats && stats.reviewCount > 0 && stats.rating
+      ? [{ value: `★ ${stats.rating}`, label: `${stats.reviewCount} ${stats.reviewCount === 1 ? "Review" : "Reviews"}`, icon: "⭐" }]
+      : []),
     {
       value: "100%",
       label: "Australian",
@@ -44,7 +43,7 @@ export function TrustBar() {
   return (
     <section className="border-y border-border bg-card py-6 sm:py-8">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-3 gap-4 sm:grid-cols-5 sm:gap-6">
+        <div className={`grid grid-cols-3 gap-4 sm:gap-6 ${trustStats.length >= 5 ? "sm:grid-cols-5" : "sm:grid-cols-4"}`}>
           {trustStats.map((stat, index) => (
             <motion.div
               key={stat.label}

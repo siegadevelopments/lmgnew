@@ -79,7 +79,7 @@ export function NewsletterSection() {
           Get Wellness Tips & Deals
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-primary-foreground/80 sm:text-lg">
-          Join 10,000+ wellness enthusiasts. Get exclusive product launches, expert articles, and
+          Join our wellness community. Get exclusive product launches, expert articles, and
           special discounts delivered to your inbox.
         </p>
 
