@@ -12,7 +12,7 @@ describe("vendor business phone", () => {
   it("store setup requires a valid phone and saves it to the vendor's profile", () => {
     expect(vendorPage).toMatch(/name="phone"[^>]*required/);
     expect(vendorPage).toMatch(/normalisePhone\(formData\.get\("phone"\)\)/);
-    expect(vendorPage).toMatch(/\.update\(\{ role: "vendor", phone \}\)\.eq\("id", user\.id\)/);
+    expect(vendorPage).toMatch(/\.update\(\{ role: "vendor", phone \}\)\s*\.eq\("id", user\.id\)/);
     // Not .upsert(): ON CONFLICT DO UPDATE reads profiles.phone, which signed-in users can't SELECT.
     expect(vendorPage).not.toMatch(/from\("profiles"\) as any\)\s*\.upsert/);
   });
