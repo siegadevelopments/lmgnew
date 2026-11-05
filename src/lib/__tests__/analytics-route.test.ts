@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { generateKeyPairSync } from "crypto";
 
+const caller = vi.hoisted(() => ({ admin: false }));
 vi.mock("@/lib/server-auth", () => ({
-  requireUser: async () => new Response("no", { status: 401 }), // public caller
+  requireUser: async () => (caller.admin ? null : new Response("no", { status: 401 })),
 }));
 
 const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048, privateKeyEncoding: { type: "pkcs8", format: "pem" }, publicKeyEncoding: { type: "spki", format: "pem" } });
@@ -20,7 +21,7 @@ function ga(body: any) {
   return { rows: [] };
 }
 
-function installFetch(opts: { gaFail?: (dims: string) => boolean; meta?: "ok" | "fail" } = {}) {
+function installFetch(opts: { gaFail?: (dims: string) => boolean; meta?: "ok" | "fail" | "bad-token" } = {}) {
   const calls: string[] = [];
   vi.stubGlobal("fetch", vi.fn(async (url: string, init?: any) => {
     calls.push(String(url));
@@ -33,6 +34,7 @@ function installFetch(opts: { gaFail?: (dims: string) => boolean; meta?: "ok" | 
     }
     if (url.includes("graph.facebook.com")) {
       if (opts.meta === "fail") return Response.json({ error: { message: "nope" } }, { status: 400 });
+      if (opts.meta === "bad-token") return Response.json({ error: { message: "Invalid OAuth access token EAAB123secret.", code: 190 } }, { status: 401 });
       const metric = /metric=([a-z_]+)/.exec(url)![1];
       // pretend the legacy name is the only one that works
       if (metric === "page_total_media_view_unique" || metric === "page_media_view") return Response.json({ error: {} }, { status: 400 });
@@ -50,6 +52,7 @@ async function load() {
 }
 
 beforeEach(() => {
+  caller.admin = false;
   process.env.GA4_PROPERTY_ID = "123";
   process.env.GA4_CLIENT_EMAIL = "sa@example.iam.gserviceaccount.com";
   process.env.GA4_PRIVATE_KEY = privateKey.replace(/\n/g, "\\n");
@@ -115,5 +118,31 @@ describe("GET /api/analytics", () => {
     const j = await load();
     expect(j).not.toHaveProperty("debug");
     expect(j).not.toHaveProperty("diagnostics");
+  });
+
+  it("tells admins why Meta returned nothing (error code, page probe) without leaking the token", async () => {
+    installFetch({ meta: "bad-token" });
+    caller.admin = true;
+    const j = await load();
+    expect(j.social).toBeNull();
+    expect(j.debug.metaError).toMatch(/no insights/);
+    expect(j.debug.metaError).toMatch(/code 190/);
+    expect(j.debug.metaError).toMatch(/page lookup failed/);
+    expect(JSON.stringify(j)).not.toMatch(/EAAB123secret|meta-token/);
+  });
+
+  it("keeps Meta errors away from the public", async () => {
+    installFetch({ meta: "bad-token" });
+    const j = await load();
+    expect(j.social).toBeNull();
+    expect(JSON.stringify(j)).not.toMatch(/190|insights|OAuth/);
+  });
+
+  it("lists partly-missing Meta metrics for admins while still showing the rest", async () => {
+    installFetch();
+    caller.admin = true;
+    const j = await load();
+    expect(j.social.reach).toBe(15);
+    expect(j.debug.metaIssues.join(" ")).toMatch(/page_total_media_view_unique/);
   });
 });

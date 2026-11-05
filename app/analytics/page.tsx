@@ -63,6 +63,7 @@ interface AnalyticsData {
   debug?: {
     gaError: string | null;
     metaError: string | null;
+    metaIssues?: string[];
     missingGa: string[];
     missingMeta: string[];
   };
@@ -194,6 +195,11 @@ export default function PublicAnalyticsPage() {
             {data.debug.metaError && (
               <p className="font-mono bg-background/80 p-2 rounded border border-amber-500/20 text-[11px] overflow-x-auto">
                 <strong>Meta:</strong> {data.debug.metaError}
+              </p>
+            )}
+            {!data.debug.metaError && data.debug.metaIssues && data.debug.metaIssues.length > 0 && (
+              <p className="font-mono bg-background/80 p-2 rounded border border-amber-500/20 text-[11px] overflow-x-auto">
+                <strong>Meta (some metrics unavailable):</strong> {data.debug.metaIssues.join(' | ')}
               </p>
             )}
           </div>
