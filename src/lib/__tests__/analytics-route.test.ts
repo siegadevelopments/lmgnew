@@ -131,6 +131,27 @@ describe("GET /api/analytics", () => {
     expect(JSON.stringify(j)).not.toMatch(/EAAB123secret|meta-token/);
   });
 
+  it("gives admins a plain-English hint for expired and malformed tokens", async () => {
+    caller.admin = true;
+    process.env.META_PAGE_ACCESS_TOKEN = `EAA${"x".repeat(120)}`;
+    installFetch({ meta: "bad-token" });
+    expect((await load()).debug.metaError).toMatch(/expired or revoked.*regenerat|Generate a new Page token/i);
+    process.env.META_PAGE_ACCESS_TOKEN = "short";
+    installFetch({ meta: "bad-token" });
+    expect((await load()).debug.metaError).toMatch(/does not look like a Meta access token/);
+  });
+
+  it("strips quotes and whitespace from the configured token before calling Meta", async () => {
+    const calls: any[] = [];
+    process.env.META_PAGE_ACCESS_TOKEN = `  "EAA${"y".repeat(80)}"\n`;
+    installFetch();
+    const spy = vi.mocked(fetch as any);
+    await load();
+    for (const c of spy.mock.calls.filter((c: any[]) => String(c[0]).includes("graph.facebook.com"))) calls.push(c[1].headers.Authorization);
+    expect(calls.length).toBeGreaterThan(0);
+    expect(calls.every((a) => a === `Bearer EAA${"y".repeat(80)}`)).toBe(true);
+  });
+
   it("keeps Meta errors away from the public", async () => {
     installFetch({ meta: "bad-token" });
     const j = await load();
