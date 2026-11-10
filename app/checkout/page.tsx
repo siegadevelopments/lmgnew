@@ -122,7 +122,20 @@ export default function CheckoutPage() {
       console.error("Checkout error:", err, err.context);
 
       let errorMessage = "Failed to initiate checkout. Please try again.";
-      if (err.context && err.context.error) {
+      // A non-2xx reply reaches us as err.context = the raw Response; its JSON body has the reason
+      // (e.g. "X is out of stock"). Without reading it, shoppers only saw the generic message.
+      let bodyError = "";
+      if (err.context && typeof err.context.json === "function") {
+        try {
+          const body = await err.context.json();
+          if (typeof body?.error === "string") bodyError = body.error;
+        } catch {
+          // body wasn't JSON: fall through to the generic message
+        }
+      }
+      if (bodyError) {
+        errorMessage = bodyError;
+      } else if (err.context && err.context.error) {
         errorMessage = `Server Error: ${err.context.error}`;
       } else if (err.context && err.context.message) {
         errorMessage = `Server Error: ${err.context.message}`;

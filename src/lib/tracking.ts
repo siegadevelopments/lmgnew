@@ -2,8 +2,30 @@
 // 3 seconds). An event fired before then used to be dropped silently, e.g. the purchase on the
 // checkout success page when the customer doesn't scroll. Wait for them, up to 20 seconds.
 const TRACKER_WAIT_MS = 20_000;
-const trackersReady = () =>
-  typeof window !== "undefined" && (!!(window as any).gtag || !!(window as any).fbq);
+// GA4 and the Pixel load as separate scripts, one just before the other. An event sent in the gap
+// used to go to GA only and be dropped for Meta, so wait for every tracker that is configured.
+const configured = (id: string | undefined) => !!id && id !== "placeholder";
+export const trackersReady = (w: any = typeof window !== "undefined" ? window : undefined) => {
+  if (!w) return false;
+  const wantGa = configured(process.env.NEXT_PUBLIC_GA_ID);
+  const wantPixel = configured(process.env.NEXT_PUBLIC_META_PIXEL_ID);
+  if (!wantGa && !wantPixel) return !!w.gtag || !!w.fbq;
+  return (!wantGa || !!w.gtag) && (!wantPixel || !!w.fbq);
+};
+
+/** Meta Pixel wants content_ids / contents / content_type; the GA4 `items` array alone isn't read. */
+export const metaParams = (params?: Record<string, any>): Record<string, any> | undefined => {
+  const items: any[] | undefined = params?.items;
+  if (!Array.isArray(items) || items.length === 0) return params;
+  const { items: _ga, ...rest } = params as Record<string, any>;
+  return {
+    ...rest,
+    content_type: "product",
+    content_ids: items.map((i) => String(i.item_id)),
+    contents: items.map((i) => ({ id: String(i.item_id), quantity: i.quantity ?? 1, item_price: i.price })),
+    num_items: items.reduce((n, i) => n + (i.quantity ?? 1), 0),
+  };
+};
 
 export const trackEvent = (eventName: string, params?: Record<string, any>, waited = 0) => {
   if (typeof window !== "undefined" && !trackersReady() && waited < TRACKER_WAIT_MS) {
@@ -30,9 +52,9 @@ export const trackEvent = (eventName: string, params?: Record<string, any>, wait
       const isStandard = standardEvents.includes(fbEventName);
 
       if (isStandard) {
-        (window as any).fbq("track", fbEventName, params);
+        (window as any).fbq("track", fbEventName, metaParams(params));
       } else {
-        (window as any).fbq("trackCustom", fbEventName, params);
+        (window as any).fbq("trackCustom", fbEventName, metaParams(params));
       }
     }
   } catch (error) {
