@@ -64,6 +64,36 @@ Working break-even: **$25 per purchase for the Gift Set, $18 for the Discovery K
 
 **Vendor co-funding:** Founder's Formula declined to share the ad cost (26 Oct 2026). LMG funds the ads alone.
 
+## Ad drafts (entered 10 Nov 2026)
+
+The original 3 Nov start was missed, so the test starts **Wed 11 Nov** and runs to **Tue 24 Nov**. The scale phase runs 25 Nov to 10 Dec. Enter each as a new ad in Admin > Meta Ads (it creates them switched off; check each in Ads Manager, then activate).
+
+Both ads: Sales objective, Purchase event, Australia only, 18+, Advantage+ audience, $10 a day, Shop Now button. Stop rules are in the Setup section above ($75 Gift Set, $55 Discovery Kit). Neither ad mentions a discount, because none is offered.
+
+**Ad 1: Gift Set**
+- Link: https://www.lifestylemedicinegateway.com/products/founders-formula-gift-box
+- Image: `https://media.lifestylemedicinegateway.com/marketing/2026-11/founders-formula-gift-box.jpg`
+- Dates: 11 to 24 Nov, $10 a day
+- Primary text (recommended): `Gift sorted for the person whose shelf is already full. Founder's Formula's Gift Set puts three 15 mL serums in one box, made on the Sunshine Coast with Australian native botanicals. $120, valued at over $200. Free shipping over $50, and Afterpay at checkout.`
+- Headline: `Founder's Formula Gift Set`
+- Description: `3 serums, valued at $200+`
+- Alternate hook: `One box, three serums. A Christmas gift for the skincare lover who has everything.`
+
+**Ad 2: Discovery Kit**
+- Link: https://www.lifestylemedicinegateway.com/products/best-sellers-discovery-kit
+- Image: `https://media.lifestylemedicinegateway.com/marketing/2026-11/best-sellers-discovery-kit.jpg`
+- Dates: 11 to 24 Nov, $10 a day
+- Primary text (recommended): `Not sure which skincare suits you, or what to gift? Try five before you commit. Founder's Formula's Best Sellers Discovery Kit is five 5 mL minis for $89, valued at $99, from a Sunshine Coast brand. Free shipping over $50, and Afterpay at checkout.`
+- Headline: `Best Sellers Discovery Kit`
+- Description: `5 minis for $89`
+- Alternate hook: `A full routine in 5 mL minis. A gift under $100.`
+
+**Checks before activating**
+1. In Meta Events Manager, open the Pixel's Test events tab and run a test purchase. Confirm Purchase arrives with value and currency (AUD).
+2. Confirm the Pixel ID in Vercel matches the Pixel connected to the ad account.
+3. Confirm prices and stock on both product pages.
+4. After activating, check Ads Manager shows no policy review rejection within 24 hours.
+
 ## Results
 
 Fill this in from Meta Ads Manager, GA4 and the admin orders list.
