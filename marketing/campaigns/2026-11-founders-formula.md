@@ -49,7 +49,7 @@ Working break-even: **$25 per purchase for the Gift Set, $18 for the Discovery K
 - Run two ads in Meta Ads Manager, both starting Tue 3 Nov.
   - Gift Set: use the existing Facebook post from 2 Nov.
   - Discovery Kit: its post isn't published until 9 Nov, so create it as a new ad with the same image (`best-sellers-discovery-kit.jpg`) and the Facebook caption.
-- Objective is Sales, optimised for the Purchase event, in Australia only.
+- Objective is **Traffic**, optimised for **landing page views** (changed 10 Nov 2026), in Australia only. The pixel has no purchase history and at $10 a day would see only a handful of purchases, so Sales optimisation has nothing to learn from. Run Traffic first so real visitors generate ViewContent, AddToCart and InitiateCheckout events. Then move to Sales with Add to Cart optimisation once those events arrive steadily, and to Purchase once orders are coming in.
 - Spend $10 a day per ad, from 3 Nov to 16 Nov.
 - On 17 Nov, stop the weaker ad and move its budget to the stronger one until about 10 Dec.
 - Stop rule: stop the Gift Set ad at about $75 spent with no purchase, and the Discovery Kit ad at about $55.
@@ -66,9 +66,9 @@ Working break-even: **$25 per purchase for the Gift Set, $18 for the Discovery K
 
 ## Ad drafts (entered 10 Nov 2026)
 
-The original 3 Nov start was missed, so the test starts **Wed 11 Nov** and runs to **Tue 24 Nov**. The scale phase runs 25 Nov to 10 Dec. Enter each as a new ad in Admin > Meta Ads (it creates them switched off; check each in Ads Manager, then activate).
+The original 3 Nov start was missed, so the test starts **Wed 11 Nov** and runs to **Tue 24 Nov**. The scale phase runs 25 Nov to 10 Dec. Move to Sales with Add to Cart optimisation once the funnel events arrive steadily, and to Purchase once real orders are arriving. Enter each as a new ad in Admin > Meta Ads (it creates them switched off; check each in Ads Manager, then activate).
 
-Both ads: Sales objective, Purchase event, Australia only, 18+, Advantage+ audience, $10 a day, Shop Now button. Stop rules are in the Setup section above ($75 Gift Set, $55 Discovery Kit). Neither ad mentions a discount, because none is offered.
+Both ads: Traffic objective, landing page views optimisation, Australia only, 18+, Advantage+ audience, $10 a day, Shop Now button. Stop rules are in the Setup section above ($75 Gift Set, $55 Discovery Kit). Neither ad mentions a discount, because none is offered.
 
 **Ad 1: Gift Set**
 - Link: https://www.lifestylemedicinegateway.com/products/founders-formula-gift-box
@@ -89,14 +89,14 @@ Both ads: Sales objective, Purchase event, Australia only, 18+, Advantage+ audie
 - Alternate hook: `A full routine in 5 mL minis. A gift under $100.`
 
 **Checks before activating**
-1. In Meta Events Manager, open the Pixel's Test events tab and run a test purchase. Confirm Purchase arrives with value and currency (AUD).
+1. In Meta Events Manager, open the Pixel's Test events tab and run a test order. Confirm ViewContent, AddToCart and InitiateCheckout arrive with value and currency (AUD), and Purchase too if you complete the order.
 2. Confirm the Pixel ID in Vercel matches the Pixel connected to the ad account.
 3. Confirm prices and stock on both product pages.
 4. After activating, check Ads Manager shows no policy review rejection within 24 hours.
 
 ## Results
 
-Fill this in from Meta Ads Manager, GA4 and the admin orders list.
+Fill this in from Meta Ads Manager, GA4 and the admin orders list. Because the ads are optimised for landing page views, judge the test on cost per landing page view, add to carts and initiated checkouts (Events Manager Overview) as well as cost per purchase, and take actual purchases from the admin orders list.
 
 | Ad | Spend | Clicks | Purchases | Cost per purchase | Revenue | LMG commission |
 |---|---|---|---|---|---|---|
