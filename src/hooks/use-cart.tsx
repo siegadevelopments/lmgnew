@@ -38,7 +38,9 @@ function loadStoredCart(): CartItem[] {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed)
+      ? parsed.map((i: CartItem) => ({ ...i, price: Number(i.price) || 0, quantity: Number(i.quantity) || 1 }))
+      : [];
   } catch {
     return [];
   }
@@ -66,6 +68,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addItem = useCallback((item: Omit<CartItem, "quantity"> & { quantity?: number }) => {
     const qty = item.quantity || 1;
+    item = { ...item, price: Number(item.price) || 0 };
     setItems((prev) => {
       const existing = prev.find((i) => i.id === item.id);
       if (existing) {
