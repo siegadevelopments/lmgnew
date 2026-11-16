@@ -56,13 +56,16 @@ export function ProductCard({ product, className }: ProductCardProps) {
     const baseVariant =
       product.variants && product.variants.length > 0 ? product.variants[0] : null;
 
+    // Variant prices can arrive as strings from the database; the cart needs numbers.
+    const unitPrice = Number(baseVariant ? baseVariant.price : product.price) || 0;
+
     addItem({
       id: baseVariant ? `${product.id}-${baseVariant.id}` : product.id,
       product_id: product.id,
       variant_id: baseVariant?.id,
       name: product.title,
       variant_name: baseVariant?.title,
-      price: baseVariant ? baseVariant.price : product.price,
+      price: unitPrice,
       image: product.image_url || undefined,
       slug: product.slug,
       vendor_id: (product as any).vendor_id,
@@ -72,7 +75,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
     trackAddToCart({
       id: product.id,
       title: product.title,
-      price: baseVariant ? baseVariant.price : product.price,
+      price: unitPrice,
       category: (product as any).category,
     });
 
