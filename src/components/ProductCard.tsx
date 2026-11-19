@@ -32,6 +32,8 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const { user } = useAuth();
   const router = useRouter();
   const [isAdding, setIsAdding] = useState(false);
+  // Some product photos are missing from storage (404); show the placeholder rather than a broken image.
+  const [imageFailed, setImageFailed] = useState(false);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -133,7 +135,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
         </AnimatePresence>
 
         <div className="relative aspect-square overflow-hidden bg-muted">
-          {product.image_url ? (
+          {product.image_url && !imageFailed ? (
             <div className="relative h-full w-full">
               <Image
                 src={product.image_url}
@@ -143,6 +145,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
                 className="object-contain bg-white p-2 transition-transform duration-600 group-hover:scale-105"
                 loading="lazy"
                 quality={80}
+                onError={() => setImageFailed(true)}
               />
             </div>
           ) : (
