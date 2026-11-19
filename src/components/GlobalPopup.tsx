@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { Sparkles, Mail, X, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Sparkles, Mail, ArrowRight, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import Image from "next/image";
@@ -132,7 +132,12 @@ export function GlobalPopup() {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleDismiss()}>
-      <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl">
+      {/* The built-in close button (top right) dismisses via onOpenChange; on the image variant it sits over the photo, so give it a visible backing. */}
+      <DialogContent
+        className={`sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl ${
+          popup.image_url ? "[&>button]:z-10 [&>button]:rounded-full [&>button]:bg-black/30 [&>button]:p-1.5 [&>button]:text-white [&>button]:opacity-100" : ""
+        }`}
+      >
         <div className="flex flex-col">
           {popup.image_url && (
             <div className="relative h-64 w-full">
@@ -143,24 +148,10 @@ export function GlobalPopup() {
                 className="h-full w-full object-cover" 
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-              <button
-                onClick={handleDismiss}
-                className="absolute top-4 right-4 h-8 w-8 rounded-full bg-black/20 text-white backdrop-blur-md flex items-center justify-center hover:bg-black/40 transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
             </div>
           )}
 
           <div className="p-8 text-center space-y-4">
-            {!popup.image_url && (
-              <div className="flex justify-end -mt-4 -mr-4">
-                <Button variant="ghost" size="icon" onClick={handleDismiss} className="h-8 w-8">
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
-
             <DialogHeader className="space-y-2">
               <DialogTitle className="text-3xl font-black tracking-tight flex items-center justify-center gap-2">
                 <Sparkles className="h-6 w-6 text-primary animate-pulse" />
