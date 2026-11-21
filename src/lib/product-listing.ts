@@ -3,7 +3,7 @@
 //
 // Why: the full `variants` JSON (sku, options, stock, source_ref ...) was ~100 KB of a ~570 KB
 // listing that every visitor downloaded. A listing card only needs the first variant's
-// id/title/price (Quick Add) and whether there is more than one variant (button label).
+// id (or sku/title when it has no id)/title/price (Quick Add) and whether there is more than one variant (button label).
 
 /** Columns a product card / listing needs. `excerpt` is not shown on cards, so it is left out. */
 export const LISTING_COLUMNS = `id, vendor_id, title, slug, price, image_url, stock, status, created_at, category, product_type, variants,
@@ -20,7 +20,7 @@ export function slimListingProduct<T extends AnyProduct>(product: T): T & { vari
   const first = variants[0];
   return {
     ...product,
-    variants: first ? [{ id: first.id, title: first.title, price: first.price }] : [],
+    variants: first ? [{ id: first.id, sku: first.sku, title: first.title, price: first.price }] : [],
     variant_count: variants.length,
   };
 }
