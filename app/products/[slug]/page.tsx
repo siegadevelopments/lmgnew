@@ -35,6 +35,7 @@ import { toast } from "sonner";
 import { Loader2, CreditCard, Store, RefreshCcw } from "lucide-react";
 import Link from "next/link";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { variantKey } from "../../../supabase/functions/_shared/cart-pricing";
 
 function ProductContent() {
   const params = useParams();
@@ -118,9 +119,9 @@ function ProductContent() {
     }
 
     addItem({
-      id: selectedVariant ? `${product.id}-${selectedVariant.id}` : product.id,
+      id: selectedVariant ? `${product.id}-${variantKey(selectedVariant)}` : product.id,
       product_id: product.id,
-      variant_id: selectedVariant?.id,
+      variant_id: variantKey(selectedVariant) ?? undefined,
       name: product.title,
       variant_name: selectedVariant?.title,
       price: currentPrice,
@@ -146,9 +147,9 @@ function ProductContent() {
   const handlePayNow = () => {
     setIsPaymentDialogOpen(false);
     addItem({
-      id: selectedVariant ? `${product.id}-${selectedVariant.id}` : product.id,
+      id: selectedVariant ? `${product.id}-${variantKey(selectedVariant)}` : product.id,
       product_id: product.id,
-      variant_id: selectedVariant?.id,
+      variant_id: variantKey(selectedVariant) ?? undefined,
       name: product.title,
       variant_name: selectedVariant?.title,
       price: currentPrice,
@@ -381,10 +382,10 @@ function ProductContent() {
                 <div className="flex flex-wrap gap-2">
                   {product.variants.map((v: any) => (
                     <button
-                      key={v.id}
+                      key={variantKey(v) ?? v.title}
                       onClick={() => setSelectedVariant(v)}
                       className={`px-4 py-2 rounded-full border text-sm font-medium transition-all ${
-                        selectedVariant?.id === v.id
+                        variantKey(selectedVariant) === variantKey(v)
                           ? "bg-primary text-primary-foreground border-primary"
                           : "bg-background text-foreground border-border hover:border-primary/50"
                       }`}

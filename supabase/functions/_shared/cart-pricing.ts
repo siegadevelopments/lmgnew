@@ -38,6 +38,21 @@ export interface PricedItem {
   booking: { start_time: string; end_time: string } | null;
 }
 
+/**
+ * The key that identifies a variant inside products.variants: its `id`, else its `sku`, else its
+ * `title` (54 Founder's Formula products have no variant ids; the Gift Card has no sku either,
+ * and titles are unique within every product). Without this, every
+ * variant of such a product shared the key "undefined", the cart sent no variant, and checkout
+ * charged the product's base price whichever size the customer picked. Used by the cart, the
+ * product page and priceCart so they always agree.
+ */
+export function variantKey(v: { id?: unknown; sku?: unknown; title?: unknown } | null | undefined): string | null {
+  for (const k of [v?.id, v?.sku, v?.title]) {
+    if (k !== undefined && k !== null && String(k) !== "") return String(k);
+  }
+  return null;
+}
+
 export type PriceResult = { ok: true; items: PricedItem[] } | { ok: false; error: string };
 
 export const MAX_QUANTITY = 99;
@@ -71,20 +86,28 @@ export function priceCart(clientItems: unknown, products: DbProduct[]): PriceRes
     let name = product.title;
     let stock = product.stock ?? 100;
     let variantId: number | null = null;
-    let variantKey: string | null = null;
+    let variantKeyValue: string | null = null;
 
+    const variants = Array.isArray(product.variants) ? (product.variants as any[]) : [];
     if (raw.variant_id != null && raw.variant_id !== "") {
-      const variants = Array.isArray(product.variants) ? (product.variants as any[]) : [];
-      const variant = variants.find((v) => String(v?.id) === String(raw.variant_id));
+      const variant = variants.find((v) => variantKey(v) === String(raw.variant_id));
       if (!variant) return { ok: false, error: `"${product.title}" option is no longer available.` };
-      variantId = Number.isFinite(Number(variant.id)) ? Number(variant.id) : null;
-      variantKey = String(variant.id);
+      // Only a real numeric id goes in orders.variant_id; a sku stays in variant_key.
+      variantId = variant.id != null && variant.id !== "" && Number.isFinite(Number(variant.id)) ? Number(variant.id) : null;
+      variantKeyValue = variantKey(variant);
       const vPrice = Number(variant.price);
       // Same rule the product page uses to pick a displayed price.
       if (vPrice > 0 && vPrice < 10000) price = vPrice;
       if (variant.title && variant.title !== "Default Title") name = `${product.title} - ${variant.title}`;
       if (variant.available === false) stock = 0;
       else if (variant.stock !== undefined && variant.stock !== null) stock = Number(variant.stock);
+    }
+
+    // A product with several options must say which one: never fall back to the base price.
+    if (raw.variant_id == null || raw.variant_id === "") {
+      if (variants.length > 1) {
+        return { ok: false, error: `Please choose an option for "${product.title}" (remove it from your cart and add it again).` };
+      }
     }
 
     if (!Number.isFinite(price) || price <= 0) {
@@ -98,7 +121,7 @@ export function priceCart(clientItems: unknown, products: DbProduct[]): PriceRes
     items.push({
       product_id: product.id,
       variant_id: variantId,
-      variant_key: variantKey,
+      variant_key: variantKeyValue,
       name,
       price,
       quantity: qty,

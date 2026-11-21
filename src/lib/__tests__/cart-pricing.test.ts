@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { priceCart, safeRedirectUrl, type DbProduct } from "../../../supabase/functions/_shared/cart-pricing";
+import { priceCart, safeRedirectUrl, variantKey, type DbProduct } from "../../../supabase/functions/_shared/cart-pricing";
 
 const product = (over: Partial<DbProduct> = {}): DbProduct => ({
   id: 1, title: "Tonic", slug: "tonic", price: 30, image_url: "https://x/y.jpg",
@@ -77,5 +77,64 @@ describe("variant keys", () => {
       product({ variants: [{ id: "3f2a9c1e-uuid", title: "Large", price: 40, stock: "5" }] }),
     ]);
     expect(r.ok && r.items[0]).toMatchObject({ variant_id: null, variant_key: "3f2a9c1e-uuid", price: 40 });
+  });
+});
+
+// Regression: 54 Founder's Formula products have variants with a sku but no id. The cart sent no
+// variant, so checkout charged the base price whichever option was picked (a $200 gift card for $50).
+describe("variants without an id (sku fallback)", () => {
+  const giftCard = product({
+    id: 685, title: "Gift Card", price: 50,
+    variants: [
+      { sku: "GC50", title: "$50.00", price: "50.00", stock: 100, available: true },
+      { sku: "GC200", title: "$200.00", price: "200.00", stock: 100, available: true },
+    ],
+  });
+
+  it("variantKey prefers id, then sku, else null", () => {
+    expect(variantKey({ id: 7, sku: "A" })).toBe("7");
+    expect(variantKey({ sku: "A" })).toBe("A");
+    expect(variantKey({ id: "", sku: "A" })).toBe("A");
+    expect(variantKey({ title: "$200.00" })).toBe("$200.00");
+    expect(variantKey({})).toBeNull();
+    expect(variantKey(null)).toBeNull();
+  });
+
+  it("prices the chosen variant by sku, not the base price", () => {
+    const r = priceCart([{ product_id: 685, variant_id: "GC200", quantity: 1 }], [giftCard]);
+    expect(r.ok && r.items[0]).toMatchObject({ price: 200, variant_id: null, variant_key: "GC200", name: "Gift Card - $200.00" });
+  });
+
+  it("prices a variant that has neither id nor sku by its title (the Gift Card)", () => {
+    const gc = product({
+      id: 685, title: "Gift Card", price: 50,
+      variants: [{ title: "$50.00", price: "50.00" }, { title: "$200.00", price: "200.00" }],
+    });
+    const r = priceCart([{ product_id: 685, variant_id: "$200.00", quantity: 1 }], [gc]);
+    expect(r.ok && r.items[0]).toMatchObject({ price: 200, variant_id: null, variant_key: "$200.00" });
+  });
+
+  it("does not store a numeric-looking sku as orders.variant_id", () => {
+    const p = product({ variants: [{ sku: "12345", price: 20 }, { sku: "67890", price: 30 }] });
+    const r = priceCart([{ product_id: 1, variant_id: "67890", quantity: 1 }], [p]);
+    expect(r.ok && r.items[0]).toMatchObject({ price: 30, variant_id: null, variant_key: "67890" });
+  });
+
+  it("rejects a multi-variant product sent without a variant instead of charging the base price", () => {
+    const r = priceCart([{ product_id: 685, quantity: 1 }], [giftCard]);
+    expect(r.ok).toBe(false);
+    expect(!r.ok && r.error).toMatch(/choose an option/i);
+  });
+
+  it("still allows a single-variant product without a variant, at the product price", () => {
+    const p = product({ price: 120, variants: [{ sku: "FF030_W", title: "Default Title", price: "120.00" }] });
+    const r = priceCart([{ product_id: 1, quantity: 1 }], [p]);
+    expect(r.ok && r.items[0].price).toBe(120);
+  });
+
+  it("matches a single id-less variant by sku and keeps its price", () => {
+    const p = product({ price: 120, variants: [{ sku: "FF030_W", title: "Default Title", price: "120.00" }] });
+    const r = priceCart([{ product_id: 1, variant_id: "FF030_W", quantity: 1 }], [p]);
+    expect(r.ok && r.items[0]).toMatchObject({ price: 120, variant_key: "FF030_W", name: "Tonic" });
   });
 });

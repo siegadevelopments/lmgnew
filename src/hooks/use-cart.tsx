@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useCallback, useEffect, useRef, Re
 export interface CartItem {
   id: number | string; // Use variant ID or product ID
   product_id: number;
-  variant_id?: number;
+  variant_id?: number | string; // variant id, or sku when the variant has no id (see variantKey)
   name: string;
   variant_name?: string;
   price: number;

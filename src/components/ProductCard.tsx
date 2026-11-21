@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { trackAddToCart } from "@/lib/tracking";
 import { variantCount } from "@/lib/product-listing";
+import { variantKey } from "../../supabase/functions/_shared/cart-pricing";
 
 interface ProductCardProps {
   product: {
@@ -64,9 +65,9 @@ export function ProductCard({ product, className }: ProductCardProps) {
     const unitPrice = Number(baseVariant ? baseVariant.price : product.price) || 0;
 
     addItem({
-      id: baseVariant ? `${product.id}-${baseVariant.id}` : product.id,
+      id: baseVariant ? `${product.id}-${variantKey(baseVariant)}` : product.id,
       product_id: product.id,
-      variant_id: baseVariant?.id,
+      variant_id: variantKey(baseVariant) ?? undefined,
       name: product.title,
       variant_name: baseVariant?.title,
       price: unitPrice,

@@ -14,7 +14,7 @@ const full = {
 describe("product listing payload", () => {
   it("keeps only the first variant's id/title/price and records the real count", () => {
     const slim = slimListingProduct(full);
-    expect(slim.variants).toEqual([{ id: "a", title: "50g", price: "63.00" }]);
+    expect(slim.variants).toEqual([{ id: "a", sku: "X", title: "50g", price: "63.00" }]);
     expect(slim.variant_count).toBe(2);
     expect(slim.title).toBe("Tea");
   });
