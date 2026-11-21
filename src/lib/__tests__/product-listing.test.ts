@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LISTING_COLUMNS, slimListingProduct, variantCount } from "../product-listing";
+import { CATEGORY_MATCH_COLUMNS, LISTING_COLUMNS, slimListingProduct, variantCount } from "../product-listing";
 
 const full = {
   id: 1,
@@ -32,5 +32,13 @@ describe("product listing payload", () => {
 
   it("does not select excerpt in the listing query", () => {
     expect(LISTING_COLUMNS).not.toMatch(/excerpt/);
+  });
+
+  it("category/menu query selects named columns, never *, and keeps what matching and cards read", () => {
+    expect(CATEGORY_MATCH_COLUMNS).not.toMatch(/(^|[\s,(])\*/);
+    for (const col of ["title", "category", "excerpt", "wellness_categories", "variants", "image_url", "price", "slug"]) {
+      expect(CATEGORY_MATCH_COLUMNS).toContain(col);
+    }
+    expect(CATEGORY_MATCH_COLUMNS).not.toMatch(/\bdescription\b|\bcontent\b/);
   });
 });

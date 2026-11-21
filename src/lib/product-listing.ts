@@ -31,3 +31,13 @@ export const slimListingProducts = <T extends AnyProduct>(products: T[]) => prod
 export function variantCount(product: { variants?: unknown[] | null; variant_count?: number | null }): number {
   return product.variant_count ?? product.variants?.length ?? 0;
 }
+
+/**
+ * Columns for the category pages, guides and the category menu (server-data fetchLiveProducts):
+ * the listing columns plus what category matching reads (excerpt for the keyword fallback,
+ * wellness_categories). This used to be `select *`, which dragged every product's full description
+ * and other fields into every page regeneration (2.5 MB, over Next's 2 MB data-cache limit, so it
+ * was re-fetched from Supabase each time) and into the HTML sent to the browser.
+ */
+export const CATEGORY_MATCH_COLUMNS = `id, vendor_id, title, slug, excerpt, price, image_url, stock, status, created_at, category, product_type, variants, wellness_categories,
+       vendor_profiles!inner(store_name, store_logo_url, is_approved, is_live)`;
