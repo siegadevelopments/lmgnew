@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { retailOnly } from "@/lib/trade";
+import { LISTING_COLUMNS, slimListingProducts } from "@/lib/product-listing";
 import { supabase } from "@/integrations/supabase/client";
 
 const wellnessImages = [
@@ -52,37 +53,27 @@ export const globalMockProductsList = [
 
 export const productsQueryOptions = () =>
   queryOptions({
-    queryKey: ["products", "list", "v4"],
-    staleTime: 10 * 1000, // 10 seconds
-    gcTime: 2 * 60 * 1000, // 2 minutes
+    queryKey: ["products", "list", "v5"],
+    // The pages that seed this list revalidate hourly (see server-data.ts), so a longer staleTime
+    // stops every visitor's browser re-downloading the whole listing from Supabase right after
+    // hydration. Each refetch was ~570 KB of Supabase egress.
+    staleTime: 2 * 60 * 60 * 1000, // 2 hours
+    gcTime: 2 * 60 * 60 * 1000,
     queryFn: async () => {
       try {
         const { data, error } = await supabase
           .from("products")
-          .select(`
-            id,
-            vendor_id,
-            title,
-            slug,
-            excerpt,
-            price,
-            image_url,
-            stock,
-            status,
-            created_at,
-            category,
-            product_type,
-            variants,
-            vendor_profiles (store_name, store_logo_url, is_approved, is_live)
-          `)
+          .select(LISTING_COLUMNS)
           .eq("status", "published");
-          
+
         if (error) throw error;
-        
+
         // Filter for approved vendors (allow products if vendor is approved, fallback gracefully if is_live is not set)
         // Trade listings (wholesale, salon only, bulk) live on /trade, not in retail browsing.
-        const filtered = retailOnly((data || []) as any[]).filter(
-          (p: any) => !p.vendor_profiles || (p.vendor_profiles.is_approved !== false && p.vendor_profiles.is_live !== false)
+        const filtered = slimListingProducts(
+          retailOnly((data || []) as any[]).filter(
+            (p: any) => !p.vendor_profiles || (p.vendor_profiles.is_approved !== false && p.vendor_profiles.is_live !== false)
+          ),
         );
         
         if (filtered.length === 0) {
@@ -107,8 +98,8 @@ export const productsQueryOptions = () =>
 export const newArrivalsQueryOptions = () =>
   queryOptions({
     queryKey: ["products", "new-arrivals", "v1"],
-    staleTime: 10 * 1000,
-    gcTime: 2 * 60 * 1000,
+    staleTime: 2 * 60 * 60 * 1000,
+    gcTime: 2 * 60 * 60 * 1000,
     queryFn: async () => ((await productsQueryOptions().queryFn!(undefined as any)) as any[]).slice(0, 5),
   });
 
@@ -232,6 +223,7 @@ export const featuredProductsQueryOptions = () =>
 export const recipesQueryOptions = () =>
   queryOptions({
     queryKey: ["recipes", "list", "v3"],
+    staleTime: 30 * 60 * 1000, // list changes rarely; avoid re-downloading it on every visit
     queryFn: async () => {
       try {
         const { data, error } = await supabase
@@ -334,6 +326,7 @@ export const recipeBySlugQueryOptions = (slug: string) =>
 export const articlesQueryOptions = (category?: string) =>
   queryOptions({
     queryKey: ["articles", "list", "v3", category || "all"],
+    staleTime: 30 * 60 * 1000, // list changes rarely; avoid re-downloading it on every visit
     queryFn: async () => {
       try {
         let query = supabase.from("articles").select("id, title, slug, image_url, excerpt, created_at, category_name");
