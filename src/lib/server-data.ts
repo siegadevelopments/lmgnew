@@ -9,7 +9,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { globalMockProductsList } from "@/lib/queries"; // homepage fallback only
 import { categoriesWithProducts, productInCategory } from "@/lib/wellness-categories";
 import { isTradeListing, retailOnly } from "@/lib/trade";
-import { LISTING_COLUMNS, slimListingProducts } from "@/lib/product-listing";
+import { CATEGORY_MATCH_COLUMNS, LISTING_COLUMNS, slimListingProducts } from "@/lib/product-listing";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -169,13 +169,13 @@ function fetchLiveProducts(): Promise<any[]> {
     const data = await withRetry("live products", () =>
       requireClient()
         .from("products")
-        .select(`*, vendor_profiles!inner(store_name, store_logo_url, is_approved, is_live)`)
+        .select(CATEGORY_MATCH_COLUMNS)
         .eq("status", "published")
         .eq("vendor_profiles.is_approved", true)
         .eq("vendor_profiles.is_live", true)
         .neq("product_type", "service"),
     );
-    return retailOnly((data as any[]) || []); // trade listings live on /trade
+    return slimListingProducts(retailOnly((data as any[]) || [])); // trade listings live on /trade
   });
 }
 
