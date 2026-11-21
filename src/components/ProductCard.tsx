@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { trackAddToCart } from "@/lib/tracking";
+import { variantCount } from "@/lib/product-listing";
 
 interface ProductCardProps {
   product: {
@@ -22,6 +23,7 @@ interface ProductCardProps {
     slug: string;
     category?: string;
     variants?: any[];
+    variant_count?: number;
     product_type?: string;
   };
   className?: string;
@@ -213,7 +215,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
             onClick={(e) => {
               if (
                 (product as any).product_type === "service" ||
-                (product.variants && product.variants.length > 1)
+                variantCount(product) > 1
               ) {
                 // For services or variants, let the Link navigate to the product page
               } else {
@@ -223,7 +225,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
           >
             {(product as any).product_type === "service"
               ? "Book Now"
-              : product.variants && product.variants.length > 1
+              : variantCount(product) > 1
                 ? "Select Options"
                 : "Quick Add"}
           </motion.button>

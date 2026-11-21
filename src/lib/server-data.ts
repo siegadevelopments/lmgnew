@@ -9,6 +9,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { globalMockProductsList } from "@/lib/queries"; // homepage fallback only
 import { categoriesWithProducts, productInCategory } from "@/lib/wellness-categories";
 import { isTradeListing, retailOnly } from "@/lib/trade";
+import { LISTING_COLUMNS, slimListingProducts } from "@/lib/product-listing";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -199,17 +200,16 @@ export async function getNonEmptyCategorySlugs(): Promise<string[]> {
   return categoriesWithProducts(await fetchLiveProducts());
 }
 
-const LISTING_COLUMNS = `id, vendor_id, title, slug, excerpt, price, image_url, stock, status, created_at, category, product_type, variants,
-       vendor_profiles (store_name, store_logo_url, is_approved, is_live)`;
-
 /** Published products from approved, live vendors — the same rule productsQueryOptions applies. */
 function fetchListingProducts(): Promise<any[]> {
   return sharedResult("listing-products", async () => {
     const data = await withRetry("product listing", () =>
       requireClient().from("products").select(LISTING_COLUMNS).eq("status", "published"),
     );
-    return ((data as any[]) || []).filter(
-      (p: any) => !p.vendor_profiles || (p.vendor_profiles.is_approved !== false && p.vendor_profiles.is_live !== false),
+    return slimListingProducts(
+      ((data as any[]) || []).filter(
+        (p: any) => !p.vendor_profiles || (p.vendor_profiles.is_approved !== false && p.vendor_profiles.is_live !== false),
+      ),
     );
   });
 }
