@@ -154,6 +154,32 @@ export const trackBeginCheckout = (value: number, items: { product_id: string | 
   });
 };
 
+// InitiateCheckout is reported when the checkout page opens with a cart, not when the form is
+// submitted: submitting redirects to Stripe straight away (which can cut the Pixel request off),
+// and shoppers who open checkout but never submit were never counted. A refresh with the same
+// cart in the same tab reports nothing; a changed cart reports again.
+const BEGIN_CHECKOUT_KEY = "lmg_begin_checkout";
+
+export const cartSignature = (items: { product_id: string | number; quantity: number }[]) =>
+  items.map((i) => `${i.product_id}x${i.quantity}`).sort().join("|");
+
+export const trackBeginCheckoutOnce = (
+  value: number,
+  items: { product_id: string | number; name: string; price: number; quantity: number }[],
+  storage: Pick<Storage, "getItem" | "setItem"> | undefined = typeof window !== "undefined" ? window.sessionStorage : undefined,
+): boolean => {
+  if (items.length === 0) return false;
+  const signature = cartSignature(items);
+  try {
+    if (storage?.getItem(BEGIN_CHECKOUT_KEY) === signature) return false;
+    storage?.setItem(BEGIN_CHECKOUT_KEY, signature);
+  } catch {
+    // storage blocked: report anyway rather than lose the event
+  }
+  trackBeginCheckout(value, items);
+  return true;
+};
+
 // The order a visitor is about to pay for, kept until the success page reports it. Stripe sends
 // the customer back to /checkout/success in the same tab after paying.
 const PENDING_PURCHASE_KEY = "lmg_pending_purchase";
