@@ -118,7 +118,20 @@ Reach 8,712, impressions 12,173, frequency about 1.4. Only the Gift Set ad ran, 
 
 ## Black Friday and Cyber Monday plan (drafted 24 Nov 2026)
 
-Black Friday is Fri 27 Nov and Cyber Monday is Mon 30 Nov. This plan builds on the results above. It is a draft: nothing here is live until the checks below pass and the ads are activated in Ads Manager.
+Black Friday is Fri 27 Nov and Cyber Monday is Mon 30 Nov. This plan builds on the results above. Ad B (Discovery Kit) was published on 24 Nov 2026 as a Traffic campaign (see **What is live**, below). Ad A (Gift Set retargeting) is not created yet.
+
+### What is live (as of 24 Nov 2026, late evening)
+
+- **Ad B, Discovery Kit (cold), published as a Traffic campaign** (objective Traffic, optimised for landing page views), not the Sales (Add to Cart) objective this plan first set. This is the plan's own fallback: AddToCart has never been seen in Events Manager, so Meta may not offer it as a conversion event.
+  - Campaign `LMG | BF2026 | Traffic`, ad set `Cold | AU | Advantage+ | Kit`, built manually.
+  - $5 a day, scheduled 25 Nov to 2 Dec, Australia, 18+, Advantage+ audience.
+  - **Placements: manual, Facebook Feed and Instagram Feed only.** The first publish failed because an in-stream placement was ticked (in-stream does not accept portrait images). Stories, Reels and in-stream are avoided so the price band at the bottom of the image is not cropped or covered.
+  - Multi-advertiser ads, Advantage+ creative enhancements and branding are off.
+  - Creative: `best-sellers-discovery-kit-price.jpg`, with the primary text, headline, call to action (Shop now), link and UTM parameters from the setup sheet. The description field was optional and may be blank.
+  - The earlier campaigns and ad sets were switched off (not deleted).
+- **Ad A, Gift Set retargeting: not created yet.** Create it on Fri 27 Nov once the ViewContent audience exists.
+- **Sales (Add to Cart) campaign: not created yet.** A Traffic campaign cannot be switched to Sales, so when AddToCart registers, create a new Sales campaign with the same creative.
+- **AddToCart tracking is unresolved.** The site code sends `AddToCart` correctly (checked on the live page), the Pixel ID (745566045254239) matches the dataset, and the user's normal Chrome profile blocks requests to Meta. An incognito test did not show an `ev=AddToCart` request or an event in Test events, and that is not yet explained. A console warning, "Invalid parameter format for currency", appears on page load (not on click) and its source is unknown. Next step: in incognito or on a phone via Events Manager > Test events > Open website, wait about 10 seconds after load, click Add to Cart once, wait 30 seconds, and read the `tr/?id=...` requests for `ev=AddToCart`.
 
 **Goal:** get the first purchases and the first AddToCart and InitiateCheckout events, at or under break-even, before sales-focused ads stop on about 10 Dec.
 
@@ -134,7 +147,7 @@ Black Friday is Fri 27 Nov and Cyber Monday is Mon 30 Nov. This plan builds on t
 |---|---|---|
 | Audience | People who viewed a product page in the last 14 to 30 days (Pixel ViewContent), about 250 so far. Small, so expect limited delivery. | Australia, 18+, Advantage+ audience |
 | Product | Gift Set | Best Sellers Discovery Kit ($89) |
-| Objective | **Sales, optimised for Add to Cart** (revised 24 Nov 2026; see below). Fallback: Traffic. | **Sales, optimised for Add to Cart.** Fallback: Traffic. |
+| Objective | Sales, optimised for Add to Cart once AddToCart registers; otherwise Traffic (landing page views). | **Launched as Traffic (landing page views)** on 24 Nov 2026. Move to a new Sales (Add to Cart) campaign once AddToCart registers. |
 | Daily budget | $5 | $5 |
 | Dates | Fri 27 Nov to Wed 2 Dec (starts after Ad B is running and the audience is built) | **Launches first:** Wed 25 Nov to Wed 2 Dec |
 | Stop rule | About $75 spent with no purchase | About $55 spent with no purchase |
@@ -183,6 +196,8 @@ Use the existing images (`founders-formula-gift-box.jpg`, `best-sellers-discover
 5. After activating, confirm there is no policy rejection within 24 hours.
 
 ### Ads Manager setup sheet (Ad B, Discovery Kit, first)
+
+Note: Ad B was actually launched with the **Traffic** objective and **landing page views** as the performance goal, with **manual placements (Facebook Feed and Instagram Feed only)** (see **What is live**). Where the sheet below says Sales and Add to cart, use the Traffic values until AddToCart registers, then use it to build the new Sales campaign.
 
 Meta changes its screens often, so labels may differ slightly. The values are what matter. Everything is created switched off, then reviewed before you turn it on.
 
@@ -247,7 +262,8 @@ Meta changes its screens often, so labels may differ slightly. The values are wh
 | Date | Action |
 |---|---|
 | Tue 24 Nov | Run the checks. Prepare the ads and the audience. |
-| Wed 25 Nov | Activate Ad B (Discovery Kit) first (decided 24 Nov 2026). Build the retargeting audience. |
+| Tue 24 Nov | Ad B published (Traffic), scheduled to start 25 Nov. Old campaigns switched off. |
+| Wed 25 Nov | Ad B starts delivering (check review status, spend and landing page views). Build the retargeting audience. |
 | Fri 27 Nov | Activate Ad A (Gift Set retargeting) once the audience exists and Ad B is delivering. |
 | Fri 27 Nov | Organic Black Friday post goes out (see calendar above). Check spend and events. |
 | Mon 30 Nov | Cyber Monday: check results, move budget to whichever ad has add to carts. |
