@@ -15,7 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { calculateShipping, gstIncluded } from "@/lib/checkout-pricing";
-import { checkoutSessionId, savePendingPurchase, trackBeginCheckout } from "@/lib/tracking";
+import { checkoutSessionId, savePendingPurchase, trackBeginCheckoutOnce } from "@/lib/tracking";
 import { getAttribution } from "@/lib/attribution";
 
 export default function CheckoutPage() {
@@ -79,6 +79,18 @@ export default function CheckoutPage() {
   const grandTotal = totalPrice + shipping;
   const gst = gstIncluded(grandTotal);
 
+  // Report InitiateCheckout once the cart has loaded (it hydrates from storage after mount).
+  const cartKey = items.map((i) => `${i.product_id}x${i.quantity}`).join("|");
+  useEffect(() => {
+    if (items.length === 0) return;
+    const value = Math.round((totalPrice + shipping) * 100) / 100;
+    trackBeginCheckoutOnce(
+      value,
+      items.map((i) => ({ product_id: i.product_id, name: i.name, price: i.price, quantity: i.quantity })),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartKey]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -108,10 +120,9 @@ export default function CheckoutPage() {
       }
 
       if (data?.url) {
-        // Analytics: checkout started now; the purchase is reported on the success page.
+        // Analytics: InitiateCheckout is reported when the page opens; the purchase is reported on the success page.
         const trackedItems = items.map((i) => ({ product_id: i.product_id, name: i.name, price: i.price, quantity: i.quantity }));
         const value = Math.round((totalPrice + shipping) * 100) / 100;
-        trackBeginCheckout(value, trackedItems);
         const sessionId = checkoutSessionId(data.url);
         if (sessionId) savePendingPurchase({ transactionId: sessionId, value, items: trackedItems });
         window.location.href = data.url;
