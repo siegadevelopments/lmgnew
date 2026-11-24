@@ -124,7 +124,7 @@ Black Friday is Fri 27 Nov and Cyber Monday is Mon 30 Nov. This plan builds on t
 
 **Offer:** no discount code, as in the November plan. The offer is the vendor's "valued at" price, free shipping over $50 and Afterpay. If Founder's Formula agrees to a real Black Friday offer, record it here and in the ad copy before launch. Do not mention a discount in any ad unless the vendor has approved one.
 
-**Budget:** $800 cap for the whole campaign, $130.23 already spent, so $669.77 remains. Reduced on 24 Nov 2026: plan about $80 for 25 Nov to 2 Dec ($5 a day on each ad), and extend to 10 Dec (about $160 in total) only if an ad is producing add to carts. Raise a budget only if cost per purchase is under break-even. At this size the stop-rule spends below are ceilings and may never be reached; the ads simply end at 2 Dec. LMG pays alone (vendor declined co-funding on 26 Oct 2026). Check the monthly cap in Admin > Meta Ads.
+**Budget:** $800 cap for the whole campaign, $130.23 already spent, so $669.77 remains. Reduced on 24 Nov 2026: plan about $70 for 25 Nov to 2 Dec ($5 a day on each ad; Ad B from 25 Nov, Ad A from 27 Nov), and extend to 10 Dec (about $150 in total) only if an ad is producing add to carts. Raise a budget only if cost per purchase is under break-even. At this size the stop-rule spends below are ceilings and may never be reached; the ads simply end at 2 Dec. LMG pays alone (vendor declined co-funding on 26 Oct 2026). Check the monthly cap in Admin > Meta Ads.
 
 **Break-even (unchanged, 25% commission):** about $25 per purchase for the Gift Set, $18 for the Discovery Kit.
 
@@ -134,10 +134,12 @@ Black Friday is Fri 27 Nov and Cyber Monday is Mon 30 Nov. This plan builds on t
 |---|---|---|
 | Audience | People who viewed a product page in the last 14 to 30 days (Pixel ViewContent), about 250 so far. Small, so expect limited delivery. | Australia, 18+, Advantage+ audience |
 | Product | Gift Set | Best Sellers Discovery Kit ($89) |
-| Objective | Sales, optimised for Add to Cart (Purchase has no history). If delivery stalls on the small audience, use Traffic to the same audience. | Traffic (landing page views) until add to carts arrive, then Sales with Add to Cart |
+| Objective | Traffic (landing page views). Events Manager showed no AddToCart events (11 to 24 Nov), so Sales optimisation has nothing to learn from yet. | Traffic (landing page views), for the same reason |
 | Daily budget | $5 | $5 |
-| Dates | Tue 24 or Wed 25 Nov to Wed 2 Dec | Wed 25 Nov to Wed 2 Dec |
+| Dates | Fri 27 Nov to Wed 2 Dec (starts after Ad B is running and the audience is built) | **Launches first:** Wed 25 Nov to Wed 2 Dec |
 | Stop rule | About $75 spent with no purchase | About $55 spent with no purchase |
+
+**Campaign setup in Ads Manager (decided 24 Nov 2026):** create one **new** campaign with two ad sets, one per column above. Do not reuse the ended campaign: an ended campaign's learning does not carry over and its objective cannot be changed. Meta's Duplicate on the old campaign is fine, to copy location, age and placement settings, then change the objective, dates, budget and creative. Budget is set per ad set, so $5 a day each holds. If Meta allows, exclude the retargeting audience from the cold ad set so the two do not compete for the same people. Once AddToCart events arrive steadily, move to Sales (Add to Cart optimisation) in a new campaign.
 
 Why the Discovery Kit: the $89 price is a lower first purchase than the $120 Gift Set, and "a gift under $100" matches the 27 Nov organic post.
 
@@ -162,7 +164,9 @@ Draft copy (Australian English):
 - Description: `A gift under $100`
 - Link: https://www.lifestylemedicinegateway.com/products/best-sellers-discovery-kit
 
-Use the existing images (`founders-formula-gift-box.jpg`, `best-sellers-discovery-kit.jpg`) with the price or value added to the image.
+Use the existing images (`founders-formula-gift-box.jpg`, `best-sellers-discovery-kit.jpg`) with the price or value added to the image. Chosen image text, in a dark green band across the bottom fifth with the price in orange (keep to two short lines):
+- Ad B: **5 minis, $89** / A gift under $100. If the ad runs as an image-only creative, "5 serum minis" is clearer than "5 minis".
+- Ad A: **Gift Set $120** / Valued at over $200.
 
 ### Checks before activating
 
@@ -177,7 +181,8 @@ Use the existing images (`founders-formula-gift-box.jpg`, `best-sellers-discover
 | Date | Action |
 |---|---|
 | Tue 24 Nov | Run the checks. Prepare the ads and the audience. |
-| Wed 25 Nov | Activate Ad A and Ad B (in time for the 27 Nov organic Black Friday post). |
+| Wed 25 Nov | Activate Ad B (Discovery Kit) first (decided 24 Nov 2026). Build the retargeting audience. |
+| Fri 27 Nov | Activate Ad A (Gift Set retargeting) once the audience exists and Ad B is delivering. |
 | Fri 27 Nov | Organic Black Friday post goes out (see calendar above). Check spend and events. |
 | Mon 30 Nov | Cyber Monday: check results, move budget to whichever ad has add to carts. |
 | Wed 2 Dec | Review. Stop, change or scale (see Decision rules). |
