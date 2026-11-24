@@ -134,12 +134,18 @@ Black Friday is Fri 27 Nov and Cyber Monday is Mon 30 Nov. This plan builds on t
 |---|---|---|
 | Audience | People who viewed a product page in the last 14 to 30 days (Pixel ViewContent), about 250 so far. Small, so expect limited delivery. | Australia, 18+, Advantage+ audience |
 | Product | Gift Set | Best Sellers Discovery Kit ($89) |
-| Objective | Traffic (landing page views). Events Manager showed no AddToCart events (11 to 24 Nov), so Sales optimisation has nothing to learn from yet. | Traffic (landing page views), for the same reason |
+| Objective | **Sales, optimised for Add to Cart** (revised 24 Nov 2026; see below). Fallback: Traffic. | **Sales, optimised for Add to Cart.** Fallback: Traffic. |
 | Daily budget | $5 | $5 |
 | Dates | Fri 27 Nov to Wed 2 Dec (starts after Ad B is running and the audience is built) | **Launches first:** Wed 25 Nov to Wed 2 Dec |
 | Stop rule | About $75 spent with no purchase | About $55 spent with no purchase |
 
-**Campaign setup in Ads Manager (decided 24 Nov 2026):** create one **new** campaign with two ad sets, one per column above. Do not reuse the ended campaign: an ended campaign's learning does not carry over and its objective cannot be changed. Meta's Duplicate on the old campaign is fine, to copy location, age and placement settings, then change the objective, dates, budget and creative. Budget is set per ad set, so $5 a day each holds. If Meta allows, exclude the retargeting audience from the cold ad set so the two do not compete for the same people. Once AddToCart events arrive steadily, move to Sales (Add to Cart optimisation) in a new campaign.
+**Campaign setup in Ads Manager (decided 24 Nov 2026):** create one **new** campaign with two ad sets, one per column above. Do not reuse the ended campaign: an ended campaign's learning does not carry over and its objective cannot be changed. Meta's Duplicate on the old campaign is fine, to copy location, age and placement settings, then change the objective, dates, budget and creative. Budget is set per ad set, so $5 a day each holds. If Meta allows, exclude the retargeting audience from the cold ad set so the two do not compete for the same people. 
+
+**Objective (revised 24 Nov 2026): Sales, optimised for Add to Cart, not Purchase.** Traffic optimises for clicks, and the first test got 254 cheap visits and no add to carts, so more of the same kind of click is unlikely to help. Sales aims at people likely to take a later step. Purchase optimisation is not used: there is no purchase history and, at $5 a day (about $35 a week), far fewer than the roughly 50 optimisation events a week Meta wants, so delivery would likely stall. Add to Cart is the closest event to a sale that can still occur often enough. Expect Meta to show "Learning limited"; this is a small test, not a sales push.
+
+**Requirement:** the Pixel has not yet seen an AddToCart event (Events Manager, 11 to 24 Nov), so Meta may not offer it as the conversion event. Do the test add to cart in the checks below first so it registers.
+
+**Fallback to Traffic:** on Fri 27 Nov (about $15 spent per ad set), if an ad set is spending well under $5 a day or has no add to carts, duplicate it as a Traffic (landing page views) ad set and switch the budget across. Do not switch to Purchase until orders are arriving.
 
 Why the Discovery Kit: the $89 price is a lower first purchase than the $120 Gift Set, and "a gift under $100" matches the 27 Nov organic post.
 
@@ -170,11 +176,71 @@ Use the existing images (`founders-formula-gift-box.jpg`, `best-sellers-discover
 
 ### Checks before activating
 
-1. Add the Gift Set to your cart and confirm AddToCart arrives in Events Manager > Test events (or the Meta Pixel Helper). Repeat for InitiateCheckout. Run one real low-value test order if possible, then refund it.
+1. **Do this first, because the ad's conversion event depends on it.** Add the Gift Set to your cart and confirm AddToCart arrives in Events Manager > Test events (or the Meta Pixel Helper). Open `/checkout` and confirm InitiateCheckout arrives once (and not again on a refresh). Run one real low-value test order if possible, then refund it. Until AddToCart registers, Meta may not list it as a conversion event.
 2. Open both product pages on a phone as a cold visitor would. Check that the price, what's inside, shipping, Afterpay and the Add to cart button are all clear without scrolling far. Fix anything that is not.
 3. Confirm prices and stock on both product pages, and that the Pixel ID in Vercel matches the Pixel on the ad account.
 4. Create the retargeting audience in Meta (ViewContent, 30 days) and check its size.
 5. After activating, confirm there is no policy rejection within 24 hours.
+
+### Ads Manager setup sheet (Ad B, Discovery Kit, first)
+
+Meta changes its screens often, so labels may differ slightly. The values are what matter. Everything is created switched off, then reviewed before you turn it on.
+
+**Before you start**
+- The ad images are in PR #89 (`best-sellers-discovery-kit-price.jpg`, `founders-formula-gift-box-price.jpg`, 1080 x 1350). If it is not merged yet, use the local copies. Merging it also puts them at `https://www.lifestylemedicinegateway.com/marketing/2026-11/<file>`.
+- The checks above are done (AddToCart has registered).
+
+**1. Campaign**
+- Create a new campaign (or Duplicate the ended one, then change the items below).
+- Objective: **Sales**.
+- Name: `LMG | BF2026 | Sales-AddToCart`.
+- Special ad category: none.
+- Campaign budget: off. Set the budget on each ad set instead.
+
+**2. Ad set 1: cold (Discovery Kit)**
+- Name: `Cold | AU | Advantage+ | Kit`.
+- Conversion location: **Website**.
+- Performance goal: **Maximise number of conversions**.
+- Pixel / dataset: the Lifestyle Medicine Gateway pixel (dataset ID 745566045254239). Conversion event: **Add to cart**. If it is greyed out or missing, the Pixel has not seen the event yet; go back to the checks.
+- Budget: **Daily, $5**.
+- Schedule: start Wed 25 Nov, end Wed 2 Dec (extend to 10 Dec only if it is producing add to carts).
+- Locations: **Australia** only (people living in or recently in this location).
+- Age: 18+. Audience: Advantage+ audience, no interest targeting.
+- Exclude: the retargeting audience from ad set 2, if Meta allows it.
+- Placements: Advantage+ placements. If you want to be careful about Stories and Reels covering the price band at the bottom of the image, choose Facebook and Instagram **Feeds** only.
+
+**3. Ad 1: Discovery Kit**
+- Name: `Kit | 5 minis $89 | image`.
+- Identity: the Lifestyle Medicine Gateway Facebook Page and its Instagram account.
+- Format: single image. Media: `best-sellers-discovery-kit-price.jpg`.
+- Primary text: `A gift under $100 for the skincare lover. Five 5 mL Founder's Formula minis for $89, valued at $99. Skip the countdown timers. Free shipping over $50, and Afterpay at checkout.`
+- Headline: `5 minis for $89`
+- Description: `A gift under $100`
+- Call to action: **Shop now**.
+- Website URL: `https://www.lifestylemedicinegateway.com/products/best-sellers-discovery-kit`
+- URL parameters (so the site records where visitors came from): `utm_source=facebook&utm_medium=paid&utm_campaign=bf2026-kit`
+- Do not tick any option that adds discount wording. There is no discount.
+
+**4. Ad set 2: retargeting (Gift Set), create now, switch on Fri 27 Nov**
+- Name: `Retarget | Viewers 30d | Gift Set`.
+- Same conversion location, goal and event as ad set 1. Budget: **Daily, $5**. Schedule: start Fri 27 Nov, end Wed 2 Dec.
+- Audience: create a Custom Audience, source **Website**, event **ViewContent** (or visited product pages), last **30 days**. Check its size; it is small (about 250 so far), so delivery may be limited.
+- Locations: Australia. Age 18+.
+
+**5. Ad 2: Gift Set**
+- Name: `Gift Set | $120 value | image`.
+- Media: `founders-formula-gift-box-price.jpg`.
+- Primary text: `Still thinking about it? Founder's Formula Gift Set: three 15 mL serums in one box, $120, valued at over $200. Made on the Sunshine Coast with Australian native botanicals. Free shipping over $50, and Afterpay at checkout.`
+- Headline: `Gift Set, $120 (valued at $200+)`
+- Description: `Free shipping over $50`
+- Call to action: **Shop now**.
+- Website URL: `https://www.lifestylemedicinegateway.com/products/founders-formula-gift-box`
+- URL parameters: `utm_source=facebook&utm_medium=paid&utm_campaign=bf2026-giftset`
+
+**6. Review and publish**
+- Check every field above against this sheet, including the dates, the $5 daily budgets and the Australia-only location.
+- Publish. Confirm there is no policy rejection within 24 hours (health and skincare ads get stricter review; the copy avoids cure and result claims).
+- Record the campaign and ad set IDs in the Results section.
 
 ### Timeline
 
@@ -191,8 +257,9 @@ Use the existing images (`founders-formula-gift-box.jpg`, `best-sellers-discover
 ### Decision rules
 
 - No add to carts after the stop-rule spend: stop that ad. Do not raise budget.
+- Spend well under $5 a day, or no events, by Fri 27 Nov: switch to the Traffic fallback (see Objective above).
 - Add to carts but no purchases: look at the cart and checkout flow and the price or shipping messaging before spending more.
 - Purchases at or under break-even: raise that ad's budget to $10 a day, within the $800 cap.
 - Record all results in the Results table and in [experiments.md](../social/experiments.md).
 
-**Open questions for the owner:** (1) Will Founder's Formula approve a real Black Friday offer? (2) Is the reduced budget of about $80 (up to about $160) right, given LMG funds it alone? (3) Should other vendors be included in a Black Friday push, one vendor per ad?
+**Open questions for the owner:** (1) Will Founder's Formula approve a real Black Friday offer? (2) Is the reduced budget of about $70 (up to about $150) right, given LMG funds it alone? (3) Should other vendors be included in a Black Friday push, one vendor per ad?
